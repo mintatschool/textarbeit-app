@@ -1,0 +1,218 @@
+import React, { useRef, useState, useMemo, useEffect } from 'react';
+import QRious from 'qrious';
+import { Icons } from './Icons';
+
+export const QRCodeModal = ({ text, onClose }) => {
+    const qrRef = useRef(null);
+    const fullQrRef = useRef(null);
+    const [linkInput, setLinkInput] = useState("");
+    const [isMaximized, setIsMaximized] = useState(false);
+    const [tooLongError, setTooLongError] = useState(false);
+    const [mode, setMode] = useState('text'); // 'text' or 'link'
+
+    // UTF-8 Encoding Fix für Umlaute
+    const toUtf8Bytes = (str) => {
+        try {
+            return unescape(encodeURIComponent(str));
+        } catch (e) {
+            return str;
+        }
+    };
+
+    // Daten-Aufbereitung & Platz-Optimierung
+    const qrValue = useMemo(() => {
+        if (!text) return "";
+        if (text.length > 2900) {
+            setTooLongError(true);
+            return "";
+        }
+        setTooLongError(false);
+        // Wenn der Text kurz ist, verpacken wir ihn in ein JSON-Objekt.
+        // Bei langem Text sparen wir den JSON-Overhead.
+        const rawString = text.length > 300 ? text : JSON.stringify({ text: text });
+        return toUtf8Bytes(rawString);
+    }, [text]);
+
+    // QR-Code für Text rendern
+    useEffect(() => {
+        if (mode !== 'text') return;
+        if (qrRef.current && qrValue && !isMaximized && !tooLongError) {
+            try {
+                new QRious({
+                    element: qrRef.current,
+                    value: qrValue,
+                    size: 280,
+                    level: 'L' // Low error correction = mehr Platz für Daten
+                });
+            } catch (e) {
+                console.error("QR Generierung fehlgeschlagen:", e);
+                setTooLongError(true);
+            }
+        }
+    }, [qrValue, isMaximized, tooLongError, mode]);
+
+    // QR-Code für maximierte Ansicht
+    useEffect(() => {
+        if (fullQrRef.current && qrValue && isMaximized && !tooLongError) {
+            try {
+                const size = Math.min(window.innerWidth, window.innerHeight) * 0.85;
+                new QRious({
+                    element: fullQrRef.current,
+                    value: mode === 'link' ? linkInput : qrValue,
+                    size: size,
+                    level: 'L'
+                });
+            } catch (e) {
+                console.error("QR Maximierung fehlgeschlagen:", e);
+            }
+        }
+    }, [qrValue, isMaximized, tooLongError, linkInput, mode]);
+
+    // QR-Code für Link-Eingabe generieren
+    const generateLinkQR = () => {
+        if (!linkInput || !qrRef.current) return;
+        setMode('link');
+        try {
+            new QRious({
+                element: qrRef.current,
+                value: linkInput,
+                size: 280,
+                level: 'M' // Medium für Links reicht aus
+            });
+        } catch (e) {
+            console.error("Link QR fehlgeschlagen:", e);
+        }
+    };
+
+    // Zurück zu Text-QR
+    const resetToText = () => {
+        setMode('text');
+        setLinkInput("");
+    };
+
+    return (
+        <div className="fixed inset-0 z-[160] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 font-sans">
+            {/* Maximierte Vollbild-Ansicht */}
+            {isMaximized && !tooLongError && (
+                <div className="fixed inset-0 z-[200] bg-white flex flex-col items-center justify-center p-4 animate-fadeIn">
+                    <div className="bg-white p-4 border-8 border-slate-100 rounded-2xl shadow-2xl">
+                        <canvas ref={fullQrRef}></canvas>
+                    </div>
+                    <p className="mt-4 text-slate-500 font-medium">
+                        {mode === 'link' ? 'Link-QR-Code' : `Text-QR-Code (${text?.length || 0} Zeichen)`}
+                    </p>
+                    <button
+                        onClick={() => setIsMaximized(false)}
+                        className="mt-6 px-8 py-3 bg-slate-800 text-white rounded-full font-bold shadow-xl flex items-center gap-2 hover:scale-105 transition min-touch-target"
+                    >
+                        <Icons.Minimize /> Verkleinern
+                    </button>
+                </div>
+            )}
+
+            {/* Normales Modal */}
+            <div className="bg-white rounded-2xl shadow-2xl p-6 modal-animate flex flex-col items-center max-w-sm w-full max-h-[90vh] overflow-y-auto custom-scroll">
+                <div className="flex justify-between items-center w-full mb-4">
+                    <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                        <Icons.QrCode className="text-blue-600" /> Text teilen
+                    </h2>
+                    <button onClick={onClose} className="p-3 hover:bg-slate-100 rounded-full min-touch-target">
+                        <Icons.X size={24} />
+                    </button>
+                </div>
+
+                {/* Tab-Umschalter */}
+                <div className="flex w-full gap-2 mb-4">
+                    <button
+                        onClick={resetToText}
+                        className={`flex-1 py-2 rounded-lg font-bold text-sm transition ${mode === 'text'
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                            }`}
+                    >
+                        📝 Voller Text
+                    </button>
+                    <button
+                        onClick={() => setMode('link')}
+                        className={`flex-1 py-2 rounded-lg font-bold text-sm transition ${mode === 'link'
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                            }`}
+                    >
+                        🔗 Cloud-Link
+                    </button>
+                </div>
+
+                {/* Link-Eingabe (nur wenn mode === 'link') */}
+                {mode === 'link' && (
+                    <div className="w-full mb-4 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                        <label className="text-sm font-bold text-slate-600 block mb-2">
+                            Datei-Link (Cloud) für Schüler:
+                        </label>
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                placeholder="https://..."
+                                className="flex-1 border rounded-lg p-2 text-sm"
+                                value={linkInput}
+                                onChange={e => setLinkInput(e.target.value)}
+                            />
+                            <button
+                                onClick={generateLinkQR}
+                                className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 min-touch-target"
+                            >
+                                OK
+                            </button>
+                        </div>
+                        <p className="text-xs text-slate-400 mt-2">
+                            Füge hier den Link zu deiner exportierten JSON-Datei ein.
+                        </p>
+                    </div>
+                )}
+
+                {/* QR-Code Anzeige */}
+                <div className="relative group w-full flex justify-center">
+                    {tooLongError ? (
+                        <div className="bg-red-50 text-red-600 p-6 rounded-xl border border-red-200 text-center text-sm font-bold min-h-[280px] flex flex-col items-center justify-center gap-2">
+                            <Icons.AlertTriangle size={48} className="text-red-400" />
+                            <p>Der Text ist zu lang für einen QR-Code.</p>
+                            <p className="text-red-400 font-normal">({text?.length || 0} / 2900 Zeichen)</p>
+                            <p className="text-slate-500 font-normal mt-2">
+                                Nutze "Speichern" und einen Cloud-Link stattdessen.
+                            </p>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="bg-white p-4 rounded-xl border-4 border-slate-100 mb-4 flex justify-center min-h-[280px] flex-col items-center">
+                                <canvas ref={qrRef}></canvas>
+                                {mode === 'text' && (
+                                    <p className="text-xs text-slate-400 mt-2">
+                                        {text?.length || 0} Zeichen
+                                    </p>
+                                )}
+                            </div>
+                            <button
+                                onClick={() => setIsMaximized(true)}
+                                className="absolute bottom-8 right-2 p-3 bg-white/90 shadow-md border rounded-full text-slate-600 hover:text-blue-600 hover:scale-110 transition min-touch-target"
+                                title="Vergrößern"
+                            >
+                                <Icons.Maximize size={20} />
+                            </button>
+                        </>
+                    )}
+                </div>
+
+                <p className="text-center text-slate-500 text-sm mb-4">
+                    Scanne diesen Code mit der App-Kamera eines anderen Geräts.
+                </p>
+
+                <button
+                    onClick={onClose}
+                    className="px-6 py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 w-full min-touch-target"
+                >
+                    Schließen
+                </button>
+            </div>
+        </div>
+    );
+};

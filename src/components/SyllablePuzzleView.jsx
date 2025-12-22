@@ -1,0 +1,81 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { Icons } from './Icons';
+import { EmptyStateMessage } from './EmptyStateMessage';
+
+export const SyllablePuzzleView = ({ words, settings, setSettings, onClose }) => {
+    if (!words || words.length === 0) return (<div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans"><EmptyStateMessage onClose={onClose} /></div>);
+    const [puzzleWords, setPuzzleWords] = useState([]);
+    const [placedPieces, setPlacedPieces] = useState({});
+    const [poolPieces, setPoolPieces] = useState([]);
+    const [showReward, setShowReward] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
+    const dragItemRef = useRef(null);
+
+    useEffect(() => {
+        if (!isDragging) return;
+        const preventDefault = (e) => { e.preventDefault(); };
+        document.body.style.overflow = 'hidden';
+        document.addEventListener('touchmove', preventDefault, { passive: false });
+        return () => { document.body.style.overflow = ''; document.removeEventListener('touchmove', preventDefault); };
+    }, [isDragging]);
+
+    useEffect(() => {
+        const pWords = words.map(w => { return { id: w.id, fullWord: w.word, syllables: w.syllables, pieces: w.syllables.map((txt, idx) => ({ id: `${w.id}_syl_${idx}`, text: txt, wordId: w.id, index: idx, isStart: idx === 0, isEnd: idx === w.syllables.length - 1, isSolo: w.syllables.length === 1 })) }; });
+        setPuzzleWords(pWords);
+        const allPieces = pWords.flatMap(w => w.pieces);
+        for (let i = allPieces.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[allPieces[i], allPieces[j]] = [allPieces[j], allPieces[i]]; }
+        setPoolPieces(allPieces);
+        setPlacedPieces({});
+        setShowReward(false);
+    }, [JSON.stringify(words)]);
+
+    useEffect(() => {
+        const totalSlots = puzzleWords.reduce((acc, w) => acc + w.syllables.length, 0);
+        const isFull = Object.keys(placedPieces).length === totalSlots;
+        if (words.length > 0 && totalSlots > 0 && isFull) {
+            let allRowsCorrect = true;
+            puzzleWords.forEach(wordDef => { const rowPieces = []; for (let i = 0; i < wordDef.syllables.length; i++) { const slotId = `${wordDef.id}_${i}`; if (placedPieces[slotId]) rowPieces.push(placedPieces[slotId].text); } const formedWord = rowPieces.join(''); const match = puzzleWords.find(w => w.fullWord === formedWord && w.syllables.length === wordDef.syllables.length); if (!match) allRowsCorrect = false; });
+            if (allRowsCorrect) setTimeout(() => setShowReward(true), 200);
+        }
+    }, [placedPieces, words, puzzleWords]);
+
+    const handleDragStart = (e, piece, source, slotId = null) => { setIsDragging(true); dragItemRef.current = { piece, source, slotId }; e.dataTransfer.setData('application/json', JSON.stringify(piece)); e.dataTransfer.effectAllowed = 'move'; setTimeout(() => e.target.classList.add('dragging'), 0); };
+    const handleDragEnd = (e) => { setIsDragging(false); e.target.classList.remove('dragging'); dragItemRef.current = null; document.querySelectorAll('.active-target').forEach(el => el.classList.remove('active-target')); };
+    const handleSlotDrop = (e, targetWordId, targetIndex) => { setIsDragging(false); e.preventDefault(); e.stopPropagation(); document.querySelectorAll('.active-target').forEach(el => el.classList.remove('active-target')); const dragData = dragItemRef.current; if (!dragData) return; const { piece, source, slotId: sourceSlotId } = dragData; const targetSlotId = `${targetWordId}_${targetIndex}`; if (source === 'slot' && sourceSlotId === targetSlotId) return; const existingPiece = placedPieces[targetSlotId]; setPlacedPieces(prev => { const newPlaced = { ...prev, [targetSlotId]: piece }; if (source === 'slot' && sourceSlotId) delete newPlaced[sourceSlotId]; return newPlaced; }); setPoolPieces(prev => { let newPool = prev; if (source === 'pool') newPool = newPool.filter(p => p.id !== piece.id); if (existingPiece) newPool = [...newPool, existingPiece]; return newPool; }); };
+    const handlePoolDrop = (e) => { setIsDragging(false); e.preventDefault(); e.stopPropagation(); const dragData = dragItemRef.current; if (!dragData) return; const { piece, source, slotId } = dragData; if (source === 'slot') { setPlacedPieces(prev => { const copy = { ...prev }; delete copy[slotId]; return copy; }); setPoolPieces(prev => [...prev, piece]); } };
+    const getPieceStyle = (piece, isPlaced) => { let base = "relative flex items-center justify-center border font-bold select-none min-w-[3rem] px-4 shadow-sm touch-action-none touch-manipulation "; base += "touch-none select-none "; base += isPlaced ? "bg-blue-200 text-blue-900 border-blue-300 " : "bg-blue-100 text-blue-900 border-blue-300 "; if (!piece.isStart && !piece.isSolo) base += "pl-6 "; if (!piece.isEnd && !piece.isSolo) base += "pr-6 "; if (piece.isStart || piece.isSolo) base += "rounded-l-2xl "; if (piece.isEnd || piece.isSolo) base += "rounded-r-2xl "; return base; };
+    const dynamicHeight = Math.max(56, settings.fontSize * 1.5);
+
+    return (
+        <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans">
+            {showReward && (<div className="fixed inset-0 z-[150] pointer-events-none flex items-center justify-center">{Array.from({ length: 30 }).map((_, i) => <div key={i} className="confetti" style={{ left: `${Math.random() * 100}%`, top: `-10%`, backgroundColor: ['#f00', '#0f0', '#00f', '#ff0'][Math.floor(Math.random() * 4)], animationDuration: `${2 + Math.random() * 3}s`, animationDelay: `${Math.random()}s` }}></div>)}<div className="bg-white/90 backdrop-blur rounded-2xl p-8 shadow-2xl pop-animate pointer-events-auto text-center border-4 border-yellow-400"><h2 className="text-4xl font-bold text-slate-800 mb-4">Super gemacht! 🎉</h2><button onClick={onClose} className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition min-touch-target">Zurück</button></div></div>)}
+            <div className="bg-white px-6 py-4 shadow-sm flex justify-between items-center z-10 shrink-0 flex-wrap gap-4">
+                <div className="flex items-center gap-4">
+                    <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2"><Icons.Puzzle className="text-purple-600" /> Silben-Puzzle</h2>
+                    <span className="bg-slate-100 px-3 py-1 rounded-full text-slate-500 font-medium text-sm">{poolPieces.length} Teile übrig</span>
+                </div>
+                <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg">
+                    <span className="text-xs font-bold text-slate-500">A</span>
+                    <input type="range" min="16" max="120" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-32 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer" />
+                    <span className="text-xl font-bold text-slate-500">A</span>
+                </div>
+                <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 shadow-sm transition-transform hover:scale-105 flex items-center justify-center min-touch-target sticky right-0"><Icons.X size={24} /></button>
+            </div>
+            <div className="flex-1 overflow-y-auto custom-scroll p-6 bg-slate-50/50">
+                <div className="max-w-6xl mx-auto grid gap-6 pb-12" style={{ gridTemplateColumns: settings.fontSize > 50 ? '1fr' : 'repeat(auto-fit, minmax(350px, 1fr))' }}>
+                    {puzzleWords.map((word) => {
+                        const isWordComplete = word.pieces.every(p => placedPieces[`${word.id}_${p.index}`]?.text === p.text); return (
+                            <div key={word.id} className={`p-4 bg-white rounded-xl border flex flex-wrap gap-2 items-center justify-center min-h-[5rem] transition-colors duration-300 ${isWordComplete ? 'border-green-400 bg-green-50 shadow-md' : 'border-slate-200 shadow-sm'}`}>
+                                <div className="flex flex-wrap gap-2 items-center justify-center">{word.pieces.map((originalPiece) => { const slotId = `${word.id}_${originalPiece.index}`; const placedPiece = placedPieces[slotId]; return (<div key={slotId} className={`puzzle-drop-target relative flex items-center justify-center rounded-lg ${!placedPiece ? 'border-2 border-dashed border-slate-300' : ''}`} style={{ fontSize: `${settings.fontSize}px`, minHeight: `${dynamicHeight}px`, minWidth: '7rem', zIndex: 1 }} onDragOver={(e) => e.preventDefault()} onDragEnter={(e) => { e.preventDefault(); e.currentTarget.classList.add('active-target'); }} onDragLeave={(e) => e.currentTarget.classList.remove('active-target')} onDrop={(e) => handleSlotDrop(e, word.id, originalPiece.index)}>{placedPiece ? (<div draggable onDragStart={(e) => handleDragStart(e, placedPiece, 'slot', slotId)} onDragEnd={handleDragEnd} className={`${getPieceStyle(placedPiece, true)} cursor-grab active:cursor-grabbing hover:scale-105 transition-transform touch-action-none`} style={{ fontFamily: settings.fontFamily, fontSize: `${settings.fontSize}px`, minHeight: `${dynamicHeight}px`, width: '100%', height: '100%' }}>{(!placedPiece.isEnd && !placedPiece.isSolo) && <div className="absolute right-[-8px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-blue-200 z-10"></div>}{(!placedPiece.isStart && !placedPiece.isSolo) && <div className="absolute left-[-8px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white z-20"></div>}{placedPiece.text}</div>) : <span className="text-slate-300 font-bold select-none">?</span>}</div>); })}</div>
+                                {isWordComplete && <div className="ml-4 text-green-500 animate-[popIn_0.4s_ease-out]"><Icons.Check size={40} strokeWidth={3} /></div>}
+                            </div>
+                        )
+                    })}
+                </div>
+            </div>
+            <div className="shrink-0 bg-white border-t border-slate-200 p-6 shadow-[0_-5px_15px_-5px_rgba(0,0,0,0.1)] z-50 overflow-y-auto custom-scroll" style={{ maxHeight: '45vh', height: 'auto', touchAction: 'pan-y' }} onDragOver={(e) => e.preventDefault()} onDrop={handlePoolDrop}>
+                <div className="max-w-7xl mx-auto"><h3 className="text-sm font-bold text-slate-400 mb-3 uppercase tracking-wider sticky top-0 bg-white z-50 pb-2">Verfügbare Teile</h3><div className="flex flex-wrap gap-4 justify-center items-start content-start pb-4">{poolPieces.map((piece) => (<div key={piece.id} draggable onDragStart={(e) => handleDragStart(e, piece, 'pool')} onDragEnd={handleDragEnd} className={`${getPieceStyle(piece, false)} cursor-grab active:cursor-grabbing hover:scale-105 transition-transform hover:shadow-md hover:bg-blue-50 relative z-40 touch-action-none`} style={{ fontFamily: settings.fontFamily, fontSize: `${settings.fontSize}px`, minHeight: `${dynamicHeight}px` }}>{(!piece.isEnd && !piece.isSolo) && <div className="absolute right-[-8px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-inherit z-10 border-r border-b border-blue-300/50"></div>}{(!piece.isStart && !piece.isSolo) && <div className="absolute left-[-8px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white z-20 border-r border-blue-300/30"></div>}<span className="relative z-0">{piece.text}</span></div>))}{poolPieces.length === 0 && !showReward && <div className="text-slate-400 italic mt-4">Alle Teile platziert!</div>}</div></div>
+            </div>
+        </div>
+    );
+};

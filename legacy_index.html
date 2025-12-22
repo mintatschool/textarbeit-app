@@ -1,0 +1,1489 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <!-- OPTIMIERUNG: user-scalable=yes erlaubt, viewport-fit=cover für Notch-Support -->
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+    <title>Lesen an Tafel und Tablet</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- QRious (Robust für QR Codes) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+
+    <!-- QR Code Scanner (Html5-QRCode) -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
+    <!-- Drag & Drop Polyfill -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mobile-drag-drop@2.3.0-rc.2/default.css">
+    <script src="https://cdn.jsdelivr.net/npm/mobile-drag-drop@2.3.0-rc.2/index.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mobile-drag-drop@2.3.0-rc.2/scroll-behaviour.min.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Andika&family=Mali:wght@400;500;700&family=Open+Sans:wght@400;600&family=Patrick+Hand&display=swap"
+        rel="stylesheet">
+
+    <style>
+        html,
+        body {
+            overscroll-behavior: none;
+        }
+
+        body {
+            background-color: #f8fafc;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            overflow-x: hidden;
+            touch-action: pan-y;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* OPTIMIERUNG: Touch Targets optimieren & Delay entfernen */
+        button,
+        a,
+        input,
+        select,
+        [role="button"] {
+            touch-action: manipulation;
+            /* Verhindert Double-Tap-Zoom auf Controls */
+        }
+
+        /* 
+           CRITICAL WINDOWS TOUCH FIX 
+           Erwingt sofortige Reaktion ohne Wartezeit für "Rechtsklick-Gesten"
+           Wird auf alle Draggables angewendet.
+        */
+        .touch-action-none {
+            touch-action: none !important;
+            -ms-touch-action: none !important;
+            /* IE/Edge Legacy */
+            -webkit-touch-callout: none !important;
+            -webkit-user-select: none !important;
+            user-select: none !important;
+        }
+
+        /* OPTIMIERUNG: Smooth Scrolling für iOS */
+        .custom-scroll {
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* OPTIMIERUNG: Hover nur auf Geräten mit Maus anzeigen */
+        @media (hover: hover) {
+            .hover-effect:hover {
+                opacity: 0.8;
+            }
+        }
+
+        /* Mindestgröße für Touch Targets sicherstellen (Hilfsklasse) */
+        .min-touch-target {
+            min-width: 44px;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        body.no-context {
+            -webkit-touch-callout: none !important;
+        }
+
+        body.hard-lock {
+            overflow: hidden !important;
+            touch-action: none !important;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+        }
+
+        :fullscreen {
+            background-color: #f8fafc;
+            overflow-y: auto;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.98);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .modal-animate {
+            animation: fadeIn 0.2s ease-out forwards;
+        }
+
+        @keyframes popIn {
+            0% {
+                transform: scale(0);
+                opacity: 0;
+            }
+
+            80% {
+                transform: scale(1.1);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .pop-animate {
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes confettiFall {
+            0% {
+                transform: translateY(-10vh) rotate(0deg);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            animation: confettiFall 3s linear forwards;
+            z-index: 200;
+        }
+
+        .dragging {
+            opacity: 0.5;
+            transform: scale(0.95);
+        }
+
+        .drag-over-column {
+            background-color: #f0f9ff !important;
+            border-color: #3b82f6 !important;
+            box-shadow: inset 0 0 0 2px #3b82f6;
+        }
+
+        .drag-over-sentence {
+            transform: scale(1.02);
+            box-shadow: 0 0 0 4px #3b82f6 !important;
+            z-index: 50;
+            position: relative;
+        }
+
+        .column-drop-zone {
+            min-height: 80px;
+            margin-top: 8px;
+            border: 2px dashed #cbd5e1;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #94a3b8;
+            font-size: 0.875rem;
+            background-color: #fff;
+            transition: all 0.2s;
+        }
+
+        .column-drop-zone.active-drop-target {
+            background-color: #dbeafe;
+            border-color: #2563eb;
+            color: #2563eb;
+            font-weight: bold;
+            transform: scale(1.02);
+        }
+
+        .puzzle-drop-target {
+            background-color: #e2e8f0;
+            transition: all 0.2s;
+        }
+
+        .puzzle-drop-target.active-target {
+            background-color: #bfdbfe;
+            transform: scale(1.05);
+            box-shadow: 0 0 0 2px #3b82f6;
+        }
+
+        .cloud-drop-target {
+            border-bottom: 2px solid #94a3b8;
+            transition: all 0.2s;
+            min-width: 3em;
+            margin: 0 4px;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .cloud-drop-target.active-target {
+            border-color: #2563eb;
+            background-color: #dbeafe;
+            transform: scale(1.1);
+        }
+
+        .cloud-drop-target.filled {
+            border-bottom: none;
+            background-color: transparent;
+        }
+
+        .custom-scroll::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        .custom-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 10px;
+            border: 2px solid #fff;
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .blur-container {
+            display: inline-block;
+            vertical-align: baseline;
+            overflow: hidden;
+            border-radius: 6px;
+            background-color: #cbd5e1;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .blur-content {
+            filter: blur(8px);
+            opacity: 0.6;
+            color: transparent;
+            user-select: none;
+            display: block;
+        }
+
+        .arc-svg {
+            position: absolute;
+            bottom: -0.35em;
+            left: 0;
+            width: 100%;
+            height: 0.45em;
+            pointer-events: none;
+            overflow: visible;
+            z-index: 0;
+        }
+
+        .arc-svg-list {
+            position: absolute;
+            bottom: -0.2em;
+            left: 0;
+            width: 100%;
+            height: 0.4em;
+            pointer-events: none;
+            overflow: visible;
+            z-index: 0;
+        }
+
+        .shadow-border-yellow {
+            box-shadow: 0 0 0 2px #eab308;
+            z-index: 10;
+        }
+
+        .shadow-border-yellow-left {
+            box-shadow: -2px 0 0 0 #eab308, 0 2px 0 0 #eab308, 0 -2px 0 0 #eab308;
+            z-index: 10;
+        }
+
+        .shadow-border-yellow-right {
+            box-shadow: 2px 0 0 0 #eab308, 0 2px 0 0 #eab308, 0 -2px 0 0 #eab308;
+            z-index: 10;
+        }
+
+        .shadow-border-yellow-mid {
+            box-shadow: 0 2px 0 0 #eab308, 0 -2px 0 0 #eab308;
+            z-index: 10;
+        }
+
+        /* Scanner specific styles */
+        #qr-reader {
+            width: 100%;
+            height: 100%;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            border: none;
+        }
+
+        #qr-reader video {
+            object-fit: cover;
+            width: 100%;
+            height: 100%;
+            border-radius: 0.75rem;
+        }
+
+        @media print {
+            @page {
+                margin: 0.5cm;
+                size: auto;
+            }
+
+            html,
+            body {
+                background-color: white !important;
+                height: auto !important;
+                overflow: visible !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            button,
+            .fixed,
+            .no-print {
+                display: none !important;
+            }
+
+            #root,
+            main {
+                overflow: visible !important;
+                height: auto !important;
+                display: block !important;
+            }
+        }
+    </style>
+</head>
+
+<body class="no-context">
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useRef, useCallback } = React;
+
+        const useScrollLock = (isLocked) => {
+            useEffect(() => {
+                if (!isLocked) return;
+                const preventDefault = (e) => { e.preventDefault(); };
+                document.body.style.overflow = 'hidden';
+                document.addEventListener('touchmove', preventDefault, { passive: false });
+                return () => { document.body.style.overflow = ''; document.removeEventListener('touchmove', preventDefault); };
+            }, [isLocked]);
+        };
+
+        // --- ICONS ---
+        const Icon = ({ path, size = 24, className = "" }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className} style={{ transformBox: 'fill-box' }}>{path}</svg>
+        );
+        const Icons = {
+            Edit2: (p) => <Icon {...p} path={<><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" /></>} />,
+            Edit3: (p) => <Icon {...p} path={<><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></>} />,
+            Eye: (p) => <Icon {...p} path={<><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></>} />,
+            RotateCcw: (p) => <Icon {...p} path={<><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></>} />,
+            Trash2: (p) => <Icon {...p} path={<><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></>} />,
+            Maximize: (p) => <Icon {...p} path={<><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" /></>} />,
+            Minimize: (p) => <Icon {...p} path={<><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3" /></>} />,
+            List: (p) => <Icon {...p} path={<><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></>} />,
+            Check: (p) => <Icon {...p} path={<><polyline points="20 6 9 17 4 12" /></>} />,
+            X: (p) => <Icon {...p} path={<><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></>} />,
+            Scissors: (p) => <Icon {...p} path={<><circle cx="6" cy="6" r="3" /><circle cx="6" cy="18" r="3" /><line x1="20" y1="4" x2="8.12" y2="15.88" /><line x1="14.47" y1="14.48" x2="20" y2="20" /><line x1="8.12" y1="8.12" x2="12" y2="12" /></>} />,
+            Settings: (p) => <Icon {...p} path={<><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></>} />,
+            Download: (p) => <Icon {...p} path={<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></>} />,
+            Upload: (p) => <Icon {...p} path={<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></>} />,
+            Image: (p) => <Icon {...p} path={<><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></>} />,
+            Hand: (p) => <Icon {...p} path={<><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0" /><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2" /><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8" /><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" /></>} />,
+            Ghost: (p) => <Icon {...p} path={<><path d="M9 21h6c3.5 0 4-3 4-6V8c0-3.5-2.5-6-7-6S5 4.5 5 8v7c0 3 .5 6 4 6z" /><path d="M5 21c0 0 1.5-2 3.5-2s3.5 2 3.5 2 1.5-2 3.5-2 3.5 2 3.5 2 3.5 2" /><circle cx="9" cy="9" r="1" fill="currentColor" /><circle cx="15" cy="9" r="1" fill="currentColor" /></>} />,
+            Arcs: (p) => <Icon {...p} path={<><path d="M7 16c2-4 5-4 7 0" /><path d="M13 16c2-4 5-4 7 0" /></>} />,
+            Printer: (p) => <Icon {...p} path={<><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></>} />,
+            Puzzle: (p) => <Icon {...p} path={<><path d="M20.5 11H18V7c0-1.1-.9-2-2-2h-4V3.5C12 2.12 10.88 1 9.5 1S7 2.12 7 3.5V5H3c-1.1 0-2 .9-2 2v4h1.5C3.88 11 5 12.12 5 13.5S3.88 16 2.5 16H1v4c0 1.1.9 2 2 2h4v-1.5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5V22h4c1.1 0 2-.9 2-2v-4h1.5c1.38 0 2.5-1.12 2.5-2.5S21.88 11 20.5 11z" /></>} />,
+            Cloud: (p) => <Icon {...p} path={<><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" /></>} />,
+            Volume2: (p) => <Icon {...p} path={<><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></>} />,
+            Play: (p) => <Icon {...p} path={<><polygon points="5 3 19 12 5 21 5 3"></polygon></>} />,
+            Square: (p) => <Icon {...p} path={<><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></>} />,
+            Shuffle: (p) => <Icon {...p} path={<><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></>} />,
+            Clock: (p) => <Icon {...p} path={<><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></>} />,
+            ArrowRight: (p) => <Icon {...p} path={<><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></>} />,
+            Sentence: (p) => <Icon {...p} path={<><path d="M4 6h16" /><path d="M4 14h10" /><circle cx="19" cy="14" r="1.5" fill="currentColor" /></>} />,
+            QrCode: (p) => <Icon {...p} path={<><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></>} />,
+            HelpCircle: (p) => <Icon {...p} path={<><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" /></>} />,
+            Empty: (p) => <Icon {...p} path={<><circle cx="12" cy="12" r="10" /><line x1="4.93" y1="4.93" x2="19.07" y2="19.07" /></>} />,
+            Camera: (p) => <Icon {...p} path={<><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" /></>} />,
+            Search: (p) => <Icon {...p} path={<><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></>} />,
+            TextBlocks: (p) => <Icon {...p} path={<><rect x="4" y="4" width="16" height="7" rx="1" /><rect x="4" y="13" width="16" height="7" rx="1" /></>} />,
+            Grid2x2: (p) => <Icon {...p} path={<><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /></>} />,
+            SplitVertical: (p) => <Icon {...p} path={<><text x="4.5" y="17" fontSize="14" fontFamily="sans-serif" fill="currentColor" style={{ userSelect: 'none' }}>s</text><line x1="12" y1="4" x2="12" y2="20" strokeWidth="2" /><text x="13.5" y="17" fontSize="14" fontFamily="sans-serif" fill="currentColor" style={{ userSelect: 'none' }}>s</text></>} />,
+        };
+
+        const DIPHTHONGS_REGEX = /^(eu|äu|au|ei|ie|ai)/i;
+        const DIGRAPHS_REGEX = /^(ch|sch|ph|th|ck|qu|pf)/i;
+        const VOWEL_REGEX = /[aeiouyäöü]/i;
+        const CLUSTERS = ['sch', 'ch', 'ck', 'ph', 'pf', 'th', 'qu', 'ei', 'ie', 'eu', 'au', 'äu', 'ai', 'sp', 'st'];
+        const MONOSYLLABIC_EXCEPTIONS = ['Text', 'text', 'Wort', 'wort', 'Haus', 'haus', 'Kind', 'kind', 'Buch', 'buch', 'dich', 'sich', 'mir', 'dir', 'ihn', 'sie', 'es'];
+
+        const CUSTOM_SYLLABLES = {
+            'fahne': ['fah', 'ne'], 'tasse': ['tas', 'se'], 'wasser': ['was', 'ser'], 'mutter': ['mut', 'ter'], 'butter': ['but', 'ter'], 'hallo': ['hal', 'lo'], 'sonne': ['son', 'ne'], 'wolle': ['wol', 'le'], 'tonne': ['ton', 'ne'], 'kanne': ['kan', 'ne'], 'suppe': ['sup', 'pe'], 'puppe': ['pup', 'pe'], 'zimmer': ['zim', 'mer'], 'nummer': ['num', 'mer'], 'sommer': ['som', 'mer']
+        };
+
+        const SYLLABLE_CACHE = new Map();
+
+        const isVowel = (char) => VOWEL_REGEX.test(char);
+
+        const syllabifyImproved = (word) => {
+            if (word.length <= 3) return [word];
+            const result = [];
+            let buffer = "";
+            for (let i = 0; i < word.length; i++) {
+                buffer += word[i];
+                if (i >= word.length - 1) break;
+
+                const c0 = word[i];
+                const c1 = word[i + 1];
+                const c2 = word[i + 2] || "";
+
+                const v0 = isVowel(c0);
+                const v1 = isVowel(c1);
+                const v2 = isVowel(c2);
+
+                let split = false;
+                const pair = c0 + c1;
+                if (DIPHTHONGS_REGEX.test(pair)) {
+                } else if (DIGRAPHS_REGEX.test(pair)) {
+                } else if (c0.toLowerCase() === 's' && c1.toLowerCase() === 'c' && c2.toLowerCase() === 'h') {
+                } else if (v0 && !v1 && v2) {
+                    split = true;
+                } else if (v0 && DIGRAPHS_REGEX.test(c1 + c2)) {
+                    split = true;
+                } else if (!v0 && !v1) {
+                    split = true;
+                }
+                if (split) { result.push(buffer); buffer = ""; }
+            }
+            result.push(buffer);
+            return result.filter(s => s.length > 0);
+        };
+
+        const enforceVowelRule = (word, generatedSyllables) => {
+            if (!generatedSyllables || generatedSyllables.length <= 1) return generatedSyllables;
+            const corrected = [];
+            let buffer = generatedSyllables[0] || "";
+            for (let i = 1; i < generatedSyllables.length; i++) {
+                const nextSyllable = generatedSyllables[i];
+                if (!VOWEL_REGEX.test(nextSyllable)) buffer += nextSyllable;
+                else if (!VOWEL_REGEX.test(buffer)) buffer += nextSyllable;
+                else { corrected.push(buffer); buffer = nextSyllable; }
+            }
+            corrected.push(buffer);
+            if (corrected.join('') !== word) return [word];
+            return corrected.filter(s => s.length > 0);
+        };
+
+        const getCachedSyllables = (word, hyphenator) => {
+            const cacheKey = word + (hyphenator ? '_hypher' : '_heuristic');
+            if (SYLLABLE_CACHE.has(cacheKey)) return SYLLABLE_CACHE.get(cacheKey);
+
+            if (CUSTOM_SYLLABLES[word.toLowerCase()]) {
+                const override = CUSTOM_SYLLABLES[word.toLowerCase()];
+                let start = 0;
+                const caseCorrected = override.map(part => {
+                    const segment = word.substring(start, start + part.length);
+                    start += part.length;
+                    return segment;
+                });
+                SYLLABLE_CACHE.set(cacheKey, caseCorrected);
+                return caseCorrected;
+            }
+
+            let s = [];
+            if (MONOSYLLABIC_EXCEPTIONS.includes(word) || MONOSYLLABIC_EXCEPTIONS.includes(word.toLowerCase())) {
+                s = [word];
+            } else if (hyphenator) {
+                try { s = hyphenator.hyphenate(word); } catch { s = syllabifyImproved(word); }
+            } else {
+                s = syllabifyImproved(word);
+            }
+            s = enforceVowelRule(word, s);
+
+            SYLLABLE_CACHE.set(cacheKey, s);
+            return s;
+        };
+
+        const getChunks = (text, useClusters) => {
+            if (!useClusters) return text.split('');
+            const result = [];
+            let i = 0;
+            while (i < text.length) {
+                let match = null;
+                for (const cluster of CLUSTERS) {
+                    if (text.substring(i).toLowerCase().startsWith(cluster)) {
+                        match = text.substring(i, i + cluster.length);
+                        break;
+                    }
+                }
+                if (match) { result.push(match); i += match.length; }
+                else { result.push(text[i]); i++; }
+            }
+            return result;
+        };
+
+        const useHypherLoader = () => {
+            const [hyphenatorInstance, setHyphenatorInstance] = useState(null);
+            const [loading, setLoading] = useState(true);
+
+            useEffect(() => {
+                const load = async () => {
+                    try {
+                        if (!navigator.onLine && !window.Hypher) { setLoading(false); return; }
+                        if (!window.Hypher) {
+                            const loadScript = (src) => new Promise((resolve, reject) => {
+                                const s = document.createElement('script'); s.src = src; s.onload = resolve; s.onerror = reject; document.head.appendChild(s);
+                            });
+                            await loadScript('https://cdnjs.cloudflare.com/ajax/libs/hypher/0.2.5/hypher.js');
+                            await loadScript('https://cdnjs.cloudflare.com/ajax/libs/hyphenation-patterns/0.2.1/de.js');
+                        }
+                        if (window.Hypher && window.HyphenationPatterns && !window.germanHyphenator) {
+                            window.germanHyphenator = new window.Hypher(window.HyphenationPatterns.de);
+                        }
+                        if (window.germanHyphenator) setHyphenatorInstance(window.germanHyphenator);
+                    } catch (e) { console.error("Hypher failed", e); } finally { setLoading(false); }
+                };
+                load();
+            }, []);
+            return { instance: hyphenatorInstance, loading };
+        };
+
+        // --- COMPONENTS ---
+
+        const EmptyStateMessage = ({ onClose, title, message }) => (
+            <div className="flex flex-col items-center justify-center h-full p-8 text-center animate-fadeIn">
+                <div className="text-gray-300 mb-6"><Icons.Empty size={120} strokeWidth={1} /></div>
+                <h2 className="text-3xl font-bold text-gray-400 mb-2">{title || "Hier ist noch nichts los."}</h2>
+                <p className="text-xl text-gray-400 mb-8">{message || "Bitte markiere zuerst Wörter im Text."}</p>
+                <button onClick={onClose} className="px-8 py-3 bg-gray-400 text-white rounded-xl font-bold hover:bg-gray-500 transition shadow-lg min-touch-target">Zurück zum Text</button>
+            </div>
+        );
+
+        // --- UPDATED QR SCANNER COMPONENT ---
+        const QRScannerModal = ({ onClose, onScanSuccess }) => {
+            const [errorMsg, setErrorMsg] = useState(null);
+            const scannerRef = useRef(null);
+
+            useEffect(() => {
+                let html5QrCode = null;
+
+                const startScanner = async () => {
+                    await new Promise(r => setTimeout(r, 100));
+
+                    try {
+                        html5QrCode = new Html5Qrcode("qr-reader");
+                        const config = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 };
+                        await html5QrCode.start(
+                            { facingMode: "environment" },
+                            config,
+                            (decodedText, decodedResult) => {
+                                html5QrCode.stop().then(() => {
+                                    onScanSuccess(decodedText);
+                                }).catch(err => {
+                                    onScanSuccess(decodedText);
+                                });
+                            },
+                            (errorMessage) => { }
+                        );
+                        scannerRef.current = html5QrCode;
+                    } catch (err) {
+                        console.error(err);
+                        setErrorMsg("Kamera konnte nicht gestartet werden. Bitte Berechtigungen prüfen oder HTTPS verwenden.");
+                    }
+                };
+                startScanner();
+                return () => {
+                    if (scannerRef.current) {
+                        try {
+                            scannerRef.current.stop().catch(e => console.log("Stop failed", e));
+                            scannerRef.current.clear();
+                        } catch (e) { }
+                    }
+                };
+            }, [onScanSuccess]);
+
+            return (
+                <div className="fixed inset-0 z-[160] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 font-sans">
+                    <div className="bg-white rounded-2xl shadow-2xl p-6 modal-animate flex flex-col items-center max-w-md w-full custom-scroll">
+                        <div className="flex justify-between items-center w-full mb-4">
+                            <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2"><Icons.Camera /> Code scannen</h2>
+                            <button onClick={onClose} className="p-3 hover:bg-slate-100 rounded-full min-touch-target"><Icons.X size={24} /></button>
+                        </div>
+                        <div className="w-full bg-black rounded-xl overflow-hidden mb-4 relative h-[300px] flex items-center justify-center">
+                            <div id="qr-reader" style={{ width: '100%', height: '100%' }}></div>
+                            {errorMsg && <div className="absolute inset-0 flex items-center justify-center p-4 bg-black/80"><p className="text-white text-center font-bold">{errorMsg}</p></div>}
+                        </div>
+                        <p className="text-center text-slate-500 text-sm mb-4">Halte den QR-Code eines anderen Geräts oder einen Dateilink in die Kamera.</p>
+                        <button onClick={onClose} className="px-6 py-3 bg-slate-200 text-slate-700 rounded-lg font-bold hover:bg-slate-300 w-full min-touch-target">Abbrechen</button>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- QR GENERATOR COMPONENT USING QRIOUS (ROBUST FIX) ---
+        const QRCodeModal = ({ text, onClose }) => {
+            const qrRef = useRef(null);
+            const fullQrRef = useRef(null);
+            const [linkInput, setLinkInput] = useState("");
+            const [isMaximized, setIsMaximized] = useState(false);
+            const [tooLongError, setTooLongError] = useState(false);
+
+            // Fix for German Umlaute/Quotes: Force UTF-8 bytes to be treated correctly by QRious
+            // QRious treats strings as ASCII. We use unescape(encodeURIComponent(str)) to 
+            // convert the multibyte UTF-8 chars into single byte equivalents that QRious encodes correctly.
+            const toUtf8Bytes = (str) => {
+                try {
+                    return unescape(encodeURIComponent(str));
+                } catch (e) {
+                    return str; // Fallback
+                }
+            };
+
+            const simpleData = useMemo(() => {
+                if (!text) return "";
+                if (text.length > 2900) {
+                    setTooLongError(true);
+                    return "";
+                }
+                setTooLongError(false);
+                const rawString = text.length > 300 ? text : JSON.stringify({ text: text });
+                return toUtf8Bytes(rawString);
+            }, [text]);
+
+            // Render Small QR
+            useEffect(() => {
+                if (qrRef.current && simpleData && !isMaximized && !tooLongError) {
+                    try {
+                        new QRious({
+                            element: qrRef.current,
+                            value: simpleData,
+                            size: 300,
+                            level: 'L'
+                        });
+                    } catch (e) {
+                        console.error(e);
+                        setTooLongError(true);
+                    }
+                }
+            }, [simpleData, isMaximized, tooLongError]);
+
+            // Render Large QR
+            useEffect(() => {
+                if (fullQrRef.current && simpleData && isMaximized && !tooLongError) {
+                    try {
+                        const size = Math.min(window.innerWidth, window.innerHeight) * 0.8;
+                        new QRious({
+                            element: fullQrRef.current,
+                            value: simpleData,
+                            size: size,
+                            level: 'L'
+                        });
+                    } catch (e) {
+                        console.error(e);
+                    }
+                }
+            }, [simpleData, isMaximized, tooLongError]);
+
+            const generateLinkQR = () => {
+                if (!linkInput || !qrRef.current) return;
+                try {
+                    new QRious({
+                        element: qrRef.current,
+                        value: linkInput,
+                        size: 300,
+                        level: 'L'
+                    });
+                } catch (e) { }
+            };
+
+            return (
+                <div className="fixed inset-0 z-[160] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 font-sans">
+                    {isMaximized && !tooLongError && (
+                        <div className="fixed inset-0 z-[200] bg-white flex flex-col items-center justify-center p-4 animate-fadeIn">
+                            <div className="bg-white p-4"><canvas ref={fullQrRef}></canvas></div>
+                            <button onClick={() => setIsMaximized(false)} className="mt-8 px-8 py-3 bg-slate-800 text-white rounded-full font-bold shadow-xl flex items-center gap-2 transform hover:scale-105 transition min-touch-target"><Icons.Minimize /> Verkleinern</button>
+                        </div>
+                    )}
+
+                    <div className="bg-white rounded-2xl shadow-2xl p-6 modal-animate flex flex-col items-center max-w-sm w-full max-h-[90vh] overflow-y-auto custom-scroll">
+                        <div className="flex justify-between items-center w-full mb-4">
+                            <h2 className="text-xl font-bold text-slate-800">Teilen</h2>
+                            <button onClick={onClose} className="p-3 hover:bg-slate-100 rounded-full min-touch-target"><Icons.X size={24} /></button>
+                        </div>
+
+                        <div className="w-full mb-4">
+                            <label className="text-sm font-bold text-slate-600 block mb-1">Datei-Link (Cloud) für Schüler:</label>
+                            <div className="flex gap-2">
+                                <input type="text" placeholder="https://..." className="flex-1 border rounded p-2 text-sm" value={linkInput} onChange={e => setLinkInput(e.target.value)} />
+                                <button onClick={generateLinkQR} className="bg-blue-600 text-white p-2 rounded text-sm font-bold min-touch-target">Generieren</button>
+                            </div>
+                            <p className="text-xs text-slate-400 mt-1">Füge hier den Link zu deiner exportierten JSON-Datei ein.</p>
+                        </div>
+
+                        <div className="relative group w-full flex justify-center">
+                            {tooLongError ? (
+                                <div className="bg-red-50 text-red-600 p-4 rounded-xl border border-red-200 text-center text-sm font-bold min-h-[256px] flex items-center justify-center">
+                                    Der Text ist leider zu lang für einen QR-Code.<br />Bitte kürze den Text oder nutze die "Speichern"-Funktion (Datei).
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="bg-white p-4 rounded-xl border-4 border-slate-100 mb-4 flex justify-center min-h-[256px] flex-col items-center justify-center">
+                                        <canvas ref={qrRef}></canvas>
+                                    </div>
+                                    <button onClick={() => setIsMaximized(true)} className="absolute bottom-6 right-2 p-3 bg-white/90 shadow-md border rounded-full text-slate-600 hover:text-blue-600 hover:scale-110 transition min-touch-target" title="Vergrößern"><Icons.Maximize size={20} /></button>
+                                </>
+                            )}
+                        </div>
+                        <p className="text-center text-slate-500 text-sm mb-4">Scanne diesen Code mit der App-Kamera.</p>
+                        <button onClick={onClose} className="px-6 py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 w-full min-touch-target">Schließen</button>
+                    </div>
+                </div>
+            );
+        };
+
+        const CorrectionModal = ({ word, currentSyllables, onSave, onClose, font }) => {
+            const fullWord = currentSyllables.join('');
+            const initialSplits = new Set();
+            let acc = 0;
+            for (let i = 0; i < currentSyllables.length - 1; i++) { acc += currentSyllables[i].length; initialSplits.add(acc - 1); }
+            const [splits, setSplits] = useState(initialSplits);
+            const toggleSplit = (index) => {
+                const newSplits = new Set(splits);
+                if (newSplits.has(index)) newSplits.delete(index); else newSplits.add(index);
+                setSplits(newSplits);
+            };
+            const handleSave = () => {
+                const newSyllables = [];
+                let buffer = "";
+                for (let i = 0; i < fullWord.length; i++) {
+                    buffer += fullWord[i];
+                    if (splits.has(i)) { newSyllables.push(buffer); buffer = ""; }
+                }
+                newSyllables.push(buffer);
+                onSave(newSyllables);
+            };
+            return (
+                <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 font-sans">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl p-6 modal-animate flex flex-col h-[85vh] md:h-auto overflow-hidden">
+                        <div className="flex justify-between items-center mb-4 border-b pb-4">
+                            <h2 className="text-2xl font-bold text-slate-700 flex items-center gap-2"><Icons.Edit3 className="text-blue-600" size={28} /> Silben anpassen</h2>
+                            <button onClick={onClose} className="p-3 hover:bg-slate-100 rounded-full min-touch-target"><Icons.X size={28} /></button>
+                        </div>
+                        <div className="flex-1 flex flex-col items-center justify-center bg-slate-50 rounded-xl border border-slate-100 relative overflow-y-auto custom-scroll">
+                            <p className="text-slate-500 text-base mb-8 text-center px-4 mt-8">Tippe zwischen die Buchstaben, um die Trennung zu korrigieren.</p>
+                            <div className="flex flex-wrap justify-center items-stretch select-none pb-20 px-4" style={{ fontFamily: font }}>
+                                {fullWord.split('').map((char, i) => (
+                                    <React.Fragment key={i}>
+                                        <div className="text-3xl md:text-5xl font-bold text-slate-800 py-4">{char}</div>
+                                        {i < fullWord.length - 1 && (
+                                            <div onClick={() => toggleSplit(i)} className="group relative w-12 md:w-20 cursor-pointer flex justify-center items-stretch hover:bg-black/5 rounded mx-1">
+                                                <div className="relative w-full h-full flex justify-center items-center">
+                                                    <div className={`absolute w-1.5 h-3/4 bg-slate-300 rounded-full transition-all duration-200 ${splits.has(i) ? 'opacity-0' : 'opacity-30 group-hover:opacity-100'}`}></div>
+                                                    <div className={`absolute w-2 md:w-3 h-full bg-blue-600 rounded-full shadow-lg transition-all duration-300 transform origin-center ${splits.has(i) ? 'scale-y-100 opacity-100' : 'scale-y-0 opacity-0'}`}></div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </React.Fragment>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="mt-6 flex justify-center gap-4 border-t pt-4">
+                            <button onClick={onClose} className="px-6 py-3 rounded-xl border border-slate-300 text-slate-600 font-bold hover:bg-slate-50 transition min-touch-target">Abbrechen</button>
+                            <button onClick={handleSave} className="px-8 py-3 rounded-xl bg-blue-600 text-white font-bold shadow-lg hover:bg-blue-700 active:scale-95 transition flex items-center gap-2 min-touch-target"><Icons.Check size={24} /> Übernehmen</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const SplitExerciseView = ({ words, onClose, settings }) => {
+            if (!words || words.length === 0) return (<div className="fixed inset-0 z-[130] bg-slate-100 modal-animate font-sans flex flex-col"><EmptyStateMessage onClose={onClose} /></div>);
+            const [currentIndex, setCurrentIndex] = useState(0);
+            const [userSplits, setUserSplits] = useState(new Set());
+            const [showVowels, setShowVowels] = useState(false);
+            const [status, setStatus] = useState('idle');
+            const [isSessionFinished, setIsSessionFinished] = useState(false);
+            const currentWordObj = words[currentIndex];
+            const fullWord = currentWordObj ? currentWordObj.word : '';
+            const correctSyllables = currentWordObj ? currentWordObj.syllables : [];
+            const progress = ((currentIndex + 1) / words.length) * 100;
+
+            useEffect(() => { setUserSplits(new Set()); setStatus('idle'); }, [currentIndex]);
+
+            const correctSplitIndices = useMemo(() => { const indices = new Set(); let acc = 0; for (let i = 0; i < correctSyllables.length - 1; i++) { acc += correctSyllables[i].length; indices.add(acc - 1); } return indices; }, [correctSyllables]);
+            const vowelStatus = useMemo(() => { const status = new Array(fullWord.length).fill(null); const text = fullWord.toLowerCase(); const diphthongs = ['eu', 'äu', 'au', 'ei', 'ie', 'ai']; const singleVowels = ['a', 'e', 'i', 'o', 'u', 'ä', 'ö', 'ü']; let i = 0; while (i < text.length) { let isDiphthong = false; for (let d of diphthongs) { if (text.startsWith(d, i)) { status[i] = { type: 'start' }; if (d.length > 1) { for (let k = 1; k < d.length - 1; k++) status[i + k] = { type: 'mid' }; status[i + d.length - 1] = { type: 'end' }; } else { status[i] = { type: 'single' }; } i += d.length; isDiphthong = true; break; } } if (isDiphthong) continue; if (singleVowels.includes(text[i])) { status[i] = { type: 'single' }; } i++; } return status; }, [fullWord]);
+
+            const handleGapClick = (index) => { if (status === 'correct') return; const newSplits = new Set(userSplits); if (newSplits.has(index)) newSplits.delete(index); else newSplits.add(index); setUserSplits(newSplits); setStatus('idle'); };
+            const checkAnswer = () => { const isCorrect = userSplits.size === correctSplitIndices.size && [...userSplits].every(x => correctSplitIndices.has(x)); setStatus(isCorrect ? 'correct' : 'wrong'); };
+            const nextWord = () => { if (currentIndex < words.length - 1) { setCurrentIndex(prev => prev + 1); } else { setIsSessionFinished(true); } };
+            if (!currentWordObj) return null;
+
+            return (
+                <div className="fixed inset-0 z-[130] flex items-center justify-center bg-slate-100 modal-animate font-sans">
+                    {isSessionFinished && (<div className="fixed inset-0 z-[150] pointer-events-auto flex items-center justify-center bg-black/50 backdrop-blur-sm">{Array.from({ length: 40 }).map((_, i) => <div key={i} className="confetti" style={{ left: `${Math.random() * 100}%`, top: `-10%`, backgroundColor: ['#f00', '#0f0', '#00f', '#ff0'][Math.floor(Math.random() * 4)], animationDuration: `${1.5 + Math.random() * 2}s` }}></div>)}<div className="bg-white rounded-2xl p-8 shadow-2xl pop-animate text-center border-4 border-yellow-400 max-w-lg mx-4 relative overflow-hidden"><h2 className="text-4xl font-bold text-slate-800 mb-4">Super gemacht! 🎉</h2><p className="text-xl text-slate-600 mb-8">Du hast alle Wörter richtig getrennt.</p><button onClick={onClose} className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition shadow-lg text-lg min-touch-target">Zurück zum Text</button></div></div>)}
+                    <div className="bg-white w-full h-full flex flex-col overflow-hidden relative transition-colors duration-300" style={{ borderColor: status === 'correct' ? '#22c55e' : (status === 'wrong' ? '#ef4444' : '#fff') }}>
+                        <div className="px-6 py-4 border-b flex justify-between items-center bg-slate-50 shrink-0">
+                            <div className="flex-1">
+                                <h2 className="text-xl font-bold text-slate-700 flex items-center gap-2">
+                                    <Icons.Scissors className="text-orange-500 -rotate-90" />
+                                    Wörter trennen
+                                    <span className="text-xl font-bold text-blue-600 ml-4">{currentIndex + 1} / {words.length}</span>
+                                </h2>
+                                <div className="w-full max-w-md mt-2 bg-slate-200 h-2.5 rounded-full overflow-hidden">
+                                    <div className="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style={{ width: `${progress}%` }}></div>
+                                </div>
+                            </div>
+                            <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white rounded-full w-14 h-14 shadow-lg transition-transform hover:scale-110 flex items-center justify-center shrink-0 ml-4 min-touch-target">
+                                <Icons.X size={32} />
+                            </button>
+                        </div>
+                        <div className="flex-1 flex flex-col items-center justify-center p-4 bg-slate-50/50 overflow-y-auto custom-scroll">
+                            <div className="flex flex-wrap justify-center items-end select-none py-4" style={{ fontFamily: settings.fontFamily }}>
+                                {fullWord.split('').map((char, i) => {
+                                    const vStat = vowelStatus[i]; let vowelClass = ""; let borderStyle = "";
+                                    if (showVowels && vStat) { vowelClass = "bg-yellow-100"; if (vStat.type === 'single') borderStyle = "shadow-border-yellow rounded-sm"; else if (vStat.type === 'start') borderStyle = "shadow-border-yellow-left rounded-l-md pr-3 md:pr-6 -mr-1 md:-mr-2 z-10"; else if (vStat.type === 'end') borderStyle = "shadow-border-yellow-right rounded-r-md pl-3 md:pl-6 -ml-1 md:-ml-2 z-10"; else if (vStat.type === 'mid') borderStyle = "shadow-border-yellow-mid px-3 md:px-6 -mx-1 md:-mx-2 z-10"; }
+                                    return (<React.Fragment key={i}><div className="relative flex flex-col items-center justify-end"><div className={`text-5xl md:text-8xl font-bold text-slate-800 leading-none px-0 py-1 ${vowelClass} ${borderStyle}`}>{char}</div></div>{i < fullWord.length - 1 && (<div onClick={() => handleGapClick(i)} className="group relative w-6 md:w-12 h-20 md:h-36 -mb-2 cursor-pointer flex justify-center items-end hover:bg-blue-50 rounded mx-1 transition-colors"><div className={`w-2 md:w-3 h-16 md:h-28 rounded-full transition-all duration-200 ${userSplits.has(i) ? 'bg-blue-600 shadow-lg scale-y-100' : 'bg-slate-200 scale-y-50 group-hover:scale-y-75'}`}></div></div>)}</React.Fragment>);
+                                })}
+                            </div>
+                            {status === 'wrong' && <p className="text-red-500 font-bold text-lg mt-4 animate-pulse">Das stimmt noch nicht ganz.</p>}
+                            {status === 'correct' && <p className="text-green-600 font-bold text-2xl mt-4 pop-animate">Richtig!</p>}
+                        </div>
+                        <div className="p-6 bg-white border-t flex flex-wrap gap-4 justify-center items-center shrink-0">
+                            <button onClick={() => setShowVowels(!showVowels)} className={`px-4 py-3 rounded-xl border font-bold transition flex items-center gap-2 min-touch-target ${showVowels ? 'bg-yellow-50 border-yellow-300 text-yellow-700' : 'border-slate-300 text-slate-500 hover:bg-slate-50'}`}><div className={`w-4 h-4 rounded-full border ${showVowels ? 'bg-yellow-400 border-yellow-500' : 'bg-slate-300 border-slate-400'}`}></div> Vokale an</button>
+                            <div className="flex-1"></div>
+                            {status !== 'correct' ? (<button onClick={checkAnswer} className="px-8 py-3 bg-blue-600 text-white text-lg font-bold rounded-xl hover:bg-blue-700 shadow-lg active:scale-95 transition min-touch-target">Prüfen</button>) : (<button onClick={nextWord} className="px-8 py-3 bg-green-500 text-white text-lg font-bold rounded-xl hover:bg-green-600 shadow-lg active:scale-95 transition flex items-center gap-2 pop-animate min-touch-target">{currentIndex < words.length - 1 ? 'Nächstes Wort' : 'Fertig'} <Icons.ArrowRight /></button>)}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const SettingsModal = ({ settings, setSettings, onExport, onImport, logo, setLogo, onClose, onClearHighlights, onPrint, onShowQR }) => {
+            const fileInputRef = useRef(null);
+            const [printType, setPrintType] = useState('text');
+            useEffect(() => { const handleEsc = (e) => { if (e.key === 'Escape') onClose(); }; window.addEventListener('keydown', handleEsc); return () => window.removeEventListener('keydown', handleEsc); }, [onClose]);
+            const handleFileChange = (e) => { const file = e.target.files[0]; if (file) { const reader = new FileReader(); reader.onloadend = () => setLogo(reader.result); reader.readAsDataURL(file); } };
+            const handleImportClick = () => { const input = document.createElement('input'); input.type = 'file'; input.accept = '.json'; input.onchange = (e) => { const file = e.target.files[0]; if (file) { const reader = new FileReader(); reader.onload = (ev) => onImport(ev.target.result); reader.readAsText(file); } }; input.click(); };
+
+            return (
+                <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 font-sans">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 modal-animate overflow-y-auto max-h-[90vh] custom-scroll">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2"><Icons.Settings className="text-gray-600" /> Einstellungen</h2>
+                            <button onClick={onClose} className="p-3 hover:bg-slate-100 rounded-full min-touch-target"><Icons.X /></button>
+                        </div>
+                        <div className="space-y-6">
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 mb-2">Logo / Bild</label>
+                                <div className="flex items-center gap-4">
+                                    <div className="w-16 h-16 border rounded-lg bg-slate-50 flex items-center justify-center overflow-hidden">{logo ? <img src={logo} alt="Logo" className="w-full h-full object-contain" /> : <Icons.Image className="text-slate-300" />}</div>
+                                    <button onClick={() => fileInputRef.current.click()} className="px-4 py-3 border border-slate-300 rounded-lg text-sm hover:bg-slate-50 transition min-touch-target">Bild wählen...</button>
+                                    <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
+                                    {logo && <button onClick={() => setLogo(null)} className="text-red-500 text-sm hover:underline min-touch-target">Löschen</button>}
+                                </div>
+                            </div>
+                            <hr className="border-slate-100" />
+                            <div><h3 className="text-lg font-bold text-slate-800 mb-3 flex items-center gap-2"><span className="bg-slate-200 text-slate-600 rounded-full w-6 h-6 flex items-center justify-center text-sm">1</span> Silbenanzeige</h3>
+                                <div className="flex bg-slate-100 rounded-lg p-1 mb-2"><button onClick={() => setSettings({ ...settings, visualType: 'block' })} className={`flex-1 py-3 px-2 rounded-md text-sm font-bold transition-all min-touch-target ${settings.visualType === 'block' ? 'bg-white shadow text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}>Boxen</button><button onClick={() => setSettings({ ...settings, visualType: 'arc' })} className={`flex-1 py-3 px-2 rounded-md text-sm font-bold transition-all min-touch-target ${settings.visualType === 'arc' ? 'bg-white shadow text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}>Bögen</button><button onClick={() => setSettings({ ...settings, visualType: 'black_gray' })} className={`flex-1 py-3 px-2 rounded-md text-sm font-bold transition-all min-touch-target ${settings.visualType === 'black_gray' ? 'bg-white shadow text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}>schwarz/grau</button></div>
+                                <div className="flex bg-slate-100 rounded-lg p-1"><button onClick={() => setSettings({ ...settings, displayTrigger: 'always' })} className={`flex-1 py-3 px-2 rounded-md text-sm font-bold transition-all min-touch-target ${settings.displayTrigger === 'always' ? 'bg-white shadow text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}>Alle Wörter</button><button onClick={() => setSettings({ ...settings, displayTrigger: 'click' })} className={`flex-1 py-3 px-2 rounded-md text-sm font-bold transition-all min-touch-target ${settings.displayTrigger === 'click' ? 'bg-white shadow text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}>Markierte Wörter</button></div>
+                            </div>
+                            <hr className="border-slate-100" />
+                            <div><h3 className="text-lg font-bold text-slate-800 mb-3 flex items-center gap-2"><span className="bg-slate-200 text-slate-600 rounded-full w-6 h-6 flex items-center justify-center text-sm">2</span> Aktionen</h3>
+                                <div className="flex items-center justify-between mb-4 bg-slate-50 p-2 rounded border border-slate-100"><div className="text-sm font-bold text-slate-700">Intelligente Auswahl (sch, ch, ck...)</div><button onClick={() => setSettings({ ...settings, smartSelection: !settings.smartSelection })} className={`w-12 h-6 rounded-full p-1 transition-colors min-touch-target ${settings.smartSelection ? 'bg-green-500' : 'bg-slate-300'}`}><div className={`w-4 h-4 bg-white rounded-full shadow-md transform transition-transform ${settings.smartSelection ? 'translate-x-6' : 'translate-x-0'}`}></div></button></div>
+                                <div className="flex flex-col gap-2"><button onClick={() => setSettings({ ...settings, clickAction: 'yellow_border' })} className={`flex items-center gap-3 px-3 py-3 rounded-lg border text-left transition-all min-touch-target ${settings.clickAction === 'yellow_border' ? 'bg-blue-50 border-blue-500 ring-1 ring-blue-500' : 'bg-white border-slate-200 hover:border-slate-300'}`}><div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${settings.clickAction === 'yellow_border' ? 'border-blue-600' : 'border-slate-300'}`}>{settings.clickAction === 'yellow_border' && <div className="w-2 h-2 bg-blue-600 rounded-full"></div>}</div><div><div className="font-bold text-slate-800 text-sm">Gelb markiert</div><div className="text-xs text-slate-500">Umrandung</div></div></button><button onClick={() => setSettings({ ...settings, clickAction: 'dark_blue' })} className={`flex items-center gap-3 px-3 py-3 rounded-lg border text-left transition-all min-touch-target ${settings.clickAction === 'dark_blue' ? 'bg-blue-50 border-blue-500 ring-1 ring-blue-500' : 'bg-white border-slate-200 hover:border-slate-300'}`}><div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${settings.clickAction === 'dark_blue' ? 'border-blue-600' : 'border-slate-300'}`}>{settings.clickAction === 'dark_blue' && <div className="w-2 h-2 bg-blue-600 rounded-full"></div>}</div><div><div className="font-bold text-slate-800 text-sm">Hervorgehoben</div><div className="text-xs text-slate-500">Dunkelblau & Fett</div></div></button><button onClick={() => { setSettings({ ...settings, clickAction: 'none' }); onClearHighlights(); }} className={`flex items-center gap-3 px-3 py-3 rounded-lg border text-left transition-all min-touch-target ${settings.clickAction === 'none' ? 'bg-blue-50 border-blue-500 ring-1 ring-blue-500' : 'bg-white border-slate-200 hover:border-slate-300'}`}><div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${settings.clickAction === 'none' ? 'border-blue-600' : 'border-slate-300'}`}>{settings.clickAction === 'none' && <div className="w-2 h-2 bg-blue-600 rounded-full"></div>}</div><div><div className="font-bold text-slate-800 text-sm">Nur Silbengliederung</div><div className="text-xs text-slate-500">Keine Markierung, Klick toggelt Wort</div></div></button><button onClick={() => { setSettings({ ...settings, clickAction: 'light_blue' }); onClearHighlights(); }} className={`flex items-center gap-3 px-3 py-3 rounded-lg border text-left transition-all min-touch-target ${settings.clickAction === 'light_blue' ? 'bg-blue-50 border-blue-500 ring-1 ring-blue-500' : 'bg-white border-slate-200 hover:border-slate-300'}`}><div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${settings.clickAction === 'light_blue' ? 'border-blue-600' : 'border-slate-300'}`}>{settings.clickAction === 'light_blue' && <div className="w-2 h-2 bg-blue-600 rounded-full"></div>}</div><div><div className="font-bold text-slate-800 text-sm">Einfarbig</div><div className="text-xs text-slate-500">Blau hinterlegt, ganzes Wort</div></div></button></div>
+                            </div>
+                            <hr className="border-slate-100" />
+                            <div><h3 className="text-lg font-bold text-slate-800 mb-3 flex items-center gap-2"><span className="bg-slate-200 text-slate-600 rounded-full w-6 h-6 flex items-center justify-center text-sm">3</span> Ansicht</h3>
+                                <div className="flex items-center justify-between mb-2"><label className="text-sm font-bold text-slate-700">Geklickte Wörter vergrößern</label><button onClick={() => setSettings({ ...settings, zoomActive: !settings.zoomActive })} className={`w-12 h-6 rounded-full p-1 transition-colors min-touch-target ${settings.zoomActive ? 'bg-green-500' : 'bg-slate-300'}`}><div className={`w-4 h-4 bg-white rounded-full shadow-md transform transition-transform ${settings.zoomActive ? 'translate-x-6' : 'translate-x-0'}`}></div></button></div>
+                                <div className="flex items-center justify-between mb-4"><label className="text-sm font-bold text-slate-700">Scrollen im Lesemodus verhindern</label><button onClick={() => setSettings({ ...settings, lockScroll: !settings.lockScroll })} className={`w-12 h-6 rounded-full p-1 transition-colors min-touch-target ${settings.lockScroll ? 'bg-green-500' : 'bg-slate-300'}`}><div className={`w-4 h-4 bg-white rounded-full shadow-md transform transition-transform ${settings.lockScroll ? 'translate-x-6' : 'translate-x-0'}`}></div></button></div>
+                                <div className="grid grid-cols-2 gap-6"><div className="col-span-2"><label className="block text-sm font-bold text-slate-700 mb-2">Textbreite</label><input type="range" min="50" max="100" step="1" value={settings.textWidth} onChange={(e) => setSettings({ ...settings, textWidth: parseInt(e.target.value) })} className="w-full accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer" /></div><div><label className="block text-sm font-bold text-slate-700 mb-2">Zeilenabstand</label><input type="range" min="1.5" max="4.0" step="0.1" value={settings.lineHeight} onChange={(e) => setSettings({ ...settings, lineHeight: parseFloat(e.target.value) })} className="w-full accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer" /></div><div><label className="block text-sm font-bold text-slate-700 mb-2">Wortabstand</label><input type="range" min="0" max="2" step="0.1" value={settings.wordSpacing || 0} onChange={(e) => setSettings({ ...settings, wordSpacing: parseFloat(e.target.value) })} className="w-full accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer" /></div></div>
+                            </div>
+                            <hr className="border-slate-100" />
+                            <div><h3 className="text-lg font-bold text-slate-800 mb-3 flex items-center gap-2"><span className="bg-slate-200 text-slate-600 rounded-full w-6 h-6 flex items-center justify-center text-sm">4</span> Schriftart</h3>
+                                <div className="space-y-2">{[{ name: "Patrick Hand", val: "'Patrick Hand', cursive" }, { name: "Comic Sans", val: "'Comic Sans MS', cursive" }, { name: "Mali", val: "'Mali', cursive" }, { name: "Andika", val: "'Andika', sans-serif" }, { name: "Open Sans", val: "'Open Sans', sans-serif" }].map((font, idx) => (<button key={idx} onClick={() => setSettings({ ...settings, fontFamily: font.val })} className={`w-full text-left px-4 py-3 rounded-lg border flex items-center justify-between transition min-touch-target ${settings.fontFamily === font.val ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500' : 'border-slate-200 hover:border-slate-300'}`}><span style={{ fontFamily: font.val }} className="text-lg">{font.name}</span>{settings.fontFamily === font.val && <Icons.Check className="text-blue-600" />}</button>))}</div>
+                            </div>
+                            <hr className="border-slate-100" />
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 mb-2">Teilen</label>
+                                <button onClick={onShowQR} className="w-full py-3 mb-4 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold flex items-center justify-center gap-2 shadow-sm min-touch-target"><Icons.QrCode size={20} /> Link / QR-Code teilen</button>
+
+                                <label className="block text-sm font-bold text-slate-700 mb-2">Import / Export (Datei)</label>
+                                <div className="flex gap-4 mb-4">
+                                    <button onClick={onExport} className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700 font-medium flex items-center justify-center gap-2 min-touch-target"><Icons.Download size={18} /> Speichern</button>
+                                    <button onClick={handleImportClick} className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700 font-medium flex items-center justify-center gap-2 min-touch-target"><Icons.Upload size={18} /> Laden</button>
+                                </div>
+                                <label className="block text-sm font-bold text-slate-700 mb-2">Drucken</label>
+                                <div className="flex gap-2">
+                                    <select value={printType} onChange={(e) => setPrintType(e.target.value)} className="flex-1 bg-white border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none font-medium min-touch-target"><option value="text">Text (Standard)</option><option value="list">Liste / Tabelle</option><option value="carpet">Silbenteppich</option></select>
+                                    <button onClick={() => onPrint(printType)} className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-4 flex items-center justify-center transition shadow-sm min-touch-target"><Icons.Printer size={20} /></button>
+                                </div>
+                            </div>
+
+                            <hr className="border-slate-100" />
+                            <div className="flex items-center justify-between opacity-50 hover:opacity-100 transition-opacity">
+                                <label className="text-xs text-slate-500 font-medium cursor-pointer" onClick={() => setSettings({ ...settings, enableCamera: !settings.enableCamera })}>Foto-Import Funktion anzeigen</label>
+                                <button onClick={() => setSettings({ ...settings, enableCamera: !settings.enableCamera })} className={`w-8 h-4 rounded-full p-0.5 transition-colors min-touch-target ${settings.enableCamera ? 'bg-slate-500' : 'bg-slate-300'}`}>
+                                    <div className={`w-3 h-3 bg-white rounded-full shadow-md transform transition-transform ${settings.enableCamera ? 'translate-x-4' : 'translate-x-0'}`}></div>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const SyllablePuzzleView = ({ words, settings, setSettings, onClose }) => {
+            if (!words || words.length === 0) return (<div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans"><EmptyStateMessage onClose={onClose} /></div>);
+            const [puzzleWords, setPuzzleWords] = useState([]);
+            const [placedPieces, setPlacedPieces] = useState({});
+            const [poolPieces, setPoolPieces] = useState([]);
+            const [showReward, setShowReward] = useState(false);
+            const [isDragging, setIsDragging] = useState(false);
+            const dragItemRef = useRef(null);
+
+            useScrollLock(isDragging);
+
+            useEffect(() => {
+                const pWords = words.map(w => { return { id: w.id, fullWord: w.word, syllables: w.syllables, pieces: w.syllables.map((txt, idx) => ({ id: `${w.id}_syl_${idx}`, text: txt, wordId: w.id, index: idx, isStart: idx === 0, isEnd: idx === w.syllables.length - 1, isSolo: w.syllables.length === 1 })) }; });
+                setPuzzleWords(pWords);
+                const allPieces = pWords.flatMap(w => w.pieces);
+                for (let i = allPieces.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[allPieces[i], allPieces[j]] = [allPieces[j], allPieces[i]]; }
+                setPoolPieces(allPieces);
+                setPlacedPieces({});
+                setShowReward(false);
+            }, [JSON.stringify(words)]);
+
+            useEffect(() => {
+                const totalSlots = puzzleWords.reduce((acc, w) => acc + w.syllables.length, 0);
+                const isFull = Object.keys(placedPieces).length === totalSlots;
+                if (words.length > 0 && totalSlots > 0 && isFull) {
+                    let allRowsCorrect = true;
+                    puzzleWords.forEach(wordDef => { const rowPieces = []; for (let i = 0; i < wordDef.syllables.length; i++) { const slotId = `${wordDef.id}_${i}`; if (placedPieces[slotId]) rowPieces.push(placedPieces[slotId].text); } const formedWord = rowPieces.join(''); const match = puzzleWords.find(w => w.fullWord === formedWord && w.syllables.length === wordDef.syllables.length); if (!match) allRowsCorrect = false; });
+                    if (allRowsCorrect) setTimeout(() => setShowReward(true), 200);
+                }
+            }, [placedPieces, words, puzzleWords]);
+
+            const handleDragStart = (e, piece, source, slotId = null) => { setIsDragging(true); dragItemRef.current = { piece, source, slotId }; e.dataTransfer.setData('application/json', JSON.stringify(piece)); e.dataTransfer.effectAllowed = 'move'; setTimeout(() => e.target.classList.add('dragging'), 0); };
+            const handleDragEnd = (e) => { setIsDragging(false); e.target.classList.remove('dragging'); dragItemRef.current = null; document.querySelectorAll('.active-target').forEach(el => el.classList.remove('active-target')); };
+            const handleSlotDrop = (e, targetWordId, targetIndex) => { setIsDragging(false); e.preventDefault(); e.stopPropagation(); document.querySelectorAll('.active-target').forEach(el => el.classList.remove('active-target')); const dragData = dragItemRef.current; if (!dragData) return; const { piece, source, slotId: sourceSlotId } = dragData; const targetSlotId = `${targetWordId}_${targetIndex}`; if (source === 'slot' && sourceSlotId === targetSlotId) return; const existingPiece = placedPieces[targetSlotId]; setPlacedPieces(prev => { const newPlaced = { ...prev, [targetSlotId]: piece }; if (source === 'slot' && sourceSlotId) delete newPlaced[sourceSlotId]; return newPlaced; }); setPoolPieces(prev => { let newPool = prev; if (source === 'pool') newPool = newPool.filter(p => p.id !== piece.id); if (existingPiece) newPool = [...newPool, existingPiece]; return newPool; }); };
+            const handlePoolDrop = (e) => { setIsDragging(false); e.preventDefault(); e.stopPropagation(); const dragData = dragItemRef.current; if (!dragData) return; const { piece, source, slotId } = dragData; if (source === 'slot') { setPlacedPieces(prev => { const copy = { ...prev }; delete copy[slotId]; return copy; }); setPoolPieces(prev => [...prev, piece]); } };
+            const getPieceStyle = (piece, isPlaced) => { let base = "relative flex items-center justify-center border font-bold select-none min-w-[3rem] px-4 shadow-sm touch-action-none touch-manipulation "; base += "touch-none select-none "; base += isPlaced ? "bg-blue-200 text-blue-900 border-blue-300 " : "bg-blue-100 text-blue-900 border-blue-300 "; if (!piece.isStart && !piece.isSolo) base += "pl-6 "; if (!piece.isEnd && !piece.isSolo) base += "pr-6 "; if (piece.isStart || piece.isSolo) base += "rounded-l-2xl "; if (piece.isEnd || piece.isSolo) base += "rounded-r-2xl "; return base; };
+            const dynamicHeight = Math.max(56, settings.fontSize * 1.5);
+
+            return (
+                <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans">
+                    {showReward && (<div className="fixed inset-0 z-[150] pointer-events-none flex items-center justify-center">{Array.from({ length: 30 }).map((_, i) => <div key={i} className="confetti" style={{ left: `${Math.random() * 100}%`, top: `-10%`, backgroundColor: ['#f00', '#0f0', '#00f', '#ff0'][Math.floor(Math.random() * 4)], animationDuration: `${2 + Math.random() * 3}s`, animationDelay: `${Math.random()}s` }}></div>)}<div className="bg-white/90 backdrop-blur rounded-2xl p-8 shadow-2xl pop-animate pointer-events-auto text-center border-4 border-yellow-400"><h2 className="text-4xl font-bold text-slate-800 mb-4">Super gemacht! 🎉</h2><button onClick={onClose} className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition min-touch-target">Zurück</button></div></div>)}
+                    <div className="bg-white px-6 py-4 shadow-sm flex justify-between items-center z-10 shrink-0 flex-wrap gap-4"><div className="flex items-center gap-4"><h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2"><Icons.Puzzle className="text-purple-600" /> Silben-Puzzle</h2><span className="bg-slate-100 px-3 py-1 rounded-full text-slate-500 font-medium text-sm">{poolPieces.length} Teile übrig</span></div><div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg"><span className="text-xs font-bold text-slate-500">A</span><input type="range" min="16" max="120" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-32 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer" /><span className="text-xl font-bold text-slate-500">A</span></div></div>
+                    <div className="flex-1 overflow-y-auto custom-scroll p-6 bg-slate-50/50">
+                        <div className="max-w-6xl mx-auto grid gap-6 pb-12" style={{ gridTemplateColumns: settings.fontSize > 50 ? '1fr' : 'repeat(auto-fit, minmax(350px, 1fr))' }}>
+                            {puzzleWords.map((word) => {
+                                const isWordComplete = word.pieces.every(p => placedPieces[`${word.id}_${p.index}`]?.text === p.text); return (
+                                    <div key={word.id} className={`p-4 bg-white rounded-xl border flex flex-wrap gap-2 items-center justify-center min-h-[5rem] transition-colors duration-300 ${isWordComplete ? 'border-green-400 bg-green-50 shadow-md' : 'border-slate-200 shadow-sm'}`}>
+                                        <div className="flex flex-wrap gap-2 items-center justify-center">{word.pieces.map((originalPiece) => { const slotId = `${word.id}_${originalPiece.index}`; const placedPiece = placedPieces[slotId]; return (<div key={slotId} className={`puzzle-drop-target relative flex items-center justify-center rounded-lg ${!placedPiece ? 'border-2 border-dashed border-slate-300' : ''}`} style={{ fontSize: `${settings.fontSize}px`, minHeight: `${dynamicHeight}px`, minWidth: '7rem', zIndex: 1 }} onDragOver={(e) => e.preventDefault()} onDragEnter={(e) => { e.preventDefault(); e.currentTarget.classList.add('active-target'); }} onDragLeave={(e) => e.currentTarget.classList.remove('active-target')} onDrop={(e) => handleSlotDrop(e, word.id, originalPiece.index)}>{placedPiece ? (<div draggable onDragStart={(e) => handleDragStart(e, placedPiece, 'slot', slotId)} onDragEnd={handleDragEnd} className={`${getPieceStyle(placedPiece, true)} cursor-grab active:cursor-grabbing hover:scale-105 transition-transform touch-action-none`} style={{ fontFamily: settings.fontFamily, fontSize: `${settings.fontSize}px`, minHeight: `${dynamicHeight}px`, width: '100%', height: '100%' }}>{(!placedPiece.isEnd && !placedPiece.isSolo) && <div className="absolute right-[-8px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-blue-200 z-10"></div>}{(!placedPiece.isStart && !placedPiece.isSolo) && <div className="absolute left-[-8px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white z-20"></div>}{placedPiece.text}</div>) : <span className="text-slate-300 font-bold select-none">?</span>}</div>); })}</div>
+                                        {isWordComplete && <div className="ml-4 text-green-500 animate-[popIn_0.4s_ease-out]"><Icons.Check size={40} strokeWidth={3} /></div>}
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    </div>
+                    <div className="shrink-0 bg-white border-t border-slate-200 p-6 shadow-[0_-5px_15px_-5px_rgba(0,0,0,0.1)] z-50 overflow-y-auto custom-scroll" style={{ maxHeight: '45vh', height: 'auto', touchAction: 'pan-y' }} onDragOver={(e) => e.preventDefault()} onDrop={handlePoolDrop}>
+                        <div className="max-w-7xl mx-auto"><h3 className="text-sm font-bold text-slate-400 mb-3 uppercase tracking-wider sticky top-0 bg-white z-50 pb-2">Verfügbare Teile</h3><div className="flex flex-wrap gap-4 justify-center items-start content-start pb-4">{poolPieces.map((piece) => (<div key={piece.id} draggable onDragStart={(e) => handleDragStart(e, piece, 'pool')} onDragEnd={handleDragEnd} className={`${getPieceStyle(piece, false)} cursor-grab active:cursor-grabbing hover:scale-105 transition-transform hover:shadow-md hover:bg-blue-50 relative z-40 touch-action-none`} style={{ fontFamily: settings.fontFamily, fontSize: `${settings.fontSize}px`, minHeight: `${dynamicHeight}px` }}>{(!piece.isEnd && !piece.isSolo) && <div className="absolute right-[-8px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-inherit z-10 border-r border-b border-blue-300/50"></div>}{(!piece.isStart && !piece.isSolo) && <div className="absolute left-[-8px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white z-20 border-r border-blue-300/30"></div>}<span className="relative z-0">{piece.text}</span></div>))}{poolPieces.length === 0 && !showReward && <div className="text-slate-400 italic mt-4">Alle Teile platziert!</div>}</div></div>
+                    </div>
+                    <div className="absolute bottom-6 right-6 z-[160]"><button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white rounded-full w-14 h-14 shadow-lg transition-transform hover:scale-110 flex items-center justify-center min-touch-target"><Icons.X size={32} /></button></div>
+                </div>
+            );
+        };
+
+        const WordCloudView = ({ words, settings, setSettings, onClose }) => {
+            if (!words || words.length === 0) return (<div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans"><EmptyStateMessage onClose={onClose} /></div>);
+            const [cloudWords, setCloudWords] = useState([]);
+            const [placedChunks, setPlacedChunks] = useState({});
+            const [poolChunks, setPoolChunks] = useState([]);
+            const [showReward, setShowReward] = useState(false);
+            const [isDragging, setIsDragging] = useState(false);
+            const dragItemRef = useRef(null);
+            useScrollLock(isDragging);
+            const generateSpiralPositions = (chunks) => { const positions = []; const centerX = 50; const centerY = 50; const sortedChunks = [...chunks].sort((a, b) => b.text.length - a.text.length); return sortedChunks.map(chunk => { const charW = 3; const chunkW = 7 + (chunk.text.length * charW); const chunkH = 12; let angle = 0; let radius = 0; let x, y; let found = false; const maxRadius = 100; while (radius < maxRadius) { x = centerX + radius * Math.cos(angle); y = centerY + radius * 0.6 * Math.sin(angle); const candidate = { left: x - chunkW / 2, right: x + chunkW / 2, top: y - chunkH / 2, bottom: y + chunkH / 2 }; let collision = false; for (const p of positions) { const existing = { left: p.x - p.w / 2 - 2, right: p.x + p.w / 2 + 2, top: p.y - p.h / 2 - 2, bottom: p.y + p.h / 2 + 2 }; if (candidate.left < existing.right && candidate.right > existing.left && candidate.top < existing.bottom && candidate.bottom > existing.top) { collision = true; break; } } if (!collision) { found = true; break; } angle += 0.5; radius += 0.2; } if (!found) { x = centerX + (Math.random() - 0.5) * 80; y = centerY + (Math.random() - 0.5) * 80; } const pos = { x, y, w: chunkW, h: chunkH }; positions.push(pos); return { ...chunk, x, y }; }); };
+
+            useEffect(() => {
+                const cWords = words.map(w => {
+                    let totalChunkIndex = 0;
+                    let wordChunks = [];
+                    const syllables = w.syllables.map((syl, sIdx) => {
+                        const chunks = getChunks(syl, settings.smartSelection).map((txt, cIdx) => {
+                            const chunkObj = { id: `${w.id}_chunk_${totalChunkIndex}`, text: txt, wordId: w.id, sylIndex: sIdx, chunkIndex: cIdx };
+                            wordChunks.push(chunkObj);
+                            totalChunkIndex++;
+                            return chunkObj;
+                        });
+                        return { text: syl, chunks };
+                    });
+                    const positionedChunks = generateSpiralPositions(wordChunks);
+                    return { id: w.id, fullWord: w.word, syllables: syllables, allChunks: positionedChunks };
+                });
+                setCloudWords(cWords);
+                setPoolChunks(cWords.flatMap(w => w.allChunks));
+                setPlacedChunks({});
+                setShowReward(false);
+            }, [JSON.stringify(words), settings.smartSelection]);
+
+            useEffect(() => { const totalSlots = cloudWords.reduce((acc, w) => acc + w.allChunks.length, 0); if (words.length > 0 && totalSlots > 0 && Object.keys(placedChunks).length === totalSlots) { let allCorrect = true; cloudWords.forEach(word => { word.allChunks.forEach(chunk => { const placed = placedChunks[chunk.id]; if (!placed || placed.text !== chunk.text) allCorrect = false; }); }); if (allCorrect) setTimeout(() => setShowReward(true), 200); } }, [placedChunks, words, cloudWords]);
+            const handleDragStart = (e, chunk, source, slotId = null) => { setIsDragging(true); dragItemRef.current = { chunk, source, slotId }; e.dataTransfer.setData('application/json', JSON.stringify(chunk)); e.dataTransfer.effectAllowed = 'move'; setTimeout(() => e.target.classList.add('dragging'), 0); };
+            const handleDragEnd = (e) => { setIsDragging(false); e.target.classList.remove('dragging'); dragItemRef.current = null; document.querySelectorAll('.active-target').forEach(el => el.classList.remove('active-target')); };
+            const handleDrop = (e, targetWordId, targetChunkId) => { setIsDragging(false); e.preventDefault(); e.stopPropagation(); document.querySelectorAll('.active-target').forEach(el => el.classList.remove('active-target')); const dragData = dragItemRef.current; if (!dragData || dragData.chunk.wordId !== targetWordId) return; const existingChunk = placedChunks[targetChunkId]; setPlacedChunks(prev => { const next = { ...prev, [targetChunkId]: dragData.chunk }; if (dragData.source === 'slot' && dragData.slotId) delete next[dragData.slotId]; return next; }); setPoolChunks(prev => { let next = prev; if (dragData.source === 'pool') next = next.filter(c => c.id !== dragData.chunk.id); if (existingChunk) next = [...next, existingChunk]; return next; }); };
+            const handleCloudReturnDrop = (e, targetWordId) => { setIsDragging(false); e.preventDefault(); e.stopPropagation(); const dragData = dragItemRef.current; if (!dragData || dragData.chunk.wordId !== targetWordId) return; if (dragData.source === 'slot') { setPlacedChunks(prev => { const next = { ...prev }; delete next[dragData.slotId]; return next; }); setPoolChunks(prev => [...prev, dragData.chunk]); } };
+            const speakWord = (text) => {
+                if (!('speechSynthesis' in window)) return;
+
+                const speak = (voices) => {
+                    const u = new SpeechSynthesisUtterance(text);
+                    u.lang = 'de-DE';
+                    u.voice = voices.find(v => v.lang.includes('de') && (v.name.includes('Google') || v.name.includes('Female'))) || voices.find(v => v.lang.includes('de')) || null;
+                    window.speechSynthesis.speak(u);
+                };
+
+                let voices = window.speechSynthesis.getVoices();
+                if (voices.length > 0) {
+                    speak(voices);
+                } else {
+                    window.speechSynthesis.onvoiceschanged = () => {
+                        voices = window.speechSynthesis.getVoices();
+                        speak(voices);
+                    };
+                }
+            };
+            const cloudSVGPath = "M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z";
+
+            return (
+                <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans">
+                    {showReward && (<div className="fixed inset-0 z-[150] pointer-events-none flex items-center justify-center">{Array.from({ length: 30 }).map((_, i) => <div key={i} className="confetti" style={{ left: `${Math.random() * 100}%`, top: `-10%`, backgroundColor: ['#f00', '#0f0', '#00f', '#ff0'][Math.floor(Math.random() * 4)], animationDuration: `${2 + Math.random() * 3}s`, animationDelay: `${Math.random()}s` }}></div>)}<div className="bg-white/90 backdrop-blur rounded-2xl p-8 shadow-2xl pop-animate pointer-events-auto text-center border-4 border-yellow-400"><h2 className="text-4xl font-bold text-slate-800 mb-4">Super gemacht! 🎉</h2><button onClick={onClose} className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition min-touch-target">Zurück</button></div></div>)}
+                    <div className="bg-white px-6 py-4 shadow-sm flex justify-between items-center z-10 shrink-0 flex-wrap gap-4"><div className="flex items-center gap-4"><h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2"><Icons.Cloud className="text-blue-500" /> Wortwolke</h2><span className="bg-slate-100 px-3 py-1 rounded-full text-slate-500 font-medium text-sm">{poolChunks.length} Teile übrig</span></div><div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg"><span className="text-xs font-bold text-slate-500">A</span><input type="range" min="24" max="80" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-32 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer" /><span className="text-xl font-bold text-slate-500">A</span></div></div>
+                    <div className="flex-1 overflow-y-auto custom-scroll p-6 pb-32">
+                        <div className="max-w-4xl mx-auto flex flex-col gap-12">
+                            {cloudWords.map((word) => {
+                                const activePool = poolChunks.filter(c => c.wordId === word.id); const isCorrect = word.allChunks.every(c => placedChunks[c.id]?.text === c.text); return (
+                                    <div key={word.id} onDragOver={(e) => e.preventDefault()} onDrop={(e) => handleCloudReturnDrop(e, word.id)} className={`bg-white rounded-2xl border-2 p-6 flex flex-col items-center gap-6 shadow-sm transition-all ${isCorrect ? 'border-green-200 bg-green-50' : 'border-slate-200'}`}>
+                                        <div className="relative w-full max-w-md h-64 flex items-center justify-center">
+                                            <button onClick={() => speakWord(word.fullWord)} className="absolute -left-2 top-0 p-3 text-slate-400 hover:text-blue-600 bg-white rounded-full shadow-sm border hover:bg-blue-50 transition z-20 min-touch-target"><Icons.Volume2 size={24} /></button>
+                                            <div className="absolute inset-0 text-blue-100 drop-shadow-sm flex items-center justify-center"><svg viewBox="0 0 24 24" className="w-full h-full overflow-visible pointer-events-none" preserveAspectRatio="none"><path d={cloudSVGPath} fill="currentColor" stroke="#93c5fd" strokeWidth="0.5" vectorEffect="non-scaling-stroke" /></svg><div className="absolute inset-0 z-10 overflow-hidden rounded-full opacity-100 pointer-events-none"><div className="relative w-full h-full pointer-events-auto">{activePool.map((chunk) => (<div key={chunk.id} draggable onDragStart={(e) => handleDragStart(e, chunk, 'pool')} onDragEnd={handleDragEnd} className="absolute cursor-grab active:cursor-grabbing bg-white border border-blue-200 shadow-sm rounded px-2 py-0.5 font-bold text-slate-700 hover:scale-110 transition-transform touch-action-none touch-manipulation select-none touch-none" style={{ fontFamily: settings.fontFamily, fontSize: `${Math.max(16, settings.fontSize * 0.8)}px`, left: `${chunk.x}%`, top: `${chunk.y}%`, transform: 'translate(-50%, -50%)', zIndex: 20 }}>{chunk.text}</div>))}{isCorrect && <div className="absolute inset-0 flex items-center justify-center text-green-600 font-bold text-2xl pop-animate z-30 pointer-events-none"><Icons.Check size={48} /></div>}</div></div></div>
+                                        </div>
+                                        <div className="flex flex-wrap justify-center gap-4 mt-2">{word.syllables.map((sylObj, sIdx) => (<div key={sIdx} className="flex gap-1 p-2 bg-slate-50 rounded-lg border border-slate-200">{sylObj.chunks.map((chunk) => { const placed = placedChunks[chunk.id]; return (<div key={chunk.id} onDragOver={(e) => e.preventDefault()} onDragEnter={(e) => { e.preventDefault(); e.currentTarget.classList.add('active-target') }} onDragLeave={(e) => e.currentTarget.classList.remove('active-target')} onDrop={(e) => handleDrop(e, word.id, chunk.id)} className={`cloud-drop-target ${placed ? 'filled' : ''} px-2 flex items-center justify-center transition-all`} style={{ minWidth: '3.5rem', height: `${settings.fontSize * 1.5}px` }}>{placed ? (<div draggable onDragStart={(e) => handleDragStart(e, placed, 'slot', chunk.id)} onDragEnd={handleDragEnd} className="cursor-grab active:cursor-grabbing text-blue-900 font-bold animate-[popIn_0.3s_ease-out] touch-action-none touch-manipulation select-none touch-none" style={{ fontFamily: settings.fontFamily, fontSize: `${settings.fontSize}px` }}>{placed.text}</div>) : <div className="w-full h-full"></div>}</div>); })}</div>))}</div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                    <div className="absolute bottom-6 right-6 z-50"><button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white rounded-full w-14 h-14 shadow-lg transition-transform hover:scale-110 flex items-center justify-center min-touch-target"><Icons.X size={32} /></button></div>
+                </div>
+            );
+        };
+
+        const SyllableCarpetView = ({ words, settings, setSettings, onClose }) => {
+            if (!words || words.length === 0) return (<div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans"><EmptyStateMessage onClose={onClose} /></div>);
+            const [hiddenSyllables, setHiddenSyllables] = useState(new Set());
+            const [shuffledSyllables, setShuffledSyllables] = useState([]);
+            const [isGameMode, setIsGameMode] = useState(false);
+            const [isFingerMode, setIsFingerMode] = useState(false);
+            const [targetSyllable, setTargetSyllable] = useState(null);
+            const [completedSyllables, setCompletedSyllables] = useState(new Set());
+            const [remainingPool, setRemainingPool] = useState([]);
+            const [showReward, setShowReward] = useState(false);
+            const [timer, setTimer] = useState(0);
+            const [timerActive, setTimerActive] = useState(false);
+
+            const uniqueSyllables = useMemo(() => { const set = new Set(); words.forEach(w => { if (w.syllables) w.syllables.forEach(s => set.add(s)); }); return Array.from(set).sort((a, b) => a.localeCompare(b, 'de')); }, [JSON.stringify(words)]);
+            useEffect(() => { setShuffledSyllables(uniqueSyllables); }, [uniqueSyllables]);
+            useEffect(() => { let interval; if (timerActive) { interval = setInterval(() => setTimer(t => t + 1), 1000); } return () => clearInterval(interval); }, [timerActive]);
+
+            const getVisibleList = () => shuffledSyllables.filter(s => !hiddenSyllables.has(s));
+            const speak = (text) => { if ('speechSynthesis' in window) { window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'de-DE'; u.rate = 0.8; u.voice = window.speechSynthesis.getVoices().find(v => v.lang.includes('de') && (v.name.includes('Google') || v.name.includes('Female'))) || null; window.speechSynthesis.speak(u); } };
+            const toggleGameMode = () => { if (isGameMode) { setIsGameMode(false); setTargetSyllable(null); setTimerActive(false); window.speechSynthesis.cancel(); } else { const visible = getVisibleList(); if (visible.length === 0) return; const shuffled = [...shuffledSyllables]; for (let i = shuffled.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]; } setShuffledSyllables(shuffled); const pool = shuffled.filter(s => !hiddenSyllables.has(s)); if (pool.length === 0) return; setRemainingPool(pool); setCompletedSyllables(new Set()); setIsGameMode(true); setTimer(0); setTimerActive(true); setShowReward(false); setIsFingerMode(false); pickNextSyllable(pool); } };
+            const pickNextSyllable = (pool) => { if (pool.length === 0) { setTimerActive(false); setTargetSyllable(null); setShowReward(true); return; } const randomIndex = Math.floor(Math.random() * pool.length); const next = pool[randomIndex]; setTargetSyllable(next); setTimeout(() => speak(next), 500); };
+            const handleSyllableClick = (syl) => { if (isFingerMode) return; if (isGameMode) { if (completedSyllables.has(syl)) return; if (syl === targetSyllable) { const newCompleted = new Set(completedSyllables); newCompleted.add(syl); setCompletedSyllables(newCompleted); const newPool = remainingPool.filter(s => s !== syl); setRemainingPool(newPool); setTimeout(() => pickNextSyllable(newPool), 300); } else { speak(targetSyllable); } } else { setHiddenSyllables(prev => { const n = new Set(prev); if (n.has(syl)) n.delete(syl); else n.add(syl); return n; }); } };
+            const minColWidth = Math.max(60, settings.fontSize * 2.5);
+
+            return (
+                <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans pt-0 md:pt-0">
+                    {showReward && (<div className="fixed inset-0 z-[150] pointer-events-none flex items-center justify-center">{Array.from({ length: 30 }).map((_, i) => <div key={i} className="confetti" style={{ left: `${Math.random() * 100}%`, top: `-10%`, backgroundColor: ['#f00', '#0f0', '#00f', '#ff0'][Math.floor(Math.random() * 4)], animationDuration: `${2 + Math.random() * 3}s`, animationDelay: `${Math.random()}s` }}></div>)}<div className="bg-white/90 backdrop-blur rounded-2xl p-8 shadow-2xl pop-animate pointer-events-auto text-center border-4 border-yellow-400"><h2 className="text-4xl font-bold text-slate-800 mb-2">Fertig! 🎉</h2><p className="text-xl text-slate-600 mb-4">Zeit: {timer} Sekunden</p><button onClick={() => { setShowReward(false); setIsGameMode(false); }} className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition min-touch-target">OK</button></div></div>)}
+                    <div className="bg-white px-6 py-4 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center z-10 shrink-0"><div className="flex items-center gap-6 w-full md:w-auto justify-between md:justify-start"><h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2"><Icons.Grid2x2 className="text-blue-600" /> Silbenteppich</h2><div className="flex items-center gap-4">{isGameMode && <div className="flex items-center gap-2 bg-slate-100 px-3 py-1 rounded-lg border border-slate-200 font-mono text-lg font-bold text-blue-600"><Icons.Clock size={20} /> {timer}s</div>}<button onClick={toggleGameMode} className={`p-3 rounded-lg border-2 transition-all flex items-center gap-2 px-6 font-bold shadow-sm min-touch-target ${isGameMode ? 'bg-red-50 border-red-500 text-red-600 animate-pulse' : 'bg-green-50 border-green-500 text-green-700 hover:bg-green-100'}`}>{isGameMode ? <><Icons.Square size={20} fill="currentColor" /> Stopp</> : <><Icons.Volume2 size={24} /> Start</>}</button></div></div><div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg w-full md:w-auto justify-center"><span className="text-xs font-bold text-slate-500">A</span><input type="range" min="16" max="120" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-48 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer" /><span className="text-xl font-bold text-slate-500">A</span></div></div>
+                    <div className={`flex-1 p-6 pr-6 overflow-y-auto custom-scroll`}>
+                        <div className="grid gap-3 pb-32" style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${minColWidth}px, 1fr))` }}>
+                            {shuffledSyllables.map((syl, idx) => { if (hiddenSyllables.has(syl)) return null; const isCompleted = completedSyllables.has(syl); let boxClass = (idx % 2 === 0) ? 'bg-blue-100 border-blue-200' : 'bg-blue-200 border-blue-300'; let textClass = 'text-slate-800'; if (isCompleted) { boxClass = 'bg-slate-50 border-slate-200'; textClass = 'text-gray-300'; } else if (isGameMode) { boxClass = (idx % 2 === 0) ? 'bg-blue-50 border-blue-100' : 'bg-blue-100 border-blue-200'; } return (<div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSyllableClick(syl); } }} key={idx} onClick={() => handleSyllableClick(syl)} className={`px-4 py-2 rounded-lg border ${boxClass} ${textClass} shadow-sm font-medium select-none text-center flex items-center justify-center transition-all duration-200 lowercase relative ${!isFingerMode && !isGameMode ? 'cursor-pointer hover:bg-red-100 hover:text-red-800 hover:border-red-200' : ''} ${isGameMode && !isCompleted && !isFingerMode ? 'cursor-pointer active:scale-95 hover:shadow-md' : ''} ${isFingerMode ? 'cursor-default' : ''}`} style={{ fontFamily: settings.fontFamily, fontSize: `${settings.fontSize}px`, minHeight: `${settings.fontSize * 1.5}px` }}>{syl}{isCompleted && <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-green-500/80 pointer-events-none"><Icons.Check size={48} strokeWidth={4} /></div>}</div>); })}
+                        </div>
+                    </div>
+                    <div className="absolute bottom-6 right-6 z-50 flex flex-col gap-4">
+                        <button onClick={() => setIsFingerMode(!isFingerMode)} className={`rounded-full w-14 h-14 shadow-lg transition-transform hover:scale-110 flex items-center justify-center border-2 min-touch-target ${isFingerMode ? 'bg-orange-500 hover:bg-orange-600 text-white border-orange-600' : 'bg-white hover:bg-slate-50 text-slate-600 border-slate-200'}`} title="Lese-Modus (Finger)"><Icons.Hand size={30} /></button>
+                        <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white rounded-full w-14 h-14 shadow-lg transition-transform hover:scale-110 flex items-center justify-center min-touch-target" title="Schließen"><Icons.X size={32} /></button>
+                    </div>
+                </div>
+            );
+        };
+
+        const WordListView = ({ words, columnsState, setColumnsState, onClose, settings, setSettings, onRemoveWord, onWordUpdate }) => {
+            if (!words || words.length === 0) return (<div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans"><EmptyStateMessage onClose={onClose} /></div>);
+            const [columnCount, setColumnCount] = useState(1);
+            const dragItemRef = useRef(null);
+
+            useEffect(() => {
+                if (Object.keys(columnsState.cols).length === 0 && words.length > 0) {
+                    setColumnsState({ cols: { 'col-1': { id: 'col-1', title: '', items: words } }, order: ['col-1'] });
+                } else {
+                    const existingIds = new Set(); Object.values(columnsState.cols).forEach(col => col.items.forEach(i => existingIds.add(i.id)));
+                    const newItems = words.filter(w => !existingIds.has(w.id));
+                    const allCurrentWordIds = new Set(words.map(w => w.id));
+                    setColumnsState(prev => { const newCols = { ...prev.cols }; let hasChanges = false; if (newItems.length > 0) { const firstColId = prev.order[0] || 'col-1'; if (!newCols[firstColId]) newCols[firstColId] = { id: firstColId, title: '', items: [] }; newCols[firstColId] = { ...newCols[firstColId], items: [...newCols[firstColId].items, ...newItems] }; hasChanges = true; } Object.keys(newCols).forEach(colKey => { const updatedItems = newCols[colKey].items.map(item => { const fresh = words.find(w => w.id === item.id); return fresh || item; }).filter(item => allCurrentWordIds.has(item.id)); if (JSON.stringify(updatedItems) !== JSON.stringify(newCols[colKey].items)) { newCols[colKey] = { ...newCols[colKey], items: updatedItems }; hasChanges = true; } }); return hasChanges ? { ...prev, cols: newCols } : prev; });
+                }
+            }, [JSON.stringify(words)]);
+
+            const updateLayout = (count) => { setColumnCount(count); const newOrder = []; const newCols = { ...columnsState.cols }; for (let i = 1; i <= count; i++) { const id = `col-${i}`; newOrder.push(id); if (!newCols[id]) newCols[id] = { id, title: '', items: [] }; } setColumnsState({ cols: newCols, order: newOrder }); };
+            const handleCharClick = (colId, itemIdx, sylIdx, charIdx) => { if (sylIdx !== 0 || charIdx !== 0) return; const col = columnsState.cols[colId]; const item = col.items[itemIdx]; const fullWord = item.word; const char = fullWord[0]; const newChar = char === char.toUpperCase() ? char.toLowerCase() : char.toUpperCase(); const newWord = newChar + fullWord.substring(1); onWordUpdate(item.id, newWord); };
+            const handleRemoveItem = (e, item) => { e.stopPropagation(); onRemoveWord(item); };
+            const handleDragStart = (e, item, colId, idx) => { dragItemRef.current = { item, sourceColId: colId, sourceIdx: idx }; e.dataTransfer.effectAllowed = 'move'; setTimeout(() => e.target.classList.add('dragging'), 0); };
+            const handleDragEnd = (e) => { e.target.classList.remove('dragging'); dragItemRef.current = null; document.querySelectorAll('.drag-over-column').forEach(el => el.classList.remove('drag-over-column')); document.querySelectorAll('.active-drop-target').forEach(el => el.classList.remove('active-drop-target')); };
+            const handleDrop = (e, targetColId, targetIdx = null) => { e.preventDefault(); e.stopPropagation(); document.querySelectorAll('.drag-over-column').forEach(el => el.classList.remove('drag-over-column')); document.querySelectorAll('.active-drop-target').forEach(el => el.classList.remove('active-drop-target')); const dragData = dragItemRef.current; if (!dragData) return; const { sourceColId, sourceIdx } = dragData; if (sourceColId === targetColId && sourceIdx === targetIdx) return; setColumnsState(prev => { const newCols = { ...prev.cols }; const sourceItems = [...newCols[sourceColId].items]; if (!sourceItems[sourceIdx]) return prev; const [itemToMove] = sourceItems.splice(sourceIdx, 1); const destItems = (sourceColId === targetColId) ? sourceItems : [...newCols[targetColId].items]; let finalTargetIdx = targetIdx !== null ? targetIdx : destItems.length; destItems.splice(finalTargetIdx, 0, itemToMove); newCols[sourceColId] = { ...newCols[sourceColId], items: sourceItems }; if (sourceColId !== targetColId) newCols[targetColId] = { ...newCols[targetColId], items: destItems }; return { ...prev, cols: newCols }; }); };
+            const minGridWidth = Math.max(350, columnCount * 180);
+
+            return (
+                <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans">
+                    <div className="bg-white px-6 py-4 shadow-sm flex flex-wrap gap-4 justify-between items-center z-10 shrink-0"><div className="flex items-center gap-4"><h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2"><Icons.List className="text-blue-600" /> Wortliste</h2><div className="bg-slate-100 rounded-lg p-1 flex gap-1">{[1, 2, 3, 4, 5].map(n => (<button key={n} onClick={() => updateLayout(n)} className={`px-3 py-1 rounded text-sm font-bold transition min-touch-target ${columnCount === n ? 'bg-white shadow text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}>{n}</button>))}</div></div><div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg"><span className="text-xs font-bold text-slate-500">A</span><input type="range" min="16" max="120" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-32 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer" /><span className="text-xl font-bold text-slate-500">A</span></div></div>
+                    <div className="flex-1 p-6 max-h-[80vh] overflow-y-auto custom-scroll">
+                        <div className={`grid gap-6`} style={{ gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`, minWidth: `${minGridWidth}px` }}>
+                            {columnsState.order.map(colId => {
+                                const col = columnsState.cols[colId]; if (!col) return null;
+                                return (
+                                    <div key={colId} className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col h-full min-h-[200px] transition-colors p-3" onDragEnter={(e) => { e.preventDefault(); e.currentTarget.classList.add('drag-over-column') }} onDragLeave={(e) => e.currentTarget.classList.remove('drag-over-column')} onDragOver={(e) => e.preventDefault()} onDrop={(e) => handleDrop(e, colId, null)}>
+                                        <div className="mb-3 border-b border-slate-100 pb-2"><input type="text" placeholder="Titel..." value={col.title} onChange={(e) => setColumnsState(old => ({ ...old, cols: { ...old.cols, [colId]: { ...old.cols[colId], title: e.target.value } } }))} className="w-full font-bold text-slate-700 outline-none border border-transparent focus:border-blue-300 focus:bg-blue-50 bg-transparent px-2 py-1 rounded transition-colors placeholder:text-slate-300 placeholder:font-normal" style={{ fontSize: `${Math.max(18, settings.fontSize * 1.2)}px`, fontFamily: settings.fontFamily }} /></div>
+                                        <div className="flex-1 space-y-3 flex flex-col pointer-events-none">
+                                            {col.items && col.items.map((item, idx) => (
+                                                <div key={item.id} draggable onDragStart={(e) => handleDragStart(e, item, colId, idx)} onDragEnd={handleDragEnd} onDrop={(e) => handleDrop(e, colId, idx)} className="touch-action-none bg-slate-50 p-2 rounded-lg border border-slate-100 flex items-center gap-3 cursor-grab active:cursor-grabbing hover:shadow-md transition-all group select-none touch-manipulation pointer-events-auto">
+                                                    <div className="flex-1 font-medium text-slate-800 tracking-wide block whitespace-nowrap overflow-hidden text-ellipsis leading-relaxed" style={{ fontSize: `${settings.fontSize * 0.9}px`, fontFamily: settings.fontFamily }}>{(item.syllables || []).map((syl, i) => { const isEven = i % 2 === 0; let arcColor = isEven ? '#2563eb' : '#dc2626'; let bgClass = isEven ? 'bg-blue-100' : 'bg-blue-200'; let textClass = (settings.visualType === 'black_gray') ? (isEven ? 'text-black' : 'text-gray-400') : (isEven ? 'text-blue-900' : 'text-blue-600'); return (<span key={i} className={`inline-block relative ${settings.visualType === 'block' ? 'px-0.5 py-0 rounded ' + bgClass + ' border border-blue-200/50 shadow-sm mx-0.5' : 'mx-0'}`}><span className={`inline-block relative z-10 ${textClass}`}>{syl.split('').map((char, charIdx) => (<span key={charIdx} onClick={(e) => { e.stopPropagation(); handleCharClick(colId, idx, i, charIdx) }} className={`${(i === 0 && charIdx === 0) ? 'cursor-pointer hover:text-orange-500 hover:font-bold hover:bg-slate-200 rounded px-[1px]' : ''} transition-colors`}>{char}</span>))}</span>{settings.visualType === 'arc' && <svg className="arc-svg-list" viewBox="0 0 100 20" preserveAspectRatio="none"><path d="M 2 2 Q 50 20 98 2" fill="none" stroke={arcColor} strokeWidth="8" strokeLinecap="round" /></svg>}</span>); })}</div>
+                                                    <button onClick={(e) => handleRemoveItem(e, item)} className="text-slate-300 hover:text-red-500 hover:bg-red-50 p-2 rounded-full transition-colors flex-shrink-0 min-touch-target"><Icons.X size={18} /></button>
+                                                </div>
+                                            ))}
+                                            {columnCount > 1 && <div className="column-drop-zone flex-shrink-0 pointer-events-auto" onDragEnter={(e) => { e.preventDefault(); e.currentTarget.classList.add('active-drop-target'); }} onDragLeave={(e) => { e.currentTarget.classList.remove('active-drop-target'); }} onDrop={(e) => handleDrop(e, colId, null)}>Hier ablegen</div>}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                    <div className="absolute bottom-4 right-6 z-50"><button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white rounded-full w-14 h-14 shadow-lg transition-transform hover:scale-110 flex items-center justify-center min-touch-target"><Icons.X size={32} /></button></div>
+                </div>
+            );
+        };
+
+        const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, highlightedIndices, isHidden, toggleHighlights, toggleHidden, activeTool, onEditMode, manualSyllables, hyphenator, settings, isReadingMode }) => {
+            const wordKey = `${word}_${startIndex}`;
+            const syllables = useMemo(() => manualSyllables || getCachedSyllables(word, hyphenator), [word, manualSyllables, hyphenator]);
+
+            const clusterConnections = useMemo(() => {
+                const bindsRight = new Set();
+                if (!settings.smartSelection) return bindsRight;
+                let currentSyllableStartIndex = 0;
+                syllables.forEach(syl => {
+                    const lowerSyl = syl.toLowerCase();
+                    for (const cluster of CLUSTERS) {
+                        let idx = lowerSyl.indexOf(cluster);
+                        while (idx !== -1) {
+                            for (let k = 0; k < cluster.length - 1; k++) bindsRight.add(startIndex + currentSyllableStartIndex + idx + k);
+                            idx = lowerSyl.indexOf(cluster, idx + 1);
+                        }
+                    }
+                    currentSyllableStartIndex += syl.length;
+                });
+                return bindsRight;
+            }, [word, syllables, settings.smartSelection, startIndex]);
+
+            const findClusterIndices = (clickedGlobalIndex) => {
+                if (!settings.smartSelection) return [clickedGlobalIndex];
+                const relativeIndex = clickedGlobalIndex - startIndex;
+                let currentSylStart = 0; let targetSylIndex = -1; let indexInSyl = -1;
+                for (let i = 0; i < syllables.length; i++) { const sylLen = syllables[i].length; if (relativeIndex >= currentSylStart && relativeIndex < currentSylStart + sylLen) { targetSylIndex = i; indexInSyl = relativeIndex - currentSylStart; break; } currentSylStart += sylLen; }
+                if (targetSylIndex === -1) return [clickedGlobalIndex];
+                const sylText = syllables[targetSylIndex].toLowerCase();
+                for (let cluster of CLUSTERS) {
+                    const len = cluster.length;
+                    for (let offset = 0; offset < len; offset++) {
+                        const start = indexInSyl - offset;
+                        if (start < 0 || start + len > sylText.length) continue;
+                        if (sylText.substring(start, start + len) === cluster) return Array.from({ length: len }, (_, k) => startIndex + currentSylStart + start + k);
+                    }
+                }
+                return [clickedGlobalIndex];
+            };
+
+            const handleInteraction = useCallback((e, globalIndex) => { e.stopPropagation(); if (isReadingMode) return; if (activeTool === 'split') { onEditMode(word, wordKey, syllables); return; } else if (activeTool === 'blur') { toggleHidden(wordKey); return; } if (settings.clickAction === 'light_blue' || settings.clickAction === 'none') { const wordIndices = Array.from({ length: word.length }, (_, i) => startIndex + i); toggleHighlights(wordIndices); } else { if (typeof globalIndex === 'number') toggleHighlights(findClusterIndices(globalIndex)); } }, [isReadingMode, activeTool, settings.clickAction, settings.smartSelection, word, wordKey, syllables, startIndex, onEditMode, toggleHidden, toggleHighlights]);
+
+            const showSyllables = settings.displayTrigger === 'always' || (isHighlighted && settings.displayTrigger === 'click');
+            let cursorClass = isReadingMode ? 'cursor-default' : (activeTool === 'split' ? 'cursor-alias' : (activeTool === 'blur' ? 'cursor-not-allowed' : 'cursor-pointer'));
+            const isZoomed = !activeTool && !isReadingMode && settings.zoomActive && isHighlighted; const zoomClass = isZoomed ? 'scale-110 z-20' : ''; const isLightBlueMode = settings.clickAction === 'light_blue' && isHighlighted;
+            const zoomMargin = isZoomed ? 0.15 : 0; const wordSpacingStyle = { marginRight: `${(settings.wordSpacing ?? 0) + zoomMargin}em`, marginLeft: `${zoomMargin}em` };
+            const renderPrefix = () => prefix ? <span className="text-slate-900" style={{ fontSize: `${settings.fontSize}px` }}>{prefix}</span> : null;
+            const renderSuffix = () => suffix ? <span className="text-slate-900" style={{ fontSize: `${settings.fontSize}px` }}>{suffix}</span> : null;
+
+            if (isHidden) return <span onClick={() => !isReadingMode && (activeTool === 'blur' || !activeTool) && toggleHidden(wordKey)} className={`blur-container transition-all ${cursorClass}`} style={wordSpacingStyle}><span className="blur-content" style={{ fontSize: `${settings.fontSize}px`, lineHeight: 1 }}>{prefix}{word}{suffix}</span></span>;
+            if (!showSyllables) { return (<span className={`inline-block select-none ${cursorClass} ${isLightBlueMode ? 'bg-blue-200 rounded-md px-0' : ''} ${zoomClass}`} style={wordSpacingStyle} onClick={(e) => !isReadingMode && (activeTool === 'split' || activeTool === 'blur' || settings.clickAction === 'light_blue' || settings.clickAction === 'none') && handleInteraction(e)}>{renderPrefix()}{word.split('').map((char, i) => <span key={i} onClick={(e) => !activeTool && !isReadingMode && handleInteraction(e, startIndex + i)} className={`inline-block rounded px-px transition-transform hover:bg-slate-100 ${isLightBlueMode ? 'text-black' : ''}`} style={{ fontSize: `${settings.fontSize}px` }}>{char}</span>)}{renderSuffix()}</span>); }
+            let charCounter = 0;
+            return (
+                <span role="button" tabIndex={0} onKeyDown={(e) => { if (!isReadingMode && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); handleInteraction(e); } }} className={`inline-block whitespace-nowrap transition-transform origin-center relative group ${cursorClass} ${zoomClass} ${isLightBlueMode ? 'bg-blue-200 rounded-md shadow-sm' : ''}`} style={wordSpacingStyle} onClick={(e) => !isReadingMode && (activeTool === 'split' || activeTool === 'blur' || settings.clickAction === 'light_blue' || settings.clickAction === 'none') && handleInteraction(e)}>
+                    {renderPrefix()}
+                    {syllables.map((syl, sIdx) => { const currentStart = charCounter; charCounter += syl.length; const isEven = sIdx % 2 === 0; let arcColor = isEven ? '#2563eb' : '#dc2626'; let bgClass = isLightBlueMode ? 'bg-transparent' : (isEven ? 'bg-blue-100' : 'bg-blue-200'); return (<span key={sIdx} className={`inline-block relative ${settings.visualType === 'block' ? (isLightBlueMode ? 'mx-0' : 'mx-0.5 px-0.5 py-0 rounded ' + bgClass + ' border border-blue-200/50 shadow-sm') : 'mx-0'}`}><span className={`inline-block relative z-10 ${settings.visualType === 'black_gray' ? (isEven ? 'text-black' : 'text-gray-400') : ''}`}>{syl.split('').map((char, cIdx) => { const relativeIndex = currentStart + cIdx; const globalIndex = startIndex + relativeIndex; const isCharClicked = highlightedIndices.has(globalIndex); let charStyle = 'text-slate-900'; let margin = 'mx-px'; let rounded = 'rounded-sm'; if (settings.visualType === 'black_gray') charStyle = isEven ? 'text-black' : 'text-gray-400'; if (isCharClicked && !isLightBlueMode) { if (settings.clickAction === 'yellow_border') { const glueLeft = highlightedIndices.has(globalIndex - 1) && clusterConnections.has(globalIndex - 1); const glueRight = highlightedIndices.has(globalIndex + 1) && clusterConnections.has(globalIndex); if (settings.smartSelection && (glueLeft || glueRight)) { margin = 'mx-0'; charStyle += ' bg-yellow-100'; if (glueLeft && glueRight) { rounded = 'rounded-none'; charStyle += ' shadow-border-yellow-mid'; } else if (glueLeft) { rounded = 'rounded-r-sm rounded-l-none'; charStyle += ' shadow-border-yellow-right'; } else if (glueRight) { rounded = 'rounded-l-sm rounded-r-none'; charStyle += ' shadow-border-yellow-left'; } } else { charStyle += ' shadow-border-yellow bg-yellow-100'; } } else if (settings.clickAction === 'dark_blue') charStyle = 'text-blue-900 font-bold scale-110'; } if (isLightBlueMode) charStyle = 'text-black'; return <span key={cIdx} onMouseDown={(e) => e.stopPropagation()} onClick={(e) => !activeTool && !isReadingMode && handleInteraction(e, globalIndex)} className={`inline-block select-none transition-all duration-200 ${charStyle} ${margin} ${rounded}`} style={{ fontSize: `${settings.fontSize}px`, lineHeight: 1 }}>{char}</span>; })}</span>{settings.visualType === 'arc' && !isLightBlueMode && <svg className="arc-svg" viewBox="0 0 100 20" preserveAspectRatio="none"><path d="M 2 2 Q 50 20 98 2" fill="none" stroke={arcColor} strokeWidth="8" strokeLinecap="round" /></svg>}</span>); })}
+                    {renderSuffix()}
+                </span>
+            );
+        }, (prev, next) => { return (prev.word === next.word && prev.prefix === next.prefix && prev.suffix === next.suffix && prev.isHighlighted === next.isHighlighted && prev.isHidden === next.isHidden && prev.activeTool === next.activeTool && prev.settings === next.settings && prev.isReadingMode === next.isReadingMode && (prev.isHighlighted ? (Array.from(prev.highlightedIndices).join(',') === Array.from(next.highlightedIndices).join(',')) : true) && prev.hyphenator === next.hyphenator); });
+
+        const SentencePuzzleView = ({ text, settings, setSettings, onClose, hyphenator, manualCorrections, savedState, onSaveState }) => {
+            if (!text || text.trim().length === 0) return (<div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans"><EmptyStateMessage onClose={onClose} /></div>);
+
+            // Initial check for split capability
+            const rawPartsCheck = text.split(/\n\s*\n/).filter(s => s.trim().length > 0);
+            if (rawPartsCheck.length <= 1) {
+                return (
+                    <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans">
+                        <EmptyStateMessage onClose={onClose} title="Hier ist noch nichts los." message="Bitte füge zwischen den Textabschnitten eine leere Zeile ein." />
+                    </div>
+                );
+            }
+
+            const [sentences, setSentences] = useState([]);
+            const [feedbackMsg, setFeedbackMsg] = useState(null);
+            const dragItemRef = useRef(null);
+            const [showReward, setShowReward] = useState(false);
+            const [isDragging, setIsDragging] = useState(false);
+            const COLORS = ['bg-red-100 border-red-200', 'bg-orange-100 border-orange-200', 'bg-amber-100 border-amber-200', 'bg-yellow-100 border-yellow-200', 'bg-lime-100 border-lime-200', 'bg-green-100 border-green-200', 'bg-emerald-100 border-emerald-200', 'bg-teal-100 border-teal-200', 'bg-cyan-100 border-cyan-200', 'bg-sky-100 border-sky-200', 'bg-blue-100 border-blue-200', 'bg-indigo-100 border-indigo-200', 'bg-violet-100 border-violet-200', 'bg-purple-100 border-purple-200', 'bg-fuchsia-100 border-fuchsia-200', 'bg-pink-100 border-pink-200', 'bg-rose-100 border-rose-200'];
+            useScrollLock(isDragging);
+
+            const initializePuzzle = () => {
+                const rawParts = text.split(/\n\s*\n/).filter(s => s.trim().length > 0);
+                const prepared = rawParts.map(s => s.trim()).filter(s => s.length > 0).map((s, idx) => ({ id: `part_${idx}`, text: s, originalIndex: idx, color: COLORS[idx % COLORS.length] }));
+                const shuffled = [...prepared];
+                for (let i = shuffled.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]; }
+                setSentences(shuffled);
+                onSaveState(shuffled);
+                setShowReward(false);
+            };
+
+            useEffect(() => { if (savedState && savedState.length > 0) setSentences(savedState); else initializePuzzle(); }, [text]);
+
+            const checkWinCondition = (currentOrder) => currentOrder.every((item, index) => item.originalIndex === index);
+            const handleManualCheck = () => { const isCorrect = checkWinCondition(sentences); if (isCorrect) setShowReward(true); else { const container = document.getElementById('sentence-container'); if (container) container.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-10px)' }, { transform: 'translateX(10px)' }, { transform: 'translateX(0)' }], { duration: 300 }); } };
+            const handleDragStart = (e, index) => { dragItemRef.current = { index }; setIsDragging(true); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData('text/plain', index); setTimeout(() => e.target.classList.add('dragging'), 0); };
+            const handleDragEnd = (e) => { setIsDragging(false); dragItemRef.current = null; e.target.classList.remove('dragging'); document.querySelectorAll('.drag-over-sentence').forEach(el => el.classList.remove('drag-over-sentence')); };
+            const handleDrop = (e, targetIndex) => { e.preventDefault(); e.stopPropagation(); document.querySelectorAll('.drag-over-sentence').forEach(el => el.classList.remove('drag-over-sentence')); const dragData = dragItemRef.current; if (!dragData) return; const sourceIndex = dragData.index; if (sourceIndex === targetIndex) return; const newSentences = [...sentences]; const [movedItem] = newSentences.splice(sourceIndex, 1); newSentences.splice(targetIndex, 0, movedItem); setSentences(newSentences); onSaveState(newSentences); };
+            const parseTextToWords = (inputText) => { const parts = inputText.split(/([ \n]+)/); return parts.map((part, i) => { if (part.includes('\n')) return <span key={i} className="whitespace-pre-wrap">{part}</span>; if (part === "" || /^\s+$/.test(part)) return <span key={i} className="whitespace-pre">{part}</span>; const match = part.match(/^([^\wäöüÄÖÜß]*)([\wäöüÄÖÜß]+(?:[-][\wäöüÄÖÜß]+)*)([^\wäöüÄÖÜß]*)$/); if (match) { return (<React.Fragment key={i}><Word word={match[2]} prefix={match[1]} suffix={match[3]} startIndex={0} isHighlighted={true} highlightedIndices={new Set()} isHidden={false} toggleHighlights={() => { }} toggleHidden={() => { }} activeTool={null} onEditMode={() => { }} manualSyllables={null} hyphenator={hyphenator} settings={{ ...settings, displayTrigger: 'always' }} isReadingMode={true} /></React.Fragment>); } return <span key={i}>{part}</span>; }); };
+
+            return (
+                <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans">
+                    {feedbackMsg && (<div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-[200] bg-slate-800 text-white px-6 py-3 rounded-full shadow-xl font-bold pop-animate flex items-center gap-2"><Icons.HelpCircle className="text-yellow-400" /> {feedbackMsg}</div>)}
+                    {showReward && (<div className="fixed inset-0 z-[150] pointer-events-none flex items-center justify-center">{Array.from({ length: 40 }).map((_, i) => <div key={i} className="confetti" style={{ left: `${Math.random() * 100}%`, top: `-10%`, backgroundColor: ['#f00', '#0f0', '#00f', '#ff0'][Math.floor(Math.random() * 4)], animationDuration: `${2 + Math.random() * 3}s`, animationDelay: `${Math.random()}s` }}></div>)}<div className="bg-white/90 backdrop-blur rounded-2xl p-8 shadow-2xl pop-animate pointer-events-auto text-center border-4 border-yellow-400"><h2 className="text-4xl font-bold text-slate-800 mb-2">Fantastisch! 🎉</h2><p className="text-xl text-slate-600 mb-6">Alles ist in der richtigen Reihenfolge.</p><button onClick={onClose} className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition min-touch-target">Zurück</button></div></div>)}
+                    <div className="bg-white px-6 py-4 shadow-sm flex flex-wrap gap-4 justify-between items-center z-10 shrink-0"><div className="flex items-center gap-4"><h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2"><Icons.TextBlocks className="text-pink-500" /> Textpuzzle</h2></div><div className="flex items-center gap-3"><button onClick={initializePuzzle} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg mr-2 font-bold text-sm min-touch-target" title="Neu mischen">Noch einmal mischen!</button><div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg"><span className="text-xs font-bold text-slate-500">A</span><input type="range" min="16" max="60" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-32 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer" /><span className="text-xl font-bold text-slate-500">A</span></div></div></div>
+                    <div className="flex-1 p-4 md:p-8 overflow-y-auto custom-scroll bg-slate-50/50"><div id="sentence-container" className="max-w-4xl mx-auto space-y-4 pb-24">{sentences.map((item, index) => (<div key={item.id} draggable onDragStart={(e) => handleDragStart(e, index)} onDragEnd={handleDragEnd} onDragEnter={(e) => { e.preventDefault(); e.currentTarget.classList.add('drag-over-sentence'); }} onDragLeave={(e) => { e.currentTarget.classList.remove('drag-over-sentence'); }} onDragOver={(e) => e.preventDefault()} onDrop={(e) => handleDrop(e, index)} className={`touch-action-none p-6 rounded-xl border-l-4 shadow-sm cursor-grab active:cursor-grabbing transition-all duration-200 ${item.color} hover:scale-[1.01] hover:shadow-md touch-action-none touch-manipulation select-none`}><div className="flex gap-4 pointer-events-none"><div className="leading-relaxed font-medium whitespace-pre-wrap" style={{ fontFamily: settings.fontFamily, fontSize: `${settings.fontSize}px` }}>{parseTextToWords(item.text)}</div></div></div>))}</div></div>
+                    <div className="absolute bottom-6 right-6 z-50 flex flex-col gap-3"><button onClick={handleManualCheck} className="bg-yellow-400 hover:bg-yellow-500 text-white rounded-full w-14 h-14 shadow-lg transition-transform hover:scale-110 flex items-center justify-center min-touch-target" title="Prüfen"><Icons.HelpCircle size={32} /></button><button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white rounded-full w-14 h-14 shadow-lg transition-transform hover:scale-110 flex items-center justify-center min-touch-target" title="Schließen"><Icons.X size={32} /></button></div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [text, setText] = useState("");
+            const [isViewMode, setIsViewMode] = useState(false);
+            const [isReadingMode, setIsReadingMode] = useState(false);
+            const [manualCorrections, setManualCorrections] = useState({});
+            const [highlightedIndices, setHighlightedIndices] = useState(new Set());
+            const [hiddenWordKeys, setHiddenWordKeys] = useState(new Set());
+            const [isFullscreen, setIsFullscreen] = useState(false);
+            const [editingWord, setEditingWord] = useState(null);
+            const [activeTool, setActiveTool] = useState(null);
+
+            const [wordOverrides, setWordOverrides] = useState({});
+            const [sentencePuzzleState, setSentencePuzzleState] = useState([]);
+
+            const [showCloud, setShowCloud] = useState(false);
+            const [showPuzzle, setShowPuzzle] = useState(false);
+            const [showList, setShowList] = useState(false);
+            const [showCarpet, setShowCarpet] = useState(false);
+            const [showSplitExercise, setShowSplitExercise] = useState(false);
+            const [showSentencePuzzle, setShowSentencePuzzle] = useState(false);
+            const [showSettings, setShowSettings] = useState(false);
+            const [showQR, setShowQR] = useState(false);
+            const [showScanner, setShowScanner] = useState(false);
+
+            const [columnsState, setColumnsState] = useState({ cols: {}, order: [] });
+            const [logo, setLogo] = useState(null);
+
+            const [settings, setSettings] = useState({
+                displayTrigger: 'click',
+                visualType: 'block',
+                clickAction: 'yellow_border',
+                zoomActive: true,
+                fontSize: 32,
+                lineHeight: 1.8,
+                fontFamily: "'Patrick Hand', cursive",
+                smartSelection: true,
+                wordSpacing: 0.5,
+                lockScroll: false,
+                textWidth: 75,
+                enableCamera: true
+            });
+            const { instance: hyphenator, loading: hypherLoading } = useHypherLoader();
+
+            useEffect(() => { const params = new URLSearchParams(window.location.search); const t = params.get('t'); if (t) { try { const decoded = decodeURIComponent(escape(atob(t))); if (decoded) { setText(decoded); setIsViewMode(true); } } catch (e) { console.error("Error decoding shared text", e); } } }, []);
+            useEffect(() => { const handleContextMenu = (e) => e.preventDefault(); document.addEventListener('contextmenu', handleContextMenu); return () => document.removeEventListener('contextmenu', handleContextMenu); }, []);
+            useEffect(() => {
+                try {
+                    if (window.MobileDragDrop) {
+                        window.MobileDragDrop.polyfill({
+                            dragImageTranslateOverride: window.MobileDragDrop.scrollBehaviourDragImageTranslateOverride,
+                            // WINDOWS FIX: Reduced from 150 to 5 for immediate response
+                            holdToDrag: 5
+                        });
+                    }
+                } catch (e) { }
+            }, []);
+            useEffect(() => { const preventDefault = (e) => { e.preventDefault(); }; if (isReadingMode && settings.lockScroll) { document.body.classList.add('hard-lock'); document.addEventListener('touchmove', preventDefault, { passive: false }); } else { document.body.classList.remove('hard-lock'); document.removeEventListener('touchmove', preventDefault); } return () => { document.body.classList.remove('hard-lock'); document.removeEventListener('touchmove', preventDefault); }; }, [isReadingMode, settings.lockScroll]);
+
+            const handleTextChange = useCallback((e) => { setText(e.target.value); setHighlightedIndices(new Set()); setHiddenWordKeys(new Set()); setManualCorrections({}); setColumnsState({ cols: {}, order: [] }); setWordOverrides({}); setSentencePuzzleState([]); }, []);
+            const handleWordUpdate = useCallback((id, newWord) => { setWordOverrides(prev => ({ ...prev, [id]: newWord })); }, []);
+            const toggleHighlights = useCallback((indices) => { setHighlightedIndices(prev => { const newH = new Set(prev); indices.forEach(idx => { if (newH.has(idx)) newH.delete(idx); else newH.add(idx); }); return newH; }); }, []);
+            const toggleHidden = useCallback((wordKey) => { setHiddenWordKeys(prev => { const newH = new Set(prev); if (newH.has(wordKey)) newH.delete(wordKey); else newH.add(wordKey); return newH; }); }, []);
+            const resetHighlights = () => { if (highlightedIndices.size > 0 && confirm("Markierungen entfernen?")) { setHighlightedIndices(new Set()); setHiddenWordKeys(new Set()); } };
+            const clearText = () => { if (text && confirm("Text löschen?")) { setText(""); setHighlightedIndices(new Set()); setManualCorrections({}); setHiddenWordKeys(new Set()); setColumnsState({ cols: {}, order: [] }); setWordOverrides({}); setSentencePuzzleState([]); window.history.replaceState({}, document.title, window.location.pathname); } };
+            const openCorrection = useCallback((word, key, syllables) => setEditingWord({ word, key, syllables }), []);
+            const saveCorrection = (newSyllables) => { if (editingWord) { setManualCorrections(prev => ({ ...prev, [editingWord.key]: newSyllables })); setEditingWord(null); } };
+            const toggleFullScreen = () => { if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(console.error); else if (document.exitFullscreen) document.exitFullscreen(); };
+            const handleRemoveFromList = (item) => { const lastUnderscoreIndex = item.id.lastIndexOf('_'); const startIndex = parseInt(item.id.substring(lastUnderscoreIndex + 1)); if (!isNaN(startIndex) && item.word) { const indicesToRemove = []; for (let i = 0; i < item.word.length; i++) indicesToRemove.push(startIndex + i); const newH = new Set(highlightedIndices); indicesToRemove.forEach(idx => newH.delete(idx)); setHighlightedIndices(newH); } };
+            const handlePrint = (type) => { setShowSettings(false); setShowList(false); setShowCarpet(false); setShowPuzzle(false); setShowCloud(false); setIsViewMode(true); if (type === 'list') { setShowList(true); } else if (type === 'carpet') { setShowCarpet(true); } document.body.classList.add(`print-${type}`); setTimeout(() => { window.print(); setTimeout(() => { document.body.classList.remove(`print-${type}`); }, 500); }, 500); };
+            const handleExport = () => { const data = { version: 10, text, manualCorrections, settings, highlightedIndices: Array.from(highlightedIndices), hiddenWordKeys: Array.from(hiddenWordKeys), columnsState, logo, wordOverrides }; const blob = new Blob([JSON.stringify(data)], { type: "application/json" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = "silben-trainer-daten.json"; a.click(); };
+
+            const handleImport = (jsonString) => {
+                try {
+                    const data = JSON.parse(jsonString);
+                    if (data.text) setText(data.text);
+                    if (data.manualCorrections) setManualCorrections(data.manualCorrections);
+                    if (data.highlightedIndices) setHighlightedIndices(new Set(data.highlightedIndices));
+                    if (data.hiddenWordKeys) setHiddenWordKeys(new Set(data.hiddenWordKeys));
+                    if (data.columnsState && data.columnsState.cols) setColumnsState(data.columnsState);
+                    if (data.logo) setLogo(data.logo);
+                    if (data.wordOverrides) setWordOverrides(data.wordOverrides);
+                    if (data.settings) setSettings(prev => ({ ...prev, ...data.settings }));
+                    alert("Daten erfolgreich geladen!");
+                    setShowSettings(false);
+                    setIsViewMode(true);
+                } catch (e) {
+                    console.error(e);
+                    alert("Fehler beim Laden.");
+                }
+            };
+
+            const handleScanSuccess = (decodedText) => {
+                setShowScanner(false);
+                const trimmed = decodedText.trim();
+                if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+                    fetch(trimmed).then(response => { if (!response.ok) throw new Error("Netzwerk-Fehler"); return response.json(); }).then(data => handleImport(JSON.stringify(data))).catch(err => { alert("Konnte Datei von URL nicht laden: " + err.message); });
+                } else if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+                    handleImport(trimmed);
+                } else {
+                    if (confirm("Gescannter Text wird eingefügt. Vorherigen Text überschreiben?")) { setText(trimmed); setIsViewMode(false); }
+                }
+            };
+
+            useEffect(() => { const h = () => setIsFullscreen(!!document.fullscreenElement); document.addEventListener('fullscreenchange', h); return () => document.removeEventListener('fullscreenchange', h); }, []);
+
+            const processedSegments = useMemo(() => { const result = []; const parts = text.split(/([ \n]+)/); let idx = 0; parts.forEach((part) => { if (part === "") return; if (/^\s+$/.test(part)) { result.push({ text: part, isWhitespace: true }); idx += part.length; return; } const match = part.match(/^([^\wäöüÄÖÜß]*)([\wäöüÄÖÜß]+(?:[-][\wäöüÄÖÜß]+)*)([^\wäöüÄÖÜß]*)$/); if (match) { result.push({ text: match[2], prefix: match[1] || "", suffix: match[3] || "", startIndex: idx, isWord: true }); idx += match[1].length + match[2].length + match[3].length; } else { result.push({ text: part, prefix: "", suffix: "", startIndex: idx, isWord: true }); idx += part.length; } }); return result; }, [text]);
+            const highlightedWordsMemo = useMemo(() => processedSegments.filter(s => s.isWord).filter(s => { for (let i = 0; i < s.text.length; i++) if (highlightedIndices.has(s.startIndex + i)) return true; return false; }).map(s => { const key = `${s.text}_${s.startIndex}`; const finalWord = wordOverrides[key] || s.text; return { word: finalWord, syllables: manualCorrections[key] || getCachedSyllables(finalWord, hyphenator), id: key }; }), [processedSegments, highlightedIndices, hyphenator, manualCorrections, wordOverrides]);
+
+            return (
+                <div className={`min-h-screen transition-colors duration-300 ${isViewMode ? 'overflow-hidden' : ''}`} style={{ fontFamily: settings.fontFamily }}>
+                    {isViewMode && <div className="fixed top-6 right-6 z-[80] flex items-center gap-2 bg-white/90 backdrop-blur px-3 py-2 rounded-lg shadow-sm border border-slate-200"><span className="text-xs font-bold text-slate-500">A</span><input type="range" min="16" max="120" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-24 md:w-32 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer" /><span className="text-xl font-bold text-slate-500">A</span></div>}
+
+                    {!isReadingMode && (
+                        <div className={`fixed bg-white/95 backdrop-blur-md shadow-2xl border border-slate-200 rounded-full flex items-center gap-1 z-[90] transition-all font-sans no-scrollbar ${!isViewMode ? 'bottom-6 left-1/2 -translate-x-1/2 flex-row px-4 py-2 hover:scale-105 overflow-x-auto max-w-[95vw]' : 'right-4 top-1/2 -translate-y-1/2 flex-col px-1 py-2 overflow-y-auto max-h-[85vh] custom-scroll'}`}>
+                            {isViewMode ?
+                                <>
+                                    <button title="Text eingeben und verändern" onClick={() => { setIsViewMode(!isViewMode); setActiveTool(null); setIsReadingMode(false); }} className="p-3 rounded-full shadow-md text-white transition bg-blue-600 hover:bg-blue-700 flex-shrink-0 min-touch-target"><Icons.Edit2 size={24} /></button>
+                                    <button title="Alle Markierungen löschen" disabled={isReadingMode} onClick={resetHighlights} className="p-3 rounded-full transition text-slate-600 hover:text-red-600 hover:bg-red-50 flex-shrink-0 min-touch-target"><Icons.RotateCcw size={24} /></button>
+                                    <button title="Wortliste/Tabelle" disabled={isReadingMode} onClick={() => setShowList(true)} className="p-3 rounded-full transition text-slate-600 hover:text-purple-600 hover:bg-purple-50 flex-shrink-0 min-touch-target"><Icons.List size={24} /></button>
+                                    <button title="Silbenteppich" disabled={isReadingMode} onClick={() => setShowCarpet(!showCarpet)} className={`p-3 rounded-full transition flex-shrink-0 min-touch-target ${showCarpet ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-600 hover:text-indigo-600 hover:bg-indigo-50'}`}><Icons.Grid2x2 size={24} /></button>
+                                    <button title="Silbenpuzzle" disabled={isReadingMode} onClick={() => setShowPuzzle(true)} className="p-3 rounded-full transition text-slate-600 hover:text-purple-600 hover:bg-purple-50 flex-shrink-0 min-touch-target"><Icons.Puzzle size={24} /></button>
+                                    <button title="Wortwolke" disabled={isReadingMode} onClick={() => setShowCloud(true)} className="p-3 rounded-full transition text-slate-600 hover:text-blue-500 hover:bg-blue-50 flex-shrink-0 min-touch-target"><Icons.Cloud size={24} /></button>
+                                    <button title="Textpuzzle" disabled={isReadingMode} onClick={() => setShowSentencePuzzle(true)} className="p-3 rounded-full transition text-slate-600 hover:text-pink-600 hover:bg-pink-50 flex-shrink-0 min-touch-target"><Icons.TextBlocks size={24} /></button>
+                                    <button title="Übung: Wörter trennen" disabled={isReadingMode} onClick={() => setShowSplitExercise(true)} className="p-3 rounded-full transition text-slate-600 hover:text-orange-600 hover:bg-orange-50 flex-shrink-0 min-touch-target"><Icons.Scissors size={24} className="-rotate-90" /></button>
+
+                                    <div className="w-8 h-px bg-slate-300 my-1 flex-shrink-0 min-h-[1px]"></div>
+
+                                    <button title="Wörter verstecken" disabled={isReadingMode} onClick={() => setActiveTool(activeTool === 'blur' ? null : 'blur')} className={`p-3 rounded-full transition flex-shrink-0 min-touch-target ${activeTool === 'blur' ? 'bg-gray-600 text-white shadow-lg' : 'text-slate-600 hover:text-gray-600 hover:bg-gray-50'}`}><Icons.Ghost size={24} className={activeTool === 'blur' ? 'opacity-100' : 'opacity-70'} /></button>
+                                    <button title="Lesemodus" onClick={() => setIsReadingMode(!isReadingMode)} className={`p-3 rounded-full transition flex-shrink-0 min-touch-target ${isReadingMode ? 'bg-orange-500 text-white shadow-lg' : 'text-slate-600 hover:text-orange-600 hover:bg-orange-50'}`}><Icons.Hand size={24} /></button>
+                                    <button title="Vollbild" disabled={isReadingMode} onClick={toggleFullScreen} className="p-3 rounded-full transition text-slate-600 hover:text-blue-600 hover:bg-blue-50 flex-shrink-0 min-touch-target">{isFullscreen ? <Icons.Minimize size={24} /> : <Icons.Maximize size={24} />}</button>
+                                    <div className="w-8 h-px bg-slate-300 my-1 flex-shrink-0 min-h-[1px]"></div>
+                                    <button title="Silben korrigieren" disabled={isReadingMode} onClick={() => setActiveTool(activeTool === 'split' ? null : 'split')} className={`p-3 rounded-full transition flex-shrink-0 min-touch-target ${activeTool === 'split' ? 'bg-teal-600 text-white shadow-lg' : 'text-slate-600 hover:text-teal-600 hover:bg-teal-50'}`}><Icons.SplitVertical size={24} /></button>
+                                    <button title="Einstellungen" disabled={isReadingMode} onClick={() => setShowSettings(true)} className="p-3 rounded-full transition text-slate-600 hover:text-blue-600 hover:bg-blue-50 flex-shrink-0 min-touch-target"><Icons.Settings size={24} /></button>
+                                </> :
+                                <>
+                                    <button onClick={() => { setIsViewMode(!isViewMode); setActiveTool(null); setIsReadingMode(false); }} className="p-3 rounded-full shadow-md text-white transition bg-emerald-600 hover:bg-emerald-700 flex-shrink-0 min-touch-target" disabled={hypherLoading}><Icons.Eye size={24} /></button>
+                                    {settings.enableCamera && <button onClick={() => setShowScanner(true)} className="p-3 rounded-full text-slate-600 hover:text-blue-600 hover:bg-blue-50 flex-shrink-0 min-touch-target" title="Importieren"><Icons.Camera size={24} /></button>}
+                                    <div className="w-px h-8 bg-slate-300 mx-1 flex-shrink-0"></div>
+                                    <button onClick={clearText} disabled={!text || hypherLoading} className="p-3 rounded-full text-slate-600 hover:text-red-600 hover:bg-red-50 flex-shrink-0 min-touch-target"><Icons.Trash2 size={24} /></button>
+                                </>
+                            }
+                        </div>
+                    )}
+                    {isReadingMode && <div className="fixed bottom-4 right-4 z-50"><button onClick={() => setIsReadingMode(false)} className="bg-red-500 hover:bg-red-600 text-white rounded-full w-14 h-14 shadow-lg transition-transform hover:scale-110 flex items-center justify-center min-touch-target"><Icons.X size={32} /></button></div>}
+                    {isFullscreen && isViewMode && !isReadingMode && <div className="fixed bottom-4 right-4 z-50"><button onClick={toggleFullScreen} className="bg-blue-600/90 hover:bg-blue-700 text-white rounded-full w-14 h-14 shadow-lg flex items-center justify-center backdrop-blur-sm transition-transform hover:scale-105 min-touch-target"><Icons.X size={32} /></button></div>}
+
+                    {editingWord && <CorrectionModal word={editingWord.word} currentSyllables={editingWord.syllables} onSave={saveCorrection} onClose={() => setEditingWord(null)} font={settings.fontFamily} />}
+                    {showSettings && <SettingsModal settings={settings} setSettings={setSettings} onExport={handleExport} onImport={handleImport} logo={logo} setLogo={setLogo} onClose={() => setShowSettings(false)} onClearHighlights={() => setHighlightedIndices(new Set())} onPrint={handlePrint} onShowQR={() => { setShowSettings(false); setShowQR(true); }} />}
+                    {showQR && <QRCodeModal text={text} onClose={() => setShowQR(false)} />}
+                    {showScanner && <QRScannerModal onClose={() => setShowScanner(false)} onScanSuccess={handleScanSuccess} />}
+
+                    {showSplitExercise && <SplitExerciseView words={highlightedWordsMemo} onClose={() => setShowSplitExercise(false)} settings={settings} />}
+                    {showCloud && <WordCloudView words={highlightedWordsMemo} settings={settings} setSettings={setSettings} onClose={() => setShowCloud(false)} />}
+                    {showPuzzle && <SyllablePuzzleView words={highlightedWordsMemo} settings={settings} setSettings={setSettings} onClose={() => setShowPuzzle(false)} />}
+                    {showCarpet && <SyllableCarpetView words={highlightedWordsMemo} settings={settings} setSettings={setSettings} onClose={() => setShowCarpet(false)} />}
+                    {showList && <WordListView words={highlightedWordsMemo} columnsState={columnsState} setColumnsState={setColumnsState} settings={settings} setSettings={setSettings} onClose={() => setShowList(false)} onRemoveWord={handleRemoveFromList} onWordUpdate={handleWordUpdate} />}
+                    {showSentencePuzzle && <SentencePuzzleView text={text} settings={settings} setSettings={setSettings} onClose={() => setShowSentencePuzzle(false)} hyphenator={hyphenator} manualCorrections={manualCorrections} savedState={sentencePuzzleState} onSaveState={setSentencePuzzleState} />}
+
+                    <main className="w-full h-screen flex flex-col" style={{ fontFamily: settings.fontFamily }}>
+                        {!isViewMode ? (
+                            <div className="flex-1 p-4 md:p-8 max-w-4xl mx-auto w-full flex flex-col font-sans">
+                                <h1 className="text-3xl font-bold text-slate-800 mb-6 text-center">Texteingabe</h1>
+                                {hypherLoading ? (<div className="flex-1 w-full rounded-2xl border border-slate-300 bg-slate-100 flex items-center justify-center"><p className="text-xl text-slate-500 font-bold animate-pulse">Lade Silbentrennung...</p></div>) : (<textarea className="flex-1 w-full p-8 text-3xl rounded-2xl border border-slate-300 shadow-inner focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none resize-none transition-all leading-relaxed font-sans custom-scroll" placeholder="Füge hier deinen Text ein..." value={text} onChange={handleTextChange} spellCheck={false} />)}
+                            </div>
+                        ) : (
+                            <div className={`flex-1 overflow-y-auto scroll-smooth bg-slate-50 custom-scroll ${activeTool ? (activeTool === 'split' ? 'cursor-alias' : 'cursor-not-allowed') : ''}`}>
+                                <div className={`min-h-full p-4 md:p-8 mx-auto text-left transition-all duration-300 ${isReadingMode ? 'reading-mode-active' : ''}`} style={{ maxWidth: `${settings.textWidth}%` }}>
+                                    {logo && <img src={logo} className="float-left mr-8 mb-6 mt-3 h-32 w-auto object-contain rounded-lg" alt="Logo" />}
+                                    {!text ? <div className="text-center text-slate-400 mt-20 text-xl font-sans">Kein Text vorhanden.</div> : (<div className="text-slate-800 transition-all text-left" style={{ lineHeight: settings.lineHeight }}>{processedSegments.map((seg, i) => { if (seg.isWhitespace) return <span key={i} className="whitespace-pre" style={{ fontSize: `${settings.fontSize}px` }}>{seg.text}</span>; const key = `${seg.text}_${seg.startIndex}`; let isHighlighted = false; for (let k = 0; k < seg.text.length; k++) { if (highlightedIndices.has(seg.startIndex + k)) { isHighlighted = true; break; } } return <Word key={i} word={seg.text} prefix={seg.prefix} suffix={seg.suffix} startIndex={seg.startIndex} isHighlighted={isHighlighted} highlightedIndices={highlightedIndices} isHidden={hiddenWordKeys.has(key)} toggleHighlights={toggleHighlights} toggleHidden={toggleHidden} activeTool={activeTool} onEditMode={openCorrection} manualSyllables={manualCorrections[key]} hyphenator={hyphenator} settings={settings} isReadingMode={isReadingMode} />; })}</div>)}
+                                    <div className="h-32"></div>
+                                </div>
+                            </div>
+                        )}
+                    </main>
+                </div>
+            );
+        };
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+
+</html>
