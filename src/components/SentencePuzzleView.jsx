@@ -43,6 +43,19 @@ export const SentencePuzzleView = ({ text, mode = 'sentence', onClose, settings,
 
     const [pieces, setPieces] = useState([]);
     const [status, setStatus] = useState('idle'); // idle, correct, wrong
+    const [isDragging, setIsDragging] = useState(false);
+
+    // iPad Fix: Prevent touch scrolling during drag
+    useEffect(() => {
+        if (!isDragging) return;
+        const preventDefault = (e) => { e.preventDefault(); };
+        document.body.style.overflow = 'hidden';
+        document.addEventListener('touchmove', preventDefault, { passive: false });
+        return () => {
+            document.body.style.overflow = '';
+            document.removeEventListener('touchmove', preventDefault);
+        };
+    }, [isDragging]);
 
     // Initialize
     useEffect(() => {
@@ -78,6 +91,7 @@ export const SentencePuzzleView = ({ text, mode = 'sentence', onClose, settings,
     const dragOverItem = useRef(null);
 
     const handleDragStart = (e, position) => {
+        setIsDragging(true);
         dragItem.current = position;
         e.dataTransfer.effectAllowed = 'move';
         // Add dragging class for visuals
@@ -91,6 +105,7 @@ export const SentencePuzzleView = ({ text, mode = 'sentence', onClose, settings,
     };
 
     const handleDragEnd = (e) => {
+        setIsDragging(false);
         e.target.classList.remove('dragging');
         const dI = dragItem.current;
         const dO = dragOverItem.current;

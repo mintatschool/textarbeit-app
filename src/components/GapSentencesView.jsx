@@ -30,7 +30,20 @@ export const GapSentencesView = ({ text, settings, setSettings, onClose }) => {
     const [poolWords, setPoolWords] = useState([]);
     const [showReward, setShowReward] = useState(false);
     const [groupSolved, setGroupSolved] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
     const dragItemRef = useRef(null);
+
+    // iPad Fix: Prevent touch scrolling during drag
+    useEffect(() => {
+        if (!isDragging) return;
+        const preventDefault = (e) => { e.preventDefault(); };
+        document.body.style.overflow = 'hidden';
+        document.addEventListener('touchmove', preventDefault, { passive: false });
+        return () => {
+            document.body.style.overflow = '';
+            document.removeEventListener('touchmove', preventDefault);
+        };
+    }, [isDragging]);
 
     // Sentence Splitting Logic
     const splitSentences = (txt) => {
@@ -120,12 +133,14 @@ export const GapSentencesView = ({ text, settings, setSettings, onClose }) => {
 
     // Drag & Drop Handlers
     const handleDragStart = (e, word, source, gapId = null) => {
+        setIsDragging(true);
         dragItemRef.current = { word, source, gapId };
         e.dataTransfer.setData('application/json', JSON.stringify(word));
         e.dataTransfer.effectAllowed = 'move';
     };
 
     const handleDragEnd = (e) => {
+        setIsDragging(false);
         dragItemRef.current = null;
         document.querySelectorAll('.active-target').forEach(el => el.classList.remove('active-target'));
     };
@@ -255,7 +270,7 @@ export const GapSentencesView = ({ text, settings, setSettings, onClose }) => {
                                                     draggable
                                                     onDragStart={(e) => handleDragStart(e, placed, 'gap', p.id)}
                                                     onDragEnd={handleDragEnd}
-                                                    className={`px-1 py-0 rounded font-bold cursor-grab active:cursor-grabbing animate-[popIn_0.3s_ease-out] whitespace-nowrap leading-none ${placed.color}`}
+                                                    className={`px-1 py-0 rounded font-bold cursor-grab active:cursor-grabbing animate-[popIn_0.3s_ease-out] whitespace-nowrap leading-none touch-action-none touch-manipulation select-none ${placed.color}`}
                                                     style={{ fontSize: '1.2em' }}
                                                 >
                                                     {placed.text}
@@ -291,7 +306,7 @@ export const GapSentencesView = ({ text, settings, setSettings, onClose }) => {
                                 draggable
                                 onDragStart={(e) => handleDragStart(e, w, 'pool')}
                                 onDragEnd={handleDragEnd}
-                                className={`w-full p-4 font-bold rounded-2xl transition-all flex items-center justify-center cursor-grab active:cursor-grabbing hover:scale-[1.02] ${w.color}`}
+                                className={`w-full p-4 font-bold rounded-2xl transition-all flex items-center justify-center cursor-grab active:cursor-grabbing hover:scale-[1.02] touch-action-none touch-manipulation select-none ${w.color}`}
                                 style={{ fontFamily: settings.fontFamily, fontSize: `${Math.max(20, settings.fontSize * 0.8)}px` }}
                             >
                                 {w.text}

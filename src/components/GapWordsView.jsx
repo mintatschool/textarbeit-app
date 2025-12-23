@@ -11,7 +11,20 @@ export const GapWordsView = ({ words, settings, setSettings, onClose }) => {
     const [showReward, setShowReward] = useState(false);
     const [groupSolved, setGroupSolved] = useState(false);
     const [solvedWordIds, setSolvedWordIds] = useState(new Set());
+    const [isDragging, setIsDragging] = useState(false);
     const dragItemRef = useRef(null);
+
+    // iPad Fix: Prevent touch scrolling during drag
+    useEffect(() => {
+        if (!isDragging) return;
+        const preventDefault = (e) => { e.preventDefault(); };
+        document.body.style.overflow = 'hidden';
+        document.addEventListener('touchmove', preventDefault, { passive: false });
+        return () => {
+            document.body.style.overflow = '';
+            document.removeEventListener('touchmove', preventDefault);
+        };
+    }, [isDragging]);
 
     // Audio support
     const speakWord = (text) => {
@@ -162,14 +175,15 @@ export const GapWordsView = ({ words, settings, setSettings, onClose }) => {
 
     // Drag & Drop
     const handleDragStart = (e, letter, source, gapId = null) => {
+        setIsDragging(true);
         dragItemRef.current = { letter, source, gapId };
         e.dataTransfer.setData('application/json', JSON.stringify(letter));
         e.dataTransfer.effectAllowed = 'move';
-        // setTimeout(() => e.target.classList.add('opacity-40'), 0); // Removed for better drag visibility
     };
 
     const handleDragEnd = (e) => {
-        e.target.classList.remove('opacity-40');
+        setIsDragging(false);
+        if (e.target.classList) e.target.classList.remove('opacity-40');
         dragItemRef.current = null;
         document.querySelectorAll('.active-target').forEach(el => el.classList.remove('active-target'));
     };
@@ -364,7 +378,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose }) => {
                                                                     draggable
                                                                     onDragStart={(e) => handleDragStart(e, placed, 'gap', chunk.id)}
                                                                     onDragEnd={handleDragEnd}
-                                                                    className={`font-bold transition-all px-1 rounded-sm cursor-grab active:cursor-grabbing animate-[popIn_0.3s_ease-out] ${showYellowStyle ? 'bg-yellow-100 shadow-border-yellow text-slate-900 mx-px' : 'text-blue-600'}`}
+                                                                    className={`font-bold transition-all px-1 rounded-sm cursor-grab active:cursor-grabbing animate-[popIn_0.3s_ease-out] touch-action-none touch-manipulation select-none ${showYellowStyle ? 'bg-yellow-100 shadow-border-yellow text-slate-900 mx-px' : 'text-blue-600'}`}
                                                                 >
                                                                     {placed.text}
                                                                 </div>
@@ -418,7 +432,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose }) => {
                                     draggable
                                     onDragStart={(e) => handleDragStart(e, l, 'pool')}
                                     onDragEnd={handleDragEnd}
-                                    className={`absolute border-2 text-slate-800 font-bold rounded-2xl transition-all flex items-center justify-center p-3 cursor-grab active:cursor-grabbing hover:scale-110 bg-white border-slate-300 shadow-[0_4px_0_0_#cbd5e1] hover:shadow-[0_2px_0_0_#cbd5e1] hover:translate-y-[2px] ${isVowelTile ? 'bg-yellow-100 border-yellow-400' : ''}`}
+                                    className={`absolute border-2 text-slate-800 font-bold rounded-2xl transition-all flex items-center justify-center p-3 cursor-grab active:cursor-grabbing hover:scale-110 bg-white border-slate-300 shadow-[0_4px_0_0_#cbd5e1] hover:shadow-[0_2px_0_0_#cbd5e1] hover:translate-y-[2px] touch-action-none touch-manipulation select-none ${isVowelTile ? 'bg-yellow-100 border-yellow-400' : ''}`}
                                     style={{ left: `${l.x}%`, top: `${l.y}%`, transform: 'translate(-50%, -50%)', fontSize: `${Math.max(20, settings.fontSize * 0.8)}px`, fontFamily: settings.fontFamily, minWidth: '3.5rem' }}
                                 >
                                     {l.text}

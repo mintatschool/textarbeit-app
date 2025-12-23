@@ -54,9 +54,22 @@ export const SentenceShuffleView = ({ text, settings, setSettings, onClose }) =>
     const [isCorrect, setIsCorrect] = useState(false);
     const [showReward, setShowReward] = useState(false);
     const [completedSentences, setCompletedSentences] = useState(new Set());
+    const [isDragging, setIsDragging] = useState(false);
 
     const dragItem = useRef(null);
     const dragOverItem = useRef(null);
+
+    // iPad Fix: Prevent touch scrolling during drag
+    useEffect(() => {
+        if (!isDragging) return;
+        const preventDefault = (e) => { e.preventDefault(); };
+        document.body.style.overflow = 'hidden';
+        document.addEventListener('touchmove', preventDefault, { passive: false });
+        return () => {
+            document.body.style.overflow = '';
+            document.removeEventListener('touchmove', preventDefault);
+        };
+    }, [isDragging]);
 
     // Initialize sentences
     useEffect(() => {
@@ -124,6 +137,7 @@ export const SentenceShuffleView = ({ text, settings, setSettings, onClose }) =>
 
     // Drag handlers
     const handleDragStart = (e, position) => {
+        setIsDragging(true);
         dragItem.current = position;
         e.dataTransfer.effectAllowed = 'move';
         setTimeout(() => e.target.classList.add('opacity-50', 'scale-105'), 0);
@@ -140,6 +154,7 @@ export const SentenceShuffleView = ({ text, settings, setSettings, onClose }) =>
     };
 
     const handleDragEnd = (e) => {
+        setIsDragging(false);
         e.target.classList.remove('opacity-50', 'scale-105');
         document.querySelectorAll('.word-card').forEach(el => {
             el.classList.remove('scale-110', 'shadow-lg');

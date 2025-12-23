@@ -23,6 +23,12 @@ import { GapTextView } from './components/GapTextView';
 import { Toolbar } from './components/Toolbar';
 import { getCachedSyllables } from './utils/syllables';
 
+// Initialize mobile-drag-drop polyfill
+polyfill({
+    dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride
+});
+import "mobile-drag-drop/default.css";
+
 
 
 const useHypherLoader = () => {
