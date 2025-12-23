@@ -17,6 +17,8 @@ import { WordListView } from './components/WordListView';
 import { SentencePuzzleView } from './components/SentencePuzzleView';
 import { SentenceShuffleView } from './components/SentenceShuffleView';
 import { StaircaseView } from './components/StaircaseView';
+import { GapWordsView } from './components/GapWordsView';
+import { GapSentencesView } from './components/GapSentencesView';
 import { Toolbar } from './components/Toolbar';
 import { getCachedSyllables } from './utils/syllables';
 
@@ -269,6 +271,8 @@ const App = () => {
                     setShowStaircase={(v) => v && setActiveView('staircase')}
                     setShowTextPuzzle={(v) => v && setActiveView('textpuzzle')}
                     setShowSentenceShuffle={(v) => v && setActiveView('sentenceshuffle')}
+                    setShowGapWords={(v) => v && setActiveView('gapwords')}
+                    setShowGapSentences={(v) => v && setActiveView('gapsentences')}
                 />
             )}
 
@@ -364,6 +368,8 @@ const App = () => {
                     {activeView === 'sentenceshuffle' && <SentenceShuffleView text={text} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} />}
                     {activeView === 'staircase' && <StaircaseView words={exerciseWords.map(w => ({ ...w, isHighlighted: highlightedIndices.has(w.index) }))} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} />}
                     {activeView === 'split' && <SplitExerciseView words={exerciseWords} onClose={() => setActiveView('text')} settings={settings} />}
+                    {activeView === 'gapwords' && <GapWordsView words={highlightedIndices.size > 0 ? exerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} />}
+                    {activeView === 'gapsentences' && <GapSentencesView text={text} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} />}
                 </>
             )}
 

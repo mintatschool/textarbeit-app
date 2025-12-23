@@ -73,6 +73,8 @@ export const Toolbar = ({
     setShowSentencePuzzle, // Needs logic for 'text' vs 'sentence' mode inside parent
     setShowTextPuzzle,     // Separate prop for text puzzle
     setShowSentenceShuffle, // New: Word shuffle within sentences
+    setShowGapWords,       // New: Missing letters exercise
+    setShowGapSentences,   // New: Missing words in sentences
 }) => {
 
     // Layout-Klasse: Feste Sidebar rechts (Docked)
@@ -116,13 +118,13 @@ export const Toolbar = ({
                 <MenuItem onClick={() => setShowCarpet(true)}>
                     <Icons.Grid2x2 size={20} className="text-indigo-600" /> Silbenteppich
                 </MenuItem>
-                <MenuItem onClick={() => setShowPuzzle(true)}>
-                    <Icons.Puzzle size={20} className="text-purple-600" /> Silbenpuzzle
-                </MenuItem>
             </MenuDropdown>
 
             {/* MENÜ: WÖRTER */}
             <MenuDropdown title="Wörter" icon={<Icons.MenuWords size={24} />} labelVisible={false} align="right">
+                <MenuItem onClick={() => setShowPuzzle(true)}>
+                    <Icons.Puzzle size={20} className="text-purple-600" /> Silbenpuzzle
+                </MenuItem>
                 <MenuItem onClick={() => setShowStaircase(true)}>
                     <Icons.Stairs size={20} className="text-indigo-600" /> Treppenwörter
                 </MenuItem>
@@ -132,12 +134,18 @@ export const Toolbar = ({
                 <MenuItem onClick={() => setShowSplitExercise(true)}>
                     <Icons.Scissors size={20} className="text-orange-500 -rotate-90" /> Wörter trennen
                 </MenuItem>
+                <MenuItem onClick={() => setShowGapWords(true)}>
+                    <Icons.GapWords size={20} className="text-blue-600" /> Lückenwörter
+                </MenuItem>
             </MenuDropdown>
 
             {/* MENÜ: SÄTZE */}
             <MenuDropdown title="Sätze" icon={<Icons.MenuSentenceCategory size={24} />} labelVisible={false} align="right">
                 <MenuItem onClick={() => setShowSentenceShuffle(true)}>
-                    <Icons.Shuffle size={20} className="text-purple-500" /> Schüttelsatz
+                    <Icons.Shuffle size={20} className="text-purple-500" /> Schüttelsätze
+                </MenuItem>
+                <MenuItem onClick={() => setShowGapSentences(true)}>
+                    <Icons.GapSentences size={20} className="text-indigo-500" /> Lückensätze
                 </MenuItem>
             </MenuDropdown>
 

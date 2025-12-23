@@ -60,4 +60,6 @@ export const Icons = {
     Move: (p) => <Icon {...p} path={<><polyline points="5 9 2 12 5 15"></polyline><polyline points="9 5 12 2 15 5"></polyline><polyline points="15 19 12 22 9 19"></polyline><polyline points="19 9 22 12 19 15"></polyline><line x1="2" y1="12" x2="22" y2="12"></line><line x1="12" y1="2" x2="12" y2="22"></line></>} />,
     AlertTriangle: (p) => <Icon {...p} path={<><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></>} />,
     Square: (p) => <Icon {...p} path={<rect x="3" y="3" width="18" height="18" rx="2" ry="2" />} />,
+    GapWords: (p) => <Icon {...p} path={<><line x1="3" y1="12" x2="7" y2="12" strokeWidth="3" /><line x1="10" y1="12" x2="14" y2="12" strokeWidth="3" /><line x1="17" y1="12" x2="21" y2="12" strokeWidth="3" /></>} />,
+    GapSentences: (p) => <Icon {...p} path={<><line x1="3" y1="7" x2="21" y2="7" strokeWidth="2" /><line x1="3" y1="12" x2="10" y2="12" strokeWidth="2" /><line x1="16" y1="12" x2="21" y2="12" strokeWidth="2" /><line x1="3" y1="17" x2="21" y2="17" strokeWidth="2" /></>} />,
 };
