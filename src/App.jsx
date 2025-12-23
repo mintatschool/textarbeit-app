@@ -19,6 +19,7 @@ import { SentenceShuffleView } from './components/SentenceShuffleView';
 import { StaircaseView } from './components/StaircaseView';
 import { GapWordsView } from './components/GapWordsView';
 import { GapSentencesView } from './components/GapSentencesView';
+import { GapTextView } from './components/GapTextView';
 import { Toolbar } from './components/Toolbar';
 import { getCachedSyllables } from './utils/syllables';
 
@@ -39,7 +40,7 @@ const App = () => {
     const [isViewMode, setIsViewMode] = useState(false);
     const [settings, setSettings] = useState({
         fontSize: 32,
-        lineHeight: 2.0,
+        lineHeight: 2.2,
         wordSpacing: 0.4,
         visualType: 'block',
         displayTrigger: 'click',
@@ -47,9 +48,10 @@ const App = () => {
         enableCamera: false,
         clickAction: 'yellow_border',
         zoomActive: false,
+        zoomScale: 1.2,
         lockScroll: false,
         centerText: false,
-        smartSelection: false,
+        smartSelection: true,
         textWidth: 80
     });
     const [highlightedIndices, setHighlightedIndices] = useState(new Set());
@@ -64,7 +66,7 @@ const App = () => {
     const [showScanner, setShowScanner] = useState(false);
     const [columnsState, setColumnsState] = useState({ cols: {}, order: [] });
     // View States
-    const [activeView, setActiveView] = useState('text'); // text, puzzle, cloud, list, carpet, sentence, split
+    const [activeView, setActiveView] = useState('text'); // text, puzzle, cloud, list, carpet, sentence, split, gapWords, gapSentences, gapText
     const [sentencePuzzleState, setSentencePuzzleState] = useState(null);
 
     const textAreaRef = useRef(null);
@@ -271,15 +273,28 @@ const App = () => {
                     setShowStaircase={(v) => v && setActiveView('staircase')}
                     setShowTextPuzzle={(v) => v && setActiveView('textpuzzle')}
                     setShowSentenceShuffle={(v) => v && setActiveView('sentenceshuffle')}
-                    setShowGapWords={(v) => v && setActiveView('gapwords')}
-                    setShowGapSentences={(v) => v && setActiveView('gapsentences')}
+                    setShowGapWords={() => setActiveView('gapWords')}
+                    setShowGapSentences={() => setActiveView('gapSentences')}
+                    setShowGapText={() => setActiveView('gapText')}
                 />
             )}
 
             {!isViewMode ? (
                 <div className="flex-1 flex flex-col items-center justify-center p-4 font-sans animate-fadeIn pb-24">
                     <div className="bg-white p-8 rounded-3xl shadow-xl w-full max-w-4xl border border-slate-100 flex flex-col h-[70vh]">
-                        <h1 className="text-3xl font-bold text-slate-800 mb-6 flex items-center gap-3"><Icons.Edit2 className="text-blue-600" /> Textvorbereitung</h1>
+                        <div className="flex justify-between items-center mb-6">
+                            <h1 className="text-3xl font-bold text-slate-800 flex items-center gap-3"><Icons.Edit2 className="text-blue-600" /> Textvorbereitung</h1>
+                            <div className="flex gap-2">
+                                {settings.enableCamera && (
+                                    <button onClick={() => setShowScanner(true)} className="p-3 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all min-touch-target" title="Foto/QR scannen">
+                                        <Icons.Camera size={24} />
+                                    </button>
+                                )}
+                                <button onClick={() => setShowSettings(true)} className="p-3 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all min-touch-target" title="Einstellungen">
+                                    <Icons.Settings size={24} />
+                                </button>
+                            </div>
+                        </div>
                         <textarea ref={textAreaRef} className="flex-1 w-full p-6 text-xl border-2 border-slate-200 rounded-2xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all resize-none shadow-inner bg-slate-50 leading-relaxed font-medium text-slate-700 placeholder:text-slate-400" placeholder="Füge hier deinen Text ein..." value={text} onChange={(e) => handleTextChange(e.target.value)} spellCheck={false} inputMode="text"></textarea>
 
                         <div className="mt-6 flex flex-wrap gap-4 justify-between items-center">
@@ -328,9 +343,11 @@ const App = () => {
                                         }
                                         if (item.type === 'space') return <span key={item.id} className="select-none inline-block whitespace-pre">{item.content}</span>;
                                         if (item.type === 'text') return <span key={item.id} className="text-slate-800 break-words" style={{ fontSize: `${settings.fontSize}px` }}>{item.content}</span>;
+                                        const isWordHighlighted = Array.from({ length: item.word.length }, (_, i) => item.index + i).some(idx => highlightedIndices.has(idx));
+
                                         return (
                                             <Word key={item.id} {...item}
-                                                isHighlighted={highlightedIndices.has(item.index)}
+                                                isHighlighted={isWordHighlighted}
                                                 isHidden={hiddenIndices.has(item.id)}
                                                 highlightedIndices={highlightedIndices}
                                                 toggleHighlights={toggleHighlights}
@@ -349,6 +366,10 @@ const App = () => {
                             </div>
                         </main>
                     )}
+
+                    {activeView === 'gapWords' && <GapWordsView text={text} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} />}
+                    {activeView === 'gapSentences' && <GapSentencesView text={text} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} />}
+                    {activeView === 'gapText' && <GapTextView text={text} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} />}
 
                     {activeView === 'puzzle' && <SyllablePuzzleView words={exerciseWords} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} />}
                     {activeView === 'cloud' && <WordCloudView words={exerciseWords} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} />}

@@ -2,6 +2,27 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Icons } from './Icons';
 import { EmptyStateMessage } from './EmptyStateMessage';
 
+// Pastel colors for words
+const WORD_COLORS = [
+    'bg-red-100 text-red-700',
+    'bg-orange-100 text-orange-700',
+    'bg-amber-100 text-amber-700',
+    'bg-yellow-100 text-yellow-700',
+    'bg-lime-100 text-lime-700',
+    'bg-green-100 text-green-700',
+    'bg-emerald-100 text-emerald-700',
+    'bg-teal-100 text-teal-700',
+    'bg-cyan-100 text-cyan-700',
+    'bg-sky-100 text-sky-700',
+    'bg-blue-100 text-blue-700',
+    'bg-indigo-100 text-indigo-700',
+    'bg-violet-100 text-violet-700',
+    'bg-purple-100 text-purple-700',
+    'bg-fuchsia-100 text-fuchsia-700',
+    'bg-pink-100 text-pink-700',
+    'bg-rose-100 text-rose-700'
+];
+
 export const GapSentencesView = ({ text, settings, setSettings, onClose }) => {
     const [currentGroupIdx, setCurrentGroupIdx] = useState(0);
     const [groups, setGroups] = useState([]);
@@ -41,7 +62,15 @@ export const GapSentencesView = ({ text, settings, setSettings, onClose }) => {
             return { type: 'text', text: w };
         });
 
-        return { id: `s_${sIdx}`, parts, target: { ...target, id: `gap_${sIdx}` } };
+        return {
+            id: `s_${sIdx}`,
+            parts,
+            target: {
+                ...target,
+                id: `gap_${sIdx}`,
+                color: WORD_COLORS[sIdx % WORD_COLORS.length]
+            }
+        };
     };
 
     // Partition logic for groups
@@ -83,19 +112,8 @@ export const GapSentencesView = ({ text, settings, setSettings, onClose }) => {
     useEffect(() => {
         if (currentGroup.length === 0) return;
         const targets = currentGroup.map(s => ({ ...s.target, poolId: `pool_${s.target.id}` }));
-
-        // Grid-based positioning logic
         const shuffled = [...targets].sort(() => Math.random() - 0.5);
-        const columns = 1;
-        const rows = shuffled.length;
-
-        const positioned = shuffled.map((w, i) => {
-            const x = 50; // Center horizontally in the pool area
-            const y = (100 / (rows + 1)) * (i + 1);
-            return { ...w, x, y };
-        });
-
-        setPoolWords(positioned);
+        setPoolWords(shuffled);
         setPlacedWords({});
         setGroupSolved(false);
     }, [currentGroup]);
@@ -216,7 +234,7 @@ export const GapSentencesView = ({ text, settings, setSettings, onClose }) => {
             </div>
 
             <div className="flex-1 flex overflow-hidden">
-                <div className="w-[75%] p-8 overflow-y-auto custom-scroll flex flex-col gap-8 bg-white/50">
+                <div className="flex-1 p-8 overflow-y-auto custom-scroll flex flex-col gap-8 bg-white/50">
                     <div className="max-w-5xl mx-auto space-y-12 py-12">
                         {currentGroup.map(sentence => (
                             <div key={sentence.id} className="flex flex-wrap items-center gap-x-3 gap-y-6 text-slate-800 leading-relaxed" style={{ fontSize: `${settings.fontSize}px`, fontFamily: settings.fontFamily }}>
@@ -237,7 +255,8 @@ export const GapSentencesView = ({ text, settings, setSettings, onClose }) => {
                                                     draggable
                                                     onDragStart={(e) => handleDragStart(e, placed, 'gap', p.id)}
                                                     onDragEnd={handleDragEnd}
-                                                    className="bg-white px-3 py-1 rounded-lg border shadow-sm font-bold text-blue-700 cursor-grab active:cursor-grabbing animate-[popIn_0.3s_ease-out]"
+                                                    className={`px-1 py-0 rounded font-bold cursor-grab active:cursor-grabbing animate-[popIn_0.3s_ease-out] whitespace-nowrap leading-none ${placed.color}`}
+                                                    style={{ fontSize: '1.2em' }}
                                                 >
                                                     {placed.text}
                                                 </div>
@@ -261,32 +280,29 @@ export const GapSentencesView = ({ text, settings, setSettings, onClose }) => {
                     )}
                 </div>
 
-                <div className="w-[25%] bg-slate-200/50 border-l border-slate-300 flex flex-col" onDragOver={(e) => e.preventDefault()} onDrop={handlePoolDrop}>
-                    <div className="p-4 bg-white/80 border-b border-slate-200 shadow-sm">
-                        <span className="font-bold text-slate-600 uppercase tracking-widest text-xs">Wortpool</span>
+                <div className="w-80 bg-white border-l border-slate-100 flex flex-col shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.05)] z-20" onDragOver={(e) => e.preventDefault()} onDrop={handlePoolDrop}>
+                    <div className="p-4 border-b border-slate-50 bg-slate-50/30">
+                        <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Wortauswahl</span>
                     </div>
-                    <div className="flex-1 relative overflow-hidden">
+                    <div className="flex-1 overflow-y-auto custom-scroll p-6 flex flex-col gap-4">
                         {poolWords.map((w) => (
                             <div
                                 key={w.poolId}
                                 draggable
                                 onDragStart={(e) => handleDragStart(e, w, 'pool')}
                                 onDragEnd={handleDragEnd}
-                                className="absolute bg-white border-2 border-slate-300 text-slate-800 font-bold rounded-2xl shadow-[0_4px_0_0_#cbd5e1] hover:shadow-[0_2px_0_0_#cbd5e1] hover:translate-y-[2px] transition-all flex items-center justify-center p-4 cursor-grab active:cursor-grabbing"
-                                style={{
-                                    left: `${w.x}%`,
-                                    top: `${w.y}%`,
-                                    transform: 'translate(-50%, -50%)',
-                                    fontSize: `${Math.max(18, settings.fontSize * 0.7)}px`,
-                                    fontFamily: settings.fontFamily,
-                                    minWidth: '70%',
-                                    textAlign: 'center'
-                                }}
+                                className={`w-full p-4 font-bold rounded-2xl transition-all flex items-center justify-center cursor-grab active:cursor-grabbing hover:scale-[1.02] ${w.color}`}
+                                style={{ fontFamily: settings.fontFamily, fontSize: `${Math.max(20, settings.fontSize * 0.8)}px` }}
                             >
                                 {w.text}
                             </div>
                         ))}
-                        {poolWords.length === 0 && !groupSolved && <div className="absolute inset-0 flex items-center justify-center p-8 text-center text-slate-400 italic text-sm">Prüfe deine Antworten...</div>}
+                        {poolWords.length === 0 && (
+                            <div className="flex-1 flex flex-col items-center justify-center text-center text-slate-300 gap-4 opacity-50">
+                                <Icons.Check size={48} className="text-green-400" />
+                                <span className="text-sm font-bold">Alles verteilt!</span>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

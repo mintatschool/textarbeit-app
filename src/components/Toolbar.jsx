@@ -19,13 +19,8 @@ const ToolbarButton = ({ onClick, icon: IconComponent, title, active, activeColo
         else if (activeColor === "gray") activeClass = "bg-gray-600 text-white shadow-lg";
         else activeClass = "bg-blue-600 text-white shadow-md"; // Default Edit Mode Button
     } else {
-        // Hover-Farben
-        if (activeColor === "orange") activeClass = "text-slate-600 hover:text-orange-600 hover:bg-orange-50";
-        else if (activeColor === "teal") activeClass = "text-slate-600 hover:text-teal-600 hover:bg-teal-50";
-        else if (activeColor === "gray") activeClass = "text-slate-600 hover:text-gray-600 hover:bg-gray-50";
-        else if (activeColor === "red") activeClass = "text-slate-600 hover:text-red-600 hover:bg-red-50";
-        else if (activeColor === "purple") activeClass = "text-slate-600 hover:text-purple-600 hover:bg-purple-50";
-        else activeClass = "text-slate-600 hover:text-blue-600 hover:bg-blue-50";
+        // Einheitliche Hover-Farbe für alle Buttons (außer active)
+        activeClass = "text-slate-600 hover:text-blue-600 hover:bg-slate-100";
     }
 
     // Special Case: Grüner Button im Edit-Mode für View-Switch
@@ -75,6 +70,7 @@ export const Toolbar = ({
     setShowSentenceShuffle, // New: Word shuffle within sentences
     setShowGapWords,       // New: Missing letters exercise
     setShowGapSentences,   // New: Missing words in sentences
+    setShowGapText,        // New: Full text with gaps
 }) => {
 
     // Layout-Klasse: Feste Sidebar rechts (Docked)
@@ -115,47 +111,50 @@ export const Toolbar = ({
 
             {/* MENÜ: SILBEN */}
             <MenuDropdown title="Silben" icon={<Icons.MenuSyllables size={24} />} labelVisible={false} align="right">
-                <MenuItem onClick={() => setShowCarpet(true)}>
-                    <Icons.Grid2x2 size={20} className="text-indigo-600" /> Silbenteppich
+                <MenuItem onClick={() => setShowCarpet(true)} icon={<Icons.Grid2x2 size={20} className="text-indigo-600" />}>
+                    Silbenteppich
                 </MenuItem>
             </MenuDropdown>
 
             {/* MENÜ: WÖRTER */}
             <MenuDropdown title="Wörter" icon={<Icons.MenuWords size={24} />} labelVisible={false} align="right">
-                <MenuItem onClick={() => setShowPuzzle(true)}>
-                    <Icons.Puzzle size={20} className="text-purple-600" /> Silbenpuzzle
+                <MenuItem onClick={() => setShowStaircase(true)} icon={<Icons.Stairs size={20} className="text-indigo-600" />}>
+                    Treppenwörter
                 </MenuItem>
-                <MenuItem onClick={() => setShowStaircase(true)}>
-                    <Icons.Stairs size={20} className="text-indigo-600" /> Treppenwörter
+                <MenuItem onClick={() => setShowGapWords(true)} icon={<Icons.GapWords size={20} className="text-blue-600" />}>
+                    Lückenwörter
                 </MenuItem>
-                <MenuItem onClick={() => setShowCloud(true)}>
-                    <Icons.Cloud size={20} className="text-blue-500" /> Schüttelwörter
+                <MenuItem onClick={() => setShowCloud(true)} icon={<Icons.Cloud size={20} className="text-blue-500" />}>
+                    Schüttelwörter
                 </MenuItem>
-                <MenuItem onClick={() => setShowSplitExercise(true)}>
-                    <Icons.Scissors size={20} className="text-orange-500 -rotate-90" /> Wörter trennen
+                <MenuItem onClick={() => setShowPuzzle(true)} icon={<Icons.Puzzle size={20} className="text-purple-600" />}>
+                    Silbenpuzzle
                 </MenuItem>
-                <MenuItem onClick={() => setShowGapWords(true)}>
-                    <Icons.GapWords size={20} className="text-blue-600" /> Lückenwörter
+                <MenuItem onClick={() => setShowSplitExercise(true)} icon={<Icons.Scissors size={20} className="text-orange-500 -rotate-90" />}>
+                    Wörter trennen
                 </MenuItem>
             </MenuDropdown>
 
             {/* MENÜ: SÄTZE */}
             <MenuDropdown title="Sätze" icon={<Icons.MenuSentenceCategory size={24} />} labelVisible={false} align="right">
-                <MenuItem onClick={() => setShowSentenceShuffle(true)}>
-                    <Icons.Shuffle size={20} className="text-purple-500" /> Schüttelsätze
+                <MenuItem onClick={() => setShowSentenceShuffle(true)} icon={<Icons.Shuffle size={20} className="text-purple-500" />}>
+                    Schüttelsätze
                 </MenuItem>
-                <MenuItem onClick={() => setShowGapSentences(true)}>
-                    <Icons.GapSentences size={20} className="text-indigo-500" /> Lückensätze
+                <MenuItem onClick={() => setShowGapSentences(true)} icon={<Icons.GapSentences size={20} className="text-indigo-500" />}>
+                    Lückensätze
                 </MenuItem>
             </MenuDropdown>
 
             {/* MENÜ: TEXT */}
             <MenuDropdown title="Text" icon={<Icons.TextParagraph size={24} />} labelVisible={false} align="right">
-                <MenuItem onClick={() => setShowSentencePuzzle(true)}>
-                    <Icons.Sentence size={20} className="text-pink-500" /> Satzpuzzle
+                <MenuItem onClick={() => setShowSentencePuzzle(true)} icon={<Icons.Sentence size={20} className="text-pink-500" />}>
+                    Satzpuzzle
                 </MenuItem>
-                <MenuItem onClick={() => setShowTextPuzzle(true)}>
-                    <Icons.TextBlocks size={20} className="text-emerald-500" /> Textpuzzle
+                <MenuItem onClick={() => setShowTextPuzzle(true)} icon={<Icons.TextBlocks size={20} className="text-emerald-500" />}>
+                    Textpuzzle
+                </MenuItem>
+                <MenuItem onClick={() => setShowGapText(true)} icon={<Icons.GapText size={20} className="text-blue-600" />}>
+                    Lückentext
                 </MenuItem>
             </MenuDropdown>
 

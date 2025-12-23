@@ -2,12 +2,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Icons } from './Icons';
 
-export const MenuItem = ({ onClick, children }) => (
+export const MenuItem = ({ onClick, children, icon }) => (
     <button
         onClick={onClick}
-        className="w-full text-left px-4 py-3 rounded-lg hover:bg-slate-50 text-slate-700 font-medium text-sm flex items-center gap-3 transition min-touch-target"
+        className="w-full text-left px-4 py-3 rounded-lg hover:bg-blue-50 hover:text-blue-700 text-slate-700 font-medium text-sm flex items-center transition min-touch-target"
     >
-        {children}
+        {icon && <span className="w-8 flex justify-start shrink-0">{icon}</span>}
+        <span className="flex-1">{children}</span>
     </button>
 );
 
@@ -22,12 +23,28 @@ export const MenuDropdown = ({ title, icon, children, labelVisible = true, align
 
             const style = {
                 position: 'fixed',
-                bottom: (window.innerHeight - rect.top) + 10, // 10px spacing von unten
                 minWidth: '220px',
-                maxHeight: '400px',
+                maxHeight: 'min(500px, 80vh)',
                 overflowY: 'auto',
                 zIndex: 9999
             };
+
+            const spaceAbove = rect.top;
+            const spaceBelow = window.innerHeight - rect.bottom;
+
+            // Wenn mehr Platz oben ist -> nach oben öffnen
+            if (spaceAbove > spaceBelow) {
+                style.bottom = (window.innerHeight - rect.top) + 10;
+                // Verhindern dass es oben aus dem Bild rutscht
+                const estimatedHeight = 300; // Sicherheitswert
+                if (rect.top < estimatedHeight) {
+                    style.bottom = 'auto';
+                    style.top = 10;
+                }
+            } else {
+                // Sonst nach unten öffnen
+                style.top = rect.bottom + 10;
+            }
 
             if (align === 'right') {
                 // Rechtsbündig zum Button (für die vertikale Toolbar rechts)
@@ -92,14 +109,15 @@ export const MenuDropdown = ({ title, icon, children, labelVisible = true, align
             <button
                 ref={buttonRef}
                 onClick={() => setIsOpen(!isOpen)}
-                className={`p-3 rounded-full transition flex items-center gap-2 min-touch-target ${isOpen ? 'bg-slate-200 text-slate-900' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'}`}
+                className={`p-3 rounded-full transition flex items-center gap-2 min-touch-target ${isOpen ? 'bg-slate-200 text-slate-900' : 'text-slate-600 hover:text-blue-600 hover:bg-slate-100'}`}
                 title={title}
             >
                 {icon}
                 {labelVisible && <span className="font-bold text-sm hidden md:inline">{title}</span>}
                 {labelVisible && <Icons.ChevronDown size={16} />}
-            </button>
-            {isOpen && createPortal(content, document.body)}
+            </button >
+            {isOpen && createPortal(content, document.body)
+            }
         </>
     );
 };
