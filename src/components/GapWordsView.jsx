@@ -12,6 +12,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose }) => {
     const [groupSolved, setGroupSolved] = useState(false);
     const [solvedWordIds, setSolvedWordIds] = useState(new Set());
     const [isDragging, setIsDragging] = useState(false);
+    const [selectedLetter, setSelectedLetter] = useState(null); // For Click-to-Place
     const dragItemRef = useRef(null);
 
     // iPad Fix: Prevent touch scrolling during drag
@@ -220,6 +221,42 @@ export const GapWordsView = ({ words, settings, setSettings, onClose }) => {
         setPoolLetters(prev => [...prev, dragData.letter]);
     };
 
+    // Click-to-Place Handlers
+    const handlePoolLetterClick = (letter) => {
+        if (selectedLetter?.poolId === letter.poolId) {
+            setSelectedLetter(null);
+        } else {
+            setSelectedLetter(letter);
+        }
+    };
+
+    const handleGapClick = (gapId, correctText) => {
+        if (!selectedLetter) {
+            // If already filled, return to pool on click
+            if (placedLetters[gapId]) {
+                const letter = placedLetters[gapId];
+                setPlacedLetters(prev => { const next = { ...prev }; delete next[gapId]; return next; });
+                setPoolLetters(prev => [...prev, letter]);
+            }
+            return;
+        }
+
+        if (selectedLetter.text.toLowerCase() === correctText.toLowerCase()) {
+            const letterToPlace = selectedLetter;
+            const existingLetter = placedLetters[gapId];
+
+            setPlacedLetters(prev => ({ ...prev, [gapId]: letterToPlace }));
+            setPoolLetters(prev => {
+                let next = prev.filter(l => l.poolId !== letterToPlace.poolId);
+                if (existingLetter) next = [...next, existingLetter];
+                return next;
+            });
+            setSelectedLetter(null);
+        } else {
+            setSelectedLetter(null);
+        }
+    };
+
     // Progress Tracking
     useEffect(() => {
         if (currentWords.length === 0) return;
@@ -370,7 +407,8 @@ export const GapWordsView = ({ words, settings, setSettings, onClose }) => {
                                                             onDragEnter={(e) => { e.preventDefault(); e.currentTarget.classList.add('active-target'); }}
                                                             onDragLeave={(e) => { e.currentTarget.classList.remove('active-target'); }}
                                                             onDrop={(e) => { e.currentTarget.classList.remove('active-target'); handleDrop(e, chunk.id, chunk.text); }}
-                                                            className={`relative flex items-center justify-center transition-all border-b-4 mx-2 rounded-t-xl gap-zone ${placed ? 'border-transparent' : 'border-slate-300 bg-slate-50/50 hover:bg-slate-100 hover:border-slate-400'}`}
+                                                            onClick={() => handleGapClick(chunk.id, chunk.text)}
+                                                            className={`relative flex items-center justify-center transition-all border-b-4 mx-2 rounded-t-xl gap-zone cursor-pointer ${placed ? 'border-transparent' : 'border-slate-300 bg-slate-50/50 hover:bg-slate-100 hover:border-slate-400'} ${selectedLetter ? 'ring-2 ring-blue-300 ring-offset-2 animate-pulse' : ''}`}
                                                             style={{ minWidth: `${Math.max(1.5, chunk.text.length * 1.2)}em`, height: '2.2em' }}
                                                         >
                                                             {placed ? (
@@ -432,7 +470,8 @@ export const GapWordsView = ({ words, settings, setSettings, onClose }) => {
                                     draggable
                                     onDragStart={(e) => handleDragStart(e, l, 'pool')}
                                     onDragEnd={handleDragEnd}
-                                    className={`absolute border-2 text-slate-800 font-bold rounded-2xl transition-all flex items-center justify-center p-3 cursor-grab active:cursor-grabbing hover:scale-110 bg-white border-slate-300 shadow-[0_4px_0_0_#cbd5e1] hover:shadow-[0_2px_0_0_#cbd5e1] hover:translate-y-[2px] touch-action-none touch-manipulation select-none ${isVowelTile ? 'bg-yellow-100 border-yellow-400' : ''}`}
+                                    onClick={() => handlePoolLetterClick(l)}
+                                    className={`absolute border-2 text-slate-800 font-bold rounded-2xl transition-all flex items-center justify-center p-3 cursor-grab active:cursor-grabbing hover:scale-110 bg-white border-slate-300 shadow-[0_4px_0_0_#cbd5e1] hover:shadow-[0_2px_0_0_#cbd5e1] hover:translate-y-[2px] touch-action-none touch-manipulation select-none ${isVowelTile ? 'bg-yellow-100 border-yellow-400' : ''} ${selectedLetter?.poolId === l.poolId ? 'ring-4 ring-blue-500 shadow-xl !scale-125 z-50' : ''}`}
                                     style={{ left: `${l.x}%`, top: `${l.y}%`, transform: 'translate(-50%, -50%)', fontSize: `${Math.max(20, settings.fontSize * 0.8)}px`, fontFamily: settings.fontFamily, minWidth: '3.5rem' }}
                                 >
                                     {l.text}

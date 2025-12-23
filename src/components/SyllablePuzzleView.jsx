@@ -9,6 +9,7 @@ export const SyllablePuzzleView = ({ words, settings, setSettings, onClose }) =>
     const [poolPieces, setPoolPieces] = useState([]);
     const [showReward, setShowReward] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
+    const [selectedPiece, setSelectedPiece] = useState(null); // For Click-to-Place
     const dragItemRef = useRef(null);
 
     useEffect(() => {
@@ -43,6 +44,41 @@ export const SyllablePuzzleView = ({ words, settings, setSettings, onClose }) =>
     const handleDragEnd = (e) => { setIsDragging(false); e.target.classList.remove('dragging'); dragItemRef.current = null; document.querySelectorAll('.active-target').forEach(el => el.classList.remove('active-target')); };
     const handleSlotDrop = (e, targetWordId, targetIndex) => { setIsDragging(false); e.preventDefault(); e.stopPropagation(); document.querySelectorAll('.active-target').forEach(el => el.classList.remove('active-target')); const dragData = dragItemRef.current; if (!dragData) return; const { piece, source, slotId: sourceSlotId } = dragData; const targetSlotId = `${targetWordId}_${targetIndex}`; if (source === 'slot' && sourceSlotId === targetSlotId) return; const existingPiece = placedPieces[targetSlotId]; setPlacedPieces(prev => { const newPlaced = { ...prev, [targetSlotId]: piece }; if (source === 'slot' && sourceSlotId) delete newPlaced[sourceSlotId]; return newPlaced; }); setPoolPieces(prev => { let newPool = prev; if (source === 'pool') newPool = newPool.filter(p => p.id !== piece.id); if (existingPiece) newPool = [...newPool, existingPiece]; return newPool; }); };
     const handlePoolDrop = (e) => { setIsDragging(false); e.preventDefault(); e.stopPropagation(); const dragData = dragItemRef.current; if (!dragData) return; const { piece, source, slotId } = dragData; if (source === 'slot') { setPlacedPieces(prev => { const copy = { ...prev }; delete copy[slotId]; return copy; }); setPoolPieces(prev => [...prev, piece]); } };
+
+    // Click-to-Place Handlers
+    const handlePoolPieceClick = (piece) => {
+        if (selectedPiece?.id === piece.id) {
+            setSelectedPiece(null);
+        } else {
+            setSelectedPiece(piece);
+        }
+    };
+
+    const handleSlotClick = (targetWordId, targetIndex) => {
+        const targetSlotId = `${targetWordId}_${targetIndex}`;
+
+        if (!selectedPiece) {
+            // If already filled, return to pool
+            if (placedPieces[targetSlotId]) {
+                const piece = placedPieces[targetSlotId];
+                setPlacedPieces(prev => { const copy = { ...prev }; delete copy[targetSlotId]; return copy; });
+                setPoolPieces(prev => [...prev, piece]);
+            }
+            return;
+        }
+
+        // Place the piece
+        const pieceToPlace = selectedPiece;
+        const existingPiece = placedPieces[targetSlotId];
+
+        setPlacedPieces(prev => ({ ...prev, [targetSlotId]: pieceToPlace }));
+        setPoolPieces(prev => {
+            let newPool = prev.filter(p => p.id !== pieceToPlace.id);
+            if (existingPiece) newPool = [...newPool, existingPiece];
+            return newPool;
+        });
+        setSelectedPiece(null);
+    };
     const getPieceStyle = (piece, isPlaced) => { let base = "relative flex items-center justify-center border font-bold select-none min-w-[3rem] px-4 shadow-sm touch-action-none touch-manipulation "; base += "touch-none select-none "; base += isPlaced ? "bg-blue-200 text-blue-900 border-blue-300 " : "bg-blue-100 text-blue-900 border-blue-300 "; if (!piece.isStart && !piece.isSolo) base += "pl-6 "; if (!piece.isEnd && !piece.isSolo) base += "pr-6 "; if (piece.isStart || piece.isSolo) base += "rounded-l-2xl "; if (piece.isEnd || piece.isSolo) base += "rounded-r-2xl "; return base; };
     const dynamicHeight = Math.max(56, settings.fontSize * 1.5);
 
@@ -66,7 +102,7 @@ export const SyllablePuzzleView = ({ words, settings, setSettings, onClose }) =>
                     {puzzleWords.map((word) => {
                         const isWordComplete = word.pieces.every(p => placedPieces[`${word.id}_${p.index}`]?.text === p.text); return (
                             <div key={word.id} className={`p-4 bg-white rounded-xl border flex flex-wrap gap-2 items-center justify-center min-h-[5rem] transition-colors duration-300 ${isWordComplete ? 'border-green-400 bg-green-50 shadow-md' : 'border-slate-200 shadow-sm'}`}>
-                                <div className="flex flex-wrap gap-2 items-center justify-center">{word.pieces.map((originalPiece) => { const slotId = `${word.id}_${originalPiece.index}`; const placedPiece = placedPieces[slotId]; return (<div key={slotId} className={`puzzle-drop-target relative flex items-center justify-center rounded-lg ${!placedPiece ? 'border-2 border-dashed border-slate-300' : ''}`} style={{ fontSize: `${settings.fontSize}px`, minHeight: `${dynamicHeight}px`, minWidth: '7rem', zIndex: 1 }} onDragOver={(e) => e.preventDefault()} onDragEnter={(e) => { e.preventDefault(); e.currentTarget.classList.add('active-target'); }} onDragLeave={(e) => e.currentTarget.classList.remove('active-target')} onDrop={(e) => handleSlotDrop(e, word.id, originalPiece.index)}>{placedPiece ? (<div draggable onDragStart={(e) => handleDragStart(e, placedPiece, 'slot', slotId)} onDragEnd={handleDragEnd} className={`${getPieceStyle(placedPiece, true)} cursor-grab active:cursor-grabbing hover:scale-105 transition-transform touch-action-none`} style={{ fontFamily: settings.fontFamily, fontSize: `${settings.fontSize}px`, minHeight: `${dynamicHeight}px`, width: '100%', height: '100%' }}>{(!placedPiece.isEnd && !placedPiece.isSolo) && <div className="absolute right-[-8px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-blue-200 z-10"></div>}{(!placedPiece.isStart && !placedPiece.isSolo) && <div className="absolute left-[-8px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white z-20"></div>}{placedPiece.text}</div>) : <span className="text-slate-300 font-bold select-none">?</span>}</div>); })}</div>
+                                <div className="flex flex-wrap gap-2 items-center justify-center">{word.pieces.map((originalPiece) => { const slotId = `${word.id}_${originalPiece.index}`; const placedPiece = placedPieces[slotId]; return (<div key={slotId} onClick={() => handleSlotClick(word.id, originalPiece.index)} className={`puzzle-drop-target relative flex items-center justify-center rounded-lg cursor-pointer ${!placedPiece ? 'border-2 border-dashed border-slate-300' : ''} ${selectedPiece ? 'ring-2 ring-blue-300 ring-offset-2 animate-pulse' : ''}`} style={{ fontSize: `${settings.fontSize}px`, minHeight: `${dynamicHeight}px`, minWidth: '7rem', zIndex: 1 }} onDragOver={(e) => e.preventDefault()} onDragEnter={(e) => { e.preventDefault(); e.currentTarget.classList.add('active-target'); }} onDragLeave={(e) => { e.currentTarget.classList.remove('active-target'); }} onDrop={(e) => handleSlotDrop(e, word.id, originalPiece.index)}>{placedPiece ? (<div draggable onDragStart={(e) => handleDragStart(e, placedPiece, 'slot', slotId)} onDragEnd={handleDragEnd} className={`${getPieceStyle(placedPiece, true)} cursor-grab active:cursor-grabbing hover:scale-105 transition-transform touch-action-none`} style={{ fontFamily: settings.fontFamily, fontSize: `${settings.fontSize}px`, minHeight: `${dynamicHeight}px`, width: '100%', height: '100%' }}>{(!placedPiece.isEnd && !placedPiece.isSolo) && <div className="absolute right-[-8px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-blue-200 z-10"></div>}{(!placedPiece.isStart && !placedPiece.isSolo) && <div className="absolute left-[-8px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white z-20"></div>}{placedPiece.text}</div>) : <span className="text-slate-300 font-bold select-none">?</span>}</div>); })}</div>
                                 {isWordComplete && <div className="ml-4 text-green-500 animate-[popIn_0.4s_ease-out]"><Icons.Check size={40} strokeWidth={3} /></div>}
                             </div>
                         )
@@ -74,7 +110,7 @@ export const SyllablePuzzleView = ({ words, settings, setSettings, onClose }) =>
                 </div>
             </div>
             <div className="shrink-0 bg-white border-t border-slate-200 p-6 shadow-[0_-5px_15px_-5px_rgba(0,0,0,0.1)] z-50 overflow-y-auto custom-scroll" style={{ maxHeight: '45vh', height: 'auto', touchAction: 'pan-y' }} onDragOver={(e) => e.preventDefault()} onDrop={handlePoolDrop}>
-                <div className="max-w-7xl mx-auto"><h3 className="text-sm font-bold text-slate-400 mb-3 uppercase tracking-wider sticky top-0 bg-white z-50 pb-2">Verfügbare Teile</h3><div className="flex flex-wrap gap-4 justify-center items-start content-start pb-4">{poolPieces.map((piece) => (<div key={piece.id} draggable onDragStart={(e) => handleDragStart(e, piece, 'pool')} onDragEnd={handleDragEnd} className={`${getPieceStyle(piece, false)} cursor-grab active:cursor-grabbing hover:scale-105 transition-transform hover:shadow-md hover:bg-blue-50 relative z-40 touch-action-none`} style={{ fontFamily: settings.fontFamily, fontSize: `${settings.fontSize}px`, minHeight: `${dynamicHeight}px` }}>{(!piece.isEnd && !piece.isSolo) && <div className="absolute right-[-8px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-inherit z-10 border-r border-b border-blue-300/50"></div>}{(!piece.isStart && !piece.isSolo) && <div className="absolute left-[-8px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white z-20 border-r border-blue-300/30"></div>}<span className="relative z-0">{piece.text}</span></div>))}{poolPieces.length === 0 && !showReward && <div className="text-slate-400 italic mt-4">Alle Teile platziert!</div>}</div></div>
+                <div className="max-w-7xl mx-auto"><h3 className="text-sm font-bold text-slate-400 mb-3 uppercase tracking-wider sticky top-0 bg-white z-50 pb-2">Verfügbare Teile</h3><div className="flex flex-wrap gap-4 justify-center items-start content-start pb-4">{poolPieces.map((piece) => (<div key={piece.id} draggable onDragStart={(e) => handleDragStart(e, piece, 'pool')} onDragEnd={handleDragEnd} onClick={() => handlePoolPieceClick(piece)} className={`${getPieceStyle(piece, false)} cursor-grab active:cursor-grabbing hover:scale-105 transition-transform hover:shadow-md hover:bg-blue-50 relative z-40 touch-action-none ${selectedPiece?.id === piece.id ? 'ring-4 ring-blue-500 shadow-xl scale-110 !z-50' : ''}`} style={{ fontFamily: settings.fontFamily, fontSize: `${settings.fontSize}px`, minHeight: `${dynamicHeight}px` }}>{(!piece.isEnd && !piece.isSolo) && <div className="absolute right-[-8px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-inherit z-10 border-r border-b border-blue-300/50"></div>}{(!piece.isStart && !piece.isSolo) && <div className="absolute left-[-8px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white z-20 border-r border-blue-300/30"></div>}<span className="relative z-0">{piece.text}</span></div>))}{poolPieces.length === 0 && !showReward && <div className="text-slate-400 italic mt-4">Alle Teile platziert!</div>}</div></div>
             </div>
         </div>
     );

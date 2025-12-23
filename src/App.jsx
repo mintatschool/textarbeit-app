@@ -25,7 +25,8 @@ import { getCachedSyllables } from './utils/syllables';
 
 // Initialize mobile-drag-drop polyfill
 polyfill({
-    dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride
+    dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride,
+    holdToDrag: 150
 });
 import "mobile-drag-drop/default.css";
 

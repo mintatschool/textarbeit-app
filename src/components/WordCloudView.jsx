@@ -11,6 +11,7 @@ export const WordCloudView = ({ words, settings, setSettings, onClose }) => {
     const [showReward, setShowReward] = useState(false);
     const [showVowels, setShowVowels] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
+    const [selectedChunk, setSelectedChunk] = useState(null); // For Click-to-Place
     const dragItemRef = useRef(null);
 
     useEffect(() => {
@@ -51,6 +52,42 @@ export const WordCloudView = ({ words, settings, setSettings, onClose }) => {
     const handleDrop = (e, targetWordId, targetChunkId) => { setIsDragging(false); e.preventDefault(); e.stopPropagation(); document.querySelectorAll('.active-target').forEach(el => el.classList.remove('active-target')); const dragData = dragItemRef.current; if (!dragData || dragData.chunk.wordId !== targetWordId) return; const existingChunk = placedChunks[targetChunkId]; setPlacedChunks(prev => { const next = { ...prev, [targetChunkId]: dragData.chunk }; if (dragData.source === 'slot' && dragData.slotId) delete next[dragData.slotId]; return next; }); setPoolChunks(prev => { let next = prev; if (dragData.source === 'pool') next = next.filter(c => c.id !== dragData.chunk.id); if (existingChunk) next = [...next, existingChunk]; return next; }); };
     const handleCloudReturnDrop = (e, targetWordId) => { setIsDragging(false); e.preventDefault(); e.stopPropagation(); const dragData = dragItemRef.current; if (!dragData || dragData.chunk.wordId !== targetWordId) return; if (dragData.source === 'slot') { setPlacedChunks(prev => { const next = { ...prev }; delete next[dragData.slotId]; return next; }); setPoolChunks(prev => [...prev, dragData.chunk]); } };
 
+    // Click-to-Place Handlers
+    const handleChunkClick = (chunk, source, slotId = null) => {
+        if (source === 'slot') {
+            // If already filled, return to pool
+            setPlacedChunks(prev => { const next = { ...prev }; delete next[slotId]; return next; });
+            setPoolChunks(prev => [...prev, chunk]);
+            setSelectedChunk(null);
+            return;
+        }
+
+        if (selectedChunk?.id === chunk.id) {
+            setSelectedChunk(null);
+        } else {
+            setSelectedChunk(chunk);
+        }
+    };
+
+    const handleSlotClick = (targetWordId, targetChunkId) => {
+        if (!selectedChunk) return;
+        if (selectedChunk.wordId !== targetWordId) {
+            setSelectedChunk(null);
+            return;
+        }
+
+        const chunkToPlace = selectedChunk;
+        const existingChunk = placedChunks[targetChunkId];
+
+        setPlacedChunks(prev => ({ ...prev, [targetChunkId]: chunkToPlace }));
+        setPoolChunks(prev => {
+            let next = prev.filter(c => c.id !== chunkToPlace.id);
+            if (existingChunk) next = [...next, existingChunk];
+            return next;
+        });
+        setSelectedChunk(null);
+    };
+
     const speakWord = (text) => {
         if (!('speechSynthesis' in window)) return;
         const speak = (voices) => {
@@ -90,7 +127,7 @@ export const WordCloudView = ({ words, settings, setSettings, onClose }) => {
                             <div key={word.id} onDragOver={(e) => e.preventDefault()} onDrop={(e) => handleCloudReturnDrop(e, word.id)} className={`bg-white rounded-2xl border-2 p-6 flex flex-col items-center gap-6 shadow-sm transition-all ${isCorrect ? 'border-green-200 bg-green-50' : 'border-slate-200'}`}>
                                 <div className="relative w-full max-w-md h-64 flex items-center justify-center">
                                     <button onClick={() => speakWord(word.fullWord)} className="absolute -left-2 top-0 p-3 text-slate-400 hover:text-blue-600 bg-white rounded-full shadow-sm border hover:bg-blue-50 transition z-20 min-touch-target"><Icons.Volume2 size={24} /></button>
-                                    <div className="absolute inset-0 text-blue-100 drop-shadow-sm flex items-center justify-center"><svg viewBox="0 0 24 24" className="w-full h-full overflow-visible pointer-events-none" preserveAspectRatio="none"><path d={cloudSVGPath} fill="currentColor" stroke="#93c5fd" strokeWidth="0.5" vectorEffect="non-scaling-stroke" /></svg><div className="absolute inset-0 z-10 overflow-hidden rounded-full opacity-100 pointer-events-none"><div className="relative w-full h-full pointer-events-auto">{activePool.map((chunk) => (<div key={chunk.id} draggable onDragStart={(e) => handleDragStart(e, chunk, 'pool')} onDragEnd={handleDragEnd} className="absolute cursor-grab active:cursor-grabbing bg-white border border-blue-200 shadow-sm rounded px-2 py-0.5 font-bold text-slate-700 hover:scale-110 transition-transform touch-action-none touch-manipulation select-none touch-none" style={{ fontFamily: settings.fontFamily, fontSize: `${Math.max(16, settings.fontSize * 0.8)}px`, left: `${chunk.x}%`, top: `${chunk.y}%`, transform: 'translate(-50%, -50%)', zIndex: 20 }}>
+                                    <div className="absolute inset-0 text-blue-100 drop-shadow-sm flex items-center justify-center"><svg viewBox="0 0 24 24" className="w-full h-full overflow-visible pointer-events-none" preserveAspectRatio="none"><path d={cloudSVGPath} fill="currentColor" stroke="#93c5fd" strokeWidth="0.5" vectorEffect="non-scaling-stroke" /></svg><div className="absolute inset-0 z-10 overflow-hidden rounded-full opacity-100 pointer-events-none"><div className="relative w-full h-full pointer-events-auto">{activePool.map((chunk) => (<div key={chunk.id} draggable onDragStart={(e) => handleDragStart(e, chunk, 'pool')} onDragEnd={handleDragEnd} onClick={(e) => { e.stopPropagation(); handleChunkClick(chunk, 'pool'); }} className={`absolute cursor-grab active:cursor-grabbing bg-white border border-blue-200 shadow-sm rounded px-2 py-0.5 font-bold text-slate-700 hover:scale-110 transition-all touch-action-none touch-manipulation select-none touch-none ${selectedChunk?.id === chunk.id ? 'ring-4 ring-blue-500 scale-125 z-50' : 'z-20'}`} style={{ fontFamily: settings.fontFamily, fontSize: `${Math.max(16, settings.fontSize * 0.8)}px`, left: `${chunk.x}%`, top: `${chunk.y}%`, transform: 'translate(-50%, -50%)' }}>
                                         {chunk.text.split('').map((char, cI) => {
                                             const isVowel = /[aeiouyäöüAEIOUYÄÖÜ]/.test(char);
                                             return <span key={cI} className={`inline-block rounded-sm ${showVowels && isVowel ? "bg-yellow-200 shadow-sm" : ""}`}>{char}</span>
@@ -103,9 +140,9 @@ export const WordCloudView = ({ words, settings, setSettings, onClose }) => {
                                             {sylObj.chunks.map((chunk) => {
                                                 const placed = placedChunks[chunk.id];
                                                 return (
-                                                    <div key={chunk.id} onDragOver={(e) => e.preventDefault()} onDragEnter={(e) => { e.preventDefault(); e.currentTarget.classList.add('active-target') }} onDragLeave={(e) => e.currentTarget.classList.remove('active-target')} onDrop={(e) => handleDrop(e, word.id, chunk.id)} className={`cloud-drop-target ${placed ? 'filled' : ''} px-1 flex items-center justify-center transition-all`} style={{ minWidth: '3.5rem', height: `${settings.fontSize * 1.5}px` }}>
+                                                    <div key={chunk.id} onDragOver={(e) => e.preventDefault()} onDragEnter={(e) => { e.preventDefault(); e.currentTarget.classList.add('active-target') }} onDragLeave={(e) => e.currentTarget.classList.remove('active-target')} onDrop={(e) => handleDrop(e, word.id, chunk.id)} onClick={() => handleSlotClick(word.id, chunk.id)} className={`cloud-drop-target cursor-pointer ${placed ? 'filled' : ''} px-1 flex items-center justify-center transition-all ${selectedChunk && selectedChunk.wordId === word.id ? 'ring-2 ring-blue-300 ring-offset-2 animate-pulse' : ''}`} style={{ minWidth: '3.5rem', height: `${settings.fontSize * 1.5}px` }}>
                                                         {placed ? (
-                                                            <div draggable onDragStart={(e) => handleDragStart(e, placed, 'slot', chunk.id)} onDragEnd={handleDragEnd} className="cursor-grab active:cursor-grabbing text-blue-900 font-bold animate-[popIn_0.3s_ease-out] touch-action-none touch-manipulation select-none touch-none" style={{ fontFamily: settings.fontFamily, fontSize: `${settings.fontSize}px` }}>
+                                                            <div draggable onDragStart={(e) => handleDragStart(e, placed, 'slot', chunk.id)} onDragEnd={handleDragEnd} onClick={(e) => { e.stopPropagation(); handleChunkClick(placed, 'slot', chunk.id); }} className="cursor-grab active:cursor-grabbing text-blue-900 font-bold animate-[popIn_0.3s_ease-out] touch-action-none touch-manipulation select-none touch-none" style={{ fontFamily: settings.fontFamily, fontSize: `${settings.fontSize}px` }}>
                                                                 {placed.text.split('').map((char, cI) => {
                                                                     const isVowel = /[aeiouyäöüAEIOUYÄÖÜ]/.test(char);
                                                                     return <span key={cI} className={`inline-block rounded-sm ${showVowels && isVowel ? "bg-yellow-200 shadow-sm" : ""}`}>{char}</span>

@@ -29,6 +29,7 @@ export const GapTextView = ({ text, settings, setSettings, onClose }) => {
     const [poolWords, setPoolWords] = useState([]);
     const [showReward, setShowReward] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
+    const [selectedWord, setSelectedWord] = useState(null); // For Click-to-Place
     const dragItemRef = useRef(null);
 
     // iPad Fix: Prevent touch scrolling during drag
@@ -143,6 +144,45 @@ export const GapTextView = ({ text, settings, setSettings, onClose }) => {
         setPoolWords(prev => [...prev, dragData.word]);
     };
 
+    // Click-to-Place Handlers
+    const handlePoolWordClick = (word) => {
+        if (selectedWord?.poolId === word.poolId) {
+            setSelectedWord(null);
+        } else {
+            setSelectedWord(word);
+        }
+    };
+
+    const handleGapClick = (gapId, correctText) => {
+        if (!selectedWord) {
+            // If already filled, return to pool on click
+            if (placedWords[gapId]) {
+                const word = placedWords[gapId];
+                setPlacedWords(prev => { const next = { ...prev }; delete next[gapId]; return next; });
+                setPoolWords(prev => [...prev, word]);
+            }
+            return;
+        }
+
+        const cleanSelected = selectedWord.text.replace(/[^\w\u00C0-\u017F]/g, '').toLowerCase();
+        const cleanTarget = correctText.replace(/[^\w\u00C0-\u017F]/g, '').toLowerCase();
+
+        if (cleanSelected === cleanTarget) {
+            const wordToPlace = selectedWord;
+            const existingWord = placedWords[gapId];
+
+            setPlacedWords(prev => ({ ...prev, [gapId]: wordToPlace }));
+            setPoolWords(prev => {
+                let next = prev.filter(w => w.poolId !== wordToPlace.poolId);
+                if (existingWord) next = [...next, existingWord];
+                return next;
+            });
+            setSelectedWord(null);
+        } else {
+            setSelectedWord(null);
+        }
+    };
+
     useEffect(() => {
         const totalGaps = sentences.filter(s => s.target).length;
         if (totalGaps > 0 && Object.keys(placedWords).length === totalGaps) {
@@ -200,7 +240,8 @@ export const GapTextView = ({ text, settings, setSettings, onClose }) => {
                                                 onDragEnter={(e) => { e.preventDefault(); e.currentTarget.classList.add('bg-blue-50', 'border-blue-400'); }}
                                                 onDragLeave={(e) => { e.currentTarget.classList.remove('bg-blue-50', 'border-blue-400'); }}
                                                 onDrop={(e) => { e.currentTarget.classList.remove('bg-blue-50', 'border-blue-400'); handleDrop(e, p.id, p.correctText); }}
-                                                className={`relative inline-flex items-center justify-center min-w-[5em] h-[1.4em] border-b-2 transition-all rounded px-2 mx-1 ${placed ? 'border-transparent' : 'border-slate-300 bg-slate-100/30'}`}
+                                                onClick={() => handleGapClick(p.id, p.correctText)}
+                                                className={`relative inline-flex items-center justify-center min-w-[5em] h-[1.4em] border-b-2 transition-all rounded px-2 mx-1 cursor-pointer ${placed ? 'border-transparent' : 'border-slate-300 bg-slate-100/30'} ${selectedWord ? 'ring-2 ring-blue-300 ring-offset-2 animate-pulse' : ''}`}
                                             >
                                                 {placed ? (
                                                     <div
@@ -243,7 +284,8 @@ export const GapTextView = ({ text, settings, setSettings, onClose }) => {
                                 draggable
                                 onDragStart={(e) => handleDragStart(e, w, 'pool')}
                                 onDragEnd={handleDragEnd}
-                                className={`w-full p-4 font-bold rounded-2xl transition-all flex items-center justify-center cursor-grab active:cursor-grabbing hover:scale-[1.02] touch-action-none touch-manipulation select-none ${w.color}`}
+                                onClick={() => handlePoolWordClick(w)}
+                                className={`w-full p-4 font-bold rounded-2xl transition-all flex items-center justify-center cursor-grab active:cursor-grabbing hover:scale-[1.02] touch-action-none touch-manipulation select-none ${w.color} ${selectedWord?.poolId === w.poolId ? 'ring-4 ring-blue-500 shadow-xl scale-105' : 'shadow-sm'}`}
                                 style={{ fontFamily: settings.fontFamily, fontSize: `${Math.max(20, settings.fontSize * 0.8)}px` }}
                             >
                                 {w.text}
