@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Icons } from './Icons';
 import { EmptyStateMessage } from './EmptyStateMessage';
+import { speak } from '../utils/speech';
 
 export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialSound = false }) => {
     const [mode, setMode] = useState('vowels'); // 'vowels' or 'consonants'
@@ -29,16 +30,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
 
     // Audio support
     const speakWord = (text) => {
-        if (!('speechSynthesis' in window)) return;
-        const speak = (voices) => {
-            const u = new SpeechSynthesisUtterance(text);
-            u.lang = 'de-DE';
-            u.voice = voices.find(v => v.lang.includes('de') && (v.name.includes('Google') || v.name.includes('Female'))) || voices.find(v => v.lang.includes('de')) || null;
-            window.speechSynthesis.speak(u);
-        };
-        let voices = window.speechSynthesis.getVoices();
-        if (voices.length > 0) speak(voices);
-        else window.speechSynthesis.onvoiceschanged = () => { voices = window.speechSynthesis.getVoices(); speak(voices); };
+        speak(text);
     };
 
     // Letter Cluster Definition (German common clusters)

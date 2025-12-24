@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Icons } from './Icons';
 import { EmptyStateMessage } from './EmptyStateMessage';
 import { getChunks } from '../utils/syllables';
+import { speak } from '../utils/speech';
 
 export const WordCloudView = ({ words, settings, setSettings, onClose }) => {
     if (!words || words.length === 0) return (<div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans"><EmptyStateMessage onClose={onClose} /></div>);
@@ -89,16 +90,7 @@ export const WordCloudView = ({ words, settings, setSettings, onClose }) => {
     };
 
     const speakWord = (text) => {
-        if (!('speechSynthesis' in window)) return;
-        const speak = (voices) => {
-            const u = new SpeechSynthesisUtterance(text);
-            u.lang = 'de-DE';
-            u.voice = voices.find(v => v.lang.includes('de') && (v.name.includes('Google') || v.name.includes('Female'))) || voices.find(v => v.lang.includes('de')) || null;
-            window.speechSynthesis.speak(u);
-        };
-        let voices = window.speechSynthesis.getVoices();
-        if (voices.length > 0) speak(voices);
-        else window.speechSynthesis.onvoiceschanged = () => { voices = window.speechSynthesis.getVoices(); speak(voices); };
+        speak(text);
     };
 
     const cloudSVGPath = "M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z";
