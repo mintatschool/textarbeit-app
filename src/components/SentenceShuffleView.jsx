@@ -4,23 +4,23 @@ import { EmptyStateMessage } from './EmptyStateMessage';
 
 // Pastel colors for words
 const WORD_COLORS = [
-    'bg-red-100 border-red-300',
-    'bg-orange-100 border-orange-300',
-    'bg-amber-100 border-amber-300',
-    'bg-yellow-100 border-yellow-300',
-    'bg-lime-100 border-lime-300',
-    'bg-green-100 border-green-300',
-    'bg-emerald-100 border-emerald-300',
-    'bg-teal-100 border-teal-300',
-    'bg-cyan-100 border-cyan-300',
-    'bg-sky-100 border-sky-300',
-    'bg-blue-100 border-blue-300',
-    'bg-indigo-100 border-indigo-300',
-    'bg-violet-100 border-violet-300',
-    'bg-purple-100 border-purple-300',
-    'bg-fuchsia-100 border-fuchsia-300',
-    'bg-pink-100 border-pink-300',
-    'bg-rose-100 border-rose-300'
+    'bg-red-100',
+    'bg-orange-100',
+    'bg-amber-100',
+    'bg-yellow-100',
+    'bg-lime-100',
+    'bg-green-100',
+    'bg-emerald-100',
+    'bg-teal-100',
+    'bg-cyan-100',
+    'bg-sky-100',
+    'bg-blue-100',
+    'bg-indigo-100',
+    'bg-violet-100',
+    'bg-purple-100',
+    'bg-fuchsia-100',
+    'bg-pink-100',
+    'bg-rose-100'
 ];
 
 // Split text into sentences
@@ -206,7 +206,7 @@ export const SentenceShuffleView = ({ text, settings, setSettings, onClose }) =>
             <div className="bg-white px-6 py-4 shadow-sm flex justify-between items-center z-10 shrink-0 flex-wrap gap-4">
                 <div className="flex items-center gap-4">
                     <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                        <Icons.Shuffle className="text-purple-500" /> Schüttelsätze
+                        <Icons.Shuffle className="text-blue-600" /> Schüttelsätze
                     </h2>
                     <span className="bg-slate-100 px-3 py-1 rounded-full text-slate-600 font-bold text-sm">
                         {currentIndex + 1} / {sentences.length}
@@ -228,7 +228,7 @@ export const SentenceShuffleView = ({ text, settings, setSettings, onClose }) =>
                     </div>
                     <button
                         onClick={onClose}
-                        className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 shadow-sm transition-transform hover:scale-105 flex items-center justify-center min-touch-target"
+                        className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 shadow-sm transition-transform hover:scale-105 flex items-center justify-center min-touch-target sticky right-0"
                     >
                         <Icons.X size={24} />
                     </button>
@@ -239,7 +239,7 @@ export const SentenceShuffleView = ({ text, settings, setSettings, onClose }) =>
             <div className="px-6 py-2 bg-white border-b border-slate-200">
                 <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
                     <div
-                        className="bg-gradient-to-r from-purple-500 to-pink-500 h-full rounded-full transition-all duration-500"
+                        className="bg-gradient-to-r from-blue-500 to-cyan-500 h-full rounded-full transition-all duration-500"
                         style={{ width: `${progress}%` }}
                     ></div>
                 </div>
@@ -255,7 +255,7 @@ export const SentenceShuffleView = ({ text, settings, setSettings, onClose }) =>
                             className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-all ${completedSentences.has(idx)
                                 ? 'bg-green-500 text-white'
                                 : idx === currentIndex
-                                    ? 'bg-purple-500 text-white scale-110 shadow-lg'
+                                    ? 'bg-blue-500 text-white scale-110 shadow-lg'
                                     : 'bg-slate-200 text-slate-500'
                                 }`}
                         >
@@ -267,7 +267,7 @@ export const SentenceShuffleView = ({ text, settings, setSettings, onClose }) =>
                 {/* Word Cards Container */}
                 <div
                     id="word-container"
-                    className={`flex flex-wrap gap-3 justify-center items-center max-w-4xl p-6 rounded-2xl transition-all duration-300 ${isCorrect ? 'bg-green-50 border-2 border-green-300' : 'bg-white border-2 border-slate-200'
+                    className={`flex flex-wrap gap-3 justify-center items-center max-w-4xl p-6 rounded-2xl transition-all duration-300 ${isCorrect ? 'bg-green-50' : 'bg-white'
                         }`}
                 >
                     {words.map((word, idx) => (
@@ -279,7 +279,7 @@ export const SentenceShuffleView = ({ text, settings, setSettings, onClose }) =>
                             onDragLeave={handleDragLeave}
                             onDragEnd={handleDragEnd}
                             onDragOver={(e) => e.preventDefault()}
-                            className={`word-card px-4 py-2 rounded-xl border-2 shadow-sm font-bold select-none transition-all duration-200 touch-action-none touch-manipulation ${word.color} ${isCorrect
+                            className={`word-card px-4 py-2 rounded-xl shadow-sm font-bold select-none transition-all duration-200 touch-action-none touch-manipulation ${word.color} ${isCorrect
                                 ? 'cursor-default'
                                 : 'cursor-grab active:cursor-grabbing hover:scale-105 hover:shadow-md'
                                 }`}
@@ -306,7 +306,7 @@ export const SentenceShuffleView = ({ text, settings, setSettings, onClose }) =>
                 {!isCorrect ? (
                     <button
                         onClick={checkOrder}
-                        className="px-10 py-4 bg-purple-600 text-white rounded-xl font-bold text-lg shadow-lg hover:bg-purple-700 active:scale-95 transition-all min-touch-target"
+                        className="px-10 py-4 bg-blue-600 text-white rounded-xl font-bold text-lg shadow-lg hover:bg-blue-700 active:scale-95 transition-all min-touch-target"
                     >
                         Prüfen
                     </button>

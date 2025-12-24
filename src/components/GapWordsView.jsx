@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Icons } from './Icons';
 import { EmptyStateMessage } from './EmptyStateMessage';
 
-export const GapWordsView = ({ words, settings, setSettings, onClose }) => {
+export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialSound = false }) => {
     const [mode, setMode] = useState('vowels'); // 'vowels' or 'consonants'
     const [currentGroupIdx, setCurrentGroupIdx] = useState(0);
     const [groups, setGroups] = useState([]);
@@ -42,31 +42,19 @@ export const GapWordsView = ({ words, settings, setSettings, onClose }) => {
     };
 
     // Letter Cluster Definition (German common clusters)
-    const clusters = ['sch', 'ch', 'qu', 'st', 'sp', 'ei', 'ie', 'au', 'eu', 'äu', 'ck', 'ng', 'nk', 'pf', 'th'];
+    const clusters = ['sch', 'chs', 'ch', 'qu', 'st', 'sp', 'ei', 'ie', 'au', 'eu', 'äu', 'ck', 'ng', 'nk', 'pf', 'th'];
 
     // Grouping Logic
     useEffect(() => {
         if (!words || words.length === 0) return;
 
         const partition = (n) => {
-            if (n < 3) return [n];
-            if (n === 3) return [3];
-            if (n === 4) return [4];
-            if (n === 5) return [5];
-            if (n === 6) return [3, 3];
-            if (n === 7) return [4, 3];
-            if (n === 11) return [4, 4, 3];
-
-            let y = Math.floor(n / 5);
-            let rem = n % 5;
-
-            if (rem === 0) return Array(y).fill(5);
-            if (rem === 1) return [...Array(y - 3).fill(5), 4, 4, 4, 4];
-            if (rem === 2) return [...Array(y - 2).fill(5), 4, 4, 4];
-            if (rem === 3) return [...Array(y - 1).fill(5), 4, 4];
-            if (rem === 4) return [...Array(y).fill(5), 4];
-
-            return [n];
+            const size = 5;
+            const result = [];
+            for (let i = 0; i < n; i += size) {
+                result.push(Math.min(size, n - i));
+            }
+            return result;
         };
 
         const groupSizes = partition(words.length);
@@ -84,10 +72,25 @@ export const GapWordsView = ({ words, settings, setSettings, onClose }) => {
     const isVowel = (char) => /[aeiouyäöüAEIOUYÄÖÜ]/.test(char);
 
     // Improved Char Logic: Handle clusters
-    const getWordChunks = (word, mode) => {
+    const getWordChunks = (word, mode, isFirstSyllable = false, isWordStart = false) => {
         const chunks = [];
         let i = 0;
         const text = word.toLowerCase();
+
+        if (isInitialSound) {
+            // In initial sound mode, only the very first character is a target
+            for (let j = 0; j < word.length; j++) {
+                chunks.push({
+                    text: word[j],
+                    isTarget: isWordStart && j === 0,
+                    id: `chunk_${j}`
+                });
+            }
+            return chunks;
+        }
+
+        // Syllable rule: Count consonants to ensure at least one remains
+        const consonantCount = [...text].filter(c => /[a-zäöü]/.test(c) && !isVowel(c)).length;
 
         while (i < word.length) {
             let foundCluster = false;
@@ -103,7 +106,14 @@ export const GapWordsView = ({ words, settings, setSettings, onClose }) => {
                     if (mode === 'vowels') {
                         isTarget = [...sub].some(isVowel);
                     } else {
-                        isTarget = [...sub].some(c => /[a-zäöü]/.test(c) && !isVowel(c));
+                        // Consonant Mode: Apply Anchor & Syllable Rules
+                        if (isFirstSyllable && i === 0) {
+                            isTarget = false; // Anchor protection
+                        } else if (consonantCount <= 1) {
+                            isTarget = false; // Syllable protection
+                        } else {
+                            isTarget = [...sub].some(c => /[a-zäöü]/.test(c) && !isVowel(c));
+                        }
                     }
 
                     chunks.push({ text: originalSub, isTarget, id: `chunk_${i}` });
@@ -115,7 +125,14 @@ export const GapWordsView = ({ words, settings, setSettings, onClose }) => {
 
             if (!foundCluster) {
                 const char = word[i];
-                const isTarget = /[a-zA-ZäöüÄÖÜ]/.test(char) && (mode === 'vowels' ? isVowel(char) : !isVowel(char));
+                let isTarget = /[a-zA-ZäöüÄÖÜ]/.test(char) && (mode === 'vowels' ? isVowel(char) : !isVowel(char));
+
+                // Consonant Mode: Apply Anchor & Syllable Rules
+                if (mode === 'consonants' && isTarget) {
+                    if (isFirstSyllable && i === 0) isTarget = false;
+                    else if (consonantCount <= 1) isTarget = false;
+                }
+
                 chunks.push({ text: char, isTarget, id: `chunk_${i}` });
                 i++;
             }
@@ -126,9 +143,9 @@ export const GapWordsView = ({ words, settings, setSettings, onClose }) => {
     const currentWords = useMemo(() => {
         if (groups.length === 0) return [];
         const group = groups[currentGroupIdx];
-        return group.map(w => {
+        return group.map((w, wIdx) => {
             const syllables = w.syllables.map((syl, sIdx) => {
-                const chunks = getWordChunks(syl, mode).map((chunk, cIdx) => ({
+                const chunks = getWordChunks(syl, mode, sIdx === 0, sIdx === 0).map((chunk, cIdx) => ({
                     ...chunk,
                     id: `${w.id}_s${sIdx}_c${cIdx}`
                 }));
@@ -136,7 +153,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose }) => {
             });
             return { ...w, syllables };
         });
-    }, [groups, currentGroupIdx, mode]);
+    }, [groups, currentGroupIdx, mode, isInitialSound]);
 
     // Letter Pool Logic & Reset
     useEffect(() => {
@@ -172,7 +189,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose }) => {
         setPlacedLetters({});
         setGroupSolved(false);
         setSolvedWordIds(new Set());
-    }, [currentWords, mode]);
+    }, [currentWords, mode, isInitialSound]);
 
     // Drag & Drop
     const handleDragStart = (e, letter, source, gapId = null) => {
@@ -306,41 +323,31 @@ export const GapWordsView = ({ words, settings, setSettings, onClose }) => {
             )}
 
             <div className="bg-white px-6 py-4 shadow-sm flex flex-wrap gap-4 justify-between items-center z-10 shrink-0">
-                <div className="flex items-center gap-6">
-                    <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2"><Icons.GapWords className="text-blue-600" /> Lückenwörter</h2>
-                    <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
-                        <button
-                            onClick={() => setMode('vowels')}
-                            className={`px-4 py-2 rounded-lg font-bold text-sm transition ${mode === 'vowels' ? 'bg-yellow-100 text-slate-900 shadow-[0_2px_0_0_#eab308] border border-yellow-400' : 'text-slate-500 hover:bg-slate-50'}`}
-                        >
-                            Vokale
-                        </button>
-                        <button
-                            onClick={() => setMode('consonants')}
-                            className={`px-4 py-2 rounded-lg font-bold text-sm transition ${mode === 'consonants' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}
-                        >
-                            Konsonanten
-                        </button>
-                    </div>
-                </div>
-
                 <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-4 py-2 shadow-sm">
-                        <div className="flex gap-2 mr-2">
-                            {groups.map((_, i) => (
-                                <div
-                                    key={i}
-                                    className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all ${i < currentGroupIdx ? 'bg-green-500 text-white' :
-                                        i === currentGroupIdx ? 'bg-blue-600 text-white scale-110 shadow-md' :
-                                            'bg-slate-200 text-slate-500'
-                                        }`}
-                                >
-                                    {i < currentGroupIdx ? <Icons.Check size={14} /> : i + 1}
-                                </div>
-                            ))}
+                    <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                        {isInitialSound ? <Icons.InitialSound className="text-blue-600" /> : <Icons.GapWords className="text-blue-600" />}
+                        {isInitialSound ? 'Anlaute finden' : 'Lückenwörter'}
+                    </h2>
+                    <span className="bg-slate-100 px-3 py-1 rounded-full text-slate-600 font-bold text-sm">
+                        {currentGroupIdx + 1} / {groups.length}
+                    </span>
+
+                    {!isInitialSound && (
+                        <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 ml-4">
+                            <button
+                                onClick={() => setMode('vowels')}
+                                className={`px-4 py-2 rounded-lg font-bold text-sm transition ${mode === 'vowels' ? 'bg-yellow-100 text-slate-900 shadow-[0_2px_0_0_#eab308] border border-yellow-400' : 'text-slate-500 hover:bg-slate-50'}`}
+                            >
+                                Vokale
+                            </button>
+                            <button
+                                onClick={() => setMode('consonants')}
+                                className={`px-4 py-2 rounded-lg font-bold text-sm transition ${mode === 'consonants' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}
+                            >
+                                Konsonanten
+                            </button>
                         </div>
-                        <span className="text-sm font-bold text-slate-700">{currentGroupIdx + 1} / {groups.length}</span>
-                    </div>
+                    )}
                 </div>
 
                 <div className="flex items-center gap-4">
@@ -350,6 +357,16 @@ export const GapWordsView = ({ words, settings, setSettings, onClose }) => {
                         <span className="text-xl font-bold text-slate-500">A</span>
                     </div>
                     <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 shadow-sm transition-transform hover:scale-105 flex items-center justify-center min-touch-target sticky right-0"><Icons.X size={24} /></button>
+                </div>
+            </div>
+
+            {/* Progress Bar */}
+            <div className="px-6 py-2 bg-white border-b border-slate-200">
+                <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                    <div
+                        className="bg-gradient-to-r from-blue-500 to-cyan-500 h-full rounded-full transition-all duration-500"
+                        style={{ width: `${(groups.length > 0 ? ((currentGroupIdx + 1) / groups.length) * 100 : 0)}%` }}
+                    ></div>
                 </div>
             </div>
 
@@ -453,13 +470,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose }) => {
                             <span className="font-bold text-slate-600 flex items-center gap-2 uppercase tracking-wider text-xs">Buchstaben</span>
                             <span className="text-xs bg-blue-100 text-blue-700 font-bold px-2 py-1 rounded-full">{poolLetters.length}</span>
                         </div>
-                        {/* Progress Bar */}
-                        <div className="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
-                            <div
-                                className="h-full bg-blue-500 transition-all duration-500"
-                                style={{ width: `${(groups.length > 0 ? ((currentGroupIdx + (groupSolved ? 1 : 0)) / groups.length) * 100 : 0)}%` }}
-                            ></div>
-                        </div>
+
                     </div>
                     <div className="flex-1 relative overflow-hidden">
                         {poolLetters.map((l) => {

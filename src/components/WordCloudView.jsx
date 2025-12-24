@@ -29,7 +29,7 @@ export const WordCloudView = ({ words, settings, setSettings, onClose }) => {
             let totalChunkIndex = 0;
             let wordChunks = [];
             const syllables = w.syllables.map((syl, sIdx) => {
-                const chunks = getChunks(syl, settings.smartSelection).map((txt, cIdx) => {
+                const chunks = getChunks(syl, settings.smartSelection, settings.clusters).map((txt, cIdx) => {
                     const chunkObj = { id: `${w.id}_chunk_${totalChunkIndex}`, text: txt, wordId: w.id, sylIndex: sIdx, chunkIndex: cIdx };
                     wordChunks.push(chunkObj);
                     totalChunkIndex++;
@@ -118,7 +118,7 @@ export const WordCloudView = ({ words, settings, setSettings, onClose }) => {
                         <span className="text-xl font-bold text-slate-500">A</span>
                     </div>
                 </div>
-                <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 shadow-sm transition-transform hover:scale-105 flex items-center justify-center min-touch-target"><Icons.X size={24} /></button>
+                <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 shadow-sm transition-transform hover:scale-105 flex items-center justify-center min-touch-target sticky right-0"><Icons.X size={24} /></button>
             </div>
             <div className="flex-1 overflow-y-auto custom-scroll p-6 pb-32">
                 <div className="max-w-4xl mx-auto flex flex-col gap-12">

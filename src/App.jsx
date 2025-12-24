@@ -20,6 +20,7 @@ import { StaircaseView } from './components/StaircaseView';
 import { GapWordsView } from './components/GapWordsView';
 import { GapSentencesView } from './components/GapSentencesView';
 import { GapTextView } from './components/GapTextView';
+import { CaseExerciseView } from './components/CaseExerciseView';
 import { Toolbar } from './components/Toolbar';
 import { getCachedSyllables } from './utils/syllables';
 
@@ -59,8 +60,16 @@ const App = () => {
         lockScroll: false,
         centerText: false,
         smartSelection: true,
-        textWidth: 80
+        textWidth: 80,
+        clusters: ['sch', 'chs', 'ch', 'ck', 'ph', 'pf', 'th', 'qu', 'ei', 'ie', 'eu', 'au', 'äu', 'ai', 'sp', 'st']
     });
+
+    // Clear active color when switching modes to prevent accidental coloring
+    useEffect(() => {
+        if (settings.clickAction !== 'light_blue') {
+            setActiveColor(null);
+        }
+    }, [settings.clickAction]);
     const [highlightedIndices, setHighlightedIndices] = useState(new Set());
     const [hiddenIndices, setHiddenIndices] = useState(new Set());
     const [showSettings, setShowSettings] = useState(false);
@@ -76,7 +85,15 @@ const App = () => {
     const [activeView, setActiveView] = useState('text'); // text, puzzle, cloud, list, carpet, sentence, split, gapWords, gapSentences, gapText
     const [sentencePuzzleState, setSentencePuzzleState] = useState(null);
 
+    // Color Feature State
+    const [wordColors, setWordColors] = useState({}); // { index: hexColor }
+    const [colorPalette, setColorPalette] = useState(['#3b82f6', '#a855f7', '#ef4444', '#f97316', '#22c55e']); // Reordered for Toolbar Column Layout
+    const [activeColor, setActiveColor] = useState(null); // If set, clicking paints. If null, standard toggle.
+    const [colorHeaders, setColorHeaders] = useState({}); // { "#hex": "My Title" }
+
     const textAreaRef = useRef(null);
+    const activeColorRef = useRef(activeColor);
+    activeColorRef.current = activeColor; // Keep ref in sync
     const { instance: hyphenator } = useHypherLoader();
 
     // Smart Text Update that shifts highlights
@@ -136,23 +153,79 @@ const App = () => {
             if (data.logo) setLogo(data.logo);
             if (data.manualCorrections) setManualCorrections(data.manualCorrections);
             if (data.columnsState) setColumnsState(data.columnsState);
+            if (data.wordColors) setWordColors(data.wordColors); // Load colors
+            if (data.colorPalette) setColorPalette(data.colorPalette);
             setIsViewMode(true);
         } catch (e) { alert("Fehler beim Laden der Datei."); }
     };
     const exportState = () => {
-        const data = { text, settings, highlights: Array.from(highlightedIndices), hidden: Array.from(hiddenIndices), logo, manualCorrections, columnsState };
+        const data = { text, settings, highlights: Array.from(highlightedIndices), hidden: Array.from(hiddenIndices), logo, manualCorrections, columnsState, wordColors, colorPalette };
         const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a'); a.href = url; a.download = 'textarbeit-export.json'; a.click();
     };
 
+    const wordColorsRef = useRef(wordColors);
+    const highlightedIndicesRef = useRef(highlightedIndices);
+
+    useEffect(() => { wordColorsRef.current = wordColors; }, [wordColors]);
+    useEffect(() => { highlightedIndicesRef.current = highlightedIndices; }, [highlightedIndices]);
+
     // Interactions
-    const toggleHighlights = useCallback((indicesStrOrArr) => {
+    const toggleHighlights = useCallback((indicesStrOrArr, options = {}) => {
+        const indices = Array.isArray(indicesStrOrArr) ? indicesStrOrArr : [indicesStrOrArr];
+        const currentActiveColor = activeColorRef.current; // 'neutral', 'yellow', 'palette-0', or Hex Code
+
+        // Determine if we should "Unmark" (Toggle Off)
+        const currentHighlights = highlightedIndicesRef.current;
+        const currentColors = wordColorsRef.current;
+
+        const allHighlighted = indices.every(i => currentHighlights.has(i));
+        const allSameColor = indices.every(i => {
+            const rangeColor = currentColors[i]; // undefined, 'yellow', hex, or 'palette-X'
+            if (currentActiveColor === 'neutral') return rangeColor === undefined;
+            // Check for direct match (handles 'yellow', 'palette-X')
+            return rangeColor === currentActiveColor;
+        });
+
+        const shouldUnmark = allHighlighted && allSameColor;
+
         setHighlightedIndices(prev => {
             const next = new Set(prev);
-            const indices = Array.isArray(indicesStrOrArr) ? indicesStrOrArr : [indicesStrOrArr];
-            const allHas = indices.every(i => next.has(i));
-            indices.forEach(i => { if (allHas) next.delete(i); else next.add(i); });
+
+            // Handle explicit unmarking (e.g. clearing rest of word when switching to char mode)
+            if (options.unmarkIndices) {
+                options.unmarkIndices.forEach(idx => next.delete(idx));
+            }
+
+            if (shouldUnmark) {
+                indices.forEach(i => next.delete(i));
+            } else {
+                indices.forEach(i => next.add(i));
+            }
+            return next;
+        });
+
+        setWordColors(prev => {
+            const next = { ...prev };
+
+            // Handle clearing requested ranges (Exclusivity)
+            if (options.clearColors) {
+                options.clearColors.forEach(idx => delete next[idx]);
+            }
+
+            if (shouldUnmark) {
+                indices.forEach(i => delete next[i]);
+            } else {
+                // Apply new color
+                indices.forEach(i => {
+                    if (currentActiveColor === 'neutral') {
+                        delete next[i];
+                    } else if (currentActiveColor) {
+                        next[i] = currentActiveColor;
+                    }
+                });
+            }
             return next;
         });
     }, []);
@@ -237,9 +310,15 @@ const App = () => {
 
     const wordsOnly = processedWords.filter(w => w.type === 'word');
     // If words are highlighted, only use those for exercises. Otherwise use all.
-    const exerciseWords = highlightedIndices.size > 0
-        ? wordsOnly.filter(w => highlightedIndices.has(w.index))
-        : wordsOnly;
+    const exerciseWords = useMemo(() => {
+        if (highlightedIndices.size === 0) return wordsOnly;
+        return wordsOnly.filter(w => {
+            for (let i = 0; i < w.word.length; i++) {
+                if (highlightedIndices.has(w.index + i)) return true;
+            }
+            return false;
+        });
+    }, [wordsOnly, highlightedIndices]);
 
     return (
         <div className={`min-h-screen flex flex-col bg-slate-50 transition-colors duration-500 ${settings.lockScroll ? 'overflow-hidden fixed w-full h-full' : ''}`}>
@@ -254,6 +333,19 @@ const App = () => {
                     enableCamera={settings.enableCamera}
                     isLoading={false}
 
+                    // Color Props
+                    colorPalette={colorPalette}
+                    activeColor={activeColor}
+                    onSetActiveColor={(newColor) => {
+                        setActiveColor(newColor);
+                    }}
+                    onUpdatePalette={(index, newColor) => setColorPalette(prev => {
+                        const next = [...prev];
+                        next[index] = newColor;
+                        return next;
+                    })}
+                    settings={settings}
+
                     onToggleView={() => {
                         if (isViewMode) {
                             setIsViewMode(false);
@@ -263,7 +355,7 @@ const App = () => {
                             setIsViewMode(true);
                         }
                     }}
-                    onResetHighlights={() => setHighlightedIndices(new Set())}
+                    onResetHighlights={() => { setHighlightedIndices(new Set()); setWordColors({}); }}
                     onToggleReadingMode={() => setActiveTool(activeTool === 'read' ? null : 'read')}
                     onToggleFullscreen={toggleFullscreen}
                     onToolChange={setActiveTool}
@@ -281,8 +373,10 @@ const App = () => {
                     setShowTextPuzzle={(v) => v && setActiveView('textpuzzle')}
                     setShowSentenceShuffle={(v) => v && setActiveView('sentenceshuffle')}
                     setShowGapWords={() => setActiveView('gapWords')}
+                    setShowInitialSound={() => setActiveView('initialSound')}
                     setShowGapSentences={() => setActiveView('gapSentences')}
                     setShowGapText={() => setActiveView('gapText')}
+                    setShowCaseExercise={() => setActiveView('caseExercise')}
                 />
             )}
 
@@ -313,7 +407,93 @@ const App = () => {
                             </div>
 
                             <button
-                                onClick={() => { setIsViewMode(true); }}
+                                onClick={() => {
+                                    // Parse Text for # markings
+                                    // We need to do this carefully to maintain indices or just re-process.
+                                    // Easiest is to split by words, check for #, reconstruct text without #, and record indices.
+
+                                    // Regex to find words starting with #. 
+                                    // We want to remove the # but keep the word.
+
+                                    // Create a temporary version of processed words logic to identify # locations
+                                    let currentText = text;
+                                    let match;
+                                    const regex = /#([\w\u00C0-\u017F]+)/g; // Match #Word
+                                    const newHighlights = new Set(highlightedIndices);
+                                    let cleanedText = "";
+                                    let lastIndex = 0;
+                                    let offset = 0; // Tracks how many chars we removed (#)
+
+                                    // Simple approach: Replace in string and track position
+                                    // But indices need to be exact.
+                                    // Let's iterate through the text, building a new text and a list of highlighted characters.
+
+                                    // Actually, we can just replace # globally and map the "original index" to "new index".
+                                    // But we need to know WHICH words were marked.
+
+                                    if (currentText.includes('#')) {
+                                        let loopIndex = 0;
+                                        let buildText = "";
+                                        const segments = currentText.split(/([#]?[\w\u00C0-\u017F]+(?:\-[\w\u00C0-\u017F]+)*)/);
+                                        // This split might be too complex to get right with all punctuation.
+
+                                        // Alternative: Use a regex loop
+                                        const parts = [];
+                                        let finalString = "";
+
+                                        // We will rebuild the text.
+                                        let ptr = 0;
+                                        const fullRegex = /#?[\w\u00C0-\u017F]+(?:\-[\w\u00C0-\u017F]+)*/g;
+
+                                        // We need to preserve whitespace/punctuation between matches
+                                        cleanedText = currentText.replace(/#([\w\u00C0-\u017F]+)/g, (match, word, offset) => {
+                                            // This callback doesn't help with global index calculation easily because multiple replaces shift it.
+                                            return word;
+                                        });
+
+                                        // Let's do a 2-pass: 
+                                        // 1. Reconstruct text without #
+                                        // 2. Find the words again? No, that risks finding duplicates in wrong places.
+
+                                        // Single pass through the string
+                                        let outputText = "";
+                                        let outputIndex = 0;
+                                        let originalIndex = 0;
+
+                                        for (let i = 0; i < currentText.length; i++) {
+                                            if (currentText[i] === '#' && (i === 0 || /[\s\P{L}]/u.test(currentText[i - 1]))) {
+                                                // Check if it's followed by a word char
+                                                if (i + 1 < currentText.length && /[\w\u00C0-\u017F]/.test(currentText[i + 1])) {
+                                                    // It is a marker! Skip it.
+                                                    // The NEXT characters (the word) should be highlighted.
+                                                    originalIndex++; // Skip #
+
+                                                    // Consume the word and mark it
+                                                    let wordEnd = i + 1;
+                                                    while (wordEnd < currentText.length && /[\w\u00C0-\u017F\-]/.test(currentText[wordEnd])) {
+                                                        wordEnd++;
+                                                    }
+
+                                                    const wordLen = wordEnd - (i + 1);
+                                                    for (let k = 0; k < wordLen; k++) {
+                                                        newHighlights.add(outputIndex + k);
+                                                    }
+                                                    // We don't advance i here, we just skipped #. 
+                                                    // The loop will continue at i+1 which is the start of the word.
+                                                    continue;
+                                                }
+                                            }
+                                            outputText += currentText[i];
+                                            outputIndex++;
+                                            originalIndex++;
+                                        }
+
+                                        setText(outputText);
+                                        setHighlightedIndices(newHighlights);
+                                    }
+
+                                    setIsViewMode(true);
+                                }}
                                 disabled={!text || text.trim().length === 0}
                                 className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold shadow-lg hover:bg-blue-700 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed min-touch-target"
                             >
@@ -360,12 +540,15 @@ const App = () => {
                                                 toggleHighlights={toggleHighlights}
                                                 toggleHidden={toggleHidden}
                                                 activeTool={activeTool}
+                                                activeColor={activeColor}
                                                 settings={settings}
                                                 manualSyllables={item.syllables}
                                                 hyphenator={hyphenator}
                                                 onEditMode={(word, key, syls) => { setCorrectionData({ word, key, syllables: syls }); setShowCorrectionModal(true); }}
                                                 startIndex={item.index}
                                                 interactionDisabled={activeTool === 'read'}
+                                                wordColors={wordColors}
+                                                colorPalette={colorPalette}
                                             />
                                         );
                                     })}
@@ -374,14 +557,11 @@ const App = () => {
                         </main>
                     )}
 
-                    {activeView === 'gapWords' && <GapWordsView text={text} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} />}
-                    {activeView === 'gapSentences' && <GapSentencesView text={text} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} />}
-                    {activeView === 'gapText' && <GapTextView text={text} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} />}
 
-                    {activeView === 'puzzle' && <SyllablePuzzleView words={exerciseWords} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} />}
-                    {activeView === 'cloud' && <WordCloudView words={exerciseWords} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} />}
+                    {activeView === 'puzzle' && <SyllablePuzzleView words={highlightedIndices.size > 0 ? exerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} />}
+                    {activeView === 'cloud' && <WordCloudView words={highlightedIndices.size > 0 ? exerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} />}
                     {activeView === 'carpet' && <SyllableCarpetView words={exerciseWords} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} />}
-                    {activeView === 'list' && <WordListView words={exerciseWords} columnsState={columnsState} setColumnsState={setColumnsState} onClose={() => setActiveView('text')} settings={settings} setSettings={setSettings} onRemoveWord={() => { }} onWordUpdate={(wordId, newText) => {
+                    {activeView === 'list' && <WordListView words={exerciseWords} columnsState={columnsState} setColumnsState={setColumnsState} onClose={() => setActiveView('text')} settings={settings} setSettings={setSettings} wordColors={wordColors} colorPalette={colorPalette} colorHeaders={colorHeaders} setColorHeaders={setColorHeaders} onRemoveWord={() => { }} onWordUpdate={(wordId, newText) => {
                         const parts = wordId.split('_');
                         const index = parseInt(parts[parts.length - 1], 10);
                         if (isNaN(index)) return;
@@ -394,16 +574,19 @@ const App = () => {
                     {activeView === 'sentence' && <SentencePuzzleView text={text} mode="sentence" settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} />}
                     {activeView === 'textpuzzle' && <SentencePuzzleView text={text} mode="text" settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} />}
                     {activeView === 'sentenceshuffle' && <SentenceShuffleView text={text} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} />}
-                    {activeView === 'staircase' && <StaircaseView words={exerciseWords.map(w => ({ ...w, isHighlighted: highlightedIndices.has(w.index) }))} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} />}
-                    {activeView === 'split' && <SplitExerciseView words={exerciseWords} onClose={() => setActiveView('text')} settings={settings} />}
-                    {activeView === 'gapwords' && <GapWordsView words={highlightedIndices.size > 0 ? exerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} />}
-                    {activeView === 'gapsentences' && <GapSentencesView text={text} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} />}
+                    {activeView === 'staircase' && <StaircaseView words={highlightedIndices.size > 0 ? exerciseWords.map(w => ({ ...w, isHighlighted: highlightedIndices.has(w.index) })) : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} />}
+                    {activeView === 'split' && <SplitExerciseView words={highlightedIndices.size > 0 ? exerciseWords : []} onClose={() => setActiveView('text')} settings={settings} setSettings={setSettings} />}
+                    {activeView === 'gapWords' && <GapWordsView words={highlightedIndices.size > 0 ? exerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} />}
+                    {activeView === 'initialSound' && <GapWordsView words={highlightedIndices.size > 0 ? exerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} isInitialSound={true} />}
+                    {activeView === 'gapSentences' && <GapSentencesView text={text} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} />}
+                    {activeView === 'gapText' && <GapTextView text={text} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} />}
+                    {activeView === 'caseExercise' && <CaseExerciseView text={text} settings={settings} onClose={() => setActiveView('text')} />}
                 </>
             )}
 
-            {showSettings && <SettingsModal settings={settings} setSettings={setSettings} onClose={() => setShowSettings(false)} onExport={exportState} onImport={loadState} onPrint={handlePrint} logo={logo} setLogo={setLogo} onClearHighlights={() => setHighlightedIndices(new Set())} onShowQR={() => { setShowSettings(false); setShowQR(true); }} />}
+            {showSettings && <SettingsModal settings={settings} setSettings={setSettings} onClose={() => setShowSettings(false)} onExport={exportState} onImport={loadState} onPrint={handlePrint} logo={logo} setLogo={setLogo} onClearHighlights={() => { setHighlightedIndices(new Set()); setWordColors({}); }} onShowQR={() => { setShowSettings(false); setShowQR(true); }} />}
             {showCorrectionModal && correctionData && <CorrectionModal word={correctionData.word} currentSyllables={correctionData.syllables} font={settings.fontFamily} onSave={handleCorrectionSave} onClose={() => setShowCorrectionModal(false)} />}
-            {showQR && <QRCodeModal text={JSON.stringify({ text, settings, highlights: Array.from(highlightedIndices), hidden: Array.from(hiddenIndices), logo, manualCorrections, columnsState })} onClose={() => setShowQR(false)} />}
+            {showQR && <QRCodeModal text={JSON.stringify({ text, settings, highlights: Array.from(highlightedIndices), hidden: Array.from(hiddenIndices), logo, manualCorrections, columnsState, wordColors, colorPalette })} onClose={() => setShowQR(false)} />}
             {showScanner && <QRScannerModal onClose={() => setShowScanner(false)} onScanSuccess={(decodedText) => {
                 setShowScanner(false);
                 const trimmed = decodedText.trim();

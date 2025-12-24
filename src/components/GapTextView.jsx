@@ -60,22 +60,47 @@ export const GapTextView = ({ text, settings, setSettings, onClose }) => {
 
         if (cleanWords.length === 0) return { id: `s_${sIdx}`, parts: wordsInSentence.map(w => ({ type: 'text', text: w })) };
 
-        const sorted = [...cleanWords].sort((a, b) => b.clean.length - a.clean.length);
-        const top3 = sorted.slice(0, 3);
-        const target = top3[Math.floor(Math.random() * top3.length)];
+        // Scoring System
+        const calculateScore = (wInfo, isStart) => {
+            let score = 0;
+            const { text, clean } = wInfo;
+            if (clean.length > 5) score += 5;
+            if (text[0] === text[0].toLowerCase() && clean.endsWith('en')) score += 10;
+            if (text[0] === text[0].toUpperCase() && !isStart) score += 12;
+            const articles = ['der', 'die', 'das', 'dem', 'den', 'des', 'ein', 'eine', 'einer', 'einem', 'einen', 'eines', 'im', 'am', 'ins'];
+            if (articles.includes(clean.toLowerCase())) score -= 20;
+            return score;
+        };
 
-        const parts = wordsInSentence.map((w, i) => {
+        const scoredWords = cleanWords.map(w => ({ ...w, score: calculateScore(w, w.index === 0) }));
+        const maxScore = Math.max(...scoredWords.map(w => w.score));
+        const candidates = scoredWords.filter(w => w.score === maxScore);
+        const target = candidates[Math.floor(Math.random() * candidates.length)];
+
+        const parts = [];
+        wordsInSentence.forEach((w, i) => {
             if (i === target.index) {
-                return { type: 'gap', id: `gap_${sIdx}`, correctText: target.text, cleanText: target.clean };
+                const trailingPunctuation = w.match(/[.,!?;:]+$/);
+                if (trailingPunctuation) {
+                    const cleanWord = w.substring(0, w.length - trailingPunctuation[0].length);
+                    parts.push({ type: 'gap', id: `gap_${sIdx}`, correctText: cleanWord, cleanText: target.clean });
+                    parts.push({ type: 'text', text: trailingPunctuation[0] });
+                } else {
+                    parts.push({ type: 'gap', id: `gap_${sIdx}`, correctText: w, cleanText: target.clean });
+                }
+            } else {
+                parts.push({ type: 'text', text: w });
             }
-            return { type: 'text', text: w };
         });
+
+        const targetCleanWord = target.text.replace(/[.,!?;:]+$/, '');
 
         return {
             id: `s_${sIdx}`,
             parts,
             target: {
                 ...target,
+                text: targetCleanWord, // Clean word for pool card
                 id: `gap_${sIdx}`,
                 color: WORD_COLORS[sIdx % WORD_COLORS.length]
             }
@@ -219,7 +244,7 @@ export const GapTextView = ({ text, settings, setSettings, onClose }) => {
                         <input type="range" min="16" max="48" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-32 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer" />
                         <span className="text-xl font-bold text-slate-500">A</span>
                     </div>
-                    <button onClick={onClose} className="bg-slate-100 hover:bg-red-50 hover:text-red-500 text-slate-500 rounded-full w-12 h-12 transition-all flex items-center justify-center min-touch-target"><Icons.X size={28} /></button>
+                    <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 shadow-sm transition-transform hover:scale-105 flex items-center justify-center min-touch-target sticky right-0"><Icons.X size={24} /></button>
                 </div>
             </div>
 

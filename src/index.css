@@ -133,22 +133,22 @@
     }
 
     .shadow-border-yellow {
-        box-shadow: 0 2px 0 0 #eab308, 0 -1px 0 0 #eab308, 2px 0 0 0 #eab308, -2px 0 0 0 #eab308;
+        box-shadow: none;
         z-index: 10;
     }
 
     .shadow-border-yellow-left {
-        box-shadow: -2px 0 0 0 #eab308, 0 2px 0 0 #eab308, 0 -1px 0 0 #eab308;
+        box-shadow: none;
         z-index: 10;
     }
 
     .shadow-border-yellow-right {
-        box-shadow: 2px 0 0 0 #eab308, 0 2px 0 0 #eab308, 0 -1px 0 0 #eab308;
+        box-shadow: none;
         z-index: 10;
     }
 
     .shadow-border-yellow-mid {
-        box-shadow: 0 2px 0 0 #eab308, 0 -1px 0 0 #eab308;
+        box-shadow: none;
         z-index: 10;
     }
 
@@ -197,6 +197,33 @@
     100% {
         transform: scale(1);
     }
+}
+
+@keyframes shake {
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    10%,
+    30%,
+    50%,
+    70%,
+    90% {
+        transform: translateX(-5px);
+    }
+
+    20%,
+    40%,
+    60%,
+    80% {
+        transform: translateX(5px);
+    }
+}
+
+.shake {
+    animation: shake 0.5s cubic-bezier(.36, .07, .19, .97) both;
 }
 
 @keyframes confettiFall {

@@ -119,9 +119,9 @@ export const StaircaseView = ({ words, settings, setSettings, onClose }) => {
             <div className="bg-white px-6 py-4 shadow-sm flex justify-between items-center z-10 shrink-0 flex-wrap gap-4">
                 <div className="flex items-center gap-4">
                     <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                        <Icons.Stairs className="text-indigo-600" /> Treppenwörter
+                        <Icons.Stairs className="text-blue-600" /> Treppenwörter
                     </h2>
-                    <span className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full font-bold text-sm">
+                    <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-bold text-sm">
                         {currentIndex + 1} / {highlightedWords.length}
                     </span>
                 </div>
@@ -135,13 +135,13 @@ export const StaircaseView = ({ words, settings, setSettings, onClose }) => {
                             max="120"
                             value={settings.fontSize}
                             onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })}
-                            className="w-32 accent-indigo-600 h-2 bg-slate-200 rounded-lg cursor-pointer"
+                            className="w-32 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer"
                         />
                         <span className="text-xl font-bold text-slate-500">A</span>
                     </div>
                     <button
                         onClick={onClose}
-                        className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 shadow-sm transition-transform hover:scale-105 flex items-center justify-center min-touch-target"
+                        className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 shadow-sm transition-transform hover:scale-105 flex items-center justify-center min-touch-target sticky right-0"
                     >
                         <Icons.X size={24} />
                     </button>
@@ -152,7 +152,7 @@ export const StaircaseView = ({ words, settings, setSettings, onClose }) => {
             <div className="px-6 py-2 bg-white border-b border-slate-200">
                 <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
                     <div
-                        className="bg-gradient-to-r from-indigo-500 to-purple-500 h-full rounded-full transition-all duration-500"
+                        className="bg-gradient-to-r from-blue-500 to-cyan-500 h-full rounded-full transition-all duration-500"
                         style={{ width: `${progress}%` }}
                     ></div>
                 </div>
@@ -183,7 +183,7 @@ export const StaircaseView = ({ words, settings, setSettings, onClose }) => {
                     {/* Full word display */}
                     <div className="mt-8 pt-6 border-t border-slate-200 text-center">
                         <span
-                            className="text-indigo-600 font-bold"
+                            className="text-blue-600 font-bold"
                             style={{
                                 fontFamily: settings.fontFamily,
                                 fontSize: `${settings.fontSize * 1.2}px`,
@@ -208,7 +208,7 @@ export const StaircaseView = ({ words, settings, setSettings, onClose }) => {
                 <button
                     onClick={nextWord}
                     disabled={currentIndex === highlightedWords.length - 1}
-                    className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-2 min-touch-target"
+                    className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-2 min-touch-target"
                 >
                     Weiter <Icons.ArrowRight size={20} />
                 </button>

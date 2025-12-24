@@ -1,7 +1,7 @@
 export const DIPHTHONGS_REGEX = /^(eu|äu|au|ei|ie|ai)/i;
 export const DIGRAPHS_REGEX = /^(ch|sch|ph|th|ck|qu|pf)/i;
 export const VOWEL_REGEX = /[aeiouyäöü]/i;
-export const CLUSTERS = ['sch', 'ch', 'ck', 'ph', 'pf', 'th', 'qu', 'ei', 'ie', 'eu', 'au', 'äu', 'ai', 'sp', 'st'];
+export const CLUSTERS = ['sch', 'chs', 'ch', 'ck', 'ph', 'pf', 'th', 'qu', 'ei', 'ie', 'eu', 'au', 'äu', 'ai', 'sp', 'st'];
 export const MONOSYLLABIC_EXCEPTIONS = ['Text', 'text', 'Wort', 'wort', 'Haus', 'haus', 'Kind', 'kind', 'Buch', 'buch', 'dich', 'sich', 'mir', 'dir', 'ihn', 'sie', 'es'];
 
 export const CUSTOM_SYLLABLES = {
@@ -91,13 +91,14 @@ export const getCachedSyllables = (word, hyphenator) => {
     return s;
 };
 
-export const getChunks = (text, useClusters) => {
+export const getChunks = (text, useClusters, activeClusters = CLUSTERS) => {
     if (!useClusters) return text.split('');
+    const clustersToUse = activeClusters || CLUSTERS;
     const result = [];
     let i = 0;
     while (i < text.length) {
         let match = null;
-        for (const cluster of CLUSTERS) {
+        for (const cluster of clustersToUse) {
             // "st" and "sp" are only clusters at the beginning of a syllable (Anlaut)
             if ((cluster.toLowerCase() === 'st' || cluster.toLowerCase() === 'sp') && i !== 0) continue;
 

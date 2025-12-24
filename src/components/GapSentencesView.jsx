@@ -64,23 +64,47 @@ export const GapSentencesView = ({ text, settings, setSettings, onClose }) => {
 
         if (cleanWords.length < 3) return null;
 
-        // Sort by length decending
-        const sorted = [...cleanWords].sort((a, b) => b.clean.length - a.clean.length);
-        const top3 = sorted.slice(0, 3);
-        const target = top3[Math.floor(Math.random() * top3.length)];
+        // Scoring System
+        const calculateScore = (wInfo, isStart) => {
+            let score = 0;
+            const { text, clean } = wInfo;
+            if (clean.length > 5) score += 5;
+            if (text[0] === text[0].toLowerCase() && clean.endsWith('en')) score += 10;
+            if (text[0] === text[0].toUpperCase() && !isStart) score += 12;
+            const articles = ['der', 'die', 'das', 'dem', 'den', 'des', 'ein', 'eine', 'einer', 'einem', 'einen', 'eines', 'im', 'am', 'ins'];
+            if (articles.includes(clean.toLowerCase())) score -= 20;
+            return score;
+        };
 
-        const parts = wordsInSentence.map((w, i) => {
+        const scoredWords = cleanWords.map(w => ({ ...w, score: calculateScore(w, w.index === 0) }));
+        const maxScore = Math.max(...scoredWords.map(w => w.score));
+        const candidates = scoredWords.filter(w => w.score === maxScore);
+        const target = candidates[Math.floor(Math.random() * candidates.length)];
+
+        const parts = [];
+        wordsInSentence.forEach((w, i) => {
             if (i === target.index) {
-                return { type: 'gap', id: `gap_${sIdx}`, correctText: target.text, cleanText: target.clean };
+                const trailingPunctuation = w.match(/[.,!?;:]+$/);
+                if (trailingPunctuation) {
+                    const cleanWord = w.substring(0, w.length - trailingPunctuation[0].length);
+                    parts.push({ type: 'gap', id: `gap_${sIdx}`, correctText: cleanWord, cleanText: target.clean });
+                    parts.push({ type: 'text', text: trailingPunctuation[0] });
+                } else {
+                    parts.push({ type: 'gap', id: `gap_${sIdx}`, correctText: w, cleanText: target.clean });
+                }
+            } else {
+                parts.push({ type: 'text', text: w });
             }
-            return { type: 'text', text: w };
         });
+
+        const targetCleanWord = target.text.replace(/[.,!?;:]+$/, '');
 
         return {
             id: `s_${sIdx}`,
             parts,
             target: {
                 ...target,
+                text: targetCleanWord, // Clean word for pool card
                 id: `gap_${sIdx}`,
                 color: WORD_COLORS[sIdx % WORD_COLORS.length]
             }
@@ -256,27 +280,13 @@ export const GapSentencesView = ({ text, settings, setSettings, onClose }) => {
 
             {/* Header */}
             <div className="bg-white px-6 py-4 shadow-sm flex flex-wrap gap-4 justify-between items-center z-10 shrink-0">
-                <div className="flex items-center gap-6">
-                    <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2"><Icons.GapSentences className="text-indigo-500" /> Lückensätze</h2>
-                </div>
-
                 <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-4 py-2 shadow-sm">
-                        <div className="flex gap-2 mr-2">
-                            {groups.map((_, i) => (
-                                <div
-                                    key={i}
-                                    className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all ${i < currentGroupIdx ? 'bg-green-500 text-white' :
-                                        i === currentGroupIdx ? 'bg-blue-600 text-white scale-110 shadow-md' :
-                                            'bg-slate-200 text-slate-500'
-                                        }`}
-                                >
-                                    {i < currentGroupIdx ? <Icons.Check size={14} /> : i + 1}
-                                </div>
-                            ))}
-                        </div>
-                        <span className="text-sm font-bold text-slate-700">{currentGroupIdx + 1} / {groups.length}</span>
-                    </div>
+                    <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                        <Icons.GapSentences className="text-indigo-500" /> Lückensätze
+                    </h2>
+                    <span className="bg-slate-100 px-3 py-1 rounded-full text-slate-600 font-bold text-sm">
+                        {currentGroupIdx + 1} / {groups.length}
+                    </span>
                 </div>
 
                 <div className="flex items-center gap-4">
@@ -286,6 +296,16 @@ export const GapSentencesView = ({ text, settings, setSettings, onClose }) => {
                         <span className="text-xl font-bold text-slate-500">A</span>
                     </div>
                     <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 shadow-sm transition-transform hover:scale-105 flex items-center justify-center min-touch-target sticky right-0"><Icons.X size={24} /></button>
+                </div>
+            </div>
+
+            {/* Progress Bar */}
+            <div className="px-6 py-2 bg-white border-b border-slate-200">
+                <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                    <div
+                        className="bg-gradient-to-r from-blue-500 to-cyan-500 h-full rounded-full transition-all duration-500"
+                        style={{ width: `${(groups.length > 0 ? ((currentGroupIdx + 1) / groups.length) * 100 : 0)}%` }}
+                    ></div>
                 </div>
             </div>
 

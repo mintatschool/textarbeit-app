@@ -19,19 +19,88 @@ export const QRCodeModal = ({ text, onClose }) => {
         }
     };
 
+    const [showHashes, setShowHashes] = useState(false);
+
+    // Parsing Input Data
+    const parsedData = useMemo(() => {
+        try {
+            return JSON.parse(text);
+        } catch (e) {
+            return { text: text }; // Fallback if plain text passed
+        }
+    }, [text]);
+
     // Daten-Aufbereitung & Platz-Optimierung
     const qrValue = useMemo(() => {
-        if (!text) return "";
-        if (text.length > 2900) {
+        if (!parsedData || !parsedData.text) return "";
+
+        let contentToEncode = text; // Default: The input JSON string (Full State)
+
+        // Feature: Markierungen als # exportieren
+        if (showHashes && parsedData.highlights && Array.isArray(parsedData.highlights) && parsedData.highlights.length > 0) {
+            const rawText = parsedData.text;
+            const highlights = new Set(parsedData.highlights);
+
+            // Reconstruct text with #
+            // Logic must match App.jsx word detection approximate
+            const segments = rawText.split(/(\s+)/);
+            let currentIndex = 0;
+            let stringWithHashes = "";
+
+            segments.forEach(segment => {
+                // Check if segment is a word (same regex as App.jsx)
+                const match = segment.match(/^([^\w\u00C0-\u017F]*)([\w\u00C0-\u017F]+(?:\-[\w\u00C0-\u017F]+)*)([^\w\u00C0-\u017F]*)$/);
+
+                if (match) {
+                    const prefix = match[1];
+                    const cleanWord = match[2];
+                    const suffix = match[3];
+                    const wordStartIndex = currentIndex + prefix.length;
+
+                    // Check if word is highlighted (any char?) - Usually checked by specific indices
+                    // We check if the FIRST character of the word is highlighted
+                    // (Assuming word-based highlighting)
+                    const isHighlighted = highlights.has(wordStartIndex);
+
+                    if (isHighlighted) {
+                        stringWithHashes += prefix + "#" + cleanWord + suffix;
+                    } else {
+                        stringWithHashes += segment;
+                    }
+                } else {
+                    stringWithHashes += segment;
+                }
+                currentIndex += segment.length;
+            });
+
+            // If we export with #, we usually just want the Text String, not the JSON state?
+            // "Generiert die Lehrkraft einen QR-Code aus einem vormarkierten Text..."
+            // "Dann wird vor jedes markierte Wort ein #-Zeichen gesetzt."
+            // Assuming this implies passing just the TEXT (compatible with other apps or simple import).
+            contentToEncode = stringWithHashes;
+        }
+
+        if (contentToEncode.length > 2900) {
             setTooLongError(true);
             return "";
         }
         setTooLongError(false);
-        // Wenn der Text kurz ist, verpacken wir ihn in ein JSON-Objekt.
-        // Bei langem Text sparen wir den JSON-Overhead.
-        const rawString = text.length > 300 ? text : JSON.stringify({ text: text });
+
+        // Wrap simple text if it's not the full JSON and not too long?
+        // If we generated the hash-string, it's just a string.
+        // If it sends 'contentToEncode' which IS the JSON string, it's fine.
+
+        // Logic from before:
+        // const rawString = text.length > 300 ? text : JSON.stringify({ text: text });
+
+        // If we have hashes, we send raw string.
+        if (showHashes) return toUtf8Bytes(contentToEncode);
+
+        // Standard behavior
+        const rawString = contentToEncode.length > 300 ? contentToEncode : (contentToEncode.startsWith('{') ? contentToEncode : JSON.stringify({ text: contentToEncode }));
         return toUtf8Bytes(rawString);
-    }, [text]);
+
+    }, [text, parsedData, showHashes]);
 
     // QR-Code für Text rendern
     useEffect(() => {
@@ -126,8 +195,8 @@ export const QRCodeModal = ({ text, onClose }) => {
                     <button
                         onClick={resetToText}
                         className={`flex-1 py-2 rounded-lg font-bold text-sm transition ${mode === 'text'
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                             }`}
                     >
                         📝 Voller Text
@@ -135,8 +204,8 @@ export const QRCodeModal = ({ text, onClose }) => {
                     <button
                         onClick={() => setMode('link')}
                         className={`flex-1 py-2 rounded-lg font-bold text-sm transition ${mode === 'link'
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                             }`}
                     >
                         🔗 Cloud-Link
