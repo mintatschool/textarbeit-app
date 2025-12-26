@@ -84,4 +84,42 @@ export const Icons = {
     Activity: (p) => <Icon {...p} path={<polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />} />,
     Grid: (p) => <Icon {...p} path={<><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></>} />,
     Plus: (p) => <Icon {...p} path={<><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></>} />,
+
+    // Silbentest Icons
+    SyllableTestTwo: (p) => <Icon {...p} size={p.size || 24} path={<g transform="translate(1, 7.5) scale(0.06)">
+        <path
+            d="M 0,20 Q 0,0 20,0 H 120 Q 140,0 140,20 V 45 C 190,30 190,120 140,105 V 130 Q 140,150 120,150 H 20 Q 0,150 0,130 Z"
+            fill="currentColor"
+            stroke="currentColor"
+            strokeWidth="20"
+        />
+        <path
+            d="M 30,20 Q 30,0 50,0 H 200 Q 220,0 220,20 V 130 Q 220,150 200,150 H 50 Q 30,150 30,130 V 105 C 80,120 80,30 30,45 Z"
+            transform="translate(140, 0)"
+            fill="currentColor"
+            stroke="currentColor"
+            strokeWidth="20"
+        />
+    </g>} />,
+    SyllableTestMulti: (p) => <Icon {...p} size={p.size || 24} path={<g transform="translate(1, 8.5) scale(0.05)">
+        <path
+            d="M 0,20 Q 0,0 20,0 H 120 Q 140,0 140,20 V 45 C 190,30 190,120 140,105 V 130 Q 140,150 120,150 H 20 Q 0,150 0,130 Z"
+            fill="currentColor"
+            stroke="currentColor"
+            strokeWidth="20"
+        />
+        <circle cx="160" cy="75" r="30" fill="currentColor" stroke="none" />
+        <circle cx="230" cy="75" r="30" fill="currentColor" stroke="none" />
+        <path
+            d="M 30,20 Q 30,0 50,0 H 200 Q 220,0 220,20 V 130 Q 220,150 200,150 H 50 Q 30,150 30,130 V 105 C 80,120 80,30 30,45 Z"
+            transform="translate(250, 0)"
+            fill="currentColor"
+            stroke="currentColor"
+            strokeWidth="20"
+        />
+    </g>} />,
+    PuzzleZigzag: (p) => <Icon {...p} size={p.size || 24} path={<g transform="translate(1, -1) scale(0.95)">
+        <path d="M1 5 h7.5 l3.5 5.5 -3.5 5.5 h-7.5 c-.5 0-1-.5-1-1 v-9 c0-.5.5-1 1-1 z" fill="currentColor" stroke="currentColor" strokeWidth="2.5" />
+        <path d="M13 5 l3.5 5.5 -3.5 5.5 h7 c.5 0 1-.5 1-1 v-9 c0-.5-.5-1-1-1 h-7 z" fill="currentColor" stroke="currentColor" strokeWidth="2.5" />
+    </g>} />,
 };

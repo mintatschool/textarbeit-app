@@ -1,0 +1,8 @@
+{
+  "name": "Silben-Puzzle Profi Max",
+  "description": "Ein interaktives Lernspiel für Kinder zum spielerischen Erlernen von Silben und Wörtern, unterstützt durch KI-generierte Inhalte.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}

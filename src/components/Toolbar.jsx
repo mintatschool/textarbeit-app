@@ -80,6 +80,10 @@ export const Toolbar = ({
     setShowPuzzle,
     setShowStaircase,
     setShowCloud,
+    setShowPuzzleTestTwo,
+    setShowPuzzleTestMulti,
+    setShowSyllableComposition,
+    setShowSyllableExtension,
     setShowSplitExercise,
     setShowSentencePuzzle, // Needs logic for 'text' vs 'sentence' mode inside parent
     setShowTextPuzzle,     // Separate prop for text puzzle
@@ -95,10 +99,12 @@ export const Toolbar = ({
     activeColor,
     onSetActiveColor,
     onUpdatePalette,
-    settings
+    settings,
+    onMarkAllNeutral // New prop
 }) => {
     const [editingColorIndex, setEditingColorIndex] = useState(null);
     const [showResetConfirm, setShowResetConfirm] = useState(false);
+    const [showMarkAllConfirm, setShowMarkAllConfirm] = useState(false); // New state
 
     // Layout-Klasse: Feste Sidebar rechts (Docked)
     const containerClasses = "fixed right-0 top-0 h-full w-20 flex-col items-center py-4 gap-4 overflow-y-auto custom-scroll border-l rounded-none";
@@ -117,22 +123,41 @@ export const Toolbar = ({
                 className="w-16 h-10 rounded-xl"
             />
 
-            <ToolbarButton
-                title={showResetConfirm ? "Bist du sicher?" : "Alle Markierungen löschen"}
-                icon={showResetConfirm ? Icons.Check : Icons.RotateCcw}
-                onClick={() => {
-                    if (showResetConfirm) {
-                        onResetHighlights();
-                        setShowResetConfirm(false);
-                    } else {
-                        setShowResetConfirm(true);
-                        setTimeout(() => setShowResetConfirm(false), 3000);
-                    }
-                }}
-                disabled={isReadingMode}
-                active={showResetConfirm}
-                activeColor="red"
-            />
+            <div className="flex flex-col gap-2 w-full items-center">
+                <ToolbarButton
+                    title={showResetConfirm ? "Bist du sicher?" : "Alle Markierungen löschen"}
+                    icon={showResetConfirm ? Icons.Check : Icons.RotateCcw}
+                    onClick={() => {
+                        if (showResetConfirm) {
+                            onResetHighlights();
+                            setShowResetConfirm(false);
+                        } else {
+                            setShowResetConfirm(true);
+                            setTimeout(() => setShowResetConfirm(false), 3000);
+                        }
+                    }}
+                    disabled={isReadingMode}
+                    active={showResetConfirm}
+                    activeColor="red"
+                />
+
+                <ToolbarButton
+                    title={showMarkAllConfirm ? "Bist du sicher?" : "Alles markieren (grauer Kasten)"}
+                    icon={showMarkAllConfirm ? Icons.Check : Icons.Square}
+                    onClick={() => {
+                        if (showMarkAllConfirm) {
+                            onMarkAllNeutral();
+                            setShowMarkAllConfirm(false);
+                        } else {
+                            setShowMarkAllConfirm(true);
+                            setTimeout(() => setShowMarkAllConfirm(false), 3000);
+                        }
+                    }}
+                    disabled={isReadingMode}
+                    active={showMarkAllConfirm}
+                    activeColor="red"
+                />
+            </div>
 
             <Separator horizontal={false} />
 
@@ -151,6 +176,12 @@ export const Toolbar = ({
                 <MenuItem onClick={() => setShowCarpet(true)} icon={<Icons.Grid2x2 size={20} className="text-indigo-600" />}>
                     Silbenteppich
                 </MenuItem>
+                <MenuItem onClick={() => setShowSyllableComposition(true)} icon={<Icons.PuzzleZigzag size={20} className="text-pink-500" />}>
+                    Silben zusammensetzen
+                </MenuItem>
+                <MenuItem onClick={() => setShowSyllableExtension(true)} icon={<Icons.PuzzleZigzag size={20} className="text-purple-500" />}>
+                    Silbenbau (Profi)
+                </MenuItem>
             </MenuDropdown>
 
             {/* MENÜ: WÖRTER */}
@@ -167,11 +198,21 @@ export const Toolbar = ({
                 <MenuItem onClick={() => setShowCloud(true)} icon={<Icons.Cloud size={20} className="text-blue-500" />}>
                     Schüttelwörter
                 </MenuItem>
-                <MenuItem onClick={() => setShowPuzzle(true)} icon={<Icons.Puzzle size={20} className="text-purple-600" />}>
-                    Silbenpuzzle
-                </MenuItem>
                 <MenuItem onClick={() => setShowSplitExercise(true)} icon={<Icons.Scissors size={20} className="text-orange-500 -rotate-90" />}>
                     Wörter trennen
+                </MenuItem>
+                <MenuItem onClick={() => setShowPuzzleTestTwo(true)} icon={<Icons.SyllableTestTwo size={20} className="text-blue-500" />}>
+                    Silbenpuzzle leicht
+                </MenuItem>
+                <MenuItem onClick={() => setShowPuzzleTestMulti(true)} icon={<Icons.SyllableTestMulti size={20} className="text-blue-500" />}>
+                    Silbenpuzzle
+                </MenuItem>
+                <MenuItem
+                    onClick={() => setShowPuzzle(true)}
+                    icon={<Icons.Puzzle size={20} className="text-slate-300" />}
+                    className="!text-slate-300 hover:!text-blue-700"
+                >
+                    Silbenpuzzle alt
                 </MenuItem>
             </MenuDropdown>
 
@@ -190,11 +231,8 @@ export const Toolbar = ({
                 <MenuItem onClick={() => setShowSentencePuzzle(true)} icon={<Icons.Sentence size={20} className="text-pink-500" />}>
                     Satzpuzzle
                 </MenuItem>
-                <MenuItem onClick={() => setShowTextPuzzle(true)} icon={<Icons.TextBlocks size={20} className="text-emerald-500" />}>
-                    Textpuzzle
-                </MenuItem>
-                <MenuItem onClick={() => setShowGapText(true)} icon={<Icons.GapText size={20} className="text-blue-600" />}>
-                    Lückentext
+                <MenuItem onClick={() => setShowCloud(true)} icon={<Icons.Cloud size={20} className="text-blue-400" />}>
+                    Wortwolke
                 </MenuItem>
                 <MenuItem onClick={() => setShowCaseExercise(true)} icon={<Icons.Capitalization size={20} className="text-blue-600" />}>
                     Groß-/Kleinschreibung

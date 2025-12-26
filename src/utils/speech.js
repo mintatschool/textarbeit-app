@@ -1,6 +1,14 @@
 import availableSyllables from './available_syllables.json';
 
-const syllableSet = new Set(availableSyllables);
+let syllableSet = new Set();
+try {
+    const raw = (availableSyllables && Array.isArray(availableSyllables) ? availableSyllables : (availableSyllables?.default || []));
+    if (Array.isArray(raw)) {
+        syllableSet = new Set(raw);
+    }
+} catch (e) {
+    console.warn("Speech: Failed to load syllable list", e);
+}
 const BASE_PATH = import.meta.env.BASE_URL;
 
 /**

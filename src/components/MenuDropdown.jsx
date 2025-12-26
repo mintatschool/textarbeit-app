@@ -2,10 +2,10 @@ import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Icons } from './Icons';
 
-export const MenuItem = ({ onClick, children, icon }) => (
+export const MenuItem = ({ onClick, children, icon, className = "" }) => (
     <button
         onClick={onClick}
-        className="w-full text-left px-4 py-3 rounded-lg hover:bg-blue-50 hover:text-blue-700 text-slate-700 font-medium text-sm flex items-center transition min-touch-target"
+        className={`w-full text-left px-4 py-3 rounded-lg hover:bg-blue-50 hover:text-blue-700 text-slate-700 font-medium text-sm flex items-center transition min-touch-target ${className}`}
     >
         {icon && <span className="w-8 flex justify-start shrink-0">{icon}</span>}
         <span className="flex-1">{children}</span>
