@@ -52,7 +52,7 @@ const App = () => {
     const [isViewMode, setIsViewMode] = useState(false);
     const [settings, setSettings] = useState({
         fontSize: 32,
-        lineHeight: 2.2,
+        lineHeight: 2.8,
         wordSpacing: 0.4,
         visualType: 'block',
         displayTrigger: 'click',
@@ -545,9 +545,9 @@ const App = () => {
             ) : (
                 <>
                     {activeView === 'text' && (
-                        <main className={`flex-1 p-4 md:p-8 outline-none print-content ${settings.lockScroll ? 'overflow-hidden touch-none' : 'overflow-y-auto custom-scroll'} pr-24 transition-all`} style={{ maxWidth: `100%` }}>
+                        <main className={`flex-1 pt-20 pb-4 md:pt-24 md:pb-8 px-4 md:px-8 outline-none print-content ${settings.lockScroll ? 'overflow-hidden touch-none' : 'overflow-y-auto custom-scroll'} pr-24 transition-all`} style={{ maxWidth: `100%` }}>
                             {/* Font Size Slider - Sticky Top Right */}
-                            <div className="fixed top-4 right-28 z-40 bg-white/95 backdrop-blur-sm shadow-lg rounded-xl px-4 py-3 border border-slate-200 flex items-center gap-3">
+                            <div className="fixed top-2 right-28 z-40 bg-white/95 backdrop-blur-sm shadow-lg rounded-xl px-4 py-3 border border-slate-200 flex items-center gap-3">
                                 <span className="text-xs font-bold text-slate-500">A</span>
                                 <input
                                     type="range"
