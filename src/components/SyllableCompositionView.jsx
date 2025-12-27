@@ -104,6 +104,7 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [] }) 
                 }
             });
         }
+        console.log("SyllableCompositionView: candidateSyllables", candidateSyllables);
 
         // 2. Filter loop
         candidateSyllables.forEach(syl => {
@@ -159,6 +160,7 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [] }) 
         // If strict audio check is desired, we are good because we KEPT:
         // if (!audioSet.has(cleanSyl)) return;
 
+        console.log("SyllableCompositionView: validSyllables", valid);
         return valid.sort(() => Math.random() - 0.5);
     }, [words, settings?.clusters, allowedClusters]);
 

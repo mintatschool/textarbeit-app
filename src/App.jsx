@@ -51,7 +51,7 @@ const App = () => {
     const [text, setText] = useState("");
     const [isViewMode, setIsViewMode] = useState(false);
     const [settings, setSettings] = useState({
-        fontSize: 32,
+        fontSize: 48,
         lineHeight: 2.8,
         wordSpacing: 0.4,
         visualType: 'block',
@@ -418,7 +418,7 @@ const App = () => {
                 <div className="flex-1 flex flex-col items-center justify-center p-4 font-sans animate-fadeIn pb-24">
                     <div className="bg-white p-8 rounded-3xl shadow-xl w-full max-w-4xl border border-slate-100 flex flex-col h-[70vh]">
                         <div className="flex justify-between items-center mb-6">
-                            <h1 className="text-3xl font-bold text-slate-800 flex items-baseline gap-3">
+                            <h1 className="text-3xl font-bold text-slate-800 flex items-baseline gap-3" style={{ fontFamily: "'Patrick Hand', cursive" }}>
                                 <span className="flex items-baseline">
                                     <span className="text-4xl font-extrabold text-slate-400">KON</span>
                                     <span className="text-4xl font-extrabold text-blue-600">TEXT</span>
@@ -551,10 +551,11 @@ const App = () => {
                                 <input
                                     type="range"
                                     min="16"
-                                    max="80"
+                                    max="120"
+                                    step="2"
                                     value={settings.fontSize}
                                     onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })}
-                                    className="w-32 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer"
+                                    className="w-32 md:w-48 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer"
                                 />
                                 <span className="text-xl font-bold text-slate-500">A</span>
                             </div>
