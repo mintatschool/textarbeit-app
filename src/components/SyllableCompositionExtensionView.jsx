@@ -46,6 +46,8 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose }) =
                     w.syllables.forEach(s => {
                         if (typeof s === 'string') candidateSyllables.push(s);
                     });
+                } else if (w && w.word) {
+                    candidateSyllables.push(w.word);
                 }
             });
         }

@@ -101,6 +101,8 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [] }) 
                     w.syllables.forEach(s => {
                         if (typeof s === 'string') candidateSyllables.push(s);
                     });
+                } else if (w && w.word) {
+                    candidateSyllables.push(w.word);
                 }
             });
         }
