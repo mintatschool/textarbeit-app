@@ -57,8 +57,8 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose }) =
             if (cleanSyl.length < 2) return;
             if (seen.has(cleanSyl)) return;
 
-            // Check if audio exists
-            if (!audioSet.has(cleanSyl)) return;
+            // OPTIONAL: Check if audio exists (warn but don't block)
+            // if (!audioSet.has(cleanSyl)) return;
 
             // SPLIT LOGIC: Decompose syllable into parts (Letters + Clusters)
             // Example: "schau" -> "sch", "au" (2 parts)

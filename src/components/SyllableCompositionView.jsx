@@ -113,10 +113,10 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [] }) 
             if (seen.has(cleanSyl)) return;
 
             // EXCLUSION CRITERION: If syllable is a cluster (e.g. 'ei', 'ie'), exclude it.
-            if (allowedClusters.has(cleanSyl)) return;
+            // if (allowedClusters.has(cleanSyl)) return;
 
             // Check if audio exists (consistent with Silbenteppich)
-            if (!audioSet.has(cleanSyl)) return;
+            // if (!audioSet.has(cleanSyl)) return;
 
             // Try all splits
             let foundSplit = null;
