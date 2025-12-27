@@ -419,8 +419,7 @@ const App = () => {
                     <div className="bg-white p-8 rounded-3xl shadow-xl w-full max-w-4xl border border-slate-100 flex flex-col h-[70vh]">
                         <div className="flex justify-between items-center mb-6">
                             <h1 className="text-3xl font-bold text-slate-800 flex items-baseline gap-3">
-                                <span className="flex items-baseline text-2xl text-slate-600 font-normal">
-                                    Lesen und schreiben im<span className="inline-block w-4"></span>
+                                <span className="flex items-baseline">
                                     <span className="text-4xl font-extrabold text-slate-400">KON</span>
                                     <span className="text-4xl font-extrabold text-blue-600">TEXT</span>
                                 </span>

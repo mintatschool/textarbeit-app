@@ -122,4 +122,13 @@ export const Icons = {
         <path d="M1 5 h7.5 l3.5 5.5 -3.5 5.5 h-7.5 c-.5 0-1-.5-1-1 v-9 c0-.5.5-1 1-1 z" fill="currentColor" stroke="currentColor" strokeWidth="2.5" />
         <path d="M13 5 l3.5 5.5 -3.5 5.5 h7 c.5 0 1-.5 1-1 v-9 c0-.5-.5-1-1-1 h-7 z" fill="currentColor" stroke="currentColor" strokeWidth="2.5" />
     </g>} />,
+    SyllableBuild1: (p) => <Icon {...p} size={p.size || 24} path={<g transform="translate(1, 0)">
+        <path d="M1 6 h8 l3 6 -3 6 h-8 a1 1 0 0 1 -1 -1 v-10 a1 1 0 0 1 1 -1 z" fill="currentColor" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M13.5 6 h6.5 a1 1 0 0 1 1 1 v10 a1 1 0 0 1 -1 1 h-6.5 l3 -6 -3 -6 z" fill="currentColor" stroke="currentColor" strokeWidth="1.5" />
+    </g>} />,
+    SyllableBuild2: (p) => <Icon {...p} size={p.size || 24} path={<g transform="translate(0, 0)">
+        <path d="M0.5 6 h5.5 l2 6 -2 6 h-5.5 a1 1 0 0 1 -1 -1 v-10 a1 1 0 0 1 1 -1 z" fill="currentColor" stroke="currentColor" strokeWidth="1.2" />
+        <path d="M9 6 h6 l2 6 -2 6 h-6 l2 -6 -2 -6 z" fill="currentColor" stroke="currentColor" strokeWidth="1.2" />
+        <path d="M18 6 h5.5 a1 1 0 0 1 1 1 v10 a1 1 0 0 1 -1 1 h-5.5 l2 -6 -2 -6 z" fill="currentColor" stroke="currentColor" strokeWidth="1.2" />
+    </g>} />,
 };

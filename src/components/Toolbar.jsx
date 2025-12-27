@@ -176,11 +176,11 @@ export const Toolbar = ({
                 <MenuItem onClick={() => setShowCarpet(true)} icon={<Icons.Grid2x2 size={20} className="text-indigo-600" />}>
                     Silbenteppich
                 </MenuItem>
-                <MenuItem onClick={() => setShowSyllableComposition(true)} icon={<Icons.PuzzleZigzag size={20} className="text-pink-500" />}>
-                    Silben zusammensetzen
+                <MenuItem onClick={() => setShowSyllableComposition(true)} icon={<Icons.SyllableBuild1 size={20} className="text-pink-500" />}>
+                    Silbenbau 1
                 </MenuItem>
-                <MenuItem onClick={() => setShowSyllableExtension(true)} icon={<Icons.PuzzleZigzag size={20} className="text-purple-500" />}>
-                    Silbenbau (Profi)
+                <MenuItem onClick={() => setShowSyllableExtension(true)} icon={<Icons.SyllableBuild2 size={20} className="text-purple-500" />}>
+                    Silbenbau 2
                 </MenuItem>
             </MenuDropdown>
 
