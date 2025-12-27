@@ -57,7 +57,7 @@ const ModeIcon = ({ mode, active }) => {
     );
 };
 
-export const PuzzleTestTwoSyllableView = ({ words, onClose }) => {
+export const PuzzleTestTwoSyllableView = ({ words, onClose, title }) => {
     const [gameState, setGameState] = useState({
         stages: [],
         currentStageIndex: 0,
@@ -291,7 +291,7 @@ export const PuzzleTestTwoSyllableView = ({ words, onClose }) => {
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-3 mr-4">
                         <Icons.SyllableTestTwo className="text-blue-600 w-8 h-8" />
-                        <span className="text-xl font-bold text-slate-800 hidden md:inline">Silbenpuzzle leicht</span>
+                        <span className="text-xl font-bold text-slate-800 hidden md:inline">{title || "Silbenpuzzle 1"}</span>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -368,8 +368,11 @@ export const PuzzleTestTwoSyllableView = ({ words, onClose }) => {
 
                 {/* Zentrum */}
                 <div className="flex-1 flex flex-col items-center justify-center px-4 relative overflow-hidden">
-                    <button onClick={() => currentStageInfo?.words[currentTargetIdx] && speak(currentStageInfo.words[currentTargetIdx].fullWord)} className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center shadow-xl hover:scale-105 active:scale-95 transition-all ring-8 ring-white/50 mb-10 shrink-0">
-                        <Volume2 className="w-8 h-8 text-white" />
+                    <button
+                        onClick={() => currentStageInfo?.words[currentTargetIdx] && speak(currentStageInfo.words[currentTargetIdx].fullWord)}
+                        className="w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all ring-4 ring-white/50 mb-10 shrink-0"
+                    >
+                        <Volume2 className="w-7 h-7" />
                     </button>
 
                     {/* Target Container - Standardized Flex Layout with Overlap */}

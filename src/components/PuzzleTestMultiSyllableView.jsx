@@ -8,7 +8,7 @@ import { Icons } from './Icons';
 import PuzzleTestPiece from './PuzzleTestPiece';
 import { speak } from '../utils/speech';
 
-export const PuzzleTestMultiSyllableView = ({ words, onClose }) => {
+export const PuzzleTestMultiSyllableView = ({ words, onClose, title }) => {
     // State
     const [pieces, setPieces] = useState({ left: [], middle: [], right: [] });
     const [activeLengths, setActiveLengths] = useState([]);
@@ -243,7 +243,7 @@ export const PuzzleTestMultiSyllableView = ({ words, onClose }) => {
             <header className="bg-white border-b border-slate-200 px-6 py-3 flex justify-between items-center z-20 shadow-sm shrink-0">
                 <div className="flex items-center gap-3">
                     <Icons.SyllableTestMulti className="text-blue-600 w-8 h-8" />
-                    <span className="text-xl font-bold text-slate-800">Silbenpuzzle</span>
+                    <span className="text-xl font-bold text-slate-800">{title || "Silbenpuzzle 2"}</span>
                 </div>
 
                 <div className="flex items-center gap-4">
@@ -256,6 +256,25 @@ export const PuzzleTestMultiSyllableView = ({ words, onClose }) => {
                     </button>
                 </div>
             </header>
+
+            <div className="flex flex-col items-center pt-8 bg-blue-50/30">
+                <button
+                    onClick={() => {
+                        const firstWordId = Object.keys(slots).length > 0 ? slots[Object.keys(slots)[0]].wordId : null;
+                        if (firstWordId) {
+                            const word = words.find(w => w.id === firstWordId);
+                            if (word) speak(word.word);
+                        } else if (words.length > 0) {
+                            speak(words[0].word);
+                        }
+                    }}
+                    className="w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all ring-4 ring-white/50 shrink-0"
+                    title="Wort anhören"
+                >
+                    <Icons.Volume2 size={24} />
+                </button>
+            </div>
+
 
             {/* Main Content */}
             <div className="flex-1 relative flex overflow-hidden">

@@ -2,7 +2,7 @@ import React from 'react';
 
 const Icon = ({ path, size = 24, className = "" }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
-        strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+        strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
         className={className} style={{ transformBox: 'fill-box' }}>{path}</svg>
 );
 
@@ -14,8 +14,8 @@ export const Icons = {
     // Menü-Icons
     MenuSyllables: (p) => <Icon {...p} path={<><line x1="4" y1="12" x2="9" y2="12" strokeWidth="4" /><line x1="15" y1="12" x2="20" y2="12" strokeWidth="4" /></>} />,
     MenuWords: (p) => <Icon {...p} path={<><line x1="4" y1="12" x2="20" y2="12" strokeWidth="4" /></>} />,
-    MenuSentences: (p) => <Icon {...p} path={<><line x1="3" y1="8" x2="8" y2="8" strokeWidth="3" /><line x1="10" y1="8" x2="16" y2="8" strokeWidth="3" /><line x1="18" y1="8" x2="21" y2="8" strokeWidth="3" /><line x1="3" y1="16" x2="12" y2="16" strokeWidth="3" /><circle cx="16" cy="16" r="2" fill="currentColor" stroke="none" /></>} />,
-    MenuSentenceCategory: (p) => <Icon {...p} path={<><line x1="4" y1="12" x2="20" y2="12" strokeWidth="2" /><line x1="4" y1="16" x2="16" y2="16" strokeWidth="2" /><circle cx="19" cy="16" r="1.5" fill="currentColor" /></>} />,
+    MenuSentences: (p) => <Icon {...p} path={<><line x1="3" y1="8" x2="8" y2="8" strokeWidth="3" /><line x1="10" y1="8" x2="16" y2="8" strokeWidth="3" /><line x1="18" y1="8" x2="21" y2="8" strokeWidth="3" /><line x1="3" y1="16" x2="12" y2="16" strokeWidth="3" /><circle cx="20" cy="16" r="2" fill="currentColor" stroke="none" /></>} />,
+    MenuSentenceCategory: (p) => <Icon {...p} path={<><line x1="4" y1="11" x2="16" y2="11" strokeWidth="3" /><line x1="4" y1="16" x2="12" y2="16" strokeWidth="3" /><circle cx="19" cy="16" r="1.5" fill="currentColor" /></>} />,
     TextParagraph: (p) => <Icon {...p} path={<><line x1="4" y1="4" x2="20" y2="4" strokeWidth="2" /><line x1="4" y1="8" x2="20" y2="8" strokeWidth="2" /><line x1="4" y1="12" x2="20" y2="12" strokeWidth="2" /><line x1="4" y1="16" x2="20" y2="16" strokeWidth="2" /><line x1="4" y1="20" x2="12" y2="20" strokeWidth="2" /></>} />,
 
     // Untermenü-Icons
@@ -130,5 +130,15 @@ export const Icons = {
         <path d="M0.5 6 h5.5 l2 6 -2 6 h-5.5 a1 1 0 0 1 -1 -1 v-10 a1 1 0 0 1 1 -1 z" fill="currentColor" stroke="currentColor" strokeWidth="1.2" />
         <path d="M9 6 h6 l2 6 -2 6 h-6 l2 -6 -2 -6 z" fill="currentColor" stroke="currentColor" strokeWidth="1.2" />
         <path d="M18 6 h5.5 a1 1 0 0 1 1 1 v10 a1 1 0 0 1 -1 1 h-5.5 l2 -6 -2 -6 z" fill="currentColor" stroke="currentColor" strokeWidth="1.2" />
+    </g>} />,
+    LetterSearch: (p) => <Icon {...p} size={p.size || 24} path={<g>
+        <rect x="3" y="3" width="18" height="18" rx="4" />
+        <path d="M9 17L12 7L15 17" />
+        <line x1="10" y1="14" x2="14" y2="14" />
+    </g>} />,
+    LetterMarker: (p) => <Icon {...p} size={p.size || 24} path={<g>
+        <rect x="3" y="3" width="18" height="18" rx="4" fill="#fde047" />
+        <path d="M9 17L12 7L15 17" />
+        <line x1="10" y1="14" x2="14" y2="14" />
     </g>} />,
 };

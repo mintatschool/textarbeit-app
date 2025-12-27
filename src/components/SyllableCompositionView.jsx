@@ -53,7 +53,7 @@ const ModeIcon = ({ mode, active }) => {
     );
 };
 
-export const SyllableCompositionView = ({ onClose, settings = {}, words = [] }) => {
+export const SyllableCompositionView = ({ onClose, settings = {}, words = [], title }) => {
     const [gameState, setGameState] = useState({
         stages: [],
         currentStageIndex: 0,
@@ -78,6 +78,7 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [] }) 
 
     // Filter valid syllables from MARKED WORDS
     const validSyllables = useMemo(() => {
+        // Strict requirement: Audio list must be loaded
         if (!availableSyllables) return [];
 
         let audioSet = new Set();
@@ -88,6 +89,7 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [] }) 
             }
         } catch (e) {
             console.warn("Syllable audio list error", e);
+            return []; // Fail safe if audio list is corrupted
         }
 
         const valid = [];
@@ -102,11 +104,11 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [] }) 
                         if (typeof s === 'string') candidateSyllables.push(s);
                     });
                 } else if (w && w.word) {
+                    // Fallback to word itself if no syllables defined (should be rare for "Syllables")
                     candidateSyllables.push(w.word);
                 }
             });
         }
-        console.log("SyllableCompositionView: candidateSyllables", candidateSyllables);
 
         // 2. Filter loop
         candidateSyllables.forEach(syl => {
@@ -115,54 +117,37 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [] }) 
             if (cleanSyl.length < 2) return;
             if (seen.has(cleanSyl)) return;
 
-            // EXCLUSION CRITERION: If syllable is a cluster (e.g. 'ei', 'ie'), exclude it.
-            // if (allowedClusters.has(cleanSyl)) return;
+            // STRICT RULE 1: Must have audio
+            if (!audioSet.has(cleanSyl)) return;
 
-            // Check if audio exists (consistent with Silbenteppich)
-            // if (!audioSet.has(cleanSyl)) return;
-
-            // Try all splits
+            // STRICT RULE 2: Must consist of (Letter/Cluster) + (Letter/Cluster)
+            // We search for *strictly* valid splits.
             let foundSplit = null;
 
-            // If strict audio check passes (it's in the list), we MUST find a split.
-            // First: Try "nice" split (valid structure).
             for (let i = 1; i < cleanSyl.length; i++) {
                 const partA = cleanSyl.substring(0, i);
                 const partB = cleanSyl.substring(i);
 
-                // Rules Relaxed: At least ONE part valid.
+                // Validation Logic
                 const isPartAValid = partA.length === 1 || allowedClusters.has(partA);
                 const isPartBValid = partB.length === 1 || allowedClusters.has(partB);
 
-                if (isPartAValid || isPartBValid) {
+                if (isPartAValid && isPartBValid) {
                     foundSplit = { partA, partB, full: cleanSyl };
-                    // Prioritize perfect splits
-                    if (isPartAValid && isPartBValid) break;
+                    break; // Found a valid structure
                 }
             }
 
-            // Fallback: If no "nice" split found, BUT it is in audio list, FORCE a split.
-            // Just take first char + rest. Or middle.
-            if (!foundSplit && cleanSyl.length >= 2) {
-                const splitIdx = Math.floor(cleanSyl.length / 2) || 1;
-                foundSplit = {
-                    partA: cleanSyl.substring(0, splitIdx),
-                    partB: cleanSyl.substring(splitIdx),
-                    full: cleanSyl
-                };
-            }
+            // Unlike before, we DO NOT have a fallback. 
+            // If it doesn't split into valid parts, it is excluded.
 
             if (foundSplit) {
                 valid.push(foundSplit);
                 seen.add(cleanSyl);
             }
-            // End Filter Loop
         });
 
-        // If strict audio check is desired, we are good because we KEPT:
-        // if (!audioSet.has(cleanSyl)) return;
-
-        console.log("SyllableCompositionView: validSyllables", valid);
+        console.log("SyllableCompositionView: Strict filtered syllables", valid);
         return valid.sort(() => Math.random() - 0.5);
     }, [words, settings?.clusters, allowedClusters]);
 
@@ -376,6 +361,17 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [] }) 
         setGameState(prev => ({ ...prev, gameMode: mode }));
     };
 
+    // Auto-close after completion
+    useEffect(() => {
+        if (gameState.gameStatus === 'stage-complete') {
+            const timer = setTimeout(() => {
+                onClose();
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [gameState.gameStatus, onClose]);
+
+
     if (gameState.gameStatus === 'loading') {
         return (
             <div className="h-screen w-screen flex flex-col items-center justify-center bg-blue-50">
@@ -398,15 +394,7 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [] }) 
         );
     }
 
-    // Auto-close after completion
-    useEffect(() => {
-        if (gameState.gameStatus === 'stage-complete') {
-            const timer = setTimeout(() => {
-                onClose();
-            }, 3000);
-            return () => clearTimeout(timer);
-        }
-    }, [gameState.gameStatus, onClose]);
+
 
     // Stage completion view
     if (gameState.gameStatus === 'stage-complete') {
@@ -435,7 +423,7 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [] }) 
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-3 mr-4">
                         <Icons.PuzzleZigzag className="text-blue-600 w-8 h-8" />
-                        <span className="text-xl font-bold text-slate-800 hidden md:inline">Silben zusammensetzen</span>
+                        <span className="text-xl font-bold text-slate-800 hidden md:inline">{title || "Silbenbau 1"}</span>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -484,16 +472,21 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [] }) 
                         <HorizontalLines count={5} />
                     </div>
 
-                    <div className="flex items-center gap-3 bg-gray-50 px-4 py-1.5 rounded-2xl border border-gray-200">
-                        <Maximize2 className="w-4 h-4 text-blue-400" />
-                        <input type="range" min="0.7" max="1.3" step="0.1" value={gameState.pieceScale} onChange={(e) => setGameState(prev => ({ ...prev, pieceScale: parseFloat(e.target.value) }))} className="w-20 h-1.5 bg-blue-100 rounded-lg appearance-none cursor-pointer accent-blue-600" />
+                    <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg">
+                        <span className="text-xs font-bold text-slate-500">A</span>
+                        <input
+                            type="range"
+                            min="0.7"
+                            max="1.3"
+                            step="0.1"
+                            value={gameState.pieceScale}
+                            onChange={(e) => setGameState(prev => ({ ...prev, pieceScale: parseFloat(e.target.value) }))}
+                            className="w-48 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer"
+                        />
+                        <span className="text-xl font-bold text-slate-500">A</span>
                     </div>
 
-                    <button onClick={() => window.confirm("Neu starten?") && startNewGame()} className="p-2 text-gray-400 hover:text-blue-500 transition-colors mr-2">
-                        <RotateCcw className="w-6 h-6" />
-                    </button>
-
-                    <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 flex items-center justify-center transition-colors shadow-sm">
+                    <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 flex items-center justify-center transition-colors shadow-sm ml-2">
                         <Icons.X size={24} />
                     </button>
                 </div>
@@ -518,8 +511,12 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [] }) 
 
                 {/* Zentrum */}
                 <div className="flex-1 flex flex-col items-center justify-center px-4 relative overflow-hidden">
-                    <button onClick={() => currentStageInfo?.items[currentTargetIdx] && speak(currentStageInfo.items[currentTargetIdx].full)} className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center shadow-xl hover:scale-105 active:scale-95 transition-all ring-8 ring-white/50 mb-10 shrink-0">
-                        <Volume2 className="w-8 h-8 text-white" />
+                    <button
+                        onClick={() => currentStageInfo?.items[currentTargetIdx] && speak(currentStageInfo.items[currentTargetIdx].full)}
+                        className="w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all ring-4 ring-white/50 mb-14 shrink-0"
+                        title="Anhören"
+                    >
+                        <Volume2 className="w-7 h-7" />
                     </button>
 
                     <div className="relative flex flex-col items-center gap-4 w-full mt-6">

@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Icons } from './Icons';
 
-export const CaseExerciseView = ({ text, settings, onClose }) => {
+export const CaseExerciseView = ({ text, settings, onClose, title }) => {
     const [wordStates, setWordStates] = useState({}); // idx -> 'UPPER' | 'STANDARD' | 'LOWER'
     const [showReward, setShowReward] = useState(false);
     const [checkResults, setCheckResults] = useState(null); // { correctIndices: Set, allCorrect: bool }
@@ -117,7 +117,7 @@ export const CaseExerciseView = ({ text, settings, onClose }) => {
             <div className="bg-white px-8 py-4 border-b border-slate-200 flex justify-between items-center shrink-0 shadow-sm z-10">
                 <div className="flex items-center gap-4">
                     <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
-                        <Icons.Capitalization className="text-blue-600" /> Groß- und Kleinschreibung
+                        <Icons.Capitalization className="text-blue-600" /> {title || "Groß- und Kleinschreibung"}
                     </h2>
                 </div>
 

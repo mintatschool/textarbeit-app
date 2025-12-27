@@ -93,6 +93,8 @@ export const Toolbar = ({
     setShowInitialSound,   // New: Finding initial sounds
     setShowGapSentences,   // New: Missing words in sentences
     setShowGapText,        // New: Full text with gaps
+    setShowFindLetters,    // New: Find letters exercise
+
 
     // Color Props
     colorPalette = [],
@@ -171,6 +173,13 @@ export const Toolbar = ({
                 activeColor="purple"
             />
 
+            {/* MENÜ: BUCHSTABEN */}
+            <MenuDropdown title="Buchstaben" icon={<Icons.LetterSearch size={24} />} labelVisible={false} align="right">
+                <MenuItem onClick={() => setShowFindLetters(true)} icon={<Icons.LetterSearch size={20} className="text-blue-600" />}>
+                    Buchstaben finden
+                </MenuItem>
+            </MenuDropdown>
+
             {/* MENÜ: SILBEN */}
             <MenuDropdown title="Silben" icon={<Icons.MenuSyllables size={24} />} labelVisible={false} align="right">
                 <MenuItem onClick={() => setShowCarpet(true)} icon={<Icons.Grid2x2 size={20} className="text-indigo-600" />}>
@@ -202,10 +211,10 @@ export const Toolbar = ({
                     Wörter trennen
                 </MenuItem>
                 <MenuItem onClick={() => setShowPuzzleTestTwo(true)} icon={<Icons.SyllableTestTwo size={20} className="text-blue-500" />}>
-                    Silbenpuzzle leicht
+                    Silbenpuzzle 1
                 </MenuItem>
                 <MenuItem onClick={() => setShowPuzzleTestMulti(true)} icon={<Icons.SyllableTestMulti size={20} className="text-blue-500" />}>
-                    Silbenpuzzle
+                    Silbenpuzzle 2
                 </MenuItem>
                 <MenuItem
                     onClick={() => setShowPuzzle(true)}
@@ -265,18 +274,18 @@ export const Toolbar = ({
                 {/* 1. NEUTRAL MARKER (Grey Box - Whole Word Frame) */}
                 <button
                     onClick={() => onSetActiveColor('neutral')}
-                    className={`w-14 h-8 rounded-md border-2 transition-all min-touch-target ${activeColor === 'neutral' ? 'border-slate-500 bg-slate-200 shadow-[0_0_12px_rgba(59,130,246,0.6)] ring-2 ring-blue-400/50 scale-110' : 'border-slate-300 bg-transparent hover:bg-slate-100 hover:border-slate-400'}`}
+                    className={`w-14 h-6 rounded-md border-2 transition-all !min-h-0 ${activeColor === 'neutral' ? 'border-slate-500 bg-slate-200 shadow-[0_0_12px_rgba(59,130,246,0.6)] ring-2 ring-blue-400/50 scale-110' : 'border-slate-500 bg-transparent hover:bg-slate-100 hover:border-slate-600'}`}
                     title="Neutral markieren (Grauer Rahmen)"
                 />
 
-                {/* 2. YELLOW MARKER (Yellow Vertical Box - Character Highlight) */}
-                <div className="w-14 flex justify-end">
-                    <button
-                        onClick={() => onSetActiveColor('yellow')}
-                        className={`w-[19px] h-[27px] rounded-sm transition-all ${activeColor === 'yellow' ? 'bg-[#feffc7] border-2 border-slate-500 shadow-[0_0_12px_rgba(59,130,246,0.6)] ring-2 ring-blue-400/50 scale-110' : 'bg-[#feffc7] hover:brightness-95 border-2 border-slate-200'}`}
-                        title="Gelb markieren (Buchstaben)"
-                    />
-                </div>
+                {/* 2. YELLOW MARKER (Character Highlight - Matches Find Letters style) */}
+                <button
+                    onClick={() => onSetActiveColor('yellow')}
+                    className={`w-14 h-12 flex items-center justify-center rounded-xl transition-all min-touch-target ${activeColor === 'yellow' ? 'bg-white border-2 border-slate-500 shadow-[0_0_12px_rgba(59,130,246,0.6)] ring-2 ring-blue-400/50 scale-110' : 'border-2 border-transparent hover:bg-slate-100'}`}
+                    title="Gelb markieren (Buchstaben)"
+                >
+                    <Icons.LetterMarker size={28} className="text-slate-500" />
+                </button>
 
                 {/* 3. COLOR PALETTE (Edge-to-Edge Staggered) */}
                 <div className="flex justify-center gap-0 w-full">

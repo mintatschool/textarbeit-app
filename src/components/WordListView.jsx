@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Icons } from './Icons';
 import { EmptyStateMessage } from './EmptyStateMessage';
 
-export const WordListView = ({ words, columnsState, setColumnsState, onClose, settings, setSettings, onRemoveWord, onWordUpdate, wordColors = {}, colorHeaders = {}, setColorHeaders, colorPalette = [] }) => {
+export const WordListView = ({ words, columnsState, setColumnsState, onClose, settings, setSettings, onRemoveWord, onWordUpdate, wordColors = {}, colorHeaders = {}, setColorHeaders, colorPalette = [], title }) => {
     if (!words || words.length === 0) return (<div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans"><EmptyStateMessage onClose={onClose} /></div>);
     const [columnCount, setColumnCount] = useState(1);
     const [sortByColor, setSortByColor] = useState(false);
@@ -265,7 +265,7 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
         <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans">
             <div className="bg-white px-6 py-4 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center z-10 shrink-0">
                 <div className="flex items-center gap-6 w-full md:w-auto justify-between md:justify-start">
-                    <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2"><Icons.List className="text-blue-600" /> Wortliste</h2>
+                    <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2"><Icons.List className="text-blue-600" /> {title || "Wortliste/Tabelle"}</h2>
 
                     {/* Column Controls */}
                     <div className={`flex items-center gap-4 ${sortByColor ? 'opacity-50 pointer-events-none grayscale' : ''}`}>

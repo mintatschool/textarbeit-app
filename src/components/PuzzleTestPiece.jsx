@@ -77,12 +77,11 @@ const PuzzleTestPiece = ({
     };
 
     // Determine padding to center text visually in the "body" excluding knobs
-    // Adjusted to align text further left as requested
     const getTextPadding = () => {
-        if (type === 'left' || type === 'zigzag-left') return 'pl-2 pr-16'; // Start very close to left edge
-        if (type === 'right' || type === 'zigzag-right') return 'pl-8 pr-2'; // Closer to the hole
-        if (type === 'zigzag-middle') return 'pl-10 pr-10'; // Balanced for middle zigzag
-        return 'pl-8 pr-12'; // Closer to left hole
+        if (type === 'left' || type === 'zigzag-left') return 'pr-8'; // Compensation for right-side extension
+        if (type === 'right' || type === 'zigzag-right') return 'pl-8'; // Compensation for left-side cutout
+        if (type === 'zigzag-middle') return 'px-2';
+        return 'px-4';
     };
 
     return (
@@ -149,8 +148,8 @@ const PuzzleTestPiece = ({
                 </div>
 
                 {!isGhost && (
-                    <div className={`absolute inset-0 flex items-center justify-start pointer-events-none z-10 ${getTextPadding()}`}>
-                        <span className="select-none font-black text-white text-left block w-full"
+                    <div className={`absolute inset-0 flex items-center justify-center pointer-events-none z-10 ${getTextPadding()}`}>
+                        <span className="select-none font-black text-white text-center block w-full"
                             style={{
                                 fontSize: calculateFontSize(),
                                 textShadow: '0 2px 5px rgba(0,0,0,0.4)',

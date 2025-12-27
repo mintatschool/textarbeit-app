@@ -38,7 +38,7 @@ const PASTEL_COLORS = [
     'bg-rose-100 border-rose-200'
 ];
 
-export const SentencePuzzleView = ({ text, mode = 'sentence', onClose, settings, setSettings }) => {
+export const SentencePuzzleView = ({ text, mode = 'sentence', onClose, settings, setSettings, title }) => {
     if (!text || text.trim().length === 0) return (<div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans"><EmptyStateMessage onClose={onClose} /></div>);
 
     const [pieces, setPieces] = useState([]);
@@ -153,7 +153,7 @@ export const SentencePuzzleView = ({ text, mode = 'sentence', onClose, settings,
                 <div className="flex items-center gap-4">
                     <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
                         {mode === 'sentence' ? <Icons.Sentence className="text-pink-500" /> : <Icons.TextBlocks className="text-emerald-500" />}
-                        {mode === 'sentence' ? 'Satzpuzzle' : 'Textpuzzle'}
+                        {title || (mode === 'sentence' ? 'Satzpuzzle' : 'Textpuzzle')}
                     </h2>
                 </div>
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Icons } from './Icons';
 import { EmptyStateMessage } from './EmptyStateMessage';
 
-export const SplitExerciseView = ({ words, onClose, settings, setSettings }) => {
+export const SplitExerciseView = ({ words, onClose, settings, setSettings, title }) => {
     if (!words || words.length === 0) return (<div className="fixed inset-0 z-[130] bg-slate-100 modal-animate font-sans flex flex-col"><EmptyStateMessage onClose={onClose} /></div>);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [userSplits, setUserSplits] = useState(new Set());
@@ -32,7 +32,7 @@ export const SplitExerciseView = ({ words, onClose, settings, setSettings }) => 
                 <div className="flex items-center gap-4">
                     <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
                         <Icons.Scissors className="text-orange-500 -rotate-90" />
-                        Wörter trennen
+                        {title || "Wörter trennen"}
                     </h2>
                     <span className="bg-slate-100 px-3 py-1 rounded-full text-slate-600 font-bold text-sm">
                         {currentIndex + 1} / {words.length}
@@ -69,6 +69,15 @@ export const SplitExerciseView = ({ words, onClose, settings, setSettings }) => 
             </div>
 
             <div className="flex-1 flex flex-col items-center justify-center p-4 bg-white/50 overflow-y-auto custom-scroll">
+                <div className="mb-8">
+                    <button
+                        onClick={() => speak(fullWord)}
+                        className="w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all ring-4 ring-white/50 shrink-0"
+                        title="Wort anhören"
+                    >
+                        <Icons.Volume2 size={24} />
+                    </button>
+                </div>
                 <div className="flex flex-wrap justify-center items-end select-none py-4" style={{ fontFamily: settings.fontFamily }}>
                     {fullWord.split('').map((char, i) => {
                         const vStat = vowelStatus[i]; let vowelClass = ""; let borderStyle = "";

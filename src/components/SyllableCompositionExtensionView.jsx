@@ -411,16 +411,35 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
 
                 <div className="flex items-center gap-4">
                     {/* Words Count Control */}
-                    <div className="flex items-center gap-2 bg-slate-50 px-2 py-1 rounded-2xl border border-slate-200">
-                        <button onClick={() => handleWordsCountChange(-1)} disabled={pendingWordsCount <= 1} className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-slate-200 hover:bg-slate-50 disabled:opacity-30"><Minus size={16} /></button>
-                        <span className="font-bold w-6 text-center">{pendingWordsCount}</span>
-                        <button onClick={() => handleWordsCountChange(1)} disabled={pendingWordsCount >= 6} className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-slate-200 hover:bg-slate-50 disabled:opacity-30"><Plus size={16} /></button>
+                    <div className="flex items-center gap-2 bg-slate-50 px-2 py-1 rounded-2xl border border-slate-200 hidden lg:flex">
+                        <HorizontalLines count={2} />
+                        <button onClick={() => handleWordsCountChange(-1)} disabled={pendingWordsCount <= 1} className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 active:scale-90 transition-all shadow-sm disabled:opacity-20 ml-1">
+                            <Minus className="w-4 h-4" />
+                        </button>
+                        <div className="flex flex-col items-center min-w-[24px]">
+                            <span className={`text-xl font-black transition-colors leading-none ${pendingWordsCount !== gameState.wordsPerStage ? 'text-orange-500' : 'text-slate-800'}`}>
+                                {pendingWordsCount}
+                            </span>
+                        </div>
+                        <button onClick={() => handleWordsCountChange(1)} disabled={pendingWordsCount >= 6} className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 active:scale-90 transition-all shadow-sm disabled:opacity-20 mr-1">
+                            <Plus className="w-4 h-4" />
+                        </button>
+                        <HorizontalLines count={5} />
                     </div>
 
                     {/* Scale Control */}
-                    <div className="flex items-center gap-3 bg-gray-50 px-4 py-1.5 rounded-2xl border border-gray-200 hidden sm:flex">
-                        <Maximize2 className="w-4 h-4 text-blue-400" />
-                        <input type="range" min="0.6" max="1.3" step="0.1" value={gameState.pieceScale} onChange={(e) => setGameState(p => ({ ...p, pieceScale: parseFloat(e.target.value) }))} className="w-20 h-1.5 bg-blue-100 rounded-lg appearance-none cursor-pointer accent-blue-600" />
+                    <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg ml-2">
+                        <span className="text-xs font-bold text-slate-500">A</span>
+                        <input
+                            type="range"
+                            min="0.7"
+                            max="1.3"
+                            step="0.1"
+                            value={gameState.pieceScale}
+                            onChange={(e) => setGameState(prev => ({ ...prev, pieceScale: parseFloat(e.target.value) }))}
+                            className="w-48 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer"
+                        />
+                        <span className="text-xl font-bold text-slate-500">A</span>
                     </div>
 
                     <button onClick={onClose} className="bg-red-500 text-white rounded-lg w-10 h-10 flex items-center justify-center ml-2 border-b-4 border-red-700 active:border-b-0 active:translate-y-1 transition-all">

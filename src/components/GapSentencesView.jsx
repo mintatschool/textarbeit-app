@@ -23,7 +23,7 @@ const WORD_COLORS = [
     'bg-rose-100 text-rose-700'
 ];
 
-export const GapSentencesView = ({ text, settings, setSettings, onClose }) => {
+export const GapSentencesView = ({ text, settings, setSettings, onClose, title }) => {
     const [currentGroupIdx, setCurrentGroupIdx] = useState(0);
     const [groups, setGroups] = useState([]);
     const [placedWords, setPlacedWords] = useState({}); // { gapId: wordObj }
@@ -282,7 +282,7 @@ export const GapSentencesView = ({ text, settings, setSettings, onClose }) => {
             <div className="bg-white px-6 py-4 shadow-sm flex flex-wrap gap-4 justify-between items-center z-10 shrink-0">
                 <div className="flex items-center gap-4">
                     <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                        <Icons.GapSentences className="text-indigo-500" /> Lückensätze
+                        <Icons.GapSentences className="text-indigo-500" /> {title || "Lückensätze"}
                     </h2>
                     <span className="bg-slate-100 px-3 py-1 rounded-full text-slate-600 font-bold text-sm">
                         {currentGroupIdx + 1} / {groups.length}

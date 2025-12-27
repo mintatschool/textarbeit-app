@@ -6,7 +6,7 @@ import availableSyllables from '../utils/available_syllables.json';
 
 const syllableSet = new Set(availableSyllables);
 
-export const SyllableCarpetView = ({ words, settings, setSettings, onClose }) => {
+export const SyllableCarpetView = ({ words, settings, setSettings, onClose, title }) => {
     if (!words || words.length === 0) return (<div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans"><EmptyStateMessage onClose={onClose} /></div>);
     const [hiddenSyllables, setHiddenSyllables] = useState(new Set());
     const [shuffledSyllables, setShuffledSyllables] = useState([]);
@@ -34,14 +34,17 @@ export const SyllableCarpetView = ({ words, settings, setSettings, onClose }) =>
             {showReward && (<div className="fixed inset-0 z-[150] pointer-events-none flex items-center justify-center">{Array.from({ length: 30 }).map((_, i) => <div key={i} className="confetti" style={{ left: `${Math.random() * 100}%`, top: `-10%`, backgroundColor: ['#f00', '#0f0', '#00f', '#ff0'][Math.floor(Math.random() * 4)], animationDuration: `${2 + Math.random() * 3}s`, animationDelay: `${Math.random()}s` }}></div>)}<div className="bg-white/90 backdrop-blur rounded-2xl p-8 shadow-2xl pop-animate pointer-events-auto text-center border-4 border-yellow-400"><h2 className="text-4xl font-bold text-slate-800 mb-2">Fertig! 🎉</h2><p className="text-xl text-slate-600 mb-4">Zeit: {timer} Sekunden</p><button onClick={() => { setShowReward(false); setIsGameMode(false); }} className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition min-touch-target">OK</button></div></div>)}
             <div className="bg-white px-6 py-4 shadow-sm flex flex-wrap gap-4 justify-between items-center z-10 shrink-0">
                 <div className="flex items-center gap-4 md:gap-6">
-                    <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2"><Icons.Grid2x2 className="text-blue-600" /> Silbenteppich</h2>
+                    <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2"><Icons.Grid2x2 className="text-blue-600" /> {title || "Silbenteppich"}</h2>
                     <div className="flex items-center gap-2 md:gap-4">
                         {isGameMode && (
                             <div className="flex items-center gap-2 bg-slate-100 px-3 py-1 rounded-lg border border-slate-200 font-mono text-lg font-bold text-blue-600">
                                 <Icons.Clock size={20} /> {timer}s
                             </div>
                         )}
-                        <button onClick={toggleGameMode} className={`p-3 rounded-lg border-2 transition-all flex items-center gap-2 px-6 font-bold shadow-sm min-touch-target ${isGameMode ? 'bg-red-50 border-red-500 text-red-600 animate-pulse' : 'bg-green-50 border-green-500 text-green-700 hover:bg-green-100'}`}>
+                        <button
+                            onClick={toggleGameMode}
+                            className={`p-4 rounded-full transition-all shadow-lg flex items-center gap-2 font-black text-xl hover:scale-105 active:scale-95 ring-4 ring-white/50 ${isGameMode ? 'bg-red-500 text-white' : 'bg-blue-500 hover:bg-blue-600 text-white'}`}
+                        >
                             {isGameMode ? <><Icons.Square size={20} fill="currentColor" /> Stopp</> : <><Icons.Volume2 size={24} /> Start</>}
                         </button>
                     </div>

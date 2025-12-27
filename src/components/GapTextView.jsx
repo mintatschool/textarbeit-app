@@ -23,7 +23,7 @@ const WORD_COLORS = [
     'bg-rose-100 text-rose-700'
 ];
 
-export const GapTextView = ({ text, settings, setSettings, onClose }) => {
+export const GapTextView = ({ text, settings, setSettings, onClose, title }) => {
     const [sentences, setSentences] = useState([]);
     const [placedWords, setPlacedWords] = useState({}); // { gapId: wordObj }
     const [poolWords, setPoolWords] = useState([]);
@@ -236,7 +236,7 @@ export const GapTextView = ({ text, settings, setSettings, onClose }) => {
             {/* Header */}
             <div className="bg-white px-8 py-5 border-b border-slate-100 flex justify-between items-center shrink-0">
                 <h2 className="text-2xl font-black text-slate-800 flex items-center gap-3">
-                    <Icons.GapText className="text-blue-600" /> Lückentext
+                    <Icons.GapText className="text-blue-600" /> {title || "Lückentext"}
                 </h2>
                 <div className="flex items-center gap-6">
                     <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl">

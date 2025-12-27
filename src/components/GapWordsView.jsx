@@ -3,7 +3,7 @@ import { Icons } from './Icons';
 import { EmptyStateMessage } from './EmptyStateMessage';
 import { speak } from '../utils/speech';
 
-export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialSound = false }) => {
+export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialSound = false, title }) => {
     const [mode, setMode] = useState('vowels'); // 'vowels' or 'consonants'
     const [currentGroupIdx, setCurrentGroupIdx] = useState(0);
     const [groups, setGroups] = useState([]);
@@ -318,7 +318,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                 <div className="flex items-center gap-4">
                     <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
                         {isInitialSound ? <Icons.InitialSound className="text-blue-600" /> : <Icons.GapWords className="text-blue-600" />}
-                        {isInitialSound ? 'Anlaute finden' : 'Lückenwörter'}
+                        {title || (isInitialSound ? 'Anlaute finden' : 'Lückenwörter')}
                     </h2>
                     <span className="bg-slate-100 px-3 py-1 rounded-full text-slate-600 font-bold text-sm">
                         {currentGroupIdx + 1} / {groups.length}
@@ -371,10 +371,10 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                                 <div key={word.id} className={`p-8 bg-white rounded-3xl border shadow-sm flex flex-wrap justify-center gap-x-1 gap-y-4 transition-all duration-500 transform relative ${isSolved ? 'border-green-300 bg-green-50/50 scale-[1.01] shadow-md' : 'border-slate-100 hover:border-slate-200'}`}>
                                     <button
                                         onClick={() => speakWord(word.word)}
-                                        className="absolute left-4 top-4 p-2.5 text-slate-400 hover:text-blue-600 bg-white rounded-xl shadow-sm border border-slate-200 hover:bg-blue-50 transition min-touch-target"
+                                        className="absolute left-4 top-4 w-12 h-12 bg-blue-500 hover:bg-blue-600 text-white rounded-xl shadow-lg hover:scale-105 active:scale-95 transition-all flex items-center justify-center shrink-0 ring-4 ring-white/50 z-10"
                                         title="Wort anhören"
                                     >
-                                        <Icons.Volume2 size={20} />
+                                        <Icons.Volume2 size={24} />
                                     </button>
                                     {word.syllables.map((syl, sIdx) => {
                                         const isEven = sIdx % 2 === 0;

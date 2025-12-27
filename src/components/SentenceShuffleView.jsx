@@ -43,7 +43,7 @@ const shuffle = (array) => {
     return arr;
 };
 
-export const SentenceShuffleView = ({ text, settings, setSettings, onClose }) => {
+export const SentenceShuffleView = ({ text, settings, setSettings, onClose, title }) => {
     if (!text || text.trim().length === 0) {
         return (<div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans"><EmptyStateMessage onClose={onClose} /></div>);
     }
@@ -206,7 +206,7 @@ export const SentenceShuffleView = ({ text, settings, setSettings, onClose }) =>
             <div className="bg-white px-6 py-4 shadow-sm flex justify-between items-center z-10 shrink-0 flex-wrap gap-4">
                 <div className="flex items-center gap-4">
                     <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                        <Icons.Shuffle className="text-blue-600" /> Schüttelsätze
+                        <Icons.Shuffle className="text-blue-600" /> {title || "Schüttelsätze"}
                     </h2>
                     <span className="bg-slate-100 px-3 py-1 rounded-full text-slate-600 font-bold text-sm">
                         {currentIndex + 1} / {sentences.length}
