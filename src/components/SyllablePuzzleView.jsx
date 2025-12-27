@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Icons } from './Icons';
 import { EmptyStateMessage } from './EmptyStateMessage';
 
-export const SyllablePuzzleView = ({ words, settings, setSettings, onClose }) => {
+export const SyllablePuzzleView = ({ words, settings, setSettings, onClose, title }) => {
     if (!words || words.length === 0) return (<div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans"><EmptyStateMessage onClose={onClose} /></div>);
     const [puzzleWords, setPuzzleWords] = useState([]);
     const [placedPieces, setPlacedPieces] = useState({});
@@ -87,21 +87,30 @@ export const SyllablePuzzleView = ({ words, settings, setSettings, onClose }) =>
             {showReward && (<div className="fixed inset-0 z-[150] pointer-events-none flex items-center justify-center">{Array.from({ length: 30 }).map((_, i) => <div key={i} className="confetti" style={{ left: `${Math.random() * 100}%`, top: `-10%`, backgroundColor: ['#f00', '#0f0', '#00f', '#ff0'][Math.floor(Math.random() * 4)], animationDuration: `${2 + Math.random() * 3}s`, animationDelay: `${Math.random()}s` }}></div>)}<div className="bg-white/90 backdrop-blur rounded-2xl p-8 shadow-2xl pop-animate pointer-events-auto text-center border-4 border-yellow-400"><h2 className="text-4xl font-bold text-slate-800 mb-4">Super gemacht! 🎉</h2><button onClick={onClose} className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition min-touch-target">Zurück</button></div></div>)}
             <div className="bg-white px-6 py-4 shadow-sm flex justify-between items-center z-10 shrink-0 flex-wrap gap-4">
                 <div className="flex items-center gap-4">
-                    <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2"><Icons.Puzzle className="text-purple-600" /> Silben-Puzzle</h2>
+                    <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2"><Icons.Puzzle className="text-purple-600" /> {title || "Silben-Puzzle"}</h2>
                     <span className="bg-slate-100 px-3 py-1 rounded-full text-slate-500 font-medium text-sm">{poolPieces.length} Teile übrig</span>
                 </div>
-                <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg">
-                    <span className="text-xs font-bold text-slate-500">A</span>
-                    <input type="range" min="16" max="120" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-32 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer" />
-                    <span className="text-xl font-bold text-slate-500">A</span>
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg">
+                        <span className="text-xs font-bold text-slate-500">A</span>
+                        <input type="range" min="16" max="120" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-32 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer" />
+                        <span className="text-xl font-bold text-slate-500">A</span>
+                    </div>
+                    <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 shadow-sm transition-transform hover:scale-105 flex items-center justify-center min-touch-target sticky right-0"><Icons.X size={24} /></button>
                 </div>
-                <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 shadow-sm transition-transform hover:scale-105 flex items-center justify-center min-touch-target sticky right-0"><Icons.X size={24} /></button>
             </div>
             <div className="flex-1 overflow-y-auto custom-scroll p-6 bg-slate-50/50">
                 <div className="max-w-6xl mx-auto grid gap-6 pb-12" style={{ gridTemplateColumns: settings.fontSize > 50 ? '1fr' : 'repeat(auto-fit, minmax(350px, 1fr))' }}>
                     {puzzleWords.map((word) => {
                         const isWordComplete = word.pieces.every(p => placedPieces[`${word.id}_${p.index}`]?.text === p.text); return (
-                            <div key={word.id} className={`p-4 bg-white rounded-xl border flex flex-wrap gap-2 items-center justify-center min-h-[5rem] transition-colors duration-300 ${isWordComplete ? 'border-green-400 bg-green-50 shadow-md' : 'border-slate-200 shadow-sm'}`}>
+                            <div key={word.id} className={`p-4 bg-white rounded-xl border flex flex-wrap gap-4 items-center justify-center min-h-[5rem] transition-colors duration-300 ${isWordComplete ? 'border-green-400 bg-green-50 shadow-md' : 'border-slate-200 shadow-sm'}`}>
+                                <button
+                                    onClick={() => speak(word.fullWord)}
+                                    className="w-12 h-12 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all ring-4 ring-white/50 shrink-0"
+                                    title="Wort anhören"
+                                >
+                                    <Icons.Volume2 size={20} />
+                                </button>
                                 <div className="flex flex-wrap gap-2 items-center justify-center">{word.pieces.map((originalPiece) => { const slotId = `${word.id}_${originalPiece.index}`; const placedPiece = placedPieces[slotId]; return (<div key={slotId} onClick={() => handleSlotClick(word.id, originalPiece.index)} className={`puzzle-drop-target relative flex items-center justify-center rounded-lg cursor-pointer ${!placedPiece ? 'border-2 border-dashed border-slate-300' : ''} ${selectedPiece ? 'ring-2 ring-blue-300 ring-offset-2 animate-pulse' : ''}`} style={{ fontSize: `${settings.fontSize}px`, minHeight: `${dynamicHeight}px`, minWidth: '7rem', zIndex: 1 }} onDragOver={(e) => e.preventDefault()} onDragEnter={(e) => { e.preventDefault(); e.currentTarget.classList.add('active-target'); }} onDragLeave={(e) => { e.currentTarget.classList.remove('active-target'); }} onDrop={(e) => handleSlotDrop(e, word.id, originalPiece.index)}>{placedPiece ? (<div draggable onDragStart={(e) => handleDragStart(e, placedPiece, 'slot', slotId)} onDragEnd={handleDragEnd} className={`${getPieceStyle(placedPiece, true)} cursor-grab active:cursor-grabbing hover:scale-105 transition-transform touch-action-none`} style={{ fontFamily: settings.fontFamily, fontSize: `${settings.fontSize}px`, minHeight: `${dynamicHeight}px`, width: '100%', height: '100%' }}>{(!placedPiece.isEnd && !placedPiece.isSolo) && <div className="absolute right-[-8px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-blue-200 z-10"></div>}{(!placedPiece.isStart && !placedPiece.isSolo) && <div className="absolute left-[-8px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white z-20"></div>}{placedPiece.text}</div>) : <span className="text-slate-300 font-bold select-none">?</span>}</div>); })}</div>
                                 {isWordComplete && <div className="ml-4 text-green-500 animate-[popIn_0.4s_ease-out]"><Icons.Check size={40} strokeWidth={3} /></div>}
                             </div>
