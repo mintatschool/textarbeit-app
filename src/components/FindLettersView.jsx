@@ -338,11 +338,11 @@ export const FindLettersView = ({ text, settings, setSettings, onClose, title })
                 <div className="flex-1 flex flex-col relative z-10 w-full bg-slate-50/50">
                     <div className="flex-1 overflow-y-auto custom-scroll p-4 md:p-8 flex justify-center w-full relative">
                         {/* Selected Indicator - Massive Backdrop (Darker Blue) */}
-                        <div className="absolute top-8 left-4 md:left-8 opacity-30 pointer-events-none z-0">
+                        <div className="absolute top-8 left-4 md:left-8 opacity-60 pointer-events-none z-0">
                             <div
                                 className={`text-[8.5rem] md:text-[13rem] font-black transition-all duration-300 select-none leading-none ${flashMode === 'correct' ? 'text-green-500 scale-105' :
                                     flashMode === 'wrong' ? 'text-red-500 animate-shake' :
-                                        'text-blue-900/40'
+                                        'text-slate-600'
                                     }`}
                                 style={{ fontFamily: settings.fontFamily }}
                             >
@@ -350,7 +350,7 @@ export const FindLettersView = ({ text, settings, setSettings, onClose, title })
                             </div>
                         </div>
 
-                        <div className="max-w-7xl w-full pt-8 pb-24 relative pl-12 md:pl-32 transition-all">
+                        <div className="max-w-7xl w-full pt-8 pb-24 relative pl-16 md:pl-48 transition-all">
                             <div className={`flex flex-wrap items-baseline content-start ${settings.centerText ? 'justify-center' : 'justify-start'}`} style={{ lineHeight: settings.lineHeight, fontFamily: settings.fontFamily }}>
                                 {(() => {
                                     // Optimization: Calculate settings once for the loop
@@ -401,35 +401,42 @@ export const FindLettersView = ({ text, settings, setSettings, onClose, title })
                     </div>
 
                     <div className="p-6 bg-white border-t border-slate-200 flex justify-center shrink-0 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]">
-                        {!success ? (
-                            <button
-                                onClick={handleCheck}
-                                disabled={markedIndices.size === 0}
-                                className="px-16 py-4 bg-blue-600 text-white rounded-2xl font-bold text-2xl shadow-xl hover:bg-blue-700 hover:scale-105 active:scale-95 transition-all flex items-center gap-3 disabled:opacity-50 disabled:grayscale"
-                            >
-                                <Icons.Check size={32} /> Prüfen
-                            </button>
-                        ) : (
-                            <div className="flex flex-col items-center animate-[popIn_0.5s_ease-out]">
-                                <span className="text-3xl font-black text-green-600 mb-2 flex items-center gap-2">
-                                    <Icons.CheckCircle size={40} /> Alles gefunden! Super!
-                                </span>
-                            </div>
-                        )}
+                        <button
+                            onClick={handleCheck}
+                            disabled={markedIndices.size === 0 || success}
+                            className="px-16 py-4 bg-blue-600 text-white rounded-2xl font-bold text-2xl shadow-xl hover:bg-blue-700 hover:scale-105 active:scale-95 transition-all flex items-center gap-3 disabled:opacity-50 disabled:grayscale"
+                        >
+                            <Icons.Check size={32} /> Prüfen
+                        </button>
                     </div>
                 </div>
             </div>
 
             {success && (
-                <div className="fixed inset-0 pointer-events-none z-[150]">
-                    {Array.from({ length: 40 }).map((_, i) => (
-                        <div key={i} className="confetti" style={{
-                            left: `${Math.random() * 100}%`,
-                            backgroundColor: ['#3b82f6', '#ef4444', '#22c55e', '#eab308'][Math.floor(Math.random() * 4)],
-                            animationDuration: `${2 + Math.random() * 3}s`,
-                            animationDelay: `${Math.random()}s`
-                        }} />
-                    ))}
+                <div className="fixed inset-0 z-[200] pointer-events-none flex items-center justify-center">
+                    <div className="fixed inset-0 bg-white/60 backdrop-blur-[2px]"></div>
+                    <div className="bg-white rounded-3xl p-12 shadow-2xl pop-animate pointer-events-auto text-center border-b-8 border-green-100 relative z-10">
+                        <div className="flex flex-col items-center">
+                            <span className="text-4xl font-black text-green-600 mb-8 flex items-center gap-3">
+                                <Icons.CheckCircle size={64} className="text-green-500" /> Alles gefunden! Super!
+                            </span>
+                            <button onClick={onClose} className="px-12 py-4 bg-blue-600 text-white rounded-2xl font-bold text-xl hover:bg-blue-700 hover:scale-105 transition-all shadow-lg min-touch-target">
+                                Beenden
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Confetti */}
+                    <div className="fixed inset-0 pointer-events-none z-[160]">
+                        {Array.from({ length: 40 }).map((_, i) => (
+                            <div key={i} className="confetti" style={{
+                                left: `${Math.random() * 100}%`,
+                                backgroundColor: ['#3b82f6', '#ef4444', '#22c55e', '#eab308'][Math.floor(Math.random() * 4)],
+                                animationDuration: `${2 + Math.random() * 3}s`,
+                                animationDelay: `${Math.random()}s`
+                            }} />
+                        ))}
+                    </div>
                 </div>
             )}
         </div>

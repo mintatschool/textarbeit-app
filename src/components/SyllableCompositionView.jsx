@@ -10,8 +10,7 @@ import {
 } from 'lucide-react';
 import { Icons } from './Icons';
 import PuzzleTestPiece from './PuzzleTestPiece';
-import { speak } from '../utils/speech';
-import availableSyllables from '../utils/available_syllables.json';
+import { speak, hasAudio } from '../utils/speech';
 
 const HorizontalLines = ({ count }) => (
     <div className="flex flex-col gap-[2px] w-4 items-center justify-center">
@@ -118,7 +117,7 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [], ti
             if (seen.has(cleanSyl)) return;
 
             // STRICT RULE 1: Must have audio
-            if (!audioSet.has(cleanSyl)) return;
+            if (!hasAudio(cleanSyl)) return;
 
             // STRICT RULE 2: Must consist of (Letter/Cluster) + (Letter/Cluster)
             // We search for *strictly* valid splits.
@@ -137,9 +136,6 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [], ti
                     break; // Found a valid structure
                 }
             }
-
-            // Unlike before, we DO NOT have a fallback. 
-            // If it doesn't split into valid parts, it is excluded.
 
             if (foundSplit) {
                 valid.push(foundSplit);
@@ -317,7 +313,7 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [], ti
             // Let's stick to that for now, as audio playback needs the word ID/file.
 
             if (targetItem && targetItem.full === formedSyllable) {
-                speak(targetItem.full);
+                // Audio removed as per user request (manual replay only)
                 setShowWordSuccess(true);
 
                 setTimeout(() => {
@@ -399,17 +395,31 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [], ti
     // Stage completion view
     if (gameState.gameStatus === 'stage-complete') {
         return (
-            <div className="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center p-6 text-center">
-                <CheckCircle2 className="w-24 h-24 text-emerald-500 mb-4 animate-bounce" />
-                <h2 className="text-2xl font-bold text-slate-800 mb-2">Super!</h2>
-                <p className="text-slate-600 mb-8">Du hast alle Silben gebaut.</p>
-                <div className="flex gap-4">
-                    <button onClick={() => startNewGame()} className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:scale-105 transition-transform flex items-center gap-2">
-                        <RotateCcw size={20} /> Noch einmal
-                    </button>
-                    <button onClick={onClose} className="bg-emerald-100 text-emerald-700 px-8 py-3 rounded-xl font-bold shadow-md hover:bg-emerald-200 transition-colors border border-emerald-200">
-                        Beenden
-                    </button>
+            <div className="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center p-6 text-center animate-fadeIn">
+                <div className="flex flex-col items-center animate-[popIn_0.5s_ease-out]">
+                    <span className="text-4xl font-black text-green-600 mb-6 flex items-center gap-3">
+                        <Icons.CheckCircle size={64} className="text-green-500" /> Alle Silben gebaut! Super!
+                    </span>
+                    <div className="flex gap-4">
+                        <button onClick={() => startNewGame()} className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:scale-105 transition-transform flex items-center gap-2">
+                            <Icons.RotateCcw size={20} /> Noch einmal
+                        </button>
+                        <button onClick={onClose} className="bg-slate-100 text-slate-700 px-8 py-3 rounded-xl font-bold shadow-md hover:bg-slate-200 transition-colors border border-slate-200">
+                            Beenden
+                        </button>
+                    </div>
+                </div>
+
+                {/* Confetti */}
+                <div className="fixed inset-0 pointer-events-none z-[150]">
+                    {Array.from({ length: 40 }).map((_, i) => (
+                        <div key={i} className="confetti" style={{
+                            left: `${Math.random() * 100}%`,
+                            backgroundColor: ['#3b82f6', '#ef4444', '#22c55e', '#eab308'][Math.floor(Math.random() * 4)],
+                            animationDuration: `${2 + Math.random() * 3}s`,
+                            animationDelay: `${Math.random()}s`
+                        }} />
+                    ))}
                 </div>
             </div>
         );
@@ -504,6 +514,7 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [], ti
                                 scale={gameState.pieceScale}
                                 onDragStart={(e) => { setIsDragging(s.id); }}
                                 isDragging={isDragging === s.id}
+                                fontFamily={settings.fontFamily}
                             />
                         </div>
                     ))}
@@ -558,6 +569,7 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [], ti
                                                         type={typeName}
                                                         isGhost={true}
                                                         scale={scale}
+                                                        fontFamily={settings.fontFamily}
                                                     />
                                                 </div>
                                             )}
@@ -573,6 +585,7 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [], ti
                                                         colorClass="bg-blue-500"
                                                         scale={scale}
                                                         showSeamLine={true}
+                                                        fontFamily={settings.fontFamily}
                                                     />
                                                 </div>
                                             )}
@@ -585,7 +598,7 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [], ti
                                 absolute transition-all duration-500 ease-out z-30 pointer-events-none
                                 ${showWordSuccess ? 'scale-125 opacity-100 translate-x-12' : 'scale-0 opacity-0 translate-x-0'}
                             `} style={{ left: '100%', top: '50%', transform: 'translateY(-50%)' }}>
-                                <CheckCircle2 className="text-emerald-500 drop-shadow-2xl" style={{ width: `${80 * gameState.pieceScale}px`, height: `${80 * gameState.pieceScale}px` }} />
+                                <CheckCircle2 className="text-green-500 drop-shadow-2xl" style={{ width: `${80 * gameState.pieceScale}px`, height: `${80 * gameState.pieceScale}px` }} />
                             </div>
                         </div>
                     </div>
@@ -602,6 +615,7 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [], ti
                                 scale={gameState.pieceScale}
                                 onDragStart={(e) => { setIsDragging(s.id); }}
                                 isDragging={isDragging === s.id}
+                                fontFamily={settings.fontFamily}
                             />
                         </div>
                     ))}

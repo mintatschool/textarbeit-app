@@ -2,16 +2,17 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Icons } from './Icons';
 import { EmptyStateMessage } from './EmptyStateMessage';
 
-export const WordListView = ({ words, columnsState, setColumnsState, onClose, settings, setSettings, onRemoveWord, onWordUpdate, wordColors = {}, colorHeaders = {}, setColorHeaders, colorPalette = [], title }) => {
+export const WordListView = ({ words, columnsState, setColumnsState, onClose, settings, setSettings, onRemoveWord, onWordUpdate, wordColors = {}, colorHeaders = {}, setColorHeaders, colorPalette = [], title, groups = [] }) => {
     if (!words || words.length === 0) return (<div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans"><EmptyStateMessage onClose={onClose} /></div>);
     const [columnCount, setColumnCount] = useState(1);
     const [sortByColor, setSortByColor] = useState(false);
     const dragItemRef = useRef(null);
+    const prevWordsProp = useRef(null);
 
     // Helper to resolve palette-X to hex
     const resolveColor = (colorCode) => {
         if (!colorCode) return 'transparent';
-        if (colorCode === 'yellow') return 'yellow'; // Should not happen in this view usually
+        if (colorCode === 'yellow') return 'yellow';
         if (typeof colorCode === 'string' && colorCode.startsWith('palette-')) {
             const idx = parseInt(colorCode.split('-')[1], 10);
             return colorPalette && colorPalette[idx] ? colorPalette[idx] : 'transparent';
@@ -21,75 +22,95 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
 
     // Color Sorting Logic
     const prevSortByColor = useRef(sortByColor);
-    const prevWordsProp = useRef(words);
 
-    // Initial State / Sync Effect
+    // 0. Pre-process groups - Derived State
+    const displayWords = React.useMemo(() => {
+        let result = [];
+        const processedIndices = new Set();
+        const sortedInput = [...words].sort((a, b) => a.index - b.index);
+
+        sortedInput.forEach(w => {
+            if (processedIndices.has(w.index)) return;
+
+            const group = groups.find(g => g.ids.includes(w.index));
+            if (group) {
+                const groupMembers = group.ids.map(id => sortedInput.find(sw => sw.index === id)).filter(Boolean);
+                if (groupMembers.length > 0) {
+                    groupMembers.sort((a, b) => a.index - b.index);
+                    const compositeWord = {
+                        ...groupMembers[0],
+                        word: groupMembers.map(m => m.word).join(' '),
+                        id: `group-${group.ids.join('-')}`,
+                        isGroup: true,
+                        syllables: groupMembers.flatMap((m, idx) => {
+                            const rawSyls = m.syllables || [m.word];
+                            const mapped = rawSyls.map(s => ({ text: s, sourceId: m.id, sourceWord: m.word }));
+                            return idx < groupMembers.length - 1 ? [...mapped, { text: ' ', isSpace: true }] : mapped;
+                        })
+                    };
+                    group.ids.forEach(id => processedIndices.add(id));
+                    result.push(compositeWord);
+                } else {
+                    const simpleW = { ...w, syllables: (w.syllables || [w.word]).map(s => ({ text: s, sourceId: w.id, sourceWord: w.word })) };
+                    result.push(simpleW);
+                    processedIndices.add(w.index);
+                }
+            } else {
+                const simpleW = { ...w, syllables: (w.syllables || [w.word]).map(s => ({ text: s, sourceId: w.id, sourceWord: w.word })) };
+                result.push(simpleW);
+                processedIndices.add(w.index);
+            }
+        });
+        return result;
+    }, [words, groups]);
+
+    // 1. Initial State Setup
     useEffect(() => {
-        // 1. Detect Toggles
         const switchedToColor = sortByColor && !prevSortByColor.current;
         const switchedToStandard = !sortByColor && prevSortByColor.current;
         prevSortByColor.current = sortByColor;
 
         if (switchedToColor) {
-            // Group indices by color key (palette-X or hex)
-            const colorGroups = {}; // key -> items
+            const colorGroups = {};
             const noColorItems = [];
-
-            words.forEach(w => {
-                const colorKey = wordColors[w.index];
-                if (colorKey && colorKey !== 'yellow') {
-                    if (!colorGroups[colorKey]) colorGroups[colorKey] = [];
-                    colorGroups[colorKey].push(w);
-                } else {
-                    noColorItems.push(w);
-                }
+            displayWords.forEach(w => {
+                const k = wordColors[w.index];
+                if (k && k !== 'yellow') {
+                    if (!colorGroups[k]) colorGroups[k] = [];
+                    colorGroups[k].push(w);
+                } else noColorItems.push(w);
             });
-
-            const uniqueKeys = Object.keys(colorGroups);
-            const newCols = {};
-            const newOrder = [];
-
-            uniqueKeys.forEach((key, idx) => {
+            const newCols = {}; const newOrder = [];
+            Object.keys(colorGroups).forEach((key, idx) => {
                 const id = `col-color-${idx}`;
-                const persistedTitle = colorHeaders[key] || '';
-                newCols[id] = { id, title: persistedTitle, color: key, items: colorGroups[key] };
+                newCols[id] = { id, title: colorHeaders[key] || '', color: key, items: colorGroups[key] };
                 newOrder.push(id);
             });
-
             if (noColorItems.length > 0) {
                 const id = 'col-no-color';
                 newCols[id] = { id, title: 'Keine Farbe', items: noColorItems };
                 newOrder.push(id);
             }
-
             setColumnsState({ cols: newCols, order: newOrder });
             setColumnCount(newOrder.length);
             return;
         }
 
         if (switchedToStandard) {
-            // Reset to 1 column view but keep word titles from first column if any?
-            // Actually, usually users want the words back in one list.
-            setColumnsState({ cols: { 'col-1': { id: 'col-1', title: '', items: words } }, order: ['col-1'] });
+            setColumnsState({ cols: { 'col-1': { id: 'col-1', title: '', items: displayWords } }, order: ['col-1'] });
             setColumnCount(1);
             return;
         }
 
-        // 2. Initial Setup if Empty
-        if (Object.keys(columnsState.cols).length === 0 && words.length > 0) {
+        if (Object.keys(columnsState.cols).length === 0 && displayWords.length > 0) {
             if (sortByColor) {
-                // Trigger grouping logic (same as above, but for initial load)
-                // This handles the case where someone opens the list and sort is already true
-                const colorGroups = {};
-                const noColorItems = [];
-                words.forEach(w => {
-                    const ck = wordColors[w.index];
-                    if (ck && ck !== 'yellow') {
-                        if (!colorGroups[ck]) colorGroups[ck] = [];
-                        colorGroups[ck].push(w);
-                    } else {
-                        noColorItems.push(w);
-                    }
+                const colorGroups = {}; const noColorItems = [];
+                displayWords.forEach(w => {
+                    const k = wordColors[w.index];
+                    if (k && k !== 'yellow') {
+                        if (!colorGroups[k]) colorGroups[k] = [];
+                        colorGroups[k].push(w);
+                    } else noColorItems.push(w);
                 });
                 const newCols = {}; const newOrder = [];
                 Object.keys(colorGroups).forEach((key, idx) => {
@@ -105,55 +126,112 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                 setColumnsState({ cols: newCols, order: newOrder });
                 setColumnCount(newOrder.length);
             } else {
-                setColumnsState({ cols: { 'col-1': { id: 'col-1', title: '', items: words } }, order: ['col-1'] });
+                setColumnsState({ cols: { 'col-1': { id: 'col-1', title: '', items: displayWords } }, order: ['col-1'] });
             }
         }
-    }, [sortByColor, words, wordColors, colorPalette]);
+    }, [sortByColor, words, wordColors, colorPalette, groups]);
 
+    // 3. Word Content Sync (If text changes while list is open)
     // 3. Word Content Sync (If text changes while list is open)
     useEffect(() => {
         if (prevWordsProp.current === words) return;
         prevWordsProp.current = words;
 
-        // Robust Sync Logic for word removals/additions
-        const newWordsByIndex = new Map(words.map(w => [w.index, w]));
-        const usedIndices = new Set();
-        const newCols = { ...columnsState.cols };
-        let hasChanges = false;
+        // Current words set for quick lookup
+        const currentWordIds = new Set(words.map(w => w.id));
 
-        Object.keys(newCols).forEach(colId => {
-            const items = newCols[colId].items;
-            const newItems = items.map(oldItem => {
-                const exactMatch = words.find(w => w.id === oldItem.id);
-                if (exactMatch) { usedIndices.add(exactMatch.index); return exactMatch; }
-                const parts = oldItem.id.lastIndexOf('_');
-                if (parts !== -1) {
-                    const idx = parseInt(oldItem.id.substring(parts + 1), 10);
-                    if (!isNaN(idx)) {
-                        const indexMatch = newWordsByIndex.get(idx);
-                        if (indexMatch) { usedIndices.add(indexMatch.index); return indexMatch; }
-                    }
+        setColumnsState(prevState => {
+            const newCols = { ...prevState.cols };
+            let hasChanges = false;
+
+            // 1. Remove deleted words from columns
+            Object.keys(newCols).forEach(colId => {
+                const col = newCols[colId];
+                const filteredItems = col.items.filter(item => {
+                    // For groups, check if the group ID still exists (needs logic?) 
+                    // Actually, if a group is removed by user, it's removed from 'groups' prop, 
+                    // which triggers the main effect (index 1).
+                    // But if a single word is removed, we might need to update group content?
+                    // For now, let's focus on top-level items in displayWords.
+                    // The 'words' prop here is actually 'displayWords' from parent? 
+                    // No, 'words' is raw exerciseWords. 
+
+                    // But wait, 'displayWords' is computed from 'words' and 'groups'.
+                    // If 'words' prop changes, 'displayWords' changes.
+                    // THIS effect listens to 'words'. 
+                    // We need to sync against 'displayWords' actually?
+                    // But displayWords is calculated inside this component.
+                    return true;
+                });
+
+                // If we filter against 'words' prop (which contains raw words)...
+                // We need to check if the item in the column is still valid.
+                // Items in columns are either single words or groups.
+                // Single words have 'id'. Groups have 'id' (group-...).
+
+                // Let's rely on 'displayWords' (derived state) instead of raw 'words'?
+                // No, 'displayWords' is recreated every render.
+            });
+
+            // BETTER STRATEGY:
+            // Syncing based on 'displayWords' is cleaner but requires checking what's new/gone.
+            // Let's use 'displayWords' which IS updated when 'words' changes.
+
+            const currentDisplayWords = displayWords;
+            const existingIds = new Set();
+            Object.values(newCols).forEach(c => c.items.forEach(i => existingIds.add(i.id)));
+
+            // Find Removed Items
+            const newDisplayIds = new Set(currentDisplayWords.map(w => w.id));
+            Object.keys(newCols).forEach(colId => {
+                const col = newCols[colId];
+                const newItems = col.items.filter(item => newDisplayIds.has(item.id));
+                if (newItems.length !== col.items.length) {
+                    newCols[colId] = { ...col, items: newItems };
+                    hasChanges = true;
                 }
-                return null;
-            }).filter(Boolean);
+            });
 
-            if (items.length !== newItems.length || items.some((it, i) => it.id !== newItems[i].id)) {
-                newCols[colId] = { ...newCols[colId], items: newItems };
-                hasChanges = true;
+            // Find Added Items (That are NOT in any column)
+            const addedItems = currentDisplayWords.filter(w => !existingIds.has(w.id));
+            if (addedItems.length > 0) {
+                // Determine target column
+                addedItems.forEach(newItem => {
+                    let targetColId;
+                    if (sortByColor) {
+                        // Find suitable color column
+                        const color = wordColors[newItem.index];
+                        // Find column with this color
+                        const colEntry = Object.entries(newCols).find(([_, c]) => c.color === color);
+                        if (colEntry) {
+                            targetColId = colEntry[0];
+                        } else {
+                            // Fallback or create? For now fallback to first or no-color
+                            // If no color column exists, maybe put in no-color
+                            const noColorEntry = Object.entries(newCols).find(([_, c]) => !c.color);
+                            targetColId = noColorEntry ? noColorEntry[0] : prevState.order[0];
+                        }
+                    } else {
+                        // Standard mode: Add to first column (usually col-1)
+                        targetColId = prevState.order[0];
+                    }
+
+                    if (targetColId && newCols[targetColId]) {
+                        newCols[targetColId] = {
+                            ...newCols[targetColId],
+                            items: [...newCols[targetColId].items, newItem]
+                        };
+                        hasChanges = true;
+                    }
+                });
             }
+
+            return hasChanges ? { ...prevState, cols: newCols } : prevState;
         });
 
-        const missing = words.filter(w => !usedIndices.has(w.index));
-        if (missing.length > 0 && columnsState.order.length > 0) {
-            const targetColId = columnsState.order[0];
-            newCols[targetColId] = { ...newCols[targetColId], items: [...newCols[targetColId].items, ...missing] };
-            hasChanges = true;
-        }
+    }, [words, displayWords, sortByColor, wordColors]);
 
-        if (hasChanges) setColumnsState(prev => ({ ...prev, cols: newCols }));
-    }, [words]);
-
-    // 4. Column Count Change (Manual in Grundfunktion)
+    // 4. Column Count Change
     useEffect(() => {
         if (sortByColor) return;
         const currentOrder = columnsState.order;
@@ -183,15 +261,9 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
             }
         }
         setColumnsState(prev => ({ ...prev, cols: newCols, order: newOrder }));
-    }, [columnCount, sortByColor]); // Add sortByColor to refire if needed
+    }, [columnCount, sortByColor]);
 
     const handleDragStart = (e, type, item, sourceColId = null, index = null) => {
-        // Disable Dragging in SortByColor mode? The requirement doesn't say so, but logic might break if we move colored word to different color column?
-        // Let's allow it but warn or just let it happen (visuals might mismatch but data is consistent).
-        // Actually, if I drag a RED word to a GREEN column, does it become GREEN?
-        // Requirement: "Wörter entsprechend ihrer Farbe in die Spalten sortiert".
-        // Implies strict mapping. Moving might define color?
-        // For now, let's keep it simple: allow move, but color remains properly rendered.
         e.stopPropagation();
         dragItemRef.current = { type, item, sourceColId, index };
         e.dataTransfer.effectAllowed = 'move';
@@ -227,7 +299,6 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
         }
     };
 
-    // Extracted Drop Logic for re-use
     const handleDropOnItemLogic = (targetColId, targetIndex) => {
         const dragData = dragItemRef.current;
         if (!dragData || dragData.type !== 'word') return;
@@ -297,8 +368,6 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                 <div className={`flex gap-6 h-full transition-all duration-300 ${!sortByColor && columnCount === 1 ? 'w-1/2 min-w-[350px] mr-auto' : 'min-w-full'}`} style={{ width: (!sortByColor && columnCount === 1) ? undefined : `${Math.max(100, columnsState.order.length * 300)}px` }}>
                     {columnsState.order.map(colId => {
                         const col = columnsState.cols[colId];
-                        // Dynamic Header Styling if Color Sort is active
-                        // col.color is either 'palette-X' or hex. resolveColor gets the display hex.
                         const resolvedBg = resolveColor(col.color);
                         const headerStyle = sortByColor && col.color ? { backgroundColor: resolvedBg, color: 'white', fontFamily: settings.fontFamily, fontSize: `${settings.fontSize * 1.1}px` } : {};
                         const headerClass = sortByColor && col.color ? "p-3 rounded-t-xl shadow-sm text-center font-bold" : "p-3 border-b border-slate-100 bg-slate-50 rounded-t-xl cursor-grab active:cursor-grabbing hover:bg-slate-100 transition-colors";
@@ -346,10 +415,17 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                                                     <span className="inline-block whitespace-nowrap">
                                                         {word.syllables.map((s, i) => {
                                                             const isEven = i % 2 === 0;
-                                                            // Logic for visual types
                                                             let styleClass = "";
                                                             let textClass = "";
-                                                            if (settings.visualType === 'block') {
+
+                                                            // Handle Object
+                                                            const sylObj = (typeof s === 'object' && s !== null) ? s : { text: String(s || "") };
+                                                            const textContent = sylObj.text;
+
+                                                            if (sylObj.isSpace) {
+                                                                styleClass = "bg-transparent mx-1 border-none inline-block w-8"; // WIDER SPACE
+                                                                textClass = "text-transparent select-none";
+                                                            } else if (settings.visualType === 'block') {
                                                                 styleClass = isEven ? 'bg-blue-100 border-blue-200' : 'bg-blue-200 border-blue-300';
                                                                 styleClass += " border rounded px-1 mx-[1px]";
                                                             } else if (settings.visualType === 'black_gray') {
@@ -360,13 +436,19 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
 
                                                             return (
                                                                 <span key={i} className={`inline-block ${styleClass}`}>
-                                                                    {s.split('').map((char, cIdx) => (
+                                                                    {textContent.split('').map((char, cIdx) => (
                                                                         <span
                                                                             key={cIdx}
                                                                             className={`${textClass} cursor-pointer hover:bg-slate-100 rounded px-px`}
                                                                             onClick={(e) => {
-                                                                                if (i === 0 && cIdx === 0) {
-                                                                                    // Toggle Capitalization of first char
+                                                                                if (cIdx === 0 && sylObj.sourceId && !sylObj.isSpace) {
+                                                                                    e.stopPropagation();
+                                                                                    const firstChar = sylObj.sourceWord.charAt(0);
+                                                                                    const isUpper = firstChar === firstChar.toUpperCase();
+                                                                                    const newWord = (isUpper ? firstChar.toLowerCase() : firstChar.toUpperCase()) + sylObj.sourceWord.slice(1);
+                                                                                    onWordUpdate(sylObj.sourceId, newWord);
+                                                                                } else if (i === 0 && cIdx === 0 && !sylObj.sourceId) {
+                                                                                    // fallback
                                                                                     e.stopPropagation();
                                                                                     const firstChar = word.word.charAt(0);
                                                                                     const isUpper = firstChar === firstChar.toUpperCase();
@@ -378,7 +460,7 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                                                                             {char}
                                                                         </span>
                                                                     ))}
-                                                                    {settings.visualType === 'arc' && (
+                                                                    {settings.visualType === 'arc' && !sylObj.isSpace && (
                                                                         <svg className="arc-svg pointer-events-none" viewBox="0 0 100 20" preserveAspectRatio="none" style={{ display: 'block', height: '0.2em', width: '100%', marginTop: '-0.1em' }}><path d="M 2 2 Q 50 20 98 2" fill="none" stroke={isEven ? '#2563eb' : '#dc2626'} strokeWidth="8" strokeLinecap="round" /></svg>
                                                                     )}
                                                                 </span>

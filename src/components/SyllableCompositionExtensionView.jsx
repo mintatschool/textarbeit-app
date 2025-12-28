@@ -306,7 +306,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                 const formed = currentParts.join('');
                 if (formed === target.full) {
                     // Success!
-                    speak(formed);
+                    // speak(formed); // Removed auto-audio
                     setCompletedTargets(prev => new Set(prev).add(target.id));
                 }
             }
@@ -351,7 +351,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
     if (gameState.gameStatus === 'finished') {
         return (
             <div className="fixed inset-0 bg-blue-50 z-[100] flex flex-col items-center justify-center animate-in fade-in duration-500">
-                <CheckCircle2 className="w-24 h-24 text-emerald-500 mb-6 animate-bounce" />
+                <CheckCircle2 className="w-24 h-24 text-green-500 mb-6 animate-bounce" />
                 <h2 className="text-3xl font-black text-slate-800 mb-2">Fantastisch!</h2>
                 <p className="text-slate-600 mb-8 text-xl">Alle Silben gebaut.</p>
                 <div className="flex gap-4">
@@ -456,7 +456,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                         {leftVisible.map(p => (
                             <div key={p.id} className="cursor-grab active:cursor-grabbing hover:scale-105 transition-transform"
                                 draggable onDragStart={(e) => e.dataTransfer.setData("pieceId", p.id)}>
-                                <PuzzleTestPiece label={p.text} type="zigzag-left" colorClass={p.color} scale={gameState.pieceScale * 0.8} />
+                                <PuzzleTestPiece label={p.text} type="zigzag-left" colorClass={p.color} scale={gameState.pieceScale * 0.8} fontFamily={settings.fontFamily} />
                             </div>
                         ))}
                     </div>
@@ -474,7 +474,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                                     style={{ left: `${p.x}%`, top: `${p.y}%`, transform: `rotate(${p.rotation}deg)` }}
                                     draggable onDragStart={(e) => e.dataTransfer.setData("pieceId", p.id)}
                                 >
-                                    <PuzzleTestPiece label={p.text} type="zigzag-middle" colorClass={p.color} scale={gameState.pieceScale * 0.8} />
+                                    <PuzzleTestPiece label={p.text} type="zigzag-middle" colorClass={p.color} scale={gameState.pieceScale * 0.8} fontFamily={settings.fontFamily} />
                                 </div>
                             ))}
                         </div>
@@ -490,7 +490,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                                     <button
                                         onClick={() => speak(target.full)}
                                         className={`w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all shrink-0 ring-4 ring-white/50 translate-y-[-6px] hover:scale-105 active:scale-95 ${isComplete
-                                            ? 'bg-emerald-500 text-white'
+                                            ? 'bg-green-500 text-white'
                                             : 'bg-blue-500 hover:bg-blue-600 text-white'
                                             }`}
                                     >
@@ -531,12 +531,12 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                                                 >
                                                     {!piece && (
                                                         <div className="pointer-events-none opacity-40">
-                                                            <PuzzleTestPiece label="" type={targetType} isGhost scale={1} />
+                                                            <PuzzleTestPiece label="" type={targetType} isGhost scale={1} fontFamily={settings.fontFamily} />
                                                         </div>
                                                     )}
                                                     {piece && (
                                                         <div className="cursor-pointer hover:scale-105 transition-transform" onClick={() => handleRemove(target.id, idx)}>
-                                                            <PuzzleTestPiece label={piece.text} type={targetType} colorClass={piece.color} scale={1} id={piece.id} showSeamLine />
+                                                            <PuzzleTestPiece label={piece.text} type={targetType} colorClass={piece.color} scale={1} id={piece.id} showSeamLine fontFamily={settings.fontFamily} />
                                                         </div>
                                                     )}
                                                 </div>
@@ -558,7 +558,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                         {rightVisible.map(p => (
                             <div key={p.id} className="cursor-grab active:cursor-grabbing hover:scale-105 transition-transform"
                                 draggable onDragStart={(e) => e.dataTransfer.setData("pieceId", p.id)}>
-                                <PuzzleTestPiece label={p.text} type="zigzag-right" colorClass={p.color} scale={gameState.pieceScale * 0.8} />
+                                <PuzzleTestPiece label={p.text} type="zigzag-right" colorClass={p.color} scale={gameState.pieceScale * 0.8} fontFamily={settings.fontFamily} />
                             </div>
                         ))}
                     </div>

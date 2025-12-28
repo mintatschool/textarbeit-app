@@ -2,9 +2,22 @@ import React, { useMemo, useCallback } from 'react';
 import { Icons } from './Icons';
 import { getCachedSyllables, CLUSTERS } from '../utils/syllables';
 
-export const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, highlightedIndices, isHidden, toggleHighlights, toggleHidden, activeTool, activeColor, onEditMode, manualSyllables, hyphenator, settings, isReadingMode, wordColors, colorPalette }) => {
+const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, highlightedIndices, isHidden, toggleHighlights, toggleHidden, activeTool, activeColor, onEditMode, manualSyllables, hyphenator, settings, isReadingMode, wordColors, colorPalette, domRef, isGrouped, isSelection }) => {
     const wordKey = `${word}_${startIndex}`;
     const syllables = useMemo(() => manualSyllables || getCachedSyllables(word, hyphenator), [word, manualSyllables, hyphenator]);
+
+    // Attach ref to span
+    const refForWord = useCallback((node) => {
+        if (domRef) {
+            domRef(startIndex, node);
+        }
+    }); // Remove dependency array to update on every render? Or just [domRef]
+    // Actually, if we remove deps, it updates every time.
+    // If domRef changes (it does in App.jsx), we need to update.
+    // So [domRef, startIndex] is correct IF domRef identity changes.
+    // App.jsx creates new domRef function every render.
+    // So this IS updating.
+    // But maybe we need to be deeper?
 
     // Helpers
     const resolveColor = (colorCode) => {
@@ -148,14 +161,15 @@ export const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighte
     if (!showSyllables || isColorMarked) {
         return (
             <span
-                className={`inline-block select-none transition-all origin-center ${wrapperCursorClass} ${markerClass} ${isNeutralMarked || isColorMarked ? 'mx-0.5' : ''}`}
+                ref={refForWord}
+                className={`inline-block select-none transition-all origin-center ${wrapperCursorClass} ${markerClass} ${isNeutralMarked || isColorMarked ? 'mx-0.5' : ''} ${isSelection ? 'animate-pulse bg-slate-100 rounded-lg' : ''}`}
                 style={{
                     ...wordSpacingStyle,
-                    backgroundColor: backgroundColor,
+                    backgroundColor: isSelection ? '#e2e8f0' : backgroundColor,
                     color: isColorMarked ? 'black' : undefined
                 }}
                 // DISABLE WRAPPER CLICK IN YELLOW MODE
-                onClick={(e) => !isReadingMode && !activeTool && activeColor !== 'yellow' && handleInteraction(e)}
+                onClick={(e) => !isReadingMode && (activeTool === 'split' || activeTool === 'blur' || activeColor !== 'yellow') && handleInteraction(e)}
             >
                 {renderPrefix()}
                 {word.split('').map((char, i) => {
@@ -211,10 +225,11 @@ export const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighte
     let charCounter = 0;
     return (
         <span
+            ref={refForWord}
             className={`inline-flex items-baseline whitespace-nowrap transition-all origin-center relative group leading-none ${wrapperCursorClass} ${markerClass} ${isNeutralMarked || isColorMarked ? 'mx-0.5' : ''}`}
             style={wordSpacingStyle}
             // DISABLE WRAPPER CLICK IN YELLOW MODE
-            onClick={(e) => !isReadingMode && (['light_blue', 'silben', 'none'].includes(settings.clickAction)) && activeColor !== 'yellow' && handleInteraction(e)}
+            onClick={(e) => !isReadingMode && (activeTool === 'split' || activeTool === 'blur' || activeColor !== 'yellow' || ['light_blue', 'silben', 'none'].includes(settings.clickAction)) && handleInteraction(e)}
         >
             {renderPrefix()}
             {syllables.map((syl, sIdx) => {
@@ -280,6 +295,7 @@ export const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighte
             {renderSuffix()}
         </span>
     );
+
 }, (prev, next) => {
     if (prev.highlightedIndices !== next.highlightedIndices || prev.wordColors !== next.wordColors) return false;
     return (
@@ -290,8 +306,14 @@ export const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighte
         prev.activeTool === next.activeTool &&
         prev.settings === next.settings &&
         prev.activeColor === next.activeColor && // ADDED VITAL COMPARISON
+        prev.isGrouped === next.isGrouped &&
+        prev.isSelection === next.isSelection &&
+        prev.toggleHighlights === next.toggleHighlights && // Fix for stale closure
         prev.isReadingMode === next.isReadingMode &&
         prev.hyphenator === next.hyphenator &&
-        prev.colorPalette === next.colorPalette // COMPARE PALETTE
+        prev.colorPalette === next.colorPalette &&
+        true // refs are stable
     );
 });
+
+export { Word };

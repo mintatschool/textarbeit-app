@@ -4,7 +4,6 @@ import {
     Volume2,
     CheckCircle2,
     ChevronRight,
-    Maximize2,
     Minus,
     Plus,
     Smile,
@@ -57,12 +56,12 @@ const ModeIcon = ({ mode, active }) => {
     );
 };
 
-export const PuzzleTestTwoSyllableView = ({ words, onClose, title }) => {
+export const PuzzleTestTwoSyllableView = ({ words, settings, onClose, title }) => {
     const [gameState, setGameState] = useState({
         stages: [],
         currentStageIndex: 0,
         gameStatus: 'loading',
-        pieceScale: 1.0,
+        pieceScale: settings.pieceScale || 1.0,
         wordsPerStage: 3,
         gameMode: 'both-empty'
     });
@@ -208,7 +207,7 @@ export const PuzzleTestTwoSyllableView = ({ words, onClose, title }) => {
             const targetWord = currentStage.words[targetWordIdx];
 
             if (targetWord && targetWord.syllables.join('') === formedWord) {
-                speak(targetWord.fullWord);
+                // speak(targetWord.fullWord); // Auto-audio disabled
                 setShowWordSuccess(true);
 
                 setTimeout(() => {
@@ -268,6 +267,7 @@ export const PuzzleTestTwoSyllableView = ({ words, onClose, title }) => {
                 <AlertCircle className="w-16 h-16 text-blue-500 mb-4" />
                 <h2 className="text-xl font-bold text-slate-800 mb-2">Keine passenden Wörter gefunden.</h2>
                 <p className="text-slate-600 mb-6">Bitte markiere Wörter mit genau 2 Silben.</p>
+
                 <button onClick={onClose} className="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold shadow-lg">Zurück</button>
             </div>
         );
@@ -341,9 +341,18 @@ export const PuzzleTestTwoSyllableView = ({ words, onClose, title }) => {
                         <HorizontalLines count={5} />
                     </div>
 
-                    <div className="flex items-center gap-3 bg-gray-50 px-4 py-1.5 rounded-2xl border border-gray-200">
-                        <Maximize2 className="w-4 h-4 text-blue-400" />
-                        <input type="range" min="0.7" max="1.3" step="0.1" value={gameState.pieceScale} onChange={(e) => setGameState(prev => ({ ...prev, pieceScale: parseFloat(e.target.value) }))} className="w-20 h-1.5 bg-blue-100 rounded-lg appearance-none cursor-pointer accent-blue-600" />
+                    <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg">
+                        <span className="text-xs font-bold text-slate-500">A</span>
+                        <input
+                            type="range"
+                            min="0.7"
+                            max="1.3"
+                            step="0.1"
+                            value={gameState.pieceScale}
+                            onChange={(e) => setGameState(prev => ({ ...prev, pieceScale: parseFloat(e.target.value) }))}
+                            className="w-48 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer"
+                        />
+                        <span className="text-xl font-bold text-slate-500">A</span>
                     </div>
 
                     <button onClick={() => window.confirm("Neu starten?") && startNewGame()} className="p-2 text-gray-400 hover:text-blue-500 transition-colors mr-2">
@@ -361,7 +370,7 @@ export const PuzzleTestTwoSyllableView = ({ words, onClose, title }) => {
                 <div className="w-1/4 relative border-r border-blue-50 bg-white/20 shrink-0 overflow-y-auto overflow-x-hidden no-scrollbar py-6 space-y-8 flex flex-col items-center">
                     {scrambledSyllables.filter(s => s.type === 'left').map(s => (
                         <div key={s.id} className="transition-transform hover:scale-105 active:scale-95 cursor-grab active:cursor-grabbing" style={{ zIndex: isDragging === s.id ? 100 : 10 }}>
-                            <PuzzleTestPiece label={s.text} type="left" colorClass={s.color} scale={gameState.pieceScale} onDragStart={(e) => { setIsDragging(s.id); }} isDragging={isDragging === s.id} />
+                            <PuzzleTestPiece label={s.text} type="left" colorClass={s.color} scale={gameState.pieceScale} onDragStart={(e) => { setIsDragging(s.id); }} isDragging={isDragging === s.id} fontFamily={settings.fontFamily} />
                         </div>
                     ))}
                 </div>
@@ -417,6 +426,7 @@ export const PuzzleTestTwoSyllableView = ({ words, onClose, title }) => {
                                                         type={type}
                                                         isGhost={true}
                                                         scale={scale}
+                                                        fontFamily={settings.fontFamily}
                                                     />
                                                 </div>
                                             )}
@@ -433,6 +443,7 @@ export const PuzzleTestTwoSyllableView = ({ words, onClose, title }) => {
                                                         colorClass="bg-blue-500"
                                                         scale={scale}
                                                         showSeamLine={true}
+                                                        fontFamily={settings.fontFamily}
                                                     />
                                                 </div>
                                             )}
@@ -445,7 +456,7 @@ export const PuzzleTestTwoSyllableView = ({ words, onClose, title }) => {
                                 absolute transition-all duration-500 ease-out z-30 pointer-events-none
                                 ${showWordSuccess ? 'scale-125 opacity-100 translate-x-12' : 'scale-0 opacity-0 translate-x-0'}
                             `} style={{ left: '100%', top: '50%', transform: 'translateY(-50%)' }}>
-                                <CheckCircle2 className="text-emerald-500 drop-shadow-2xl" style={{ width: `${80 * gameState.pieceScale}px`, height: `${80 * gameState.pieceScale}px` }} />
+                                <CheckCircle2 className="text-green-500 drop-shadow-2xl" style={{ width: `${80 * gameState.pieceScale}px`, height: `${80 * gameState.pieceScale}px` }} />
                             </div>
                         </div>
                     </div>
@@ -455,7 +466,7 @@ export const PuzzleTestTwoSyllableView = ({ words, onClose, title }) => {
                 <div className="w-1/4 relative border-l border-blue-50 bg-white/20 shrink-0 overflow-y-auto overflow-x-hidden no-scrollbar py-6 space-y-8 flex flex-col items-center">
                     {scrambledSyllables.filter(s => s.type === 'right').map(s => (
                         <div key={s.id} className="transition-transform hover:scale-105 active:scale-95 cursor-grab active:cursor-grabbing" style={{ zIndex: isDragging === s.id ? 100 : 10 }}>
-                            <PuzzleTestPiece label={s.text} type="right" colorClass={s.color} scale={gameState.pieceScale} onDragStart={() => setIsDragging(s.id)} isDragging={isDragging === s.id} />
+                            <PuzzleTestPiece label={s.text} type="right" colorClass={s.color} scale={gameState.pieceScale} onDragStart={() => setIsDragging(s.id)} isDragging={isDragging === s.id} fontFamily={settings.fontFamily} />
                         </div>
                     ))}
                 </div>
@@ -463,8 +474,8 @@ export const PuzzleTestTwoSyllableView = ({ words, onClose, title }) => {
 
             {gameState.gameStatus === 'stage-complete' && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-md">
-                    <div className="bg-white rounded-[3rem] shadow-2xl p-10 max-w-sm w-full flex flex-col items-center text-center animate-in zoom-in duration-300">
-                        <Smile className="w-16 h-16 text-emerald-600 mb-6" />
+                    <div className="bg-white rounded-[3rem] shadow-2xl p-10 max-w-sm w-full flex flex-col items-center text-center animate-in zoom-in duration-300 relative overflow-hidden">
+                        <CheckCircle2 className="w-16 h-16 text-green-500 mb-6" />
                         <h2 className="text-3xl font-black text-slate-900 mb-2">Super!</h2>
                         <p className="text-slate-500 mb-8 font-medium">Level geschafft.</p>
                         <button onClick={() => setGameState(prev => {
@@ -472,9 +483,20 @@ export const PuzzleTestTwoSyllableView = ({ words, onClose, title }) => {
                                 return { ...prev, currentStageIndex: 0, gameStatus: 'playing' };
                             }
                             return { ...prev, currentStageIndex: prev.currentStageIndex + 1, gameStatus: 'playing' }
-                        })} className="w-full bg-blue-600 text-white py-5 rounded-2xl font-black text-xl flex items-center justify-center gap-3 transition-all hover:scale-105 active:scale-95 shadow-lg">
+                        })} className="w-full bg-blue-600 text-white py-5 rounded-2xl font-black text-xl flex items-center justify-center gap-3 transition-all hover:scale-105 active:scale-95 shadow-lg relative z-10">
                             Weiter <ChevronRight className="w-6 h-6" />
                         </button>
+                    </div>
+                    {/* Confetti */}
+                    <div className="fixed inset-0 pointer-events-none z-[60]">
+                        {Array.from({ length: 40 }).map((_, i) => (
+                            <div key={i} className="confetti" style={{
+                                left: `${Math.random() * 100}%`,
+                                backgroundColor: ['#3b82f6', '#ef4444', '#22c55e', '#eab308'][Math.floor(Math.random() * 4)],
+                                animationDuration: `${2 + Math.random() * 3}s`,
+                                animationDelay: `${Math.random()}s`
+                            }} />
+                        ))}
                     </div>
                 </div>
             )}

@@ -12,7 +12,7 @@ export const MenuItem = ({ onClick, children, icon, className = "" }) => (
     </button>
 );
 
-export const MenuDropdown = ({ title, icon, children, labelVisible = true, align = 'top' }) => {
+export const MenuDropdown = ({ title, icon, children, labelVisible = true, align = 'top', className = "" }) => {
     const [isOpen, setIsOpen] = useState(false);
     const buttonRef = useRef(null);
     const [dropdownStyle, setDropdownStyle] = useState({});
@@ -109,7 +109,7 @@ export const MenuDropdown = ({ title, icon, children, labelVisible = true, align
             <button
                 ref={buttonRef}
                 onClick={() => setIsOpen(!isOpen)}
-                className={`p-3 rounded-full transition flex items-center gap-2 min-touch-target ${isOpen ? 'bg-slate-200 text-slate-900' : 'text-slate-600 hover:text-blue-600 hover:bg-slate-100'}`}
+                className={`p-3 rounded-xl transition flex items-center gap-2 min-touch-target ${isOpen ? 'bg-slate-200 text-slate-900' : 'text-slate-600 hover:text-blue-600 hover:bg-slate-100'} ${className}`}
                 title={title}
             >
                 {icon}

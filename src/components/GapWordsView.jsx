@@ -304,12 +304,28 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
         <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans select-none">
             {showReward && (
                 <div className="fixed inset-0 z-[150] pointer-events-none flex items-center justify-center">
-                    {Array.from({ length: 30 }).map((_, i) => (
-                        <div key={i} className="confetti" style={{ left: `${Math.random() * 100}%`, top: `-10%`, backgroundColor: ['#f00', '#0f0', '#00f', '#ff0'][Math.floor(Math.random() * 4)], animationDuration: `${2 + Math.random() * 3}s`, animationDelay: `${Math.random()}s` }}></div>
-                    ))}
-                    <div className="bg-white/90 backdrop-blur rounded-2xl p-8 shadow-2xl pop-animate pointer-events-auto text-center border-4 border-yellow-400">
-                        <h2 className="text-4xl font-bold text-slate-800 mb-4">Super gemacht! 🎉</h2>
-                        <button onClick={onClose} className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition min-touch-target">Zurück</button>
+                    <div className="fixed inset-0 bg-white/60 backdrop-blur-[2px]"></div>
+                    <div className="bg-white rounded-3xl p-12 shadow-2xl pop-animate pointer-events-auto text-center border-b-8 border-green-100 relative z-10">
+                        <div className="flex flex-col items-center">
+                            <span className="text-4xl font-black text-green-600 mb-8 flex items-center gap-3">
+                                <Icons.CheckCircle size={64} className="text-green-500" /> Alle Lücken gefüllt! Toll!
+                            </span>
+                            <button onClick={onClose} className="px-12 py-4 bg-blue-600 text-white rounded-2xl font-bold text-xl hover:bg-blue-700 hover:scale-105 transition-all shadow-lg min-touch-target">
+                                Beenden
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Confetti */}
+                    <div className="fixed inset-0 pointer-events-none z-[160]">
+                        {Array.from({ length: 40 }).map((_, i) => (
+                            <div key={i} className="confetti" style={{
+                                left: `${Math.random() * 100}%`,
+                                backgroundColor: ['#3b82f6', '#ef4444', '#22c55e', '#eab308'][Math.floor(Math.random() * 4)],
+                                animationDuration: `${2 + Math.random() * 3}s`,
+                                animationDelay: `${Math.random()}s`
+                            }} />
+                        ))}
                     </div>
                 </div>
             )}
@@ -323,26 +339,25 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                     <span className="bg-slate-100 px-3 py-1 rounded-full text-slate-600 font-bold text-sm">
                         {currentGroupIdx + 1} / {groups.length}
                     </span>
+                </div>
 
+                <div className="flex items-center gap-4">
                     {!isInitialSound && (
-                        <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 ml-4">
+                        <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
                             <button
                                 onClick={() => setMode('vowels')}
-                                className={`px-4 py-2 rounded-lg font-bold text-sm transition ${mode === 'vowels' ? 'bg-yellow-100 text-slate-900 shadow-[0_2px_0_0_#eab308] border border-yellow-400' : 'text-slate-500 hover:bg-slate-50'}`}
+                                className={`px-4 py-2 rounded-lg font-bold text-lg transition-all ${mode === 'vowels' ? 'bg-yellow-400 text-yellow-900 border-yellow-500 shadow-[0_2px_0_0_#eab308]' : 'text-slate-500 hover:bg-slate-50'}`}
                             >
                                 Vokale
                             </button>
                             <button
                                 onClick={() => setMode('consonants')}
-                                className={`px-4 py-2 rounded-lg font-bold text-sm transition ${mode === 'consonants' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}
+                                className={`px-4 py-2 rounded-lg font-bold text-lg transition-all ${mode === 'consonants' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}
                             >
                                 Konsonanten
                             </button>
                         </div>
                     )}
-                </div>
-
-                <div className="flex items-center gap-4">
                     <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg">
                         <span className="text-xs font-bold text-slate-500">A</span>
                         <input type="range" min="24" max="100" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-32 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer" />

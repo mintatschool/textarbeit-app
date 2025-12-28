@@ -13,7 +13,8 @@ const PuzzleTestPiece = ({
     className,
     isGhost = false,
     showSeamLine = false,
-    dynamicWidth = null
+    dynamicWidth = null,
+    fontFamily
 }) => {
     // Determine base width
     const standardBaseWidth = 200;
@@ -54,12 +55,13 @@ const PuzzleTestPiece = ({
 
     const calculateFontSize = () => {
         const len = label.length;
-        if (len > 12) return '1.1rem';
-        if (len > 10) return '1.3rem';
-        if (len > 8) return '1.6rem';
-        if (len > 6) return '1.9rem';
-        if (len > 4) return '2.2rem';
-        return '2.4rem';
+        if (len > 12) return '1.3rem';
+        if (len > 10) return '1.5rem';
+        if (len > 8) return '1.8rem';
+        if (len > 6) return '2.2rem';
+        if (len > 4) return '2.5rem';
+        if (len > 2) return '3.0rem';
+        return '3.5rem';
     };
 
     const getHexColor = (twClass) => {
@@ -78,10 +80,14 @@ const PuzzleTestPiece = ({
 
     // Determine padding to center text visually in the "body" excluding knobs
     const getTextPadding = () => {
-        if (type === 'left' || type === 'zigzag-left') return 'pr-8'; // Compensation for right-side extension
-        if (type === 'right' || type === 'zigzag-right') return 'pl-8'; // Compensation for left-side cutout
+        // Start pieces (Knob/Arrow on Right) -> Need Padding Right to shift text Left
+        if (type === 'left' || type === 'zigzag-left') return 'pr-8';
+
+        // End pieces (Hole/Arrow-In on Left) -> Need Padding Left to shift text Right
+        if (type === 'right' || type === 'zigzag-right') return 'pl-8';
+
         if (type === 'zigzag-middle') return 'px-2';
-        return 'px-4';
+        return 'px-2';
     };
 
     return (
@@ -152,10 +158,10 @@ const PuzzleTestPiece = ({
                         <span className="select-none font-black text-white text-center block w-full"
                             style={{
                                 fontSize: calculateFontSize(),
+                                fontFamily: fontFamily,
                                 textShadow: '0 2px 5px rgba(0,0,0,0.4)',
                                 maxWidth: '100%',
                                 whiteSpace: 'nowrap',
-                                // Removed overflow hidden and ellipsis to ensure full text (font size handles fit)
                             }}>
                             {label}
                         </span>

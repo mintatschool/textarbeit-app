@@ -154,20 +154,31 @@
 
     .blur-container {
         display: inline-block;
-        vertical-align: baseline;
+        vertical-align: middle;
         overflow: hidden;
-        border-radius: 6px;
+        border-radius: 12px;
         background-color: #cbd5e1;
         cursor: pointer;
         position: relative;
+        padding: 4px 10px;
+        margin: -4px 2px;
+        box-shadow: 0 0 12px 4px rgba(203, 213, 225, 0.6);
+        transition: all 0.3s ease;
+    }
+
+    .blur-container:hover {
+        background-color: #94a3b8;
+        box-shadow: 0 0 16px 6px rgba(148, 163, 184, 0.5);
+        transform: translateY(-1px);
     }
 
     .blur-content {
-        filter: blur(8px);
-        opacity: 0.6;
+        filter: blur(10px);
+        opacity: 0;
         color: transparent;
         user-select: none;
         display: block;
+        line-height: 1;
     }
 }
 

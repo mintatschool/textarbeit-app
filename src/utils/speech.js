@@ -1,20 +1,31 @@
 import availableSyllables from './available_syllables.json';
 
-let syllableSet = new Set();
-try {
-    const raw = (availableSyllables && Array.isArray(availableSyllables) ? availableSyllables : (availableSyllables?.default || []));
-    if (Array.isArray(raw)) {
-        syllableSet = new Set(raw);
-    }
-} catch (e) {
-    console.warn("Speech: Failed to load syllable list", e);
-}
+const rawSyllables = (availableSyllables && Array.isArray(availableSyllables) ? availableSyllables : (availableSyllables?.default || []));
+const syllableSet = new Set(Array.isArray(rawSyllables) ? rawSyllables.map(s => s.toLowerCase().trim()) : []);
+
 const BASE_PATH = import.meta.env.BASE_URL;
 
+export const getAudioListSize = () => syllableSet.size;
+
 /**
- * Enhanced speak function that prioritizes local MP3 files for syllables.
- * Falls back to Web Speech API if no file is found or for non-syllable text.
+ * Checks if a syllable has a local MP3 file available.
  */
+export const hasAudio = (text) => {
+    if (!text || typeof text !== 'string') return false;
+    // Replace soft hyphens and other non-alphabetical characters
+    const normalized = text.toLowerCase().trim()
+        .replace(/\u00AD/g, '') // Remove soft hyphens
+        .replace(/[^a-zäöüß]/g, '');
+
+    const exists = syllableSet.has(normalized);
+    if (!exists && text.length > 0) {
+        console.log(`hasAudio: "${text}" -> "${normalized}" [NOT FOUND]`);
+    } else if (exists) {
+        // console.log(`hasAudio: "${text}" -> "${normalized}" [FOUND]`);
+    }
+    return exists;
+};
+
 export const speak = (text) => {
     if (!text) return;
 

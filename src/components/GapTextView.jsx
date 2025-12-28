@@ -223,12 +223,28 @@ export const GapTextView = ({ text, settings, setSettings, onClose, title }) => 
         <div className="fixed inset-0 z-[100] bg-white flex flex-col modal-animate font-sans select-none">
             {showReward && (
                 <div className="fixed inset-0 z-[200] pointer-events-none flex items-center justify-center">
-                    <div className="bg-white/95 backdrop-blur rounded-2xl p-10 shadow-2xl pop-animate pointer-events-auto text-center border-4 border-yellow-400">
-                        <h2 className="text-4xl font-bold text-slate-800 mb-4">Großartig! 🎉</h2>
-                        <p className="text-xl text-slate-600 mb-6">Du hast den gesamten Text vervollständigt.</p>
-                        <button onClick={onClose} className="px-10 py-4 bg-green-500 text-white rounded-xl font-bold hover:bg-green-600 transition shadow-lg min-touch-target">
-                            Fertig
-                        </button>
+                    <div className="fixed inset-0 bg-white/60 backdrop-blur-[2px]"></div>
+                    <div className="bg-white rounded-3xl p-12 shadow-2xl pop-animate pointer-events-auto text-center border-b-8 border-green-100 relative z-10">
+                        <div className="flex flex-col items-center">
+                            <span className="text-4xl font-black text-green-600 mb-8 flex items-center gap-3">
+                                <Icons.CheckCircle size={64} className="text-green-500" /> Alles richtig ergänzt! Super!
+                            </span>
+                            <button onClick={onClose} className="px-12 py-4 bg-blue-600 text-white rounded-2xl font-bold text-xl hover:bg-blue-700 hover:scale-105 transition-all shadow-lg min-touch-target">
+                                Beenden
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Confetti */}
+                    <div className="fixed inset-0 pointer-events-none z-[160]">
+                        {Array.from({ length: 40 }).map((_, i) => (
+                            <div key={i} className="confetti" style={{
+                                left: `${Math.random() * 100}%`,
+                                backgroundColor: ['#3b82f6', '#ef4444', '#22c55e', '#eab308'][Math.floor(Math.random() * 4)],
+                                animationDuration: `${2 + Math.random() * 3}s`,
+                                animationDelay: `${Math.random()}s`
+                            }} />
+                        ))}
                     </div>
                 </div>
             )}

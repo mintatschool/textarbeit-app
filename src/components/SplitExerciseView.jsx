@@ -26,7 +26,33 @@ export const SplitExerciseView = ({ words, onClose, settings, setSettings, title
 
     return (
         <div className="fixed inset-0 z-[130] flex flex-col bg-slate-100 modal-animate font-sans select-none">
-            {isSessionFinished && (<div className="fixed inset-0 z-[150] pointer-events-auto flex items-center justify-center bg-black/20 backdrop-blur-sm">{Array.from({ length: 40 }).map((_, i) => <div key={i} className="confetti" style={{ left: `${Math.random() * 100}%`, top: `-10%`, backgroundColor: ['#f00', '#0f0', '#00f', '#ff0'][Math.floor(Math.random() * 4)], animationDuration: `${1.5 + Math.random() * 2}s` }}></div>)}<div className="bg-white/90 backdrop-blur rounded-2xl p-8 shadow-2xl pop-animate text-center border-4 border-yellow-400 max-w-lg mx-4 relative overflow-hidden"><h2 className="text-4xl font-bold text-slate-800 mb-4">Super gemacht! 🎉</h2><p className="text-xl text-slate-600 mb-8">Du hast alle Wörter richtig getrennt.</p><button onClick={onClose} className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition shadow-lg text-lg min-touch-target">Zurück zum Text</button></div></div>)}
+            {isSessionFinished && (
+                <div className="fixed inset-0 z-[150] pointer-events-none flex items-center justify-center">
+                    <div className="fixed inset-0 bg-white/60 backdrop-blur-[2px]"></div>
+                    <div className="bg-white rounded-3xl p-12 shadow-2xl pop-animate pointer-events-auto text-center border-b-8 border-green-100 relative z-10">
+                        <div className="flex flex-col items-center">
+                            <span className="text-4xl font-black text-green-600 mb-8 flex items-center gap-3">
+                                <Icons.CheckCircle size={64} className="text-green-500" /> Alle Wörter richtig getrennt! Toll!
+                            </span>
+                            <button onClick={onClose} className="px-12 py-4 bg-blue-600 text-white rounded-2xl font-bold text-xl hover:bg-blue-700 hover:scale-105 transition-all shadow-lg min-touch-target">
+                                Beenden
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Confetti */}
+                    <div className="fixed inset-0 pointer-events-none z-[160]">
+                        {Array.from({ length: 40 }).map((_, i) => (
+                            <div key={i} className="confetti" style={{
+                                left: `${Math.random() * 100}%`,
+                                backgroundColor: ['#3b82f6', '#ef4444', '#22c55e', '#eab308'][Math.floor(Math.random() * 4)],
+                                animationDuration: `${2 + Math.random() * 3}s`,
+                                animationDelay: `${Math.random()}s`
+                            }} />
+                        ))}
+                    </div>
+                </div>
+            )}
 
             <div className="bg-white px-6 py-4 shadow-sm flex flex-wrap gap-4 justify-between items-center z-10 shrink-0">
                 <div className="flex items-center gap-4">
@@ -39,8 +65,14 @@ export const SplitExerciseView = ({ words, onClose, settings, setSettings, title
                     </span>
                 </div>
 
-                <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg">
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => setShowVowels(!showVowels)}
+                        className={`px-4 py-2 rounded-xl font-bold text-lg border transition-all min-touch-target ${showVowels ? 'bg-yellow-400 text-yellow-900 border-yellow-500 shadow-[0_2px_0_0_#eab308]' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}
+                    >
+                        Vokale
+                    </button>
+                    <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg ml-2">
                         <span className="text-xs font-bold text-slate-500">A</span>
                         <input
                             type="range"
@@ -52,7 +84,7 @@ export const SplitExerciseView = ({ words, onClose, settings, setSettings, title
                         />
                         <span className="text-xl font-bold text-slate-500">A</span>
                     </div>
-                    <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 shadow-sm transition-transform hover:scale-105 flex items-center justify-center min-touch-target sticky right-0">
+                    <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 shadow-sm transition-transform hover:scale-105 flex items-center justify-center min-touch-target">
                         <Icons.X size={24} />
                     </button>
                 </div>
@@ -105,10 +137,6 @@ export const SplitExerciseView = ({ words, onClose, settings, setSettings, title
             </div>
 
             <div className="p-6 bg-white border-t flex flex-wrap gap-4 justify-center items-center shrink-0">
-                <button onClick={() => setShowVowels(!showVowels)} className={`px-4 py-3 rounded-xl border font-bold transition flex items-center gap-2 min-touch-target ${showVowels ? 'bg-yellow-50 border-yellow-300 text-yellow-700' : 'border-slate-300 text-slate-500 hover:bg-slate-50'}`}>
-                    <div className={`w-4 h-4 rounded-full border ${showVowels ? 'bg-yellow-400 border-yellow-500' : 'bg-slate-300 border-slate-400'}`}></div>
-                    Vokale an
-                </button>
                 <div className="flex-1"></div>
                 {status !== 'correct' ? (
                     <button onClick={checkAnswer} className="px-8 py-3 bg-blue-600 text-white text-lg font-bold rounded-xl hover:bg-blue-700 shadow-lg active:scale-95 transition min-touch-target">Prüfen</button>

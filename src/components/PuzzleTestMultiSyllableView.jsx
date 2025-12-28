@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-    Maximize2,
     CheckCircle2,
     AlertCircle
 } from 'lucide-react';
@@ -8,7 +7,7 @@ import { Icons } from './Icons';
 import PuzzleTestPiece from './PuzzleTestPiece';
 import { speak } from '../utils/speech';
 
-export const PuzzleTestMultiSyllableView = ({ words, onClose, title }) => {
+export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title }) => {
     // State
     const [pieces, setPieces] = useState({ left: [], middle: [], right: [] });
     const [activeLengths, setActiveLengths] = useState([]);
@@ -22,7 +21,11 @@ export const PuzzleTestMultiSyllableView = ({ words, onClose, title }) => {
         if (!words || words.length === 0) return;
 
         const validWords = words
-            .filter(w => w.syllables && w.syllables.length >= 2 && w.syllables.every(s => s && typeof s === 'string'))
+            .filter(w =>
+                w.syllables &&
+                w.syllables.length >= 2 &&
+                w.syllables.every(s => s && typeof s === 'string')
+            )
             .map(w => ({
                 ...w,
                 id: w.id || Math.random().toString(36).substr(2, 9)
@@ -148,7 +151,7 @@ export const PuzzleTestMultiSyllableView = ({ words, onClose, title }) => {
                 const match = words.find(w => w.syllables.join('') === formedWord);
 
                 if (match) {
-                    speak(match.word);
+                    // speak(match.word); // Auto-audio disabled
                     setIsSuccess(len);
 
                     setTimeout(() => {
@@ -229,10 +232,23 @@ export const PuzzleTestMultiSyllableView = ({ words, onClose, title }) => {
     if (visibleLengths.length === 0 && completedWords.length > 0 && !isSuccess) {
         return (
             <div className="fixed inset-0 bg-blue-50 z-[100] flex flex-col items-center justify-center animate-in fade-in duration-500">
-                <CheckCircle2 className="w-24 h-24 text-emerald-500 mb-6 animate-bounce" />
+                <CheckCircle2 className="w-24 h-24 text-green-500 mb-6 animate-bounce" />
                 <h2 className="text-3xl font-black text-slate-800 mb-2">Fantastisch!</h2>
                 <p className="text-slate-600 mb-8 text-xl">Alle Wörter gepuzzelt.</p>
-                <button onClick={onClose} className="bg-blue-600 text-white px-8 py-3 rounded-2xl font-bold shadow-xl text-lg hover:scale-105 transition-all">Fertig</button>
+                <div className="flex gap-4 relative z-10">
+                    <button onClick={onClose} className="bg-blue-600 text-white px-8 py-3 rounded-2xl font-bold shadow-xl text-lg hover:scale-105 transition-all">Fertig</button>
+                </div>
+                {/* Confetti */}
+                <div className="fixed inset-0 pointer-events-none z-[60]">
+                    {Array.from({ length: 40 }).map((_, i) => (
+                        <div key={i} className="confetti" style={{
+                            left: `${Math.random() * 100}%`,
+                            backgroundColor: ['#3b82f6', '#ef4444', '#22c55e', '#eab308'][Math.floor(Math.random() * 4)],
+                            animationDuration: `${2 + Math.random() * 3}s`,
+                            animationDelay: `${Math.random()}s`
+                        }} />
+                    ))}
+                </div>
             </div>
         );
     }
@@ -247,9 +263,18 @@ export const PuzzleTestMultiSyllableView = ({ words, onClose, title }) => {
                 </div>
 
                 <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-3 bg-gray-50 px-4 py-1.5 rounded-2xl border border-gray-200 hidden sm:flex">
-                        <Maximize2 className="w-4 h-4 text-blue-400" />
-                        <input type="range" min="0.6" max="1.2" step="0.1" value={scale} onChange={(e) => setScale(parseFloat(e.target.value))} className="w-24 h-1.5 bg-blue-100 rounded-lg appearance-none cursor-pointer accent-blue-600" />
+                    <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg hidden md:flex">
+                        <span className="text-xs font-bold text-slate-500">A</span>
+                        <input
+                            type="range"
+                            min="0.6"
+                            max="1.2"
+                            step="0.1"
+                            value={scale}
+                            onChange={(e) => setScale(parseFloat(e.target.value))}
+                            className="w-48 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer"
+                        />
+                        <span className="text-xl font-bold text-slate-500">A</span>
                     </div>
                     <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 flex items-center justify-center transition-colors shadow-sm">
                         <Icons.X size={24} />
@@ -294,6 +319,7 @@ export const PuzzleTestMultiSyllableView = ({ words, onClose, title }) => {
                                     colorClass={p.color}
                                     dynamicWidth={p.width}
                                     onDragStart={(e) => { e.dataTransfer.setData("application/puzzle-piece-id", p.id); }}
+                                    fontFamily={settings.fontFamily}
                                 />
                             </div>
                         ))}
@@ -317,6 +343,7 @@ export const PuzzleTestMultiSyllableView = ({ words, onClose, title }) => {
                                         colorClass={p.color}
                                         dynamicWidth={p.width}
                                         onDragStart={(e) => { e.dataTransfer.setData("application/puzzle-piece-id", p.id); }}
+                                        fontFamily={settings.fontFamily}
                                     />
                                 </div>
                             ))}
@@ -362,6 +389,7 @@ export const PuzzleTestMultiSyllableView = ({ words, onClose, title }) => {
                                                                 type={type}
                                                                 isGhost={true}
                                                                 scale={scale}
+                                                                fontFamily={settings.fontFamily}
                                                             />
                                                         </div>
                                                     )}
@@ -380,6 +408,7 @@ export const PuzzleTestMultiSyllableView = ({ words, onClose, title }) => {
                                                                 scale={scale}
                                                                 dynamicWidth={piece.width}
                                                                 showSeamLine={true}
+                                                                fontFamily={settings.fontFamily}
                                                             />
                                                         </div>
                                                     )}
@@ -392,7 +421,7 @@ export const PuzzleTestMultiSyllableView = ({ words, onClose, title }) => {
                                         absolute transition-all duration-500 ease-out z-30 pointer-events-none
                                         ${isSuccess === len ? 'scale-125 opacity-100 translate-x-20' : 'scale-0 opacity-0 translate-x-0'}
                                     `} style={{ left: '100%', top: '50%', transform: 'translateY(-50%)' }}>
-                                        <CheckCircle2 className="text-emerald-500 drop-shadow-2xl w-16 h-16" />
+                                        <CheckCircle2 className="text-green-500 drop-shadow-2xl w-16 h-16" />
                                     </div>
                                 </div>
                             </div>
@@ -415,6 +444,7 @@ export const PuzzleTestMultiSyllableView = ({ words, onClose, title }) => {
                                     colorClass={p.color}
                                     dynamicWidth={p.width}
                                     onDragStart={(e) => { e.dataTransfer.setData("application/puzzle-piece-id", p.id); }}
+                                    fontFamily={settings.fontFamily}
                                 />
                             </div>
                         ))}

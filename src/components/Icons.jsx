@@ -141,4 +141,5 @@ export const Icons = {
         <path d="M9 17L12 7L15 17" />
         <line x1="10" y1="14" x2="14" y2="14" />
     </g>} />,
+    Group: ({ size = 24, className = "" }) => <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 9v6a7 7 0 0 0 14 0v-6" /></svg>,
 };

@@ -28,6 +28,7 @@ import { CaseExerciseView } from './components/CaseExerciseView';
 import { FindLettersView } from './components/FindLettersView';
 import { Toolbar } from './components/Toolbar';
 import { getCachedSyllables } from './utils/syllables';
+import { ConnectionOverlay } from './components/ConnectionOverlay';
 
 // Initialize mobile-drag-drop polyfill
 polyfill({
@@ -99,7 +100,15 @@ const App = () => {
     const textAreaRef = useRef(null);
     const activeColorRef = useRef(activeColor);
     activeColorRef.current = activeColor; // Keep ref in sync
+    activeColorRef.current = activeColor; // Keep ref in sync
     const { instance: hyphenator } = useHypherLoader();
+
+    // Grouping State
+    const [wordGroups, setWordGroups] = useState([]); // Array<{ ids: number[], color: string }>
+    const [isGrouping, setIsGrouping] = useState(false);
+    const [currentGroupSelection, setCurrentGroupSelection] = useState([]); // Array<number>
+    const wordRefs = useRef({});
+    const textContainerRef = useRef(null);
 
     // Smart Text Update that shifts highlights
     const handleTextChange = (newText) => {
@@ -177,8 +186,38 @@ const App = () => {
     useEffect(() => { highlightedIndicesRef.current = highlightedIndices; }, [highlightedIndices]);
 
     // Interactions
+    const handleGrouping = useCallback((indicesStrOrArr) => {
+        const indices = Array.isArray(indicesStrOrArr) ? indicesStrOrArr : [indicesStrOrArr];
+        const sortedIndices = [...indices].sort((a, b) => a - b);
+
+        setCurrentGroupSelection(prev => {
+            const asSet = new Set(prev);
+            let modified = false;
+            // Toggle: Add if not present, remove if present?
+            // Actually simpler: Add to selection.
+            // If user clicks same word again, maybe remove?
+
+            sortedIndices.forEach(idx => {
+                if (asSet.has(idx)) { asSet.delete(idx); modified = true; }
+                else { asSet.add(idx); modified = true; }
+            });
+            return modified ? Array.from(asSet).sort((a, b) => a - b) : prev;
+        });
+    }, []);
+
     const toggleHighlights = useCallback((indicesStrOrArr, options = {}) => {
         const indices = Array.isArray(indicesStrOrArr) ? indicesStrOrArr : [indicesStrOrArr];
+
+        if (isGrouping) {
+            // For grouping, we only care about the ANCHOR index (Start Index of the word)
+            // The refs are stored by startIndex.
+            // indices[0] is typically the startIndex passed from Word.jsx
+            if (indices.length > 0) {
+                handleGrouping(indices[0]);
+            }
+            return;
+        }
+
         const currentActiveColor = activeColorRef.current; // 'neutral', 'yellow', 'palette-0', or Hex Code
 
         // Determine if we should "Unmark" (Toggle Off)
@@ -189,11 +228,20 @@ const App = () => {
         const allSameColor = indices.every(i => {
             const rangeColor = currentColors[i]; // undefined, 'yellow', hex, or 'palette-X'
             if (currentActiveColor === 'neutral') return rangeColor === undefined;
+            // Relaxed check: If no active color (generic mode), allow unmarking
+            if (!currentActiveColor) return true;
             // Check for direct match (handles 'yellow', 'palette-X')
             return rangeColor === currentActiveColor;
         });
 
-        const shouldUnmark = allHighlighted && allSameColor;
+        // Check if word is part of a group
+        // indices[0] is start index
+        const isGrouped = wordGroups.some(g => g.ids.includes(indices[0]));
+
+        // Always unmark if:
+        // 1. Matches color conditions (standard toggle)
+        // 2. OR is part of a group (Force detach/unmark on click)
+        const shouldUnmark = (allHighlighted && allSameColor) || isGrouped;
 
         setHighlightedIndices(prev => {
             const next = new Set(prev);
@@ -221,6 +269,30 @@ const App = () => {
 
             if (shouldUnmark) {
                 indices.forEach(i => delete next[i]);
+
+                // ALSO REMOVE FROM GROUPS IF PRESENT
+                // We need the start index of the word.
+                // Assuming indices contains contiguous indices of a word.
+                if (indices.length > 0) {
+                    const startIndex = Math.min(...indices);
+                    setWordGroups(prevGroups => {
+                        const newGroups = prevGroups.map(g => {
+                            if (g.ids.includes(startIndex)) {
+                                // Remove this ID
+                                return { ...g, ids: g.ids.filter(id => id !== startIndex) };
+                            }
+                            return g;
+                        });
+                        // Filter out groups that have < 2 items? 
+                        // User request: "wird dessen Markierung und die Verbindung entfernt"
+                        // If a group has 1 item left, it's just a colored word without connection? 
+                        // Or should we keep it as a "group of 1" which might have special styling?
+                        // Usually groups are connections. A single item group is useless.
+                        // But maybe we keep it as is.
+                        // But if I remove the word from 'ids', it is no longer in the group.
+                        return newGroups.filter(g => g.ids.length > 0);
+                    });
+                }
             } else {
                 // Apply new color
                 indices.forEach(i => {
@@ -233,7 +305,7 @@ const App = () => {
             }
             return next;
         });
-    }, []);
+    }, [isGrouping, handleGrouping]);
     const toggleHidden = useCallback((key) => {
         setHiddenIndices(prev => { const next = new Set(prev); if (next.has(key)) next.delete(key); else next.add(key); return next; });
     }, []);
@@ -368,6 +440,50 @@ const App = () => {
                     activeColor={activeColor}
                     onSetActiveColor={(newColor) => {
                         setActiveColor(newColor);
+                    }}
+                    isGrouping={isGrouping}
+                    onToggleGrouping={() => {
+                        if (isGrouping) {
+                            // Finish Grouping
+                            if (currentGroupSelection.length > 1) {
+                                // Save Group
+                                const newGroup = { ids: [...currentGroupSelection].sort((a, b) => a - b), color: activeColor || '#3b82f6' };
+                                setWordGroups(prev => [...prev, newGroup]);
+
+                                // ALSO APPLY COLOR TO WORDS
+                                if (activeColor) {
+                                    setHighlightedIndices(prev => {
+                                        const next = new Set(prev);
+                                        currentGroupSelection.forEach(idx => {
+                                            // We need to mark ALL indices of the word? 
+                                            // The word object has a length. 'idx' is just the start index.
+                                            // We need to find the word to know its length.
+                                            // But wait, toggleHighlights usually handles this.
+                                            // Here we only have start indices.
+                                            // processedWords has the data. 
+                                            // We can find the word by index.
+                                            const wordObj = processedWords.find(w => w.index === idx);
+                                            if (wordObj && wordObj.word) {
+                                                for (let i = 0; i < wordObj.word.length; i++) next.add(idx + i);
+                                            }
+                                        });
+                                        return next;
+                                    });
+                                    setWordColors(prev => {
+                                        const next = { ...prev };
+                                        currentGroupSelection.forEach(idx => {
+                                            next[idx] = activeColor;
+                                        });
+                                        return next;
+                                    });
+                                }
+                            }
+                            setCurrentGroupSelection([]);
+                            setIsGrouping(false);
+                        } else {
+                            if (!activeColor) return;
+                            setIsGrouping(true);
+                        }
                     }}
                     onUpdatePalette={(index, newColor) => setColorPalette(prev => {
                         const next = [...prev];
@@ -562,7 +678,14 @@ const App = () => {
                                 <span className="text-xl font-bold text-slate-500">A</span>
                             </div>
 
-                            <div className="max-w-7xl mx-auto w-full transition-all duration-300" style={{ maxWidth: `${settings.textWidth}%` }}>
+                            <div ref={textContainerRef} className="max-w-7xl mx-auto w-full transition-all duration-300 relative" style={{ maxWidth: `${settings.textWidth}%` }}>
+                                {/* Connection Overlay */}
+                                <ConnectionOverlay
+                                    groups={wordGroups}
+                                    wordRefs={wordRefs}
+                                    containerRef={textContainerRef}
+                                    currentSelection={[...currentGroupSelection].sort((a, b) => a - b)}
+                                />
                                 <div className={`flex flex-wrap items-baseline content-start ${settings.centerText ? 'justify-center' : 'justify-start'}`} style={{ lineHeight: settings.lineHeight, fontFamily: settings.fontFamily }}>
                                     {processedWords.map((item, idx) => {
                                         if (item.type === 'newline') {
@@ -577,6 +700,10 @@ const App = () => {
                                         return (
                                             <Word key={item.id} {...item}
                                                 isHighlighted={isWordHighlighted}
+                                                // Grouping Styling
+                                                isGrouped={wordGroups.some(g => g.ids.includes(item.index))}
+                                                isSelection={currentGroupSelection.includes(item.index)}
+                                                //
                                                 isHidden={hiddenIndices.has(item.id)}
                                                 highlightedIndices={highlightedIndices}
                                                 toggleHighlights={toggleHighlights}
@@ -591,6 +718,10 @@ const App = () => {
                                                 interactionDisabled={activeTool === 'read'}
                                                 wordColors={wordColors}
                                                 colorPalette={colorPalette}
+                                                domRef={(idx, node) => {
+                                                    if (node) wordRefs.current[idx] = node;
+                                                    else delete wordRefs.current[idx];
+                                                }}
                                             />
                                         );
                                     })}
@@ -600,23 +731,83 @@ const App = () => {
                     )}
 
 
+
                     {activeView === 'puzzle' && <SyllablePuzzleView words={hasMarkings ? exerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Silbenpuzzle alt" />}
                     {activeView === 'puzzletest_two' && <PuzzleTestTwoSyllableView words={hasMarkings ? exerciseWords : []} settings={settings} onClose={() => setActiveView('text')} title="Silbenpuzzle 1" />}
-                    {activeView === 'syllable_composition' && <SyllableCompositionView words={exerciseWords} settings={settings} onClose={() => setActiveView('text')} title="Silbenbau 1" />}
+                    {activeView === 'syllable_composition' && <SyllableCompositionView words={hasMarkings ? exerciseWords : []} settings={settings} onClose={() => setActiveView('text')} title="Silbenbau 1" />}
                     {activeView === 'syllable_composition_extension' && <SyllableCompositionExtensionView words={hasMarkings ? exerciseWords : []} settings={settings} onClose={() => setActiveView('text')} title="Silbenbau 2" />}
                     {activeView === 'puzzletest_multi' && <PuzzleTestMultiSyllableView words={hasMarkings ? exerciseWords : []} settings={settings} onClose={() => setActiveView('text')} title="Silbenpuzzle 2" />}
-                    {activeView === 'cloud' && <WordCloudView words={hasMarkings ? exerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Schüttelwörter" />}
-                    {activeView === 'carpet' && <SyllableCarpetView words={exerciseWords} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Silbenteppich" />}
-                    {activeView === 'list' && <WordListView words={exerciseWords} columnsState={columnsState} setColumnsState={setColumnsState} onClose={() => setActiveView('text')} settings={settings} setSettings={setSettings} wordColors={wordColors} colorPalette={colorPalette} colorHeaders={colorHeaders} setColorHeaders={setColorHeaders} onRemoveWord={() => { }} title="Wortliste/Tabelle" onWordUpdate={(wordId, newText) => {
-                        const parts = wordId.split('_');
-                        const index = parseInt(parts[parts.length - 1], 10);
-                        if (isNaN(index)) return;
-                        const target = processedWords.find(w => w.id === wordId);
-                        if (!target) return;
-                        const before = text.substring(0, index);
-                        const after = text.substring(index + target.word.length);
-                        handleTextChange(before + newText + after);
-                    }} />}
+                    {activeView === 'cloud' && <WordCloudView words={hasMarkings ? exerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Wortwolke" />}
+                    {activeView === 'carpet' && <SyllableCarpetView words={hasMarkings ? exerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Silbenteppich" />}
+                    {activeView === 'list' && <WordListView
+                        words={exerciseWords}
+                        columnsState={columnsState}
+                        setColumnsState={setColumnsState}
+                        onClose={() => setActiveView('text')}
+                        settings={settings}
+                        setSettings={setSettings}
+                        wordColors={wordColors}
+                        colorPalette={colorPalette}
+                        colorHeaders={colorHeaders}
+                        setColorHeaders={setColorHeaders}
+                        groups={wordGroups}
+                        onRemoveWord={(id) => {
+                            if (typeof id === 'string' && id.startsWith('group-')) {
+                                // REMOVE GROUP
+                                const idsString = id.replace('group-', '');
+                                const ids = idsString.split('-').map(Number);
+
+                                // 1. Remove from Groups
+                                setWordGroups(prev => prev.filter(g => {
+                                    if (g.ids.length !== ids.length) return true;
+                                    return !g.ids.every((val, index) => val === ids[index]);
+                                }));
+
+                                // 2. Remove Colors & Highlights for ALL members
+                                setHighlightedIndices(prev => {
+                                    const next = new Set(prev);
+                                    ids.forEach(startIndex => {
+                                        const w = processedWords.find(pw => pw.index === startIndex);
+                                        if (w) {
+                                            for (let i = 0; i < w.word.length; i++) next.delete(startIndex + i);
+                                        }
+                                    });
+                                    return next;
+                                });
+                                setWordColors(prev => {
+                                    const next = { ...prev };
+                                    ids.forEach(idx => delete next[idx]);
+                                    return next;
+                                });
+
+                            } else {
+                                // REMOVE SINGLE WORD
+                                const target = processedWords.find(w => w.id === id);
+                                if (target) {
+                                    setHighlightedIndices(prev => {
+                                        const next = new Set(prev);
+                                        for (let i = 0; i < target.word.length; i++) next.delete(target.index + i);
+                                        return next;
+                                    });
+                                    setWordColors(prev => {
+                                        const next = { ...prev };
+                                        delete next[target.index];
+                                        return next;
+                                    });
+                                }
+                            }
+                        }}
+                        title="Wortliste/Tabelle"
+                        onWordUpdate={(wordId, newText) => {
+                            const parts = wordId.split('_');
+                            const index = parseInt(parts[parts.length - 1], 10);
+                            if (isNaN(index)) return;
+                            const target = processedWords.find(w => w.id === wordId);
+                            if (!target) return;
+                            const before = text.substring(0, index);
+                            const after = text.substring(index + target.word.length);
+                            handleTextChange(before + newText + after);
+                        }} />}
                     {activeView === 'sentence' && <SentencePuzzleView text={text} mode="sentence" settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Satzpuzzle" />}
                     {activeView === 'textpuzzle' && <SentencePuzzleView text={text} mode="text" settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Textpuzzle" />}
                     {activeView === 'sentenceshuffle' && <SentenceShuffleView text={text} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Schüttelsätze" />}

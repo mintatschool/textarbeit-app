@@ -23,8 +23,14 @@ const AVAILABLE_COLORS = [
 ];
 
 const ToolbarButton = ({ onClick, icon: IconComponent, title, active, activeColor = "blue", disabled, className = "" }) => {
-    let baseClass = "p-3 rounded-full transition flex-shrink-0 min-touch-target";
-    if (className) baseClass = `p-2 transition flex-shrink-0 min-touch-target ${className}`;
+    let baseClass = "p-3 rounded-xl transition flex-shrink-0 min-touch-target";
+    if (className) {
+        if (!className.includes('rounded-')) {
+            baseClass = `p-2 rounded-xl transition flex-shrink-0 min-touch-target ${className}`;
+        } else {
+            baseClass = `p-2 transition flex-shrink-0 min-touch-target ${className}`;
+        }
+    }
     let activeClass = "";
 
     if (active) {
@@ -102,7 +108,9 @@ export const Toolbar = ({
     onSetActiveColor,
     onUpdatePalette,
     settings,
-    onMarkAllNeutral // New prop
+    onMarkAllNeutral, // New prop
+    isGrouping,
+    onToggleGrouping
 }) => {
     const [editingColorIndex, setEditingColorIndex] = useState(null);
     const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -116,16 +124,16 @@ export const Toolbar = ({
 
     return (
         <div className={`bg-white/95 backdrop-blur-md shadow-2xl border-slate-200 z-[90] transition-all font-sans no-scrollbar flex ${containerClasses}`}>
-            {/* --- TOP SECTION: EDIT & RESET --- */}
-            <ToolbarButton
-                title="Zurück zur Eingabe"
-                icon={Icons.Edit2}
-                onClick={onToggleView}
-                active={true} // Always blue
-                className="w-16 h-10 rounded-xl"
-            />
+            {/* --- SECTION 1: SYSTEM & GENERAL TOOLS ("Control Room") --- */}
+            <div className="flex flex-col gap-2 items-center p-2 rounded-3xl bg-slate-50/80 border border-slate-200/50 shadow-inner w-[calc(100%-12px)] mx-auto">
+                <ToolbarButton
+                    title="Zurück zur Eingabe"
+                    icon={Icons.Edit2}
+                    onClick={onToggleView}
+                    active={false}
+                    className="w-14 h-10 rounded-2xl bg-white border border-slate-200 shadow-sm hover:border-blue-400"
+                />
 
-            <div className="flex flex-col gap-2 w-full items-center">
                 <ToolbarButton
                     title={showResetConfirm ? "Bist du sicher?" : "Alle Markierungen löschen"}
                     icon={showResetConfirm ? Icons.Check : Icons.RotateCcw}
@@ -141,6 +149,7 @@ export const Toolbar = ({
                     disabled={isReadingMode}
                     active={showResetConfirm}
                     activeColor="red"
+                    className="w-14 h-10 rounded-2xl"
                 />
 
                 <ToolbarButton
@@ -158,12 +167,39 @@ export const Toolbar = ({
                     disabled={isReadingMode}
                     active={showMarkAllConfirm}
                     activeColor="red"
+                    className="w-14 h-10 rounded-2xl"
                 />
             </div>
 
+            <ToolbarButton
+                title="Silben korrigieren"
+                icon={Icons.SplitVertical}
+                onClick={() => onToolChange(activeTool === 'split' ? null : 'split')}
+                active={activeTool === 'split'}
+                activeColor="teal"
+                disabled={isReadingMode}
+            />
+
+            <ToolbarButton
+                title="Wörter verstecken"
+                icon={Icons.Ghost}
+                onClick={() => onToolChange(activeTool === 'blur' ? null : 'blur')}
+                active={activeTool === 'blur'}
+                activeColor="gray"
+                disabled={isReadingMode}
+            />
+
+            <ToolbarButton
+                title="Lesemodus"
+                icon={Icons.Hand}
+                onClick={onToggleReadingMode}
+                active={isReadingMode}
+                activeColor="orange"
+            />
+
             <Separator horizontal={false} />
 
-            {/* --- MIDDLE SECTION: TOOLS --- */}
+            {/* --- SECTION 2: DATA VIEW --- */}
 
             <ToolbarButton
                 title="Wortliste/Tabelle"
@@ -171,17 +207,32 @@ export const Toolbar = ({
                 onClick={() => setShowList(true)}
                 disabled={isReadingMode}
                 activeColor="purple"
+                className="bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-700 hover:border-purple-300 rounded-xl"
             />
 
-            {/* MENÜ: BUCHSTABEN */}
-            <MenuDropdown title="Buchstaben" icon={<Icons.LetterSearch size={24} />} labelVisible={false} align="right">
+            <Separator horizontal={false} />
+
+            {/* --- SECTION 3: EXERCISE MENUS --- */}
+            <MenuDropdown
+                title="Buchstaben"
+                icon={<Icons.LetterSearch size={24} />}
+                labelVisible={false}
+                align="right"
+                className="bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-600 hover:border-blue-300 rounded-xl"
+            >
                 <MenuItem onClick={() => setShowFindLetters(true)} icon={<Icons.LetterSearch size={20} className="text-blue-600" />}>
                     Buchstaben finden
                 </MenuItem>
             </MenuDropdown>
 
             {/* MENÜ: SILBEN */}
-            <MenuDropdown title="Silben" icon={<Icons.MenuSyllables size={24} />} labelVisible={false} align="right">
+            <MenuDropdown
+                title="Silben"
+                icon={<Icons.MenuSyllables size={24} />}
+                labelVisible={false}
+                align="right"
+                className="bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-600 hover:border-blue-300 rounded-xl"
+            >
                 <MenuItem onClick={() => setShowCarpet(true)} icon={<Icons.Grid2x2 size={20} className="text-indigo-600" />}>
                     Silbenteppich
                 </MenuItem>
@@ -194,7 +245,13 @@ export const Toolbar = ({
             </MenuDropdown>
 
             {/* MENÜ: WÖRTER */}
-            <MenuDropdown title="Wörter" icon={<Icons.MenuWords size={24} />} labelVisible={false} align="right">
+            <MenuDropdown
+                title="Wörter"
+                icon={<Icons.MenuWords size={24} />}
+                labelVisible={false}
+                align="right"
+                className="bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-600 hover:border-blue-300 rounded-xl"
+            >
                 <MenuItem onClick={() => setShowStaircase(true)} icon={<Icons.Stairs size={20} className="text-indigo-600" />}>
                     Treppenwörter
                 </MenuItem>
@@ -205,7 +262,7 @@ export const Toolbar = ({
                     Lückenwörter
                 </MenuItem>
                 <MenuItem onClick={() => setShowCloud(true)} icon={<Icons.Cloud size={20} className="text-blue-500" />}>
-                    Schüttelwörter
+                    Wortwolke
                 </MenuItem>
                 <MenuItem onClick={() => setShowSplitExercise(true)} icon={<Icons.Scissors size={20} className="text-orange-500 -rotate-90" />}>
                     Wörter trennen
@@ -226,7 +283,13 @@ export const Toolbar = ({
             </MenuDropdown>
 
             {/* MENÜ: SÄTZE */}
-            <MenuDropdown title="Sätze" icon={<Icons.MenuSentenceCategory size={24} />} labelVisible={false} align="right">
+            <MenuDropdown
+                title="Sätze"
+                icon={<Icons.MenuSentenceCategory size={24} />}
+                labelVisible={false}
+                align="right"
+                className="bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-600 hover:border-blue-300 rounded-xl"
+            >
                 <MenuItem onClick={() => setShowSentenceShuffle(true)} icon={<Icons.Shuffle size={20} className="text-purple-500" />}>
                     Schüttelsätze
                 </MenuItem>
@@ -236,56 +299,55 @@ export const Toolbar = ({
             </MenuDropdown>
 
             {/* MENÜ: TEXT */}
-            <MenuDropdown title="Text" icon={<Icons.TextParagraph size={24} />} labelVisible={false} align="right">
+            <MenuDropdown
+                title="Text"
+                icon={<Icons.TextParagraph size={24} />}
+                labelVisible={false}
+                align="right"
+                className="bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-600 hover:border-blue-300 rounded-xl"
+            >
                 <MenuItem onClick={() => setShowSentencePuzzle(true)} icon={<Icons.Sentence size={20} className="text-pink-500" />}>
                     Satzpuzzle
                 </MenuItem>
-                <MenuItem onClick={() => setShowCloud(true)} icon={<Icons.Cloud size={20} className="text-blue-400" />}>
-                    Wortwolke
+                <MenuItem onClick={() => setShowTextPuzzle(true)} icon={<Icons.TextBlocks size={20} className="text-emerald-500" />}>
+                    Textpuzzle
                 </MenuItem>
                 <MenuItem onClick={() => setShowCaseExercise(true)} icon={<Icons.Capitalization size={20} className="text-blue-600" />}>
                     Groß-/Kleinschreibung
                 </MenuItem>
             </MenuDropdown>
 
-            {/* BLUR TOOL */}
-            <ToolbarButton
-                title="Wörter verstecken"
-                icon={Icons.Ghost}
-                onClick={() => onToolChange(activeTool === 'blur' ? null : 'blur')}
-                active={activeTool === 'blur'}
-                activeColor="gray"
-                disabled={isReadingMode}
-            />
-
-            <ToolbarButton
-                title="Lesemodus"
-                icon={Icons.Hand}
-                onClick={onToggleReadingMode}
-                active={isReadingMode}
-                activeColor="orange"
-            />
-
             <Separator horizontal={false} />
 
-            {/* MARKING SYSTEM */}
+            {/* --- SECTION 4: MARKING SYSTEM --- */}
             <div className="flex flex-col gap-3 items-center p-1 rounded-2xl bg-slate-50 border border-slate-200 shadow-inner w-full">
 
                 {/* 1. NEUTRAL MARKER (Grey Box - Whole Word Frame) */}
                 <button
                     onClick={() => onSetActiveColor('neutral')}
-                    className={`w-14 h-6 rounded-md border-2 transition-all !min-h-0 ${activeColor === 'neutral' ? 'border-slate-500 bg-slate-200 shadow-[0_0_12px_rgba(59,130,246,0.6)] ring-2 ring-blue-400/50 scale-110' : 'border-slate-500 bg-transparent hover:bg-slate-100 hover:border-slate-600'}`}
+                    className={`w-14 h-6 rounded-lg border-2 transition-all !min-h-0 ${activeColor === 'neutral' ? 'border-slate-500 bg-slate-200 shadow-[0_0_12px_rgba(59,130,246,0.6)] ring-2 ring-blue-400/50 scale-110' : 'border-slate-500 bg-transparent hover:bg-slate-100 hover:border-slate-600'}`}
                     title="Neutral markieren (Grauer Rahmen)"
                 />
 
                 {/* 2. YELLOW MARKER (Character Highlight - Matches Find Letters style) */}
                 <button
                     onClick={() => onSetActiveColor('yellow')}
-                    className={`w-14 h-12 flex items-center justify-center rounded-xl transition-all min-touch-target ${activeColor === 'yellow' ? 'bg-white border-2 border-slate-500 shadow-[0_0_12px_rgba(59,130,246,0.6)] ring-2 ring-blue-400/50 scale-110' : 'border-2 border-transparent hover:bg-slate-100'}`}
+                    className={`w-14 h-12 flex items-center justify-center rounded-xl transition-transform min-touch-target ${activeColor === 'yellow' ? 'bg-white border-2 border-slate-500 shadow-[0_0_12px_rgba(59,130,246,0.6)] ring-2 ring-blue-400/50 scale-110' : 'border-2 border-transparent hover:bg-slate-100'}`}
                     title="Gelb markieren (Buchstaben)"
                 >
                     <Icons.LetterMarker size={28} className="text-slate-500" />
                 </button>
+
+                {/* 2b. GROUPING BUTTON (Only visible if a color is active) */}
+                {(activeColor && activeColor !== 'neutral' && activeColor !== 'yellow') && (
+                    <button
+                        onClick={onToggleGrouping}
+                        className={`w-14 h-10 flex items-center justify-center rounded-xl transition-all min-touch-target ${isGrouping ? 'bg-slate-800 text-white shadow-lg scale-105' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                        title={isGrouping ? "Verbinden abschließen" : "Wörter verbinden"}
+                    >
+                        <Icons.Group size={24} />
+                    </button>
+                )}
 
                 {/* 3. COLOR PALETTE (Edge-to-Edge Staggered) */}
                 <div className="flex justify-center gap-0 w-full">
@@ -391,24 +453,15 @@ export const Toolbar = ({
             )}
 
             <div className="mt-auto flex flex-col gap-4 w-full items-center">
+                <Separator horizontal={false} />
+
+                {/* --- SECTION 5: GLOBAL UTILITIES --- */}
                 <ToolbarButton
                     title="Vollbild"
                     icon={isFullscreen ? Icons.Minimize : Icons.Maximize}
                     onClick={onToggleFullscreen}
                     disabled={isReadingMode}
                     activeColor="gray"
-                />
-
-                <Separator horizontal={false} />
-
-                {/* --- BOTTOM SECTION: CORRECTION & SETTINGS --- */}
-                <ToolbarButton
-                    title="Silben korrigieren"
-                    icon={Icons.SplitVertical}
-                    onClick={() => onToolChange(activeTool === 'split' ? null : 'split')}
-                    active={activeTool === 'split'}
-                    activeColor="teal"
-                    disabled={isReadingMode}
                 />
 
                 <ToolbarButton

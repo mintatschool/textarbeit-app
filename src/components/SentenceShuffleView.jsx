@@ -183,21 +183,28 @@ export const SentenceShuffleView = ({ text, settings, setSettings, onClose, titl
             {/* Reward Modal */}
             {showReward && (
                 <div className="fixed inset-0 z-[150] pointer-events-none flex items-center justify-center">
-                    {Array.from({ length: 40 }).map((_, i) => (
-                        <div key={i} className="confetti" style={{
-                            left: `${Math.random() * 100}%`,
-                            top: `-10%`,
-                            backgroundColor: ['#f00', '#0f0', '#00f', '#ff0', '#f0f', '#0ff'][Math.floor(Math.random() * 6)],
-                            animationDuration: `${2 + Math.random() * 3}s`,
-                            animationDelay: `${Math.random()}s`
-                        }}></div>
-                    ))}
-                    <div className="bg-white/95 backdrop-blur rounded-2xl p-8 shadow-2xl pop-animate pointer-events-auto text-center border-4 border-yellow-400">
-                        <h2 className="text-4xl font-bold text-slate-800 mb-4">Super gemacht! 🎉</h2>
-                        <p className="text-xl text-slate-600 mb-6">Alle {sentences.length} Sätze richtig sortiert!</p>
-                        <button onClick={onClose} className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition shadow-lg min-touch-target">
-                            Zurück
-                        </button>
+                    <div className="fixed inset-0 bg-white/60 backdrop-blur-[2px]"></div>
+                    <div className="bg-white rounded-3xl p-12 shadow-2xl pop-animate pointer-events-auto text-center border-b-8 border-green-100 relative z-10">
+                        <div className="flex flex-col items-center">
+                            <span className="text-4xl font-black text-green-600 mb-8 flex items-center gap-3">
+                                <Icons.CheckCircle size={64} className="text-green-500" /> Alles richtig sortiert! Super!
+                            </span>
+                            <button onClick={onClose} className="px-12 py-4 bg-blue-600 text-white rounded-2xl font-bold text-xl hover:bg-blue-700 hover:scale-105 transition-all shadow-lg min-touch-target">
+                                Beenden
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Confetti */}
+                    <div className="fixed inset-0 pointer-events-none z-[160]">
+                        {Array.from({ length: 40 }).map((_, i) => (
+                            <div key={i} className="confetti" style={{
+                                left: `${Math.random() * 100}%`,
+                                backgroundColor: ['#3b82f6', '#ef4444', '#22c55e', '#eab308'][Math.floor(Math.random() * 4)],
+                                animationDuration: `${2 + Math.random() * 3}s`,
+                                animationDelay: `${Math.random()}s`
+                            }} />
+                        ))}
                     </div>
                 </div>
             )}
