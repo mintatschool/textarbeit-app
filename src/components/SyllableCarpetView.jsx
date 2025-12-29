@@ -87,6 +87,13 @@ export const SyllableCarpetView = ({ words, settings, setSettings, onClose, titl
                             <Icons.RotateCcw size={22} />
                         </button>
                     )}
+                    <button
+                        onClick={() => setIsFingerMode(!isFingerMode)}
+                        className={`p-2.5 rounded-xl transition-all flex items-center justify-center border-2 mr-2 ${isFingerMode ? 'bg-orange-500 text-white border-orange-600 shadow-inner' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 shadow-sm'}`}
+                        title="Lese-Modus (Finger)"
+                    >
+                        <Icons.Hand size={28} />
+                    </button>
                     <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg">
                         <span className="text-xs font-bold text-slate-500">A</span>
                         <input type="range" min="16" max="120" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-48 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer" />
@@ -131,9 +138,6 @@ export const SyllableCarpetView = ({ words, settings, setSettings, onClose, titl
                         );
                     })}
                 </div>
-            </div>
-            <div className="absolute bottom-6 right-6 z-50 flex flex-col gap-4">
-                <button onClick={() => setIsFingerMode(!isFingerMode)} className={`rounded-full w-14 h-14 shadow-lg transition-transform hover:scale-110 flex items-center justify-center border-2 min-touch-target ${isFingerMode ? 'bg-orange-500 hover:bg-orange-600 text-white border-orange-600' : 'bg-white hover:bg-slate-50 text-slate-600 border-slate-200'}`} title="Lese-Modus (Finger)"><Icons.Hand size={30} /></button>
             </div>
         </div>
     );

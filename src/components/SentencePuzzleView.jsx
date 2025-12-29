@@ -231,7 +231,7 @@ export const SentencePuzzleView = ({ text, mode = 'sentence', onClose, settings,
                      Let's use a floating action button style for "Check".
                   */}
             </div>
-            <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
+            <div className="fixed bottom-8 right-12 z-50">
                 <button
                     onClick={checkOrder}
                     className={`px-12 py-4 rounded-full font-bold text-xl shadow-xl transition-transform hover:scale-105 active:scale-95 flex items-center gap-3 min-touch-target ${status === 'wrong' ? 'bg-red-500 text-white animate-pulse' : 'bg-blue-600 text-white hover:bg-blue-700'}`}

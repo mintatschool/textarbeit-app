@@ -179,7 +179,7 @@ export const CaseExerciseView = ({ text, settings, onClose, title }) => {
                 </div>
 
                 {/* Fixed Footer for Check Button */}
-                <div className="fixed bottom-12 left-1/2 -translate-x-1/2 flex items-center gap-4 z-30">
+                <div className="fixed bottom-12 right-12 flex items-center gap-4 z-30">
                     <button
                         onClick={handleCheck}
                         disabled={checkResults?.allCorrect}
