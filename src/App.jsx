@@ -537,7 +537,7 @@ const App = () => {
                     <div className="bg-white p-8 rounded-3xl shadow-xl w-full max-w-4xl border border-slate-100 flex flex-col h-[70vh]">
                         <div className="flex justify-between items-center mb-3">
                             <div className="flex items-center">
-                                <img src={`${import.meta.env.BASE_URL}logo.png`} alt="KONTEXT Logo" className="h-20 w-auto" />
+                                <img src={`${import.meta.env.BASE_URL}logo.png`} alt="KONTEXT Logo" className="h-14 w-auto object-contain" />
                             </div>
                             <div className="flex gap-2">
                                 {settings.enableCamera && (
