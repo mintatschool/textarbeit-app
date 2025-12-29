@@ -7,6 +7,7 @@ const PuzzleTestPiece = ({
     type,
     colorClass,
     onDragStart,
+    onDragEnd,
     isDragging,
     scale = 1,
     style,
@@ -102,6 +103,7 @@ const PuzzleTestPiece = ({
             <div
                 draggable={!!onDragStart && !isGhost}
                 onDragStart={handleDragStart}
+                onDragEnd={onDragEnd}
                 className={`
           relative flex items-center justify-center overflow-visible
           ${isDragging ? 'opacity-20 scale-95' : 'opacity-100'}

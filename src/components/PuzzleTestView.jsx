@@ -16,6 +16,19 @@ export const PuzzleTestView = ({ words, onClose }) => {
     const [completedWords, setCompletedWords] = useState([]); // List of completed word strings
     const [isSuccess, setIsSuccess] = useState(null); // Length of the word just completed
     const [scale, setScale] = useState(1.0);
+    const [isDragging, setIsDragging] = useState(null);
+
+    // iPad Fix: Prevent touch scrolling during drag
+    useEffect(() => {
+        if (!isDragging) return;
+        const preventDefault = (e) => { e.preventDefault(); };
+        document.body.style.overflow = 'hidden';
+        document.addEventListener('touchmove', preventDefault, { passive: false });
+        return () => {
+            document.body.style.overflow = '';
+            document.removeEventListener('touchmove', preventDefault);
+        };
+    }, [isDragging]);
 
     // Initialize game logic
     useEffect(() => {
@@ -236,7 +249,9 @@ export const PuzzleTestView = ({ words, onClose }) => {
                                     label={p.text}
                                     type="left"
                                     colorClass={p.color}
-                                    onDragStart={(e) => { e.dataTransfer.setData("application/puzzle-piece-id", p.id); }}
+                                    onDragStart={(e) => { e.dataTransfer.setData("application/puzzle-piece-id", p.id); setIsDragging(p.id); }}
+                                    onDragEnd={() => setIsDragging(null)}
+                                    scale={scale}
                                 />
                             </div>
                         ))}
@@ -258,7 +273,9 @@ export const PuzzleTestView = ({ words, onClose }) => {
                                         label={p.text}
                                         type="middle"
                                         colorClass={p.color}
-                                        onDragStart={(e) => { e.dataTransfer.setData("application/puzzle-piece-id", p.id); }}
+                                        onDragStart={(e) => { e.dataTransfer.setData("application/puzzle-piece-id", p.id); setIsDragging(p.id); }}
+                                        onDragEnd={() => setIsDragging(null)}
+                                        scale={scale}
                                     />
                                 </div>
                             ))}
@@ -358,7 +375,9 @@ export const PuzzleTestView = ({ words, onClose }) => {
                                     label={p.text}
                                     type="right"
                                     colorClass={p.color}
-                                    onDragStart={(e) => { e.dataTransfer.setData("application/puzzle-piece-id", p.id); }}
+                                    onDragStart={(e) => { e.dataTransfer.setData("application/puzzle-piece-id", p.id); setIsDragging(p.id); }}
+                                    onDragEnd={() => setIsDragging(null)}
+                                    scale={scale}
                                 />
                             </div>
                         ))}

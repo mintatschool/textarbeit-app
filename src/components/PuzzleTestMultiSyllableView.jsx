@@ -15,6 +15,19 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title })
     const [completedWords, setCompletedWords] = useState([]);
     const [isSuccess, setIsSuccess] = useState(null);
     const [scale, setScale] = useState(1.0);
+    const [isDragging, setIsDragging] = useState(null);
+
+    // iPad Fix: Prevent touch scrolling during drag
+    useEffect(() => {
+        if (!isDragging) return;
+        const preventDefault = (e) => { e.preventDefault(); };
+        document.body.style.overflow = 'hidden';
+        document.addEventListener('touchmove', preventDefault, { passive: false });
+        return () => {
+            document.body.style.overflow = '';
+            document.removeEventListener('touchmove', preventDefault);
+        };
+    }, [isDragging]);
 
     // Initialize game logic
     useEffect(() => {
@@ -318,7 +331,8 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title })
                                     type="left"
                                     colorClass={p.color}
                                     dynamicWidth={p.width}
-                                    onDragStart={(e) => { e.dataTransfer.setData("application/puzzle-piece-id", p.id); }}
+                                    onDragStart={(e) => { e.dataTransfer.setData("application/puzzle-piece-id", p.id); setIsDragging(p.id); }}
+                                    onDragEnd={() => setIsDragging(null)}
                                     fontFamily={settings.fontFamily}
                                 />
                             </div>
@@ -342,7 +356,8 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title })
                                         type="middle"
                                         colorClass={p.color}
                                         dynamicWidth={p.width}
-                                        onDragStart={(e) => { e.dataTransfer.setData("application/puzzle-piece-id", p.id); }}
+                                        onDragStart={(e) => { e.dataTransfer.setData("application/puzzle-piece-id", p.id); setIsDragging(p.id); }}
+                                        onDragEnd={() => setIsDragging(null)}
                                         fontFamily={settings.fontFamily}
                                     />
                                 </div>
@@ -443,7 +458,8 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title })
                                     type="right"
                                     colorClass={p.color}
                                     dynamicWidth={p.width}
-                                    onDragStart={(e) => { e.dataTransfer.setData("application/puzzle-piece-id", p.id); }}
+                                    onDragStart={(e) => { e.dataTransfer.setData("application/puzzle-piece-id", p.id); setIsDragging(p.id); }}
+                                    onDragEnd={() => setIsDragging(null)}
                                     fontFamily={settings.fontFamily}
                                 />
                             </div>

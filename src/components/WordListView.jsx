@@ -6,8 +6,21 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
     if (!words || words.length === 0) return (<div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans"><EmptyStateMessage onClose={onClose} /></div>);
     const [columnCount, setColumnCount] = useState(1);
     const [sortByColor, setSortByColor] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
     const dragItemRef = useRef(null);
     const prevWordsProp = useRef(null);
+
+    // iPad Fix: Prevent touch scrolling during drag
+    useEffect(() => {
+        if (!isDragging) return;
+        const preventDefault = (e) => { e.preventDefault(); };
+        document.body.style.overflow = 'hidden';
+        document.addEventListener('touchmove', preventDefault, { passive: false });
+        return () => {
+            document.body.style.overflow = '';
+            document.removeEventListener('touchmove', preventDefault);
+        };
+    }, [isDragging]);
 
     // Helper to resolve palette-X to hex
     const resolveColor = (colorCode) => {
@@ -265,6 +278,7 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
 
     const handleDragStart = (e, type, item, sourceColId = null, index = null) => {
         e.stopPropagation();
+        setIsDragging(true);
         dragItemRef.current = { type, item, sourceColId, index };
         e.dataTransfer.effectAllowed = 'move';
         if (type === 'column') {
@@ -273,7 +287,11 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
     };
 
     const handleDragOver = (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; };
-    const handleDragEnd = () => { dragItemRef.current = null; document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over', 'bg-blue-50')); };
+    const handleDragEnd = () => {
+        setIsDragging(false);
+        dragItemRef.current = null;
+        document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over', 'bg-blue-50'));
+    };
     const handleDragEnterCol = (e) => { e.preventDefault(); e.currentTarget.classList.add('bg-blue-50'); };
     const handleDragLeaveCol = (e) => { e.preventDefault(); e.currentTarget.classList.remove('bg-blue-50'); };
     const handleDropOnColumn = (e, targetColId) => {

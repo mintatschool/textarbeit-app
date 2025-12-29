@@ -535,13 +535,10 @@ const App = () => {
             {!isViewMode ? (
                 <div className="flex-1 flex flex-col items-center justify-center p-4 font-sans animate-fadeIn pb-24">
                     <div className="bg-white p-8 rounded-3xl shadow-xl w-full max-w-4xl border border-slate-100 flex flex-col h-[70vh]">
-                        <div className="flex justify-between items-center mb-6">
-                            <h1 className="text-3xl font-bold text-slate-800 flex items-baseline gap-3" style={{ fontFamily: "'Patrick Hand', cursive" }}>
-                                <span className="flex items-baseline">
-                                    <span className="text-4xl font-extrabold text-slate-400">KON</span>
-                                    <span className="text-4xl font-extrabold text-blue-600">TEXT</span>
-                                </span>
-                            </h1>
+                        <div className="flex justify-between items-center mb-3">
+                            <div className="flex items-center">
+                                <img src={`${import.meta.env.BASE_URL}logo.png`} alt="KONTEXT Logo" className="h-20 w-auto" />
+                            </div>
                             <div className="flex gap-2">
                                 {settings.enableCamera && (
                                     <button onClick={() => setShowScanner(true)} className="p-3 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all min-touch-target" title="Foto/QR scannen">

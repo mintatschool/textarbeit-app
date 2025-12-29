@@ -31,6 +31,20 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
         wordsPerStage: 3
     });
 
+    const [isDragging, setIsDragging] = useState(null);
+
+    // iPad Fix: Prevent touch scrolling during drag
+    useEffect(() => {
+        if (!isDragging) return;
+        const preventDefault = (e) => { e.preventDefault(); };
+        document.body.style.overflow = 'hidden';
+        document.addEventListener('touchmove', preventDefault, { passive: false });
+        return () => {
+            document.body.style.overflow = '';
+            document.removeEventListener('touchmove', preventDefault);
+        };
+    }, [isDragging]);
+
     const [pendingWordsCount, setPendingWordsCount] = useState(3);
     const debounceTimerRef = useRef(null);
     const [activeLengths, setActiveLengths] = useState([]); // Needed for drop logic compatibility? No, we use stage items.
@@ -455,7 +469,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                     <div className="flex-1 overflow-y-auto p-4 content-center gap-4 flex flex-col items-center">
                         {leftVisible.map(p => (
                             <div key={p.id} className="cursor-grab active:cursor-grabbing hover:scale-105 transition-transform"
-                                draggable onDragStart={(e) => e.dataTransfer.setData("pieceId", p.id)}>
+                                draggable onDragStart={(e) => { e.dataTransfer.setData("pieceId", p.id); setIsDragging(p.id); }} onDragEnd={() => setIsDragging(null)}>
                                 <PuzzleTestPiece label={p.text} type="zigzag-left" colorClass={p.color} scale={gameState.pieceScale * 0.8} fontFamily={settings.fontFamily} />
                             </div>
                         ))}
@@ -472,7 +486,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                                 <div key={p.id}
                                     className="absolute cursor-grab active:cursor-grabbing hover:z-50 transition-transform"
                                     style={{ left: `${p.x}%`, top: `${p.y}%`, transform: `rotate(${p.rotation}deg)` }}
-                                    draggable onDragStart={(e) => e.dataTransfer.setData("pieceId", p.id)}
+                                    draggable onDragStart={(e) => { e.dataTransfer.setData("pieceId", p.id); setIsDragging(p.id); }} onDragEnd={() => setIsDragging(null)}
                                 >
                                     <PuzzleTestPiece label={p.text} type="zigzag-middle" colorClass={p.color} scale={gameState.pieceScale * 0.8} fontFamily={settings.fontFamily} />
                                 </div>
@@ -557,7 +571,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                     <div className="flex-1 overflow-y-auto p-4 content-center gap-4 flex flex-col items-center">
                         {rightVisible.map(p => (
                             <div key={p.id} className="cursor-grab active:cursor-grabbing hover:scale-105 transition-transform"
-                                draggable onDragStart={(e) => e.dataTransfer.setData("pieceId", p.id)}>
+                                draggable onDragStart={(e) => { e.dataTransfer.setData("pieceId", p.id); setIsDragging(p.id); }} onDragEnd={() => setIsDragging(null)}>
                                 <PuzzleTestPiece label={p.text} type="zigzag-right" colorClass={p.color} scale={gameState.pieceScale * 0.8} fontFamily={settings.fontFamily} />
                             </div>
                         ))}

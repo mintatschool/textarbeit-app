@@ -74,6 +74,18 @@ export const PuzzleTestTwoSyllableView = ({ words, settings, onClose, title }) =
     const [isDragging, setIsDragging] = useState(null);
     const [showWordSuccess, setShowWordSuccess] = useState(false);
 
+    // iPad Fix: Prevent touch scrolling during drag
+    useEffect(() => {
+        if (!isDragging) return;
+        const preventDefault = (e) => { e.preventDefault(); };
+        document.body.style.overflow = 'hidden';
+        document.addEventListener('touchmove', preventDefault, { passive: false });
+        return () => {
+            document.body.style.overflow = '';
+            document.removeEventListener('touchmove', preventDefault);
+        };
+    }, [isDragging]);
+
     const startNewGame = useCallback((customWordsPerStage) => {
         const wps = customWordsPerStage !== undefined ? customWordsPerStage : pendingWordsCount;
         setGameState(prev => ({ ...prev, gameStatus: 'loading', stages: [], currentStageIndex: 0, wordsPerStage: wps }));
@@ -370,7 +382,7 @@ export const PuzzleTestTwoSyllableView = ({ words, settings, onClose, title }) =
                 <div className="w-1/4 relative border-r border-blue-50 bg-white/20 shrink-0 overflow-y-auto overflow-x-hidden no-scrollbar py-6 space-y-8 flex flex-col items-center">
                     {scrambledSyllables.filter(s => s.type === 'left').map(s => (
                         <div key={s.id} className="transition-transform hover:scale-105 active:scale-95 cursor-grab active:cursor-grabbing" style={{ zIndex: isDragging === s.id ? 100 : 10 }}>
-                            <PuzzleTestPiece label={s.text} type="left" colorClass={s.color} scale={gameState.pieceScale} onDragStart={(e) => { setIsDragging(s.id); }} isDragging={isDragging === s.id} fontFamily={settings.fontFamily} />
+                            <PuzzleTestPiece label={s.text} type="left" colorClass={s.color} scale={gameState.pieceScale} onDragStart={(e) => { setIsDragging(s.id); }} onDragEnd={() => setIsDragging(null)} isDragging={isDragging === s.id} fontFamily={settings.fontFamily} />
                         </div>
                     ))}
                 </div>
@@ -466,7 +478,7 @@ export const PuzzleTestTwoSyllableView = ({ words, settings, onClose, title }) =
                 <div className="w-1/4 relative border-l border-blue-50 bg-white/20 shrink-0 overflow-y-auto overflow-x-hidden no-scrollbar py-6 space-y-8 flex flex-col items-center">
                     {scrambledSyllables.filter(s => s.type === 'right').map(s => (
                         <div key={s.id} className="transition-transform hover:scale-105 active:scale-95 cursor-grab active:cursor-grabbing" style={{ zIndex: isDragging === s.id ? 100 : 10 }}>
-                            <PuzzleTestPiece label={s.text} type="right" colorClass={s.color} scale={gameState.pieceScale} onDragStart={() => setIsDragging(s.id)} isDragging={isDragging === s.id} fontFamily={settings.fontFamily} />
+                            <PuzzleTestPiece label={s.text} type="right" colorClass={s.color} scale={gameState.pieceScale} onDragStart={() => setIsDragging(s.id)} onDragEnd={() => setIsDragging(null)} isDragging={isDragging === s.id} fontFamily={settings.fontFamily} />
                         </div>
                     ))}
                 </div>

@@ -70,6 +70,18 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [], ti
     const [isDragging, setIsDragging] = useState(null);
     const [showWordSuccess, setShowWordSuccess] = useState(false);
 
+    // iPad Fix: Prevent touch scrolling during drag
+    useEffect(() => {
+        if (!isDragging) return;
+        const preventDefault = (e) => { e.preventDefault(); };
+        document.body.style.overflow = 'hidden';
+        document.addEventListener('touchmove', preventDefault, { passive: false });
+        return () => {
+            document.body.style.overflow = '';
+            document.removeEventListener('touchmove', preventDefault);
+        };
+    }, [isDragging]);
+
     // Syllable Logic
     const allowedClusters = useMemo(() => new Set(settings.clusters || []), [settings.clusters]);
     const isCluster = (str) => allowedClusters.has(str);
@@ -513,6 +525,7 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [], ti
                                 colorClass={s.color}
                                 scale={gameState.pieceScale}
                                 onDragStart={(e) => { setIsDragging(s.id); }}
+                                onDragEnd={() => setIsDragging(null)}
                                 isDragging={isDragging === s.id}
                                 fontFamily={settings.fontFamily}
                             />
@@ -614,6 +627,7 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [], ti
                                 colorClass={s.color}
                                 scale={gameState.pieceScale}
                                 onDragStart={(e) => { setIsDragging(s.id); }}
+                                onDragEnd={() => setIsDragging(null)}
                                 isDragging={isDragging === s.id}
                                 fontFamily={settings.fontFamily}
                             />
