@@ -228,18 +228,27 @@ export const PuzzleTestTwoSyllableView = ({ words, settings, onClose, title }) =
 
                     const nextWordIdx = targetWordIdx + 1;
                     setGameState(prev => {
+                        const currentStage = prev.stages[prev.currentStageIndex];
+                        const currentStageWordsCount = currentStage?.words?.length || prev.wordsPerStage;
                         const newStages = prev.stages.map((stage, idx) => {
                             if (idx === prev.currentStageIndex) {
                                 return {
                                     ...stage,
                                     completedWordIndices: [...stage.completedWordIndices, targetWordIdx],
-                                    targetWordIndex: nextWordIdx < prev.wordsPerStage ? nextWordIdx : stage.targetWordIndex
+                                    targetWordIndex: nextWordIdx < currentStageWordsCount ? nextWordIdx : stage.targetWordIndex
                                 };
                             }
                             return stage;
                         });
-                        const isStageFinished = nextWordIdx >= prev.wordsPerStage;
-                        return { ...prev, stages: newStages, gameStatus: isStageFinished ? 'stage-complete' : 'playing' };
+                        const isStageFinished = nextWordIdx >= currentStageWordsCount;
+                        const isFinalStage = prev.currentStageIndex >= prev.stages.length - 1;
+                        return {
+                            ...prev,
+                            stages: newStages,
+                            gameStatus: isStageFinished
+                                ? (isFinalStage ? 'all-complete' : 'stage-complete')
+                                : 'playing'
+                        };
                     });
                 }, 2500);
             }
@@ -322,7 +331,7 @@ export const PuzzleTestTwoSyllableView = ({ words, settings, onClose, title }) =
                                 key={m}
                                 onClick={() => handleModeChange(m)}
                                 className={`
-                  relative px-3 py-1.5 rounded-xl transition-all duration-300 
+                  relative px-3 py-1.5 rounded-xl transition-all duration-300
                   ${gameState.gameMode === m
                                         ? 'bg-white shadow-lg scale-105 border border-blue-100'
                                         : 'hover:bg-white/50 border border-transparent'}
@@ -390,7 +399,17 @@ export const PuzzleTestTwoSyllableView = ({ words, settings, onClose, title }) =
                 {/* Zentrum */}
                 <div className="flex-1 flex flex-col items-center justify-center px-4 relative overflow-hidden">
                     <button
-                        onClick={() => currentStageInfo?.words[currentTargetIdx] && speak(currentStageInfo.words[currentTargetIdx].fullWord)}
+                        onClick={() => {
+                            const stage = currentStageInfo;
+                            if (!stage) return;
+                            let idx = currentTargetIdx;
+                            // If currently showing success for the current word, speak the NEXT one if available
+                            if (showWordSuccess) {
+                                idx++;
+                            }
+                            const word = stage.words[idx];
+                            if (word) speak(word.fullWord);
+                        }}
                         className="w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all ring-4 ring-white/50 mb-10 shrink-0"
                     >
                         <Volume2 className="w-7 h-7" />
@@ -408,7 +427,6 @@ export const PuzzleTestTwoSyllableView = ({ words, settings, onClose, title }) =
                                 {['left', 'right'].map((type, idx) => {
                                     const pieceText = placedSyllables[type];
                                     const scale = gameState.pieceScale;
-                                    const base = 200;
                                     const overlap = 25 * scale; // Standard overlap
 
                                     return (
@@ -484,19 +502,24 @@ export const PuzzleTestTwoSyllableView = ({ words, settings, onClose, title }) =
                 </div>
             </main>
 
-            {gameState.gameStatus === 'stage-complete' && (
+            {(gameState.gameStatus === 'stage-complete' || gameState.gameStatus === 'all-complete') && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-md">
                     <div className="bg-white rounded-[3rem] shadow-2xl p-10 max-w-sm w-full flex flex-col items-center text-center animate-in zoom-in duration-300 relative overflow-hidden">
                         <CheckCircle2 className="w-16 h-16 text-green-500 mb-6" />
-                        <h2 className="text-3xl font-black text-slate-900 mb-2">Super!</h2>
-                        <p className="text-slate-500 mb-8 font-medium">Level geschafft.</p>
-                        <button onClick={() => setGameState(prev => {
-                            if (prev.currentStageIndex >= prev.stages.length - 1) {
-                                return { ...prev, currentStageIndex: 0, gameStatus: 'playing' };
+                        <h2 className="text-3xl font-black text-slate-900 mb-2">
+                            {gameState.gameStatus === 'all-complete' ? 'Super!' : 'Super!'}
+                        </h2>
+                        <p className="text-slate-500 mb-8 font-medium">
+                            {gameState.gameStatus === 'all-complete' ? 'Alle Wörter geschafft!' : 'Level geschafft.'}
+                        </p>
+                        <button onClick={() => {
+                            if (gameState.gameStatus === 'all-complete') {
+                                onClose();
+                            } else {
+                                setGameState(prev => ({ ...prev, currentStageIndex: prev.currentStageIndex + 1, gameStatus: 'playing' }));
                             }
-                            return { ...prev, currentStageIndex: prev.currentStageIndex + 1, gameStatus: 'playing' }
-                        })} className="w-full bg-blue-600 text-white py-5 rounded-2xl font-black text-xl flex items-center justify-center gap-3 transition-all hover:scale-105 active:scale-95 shadow-lg relative z-10">
-                            Weiter <ChevronRight className="w-6 h-6" />
+                        }} className="w-full bg-blue-600 text-white py-5 rounded-2xl font-black text-xl flex items-center justify-center gap-3 transition-all hover:scale-105 active:scale-95 shadow-lg relative z-10">
+                            {gameState.gameStatus === 'all-complete' ? 'Beenden' : 'Weiter'} <ChevronRight className="w-6 h-6" />
                         </button>
                     </div>
                     {/* Confetti */}

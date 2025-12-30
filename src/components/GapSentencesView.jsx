@@ -308,7 +308,7 @@ export const GapSentencesView = ({ text, settings, setSettings, onClose, title }
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg">
                         <span className="text-xs font-bold text-slate-500">A</span>
-                        <input type="range" min="20" max="64" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-32 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer" />
+                        <input type="range" min="20" max="128" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-32 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer" />
                         <span className="text-xl font-bold text-slate-500">A</span>
                     </div>
                     <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 shadow-sm transition-transform hover:scale-105 flex items-center justify-center min-touch-target sticky right-0"><Icons.X size={24} /></button>
@@ -327,7 +327,7 @@ export const GapSentencesView = ({ text, settings, setSettings, onClose, title }
 
             <div className="flex-1 flex overflow-hidden">
                 <div className="flex-1 p-8 overflow-y-auto custom-scroll flex flex-col gap-8 bg-white/50">
-                    <div className="max-w-5xl mx-auto space-y-12 py-12">
+                    <div className="max-w-7xl mx-auto space-y-12 py-12">
                         {currentGroup.map(sentence => (
                             <div key={sentence.id} className="flex flex-wrap items-center gap-x-3 gap-y-6 text-slate-800 leading-relaxed" style={{ fontSize: `${settings.fontSize}px`, fontFamily: settings.fontFamily }}>
                                 {sentence.parts.map((p, i) => {
@@ -365,7 +365,7 @@ export const GapSentencesView = ({ text, settings, setSettings, onClose, title }
 
                     {groupSolved && currentGroupIdx < groups.length - 1 && (
                         <div className="mt-8 flex flex-col items-center pb-20">
-                            <span className="text-green-600 font-bold mb-3 flex items-center gap-2 text-xl"><Icons.Check size={28} /> Richtig!</span>
+                            <span className="text-green-600 font-bold mb-3 flex items-center gap-2 text-xl"><Icons.CheckCircle size={28} /> Richtig!</span>
                             <button onClick={() => { setCurrentGroupIdx(prev => prev + 1); setGroupSolved(false); }} className="px-8 py-4 bg-green-500 text-white rounded-2xl font-bold shadow-lg hover:bg-green-600 hover:scale-105 transition-all flex items-center gap-2 text-lg">
                                 weiter <Icons.ArrowRight size={20} />
                             </button>
@@ -393,7 +393,7 @@ export const GapSentencesView = ({ text, settings, setSettings, onClose, title }
                         ))}
                         {poolWords.length === 0 && (
                             <div className="flex-1 flex flex-col items-center justify-center text-center text-slate-300 gap-4 opacity-50">
-                                <Icons.Check size={48} className="text-green-400" />
+                                <Icons.CheckCircle size={48} className="text-green-400" />
                                 <span className="text-sm font-bold">Alles verteilt!</span>
                             </div>
                         )}

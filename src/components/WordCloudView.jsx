@@ -247,56 +247,60 @@ export const WordCloudView = ({ words, settings, setSettings, onClose, title }) 
                                                         onDragStart={(e) => handleDragStart(e, chunk, 'pool')}
                                                         onDragEnd={handleDragEnd}
                                                         onClick={(e) => { e.stopPropagation(); handleChunkClick(chunk, 'pool'); }}
-                                                        className={`absolute cursor-grab active:cursor-grabbing bg-white border-2 border-blue-400 shadow-lg rounded-xl px-3 py-1 font-bold text-slate-800 hover:scale-105 active:scale-95 transition-all touch-action-none touch-manipulation select-none touch-none ${selectedChunk?.id === chunk.id ? 'ring-4 ring-blue-500 scale-125 z-50' : 'z-20'}`}
+                                                        className={`absolute cursor-grab active:cursor-grabbing bg-white border-2 border-blue-400 shadow-lg rounded-xl flex items-stretch overflow-hidden font-bold text-slate-800 hover:scale-105 active:scale-95 transition-all touch-action-none touch-manipulation select-none touch-none ${selectedChunk?.id === chunk.id ? 'ring-4 ring-blue-500 scale-125 z-50' : 'z-20'}`}
                                                         style={{
                                                             fontFamily: settings.fontFamily,
                                                             fontSize: `${Math.max(16, settings.fontSize * 0.75)}px`,
                                                             left: `${chunk.x}%`,
                                                             top: `${chunk.y}%`,
                                                             transform: 'translate(-50%, -50%)',
-                                                            whiteSpace: 'nowrap'
+                                                            whiteSpace: 'nowrap',
+                                                            height: '2.5em'
                                                         }}
                                                     >
                                                         {chunk.text.split('').map((char, cI) => {
                                                             const isVowel = /[aeiouyäöüAEIOUYÄÖÜ]/.test(char);
-                                                            return <span key={cI} className={`inline-block px-0.5 rounded-md ${showVowels && isVowel ? "bg-yellow-200 text-yellow-900 shadow-sm" : ""}`}>{char}</span>
+                                                            return <span key={cI} className={`flex items-center justify-center px-2 min-w-[1.1ch] h-full ${showVowels && isVowel ? "bg-yellow-200 text-yellow-900 shadow-sm" : ""}`}>{char}</span>
                                                         })}
                                                     </div>
                                                 ))}
-                                                {isCorrect && <div className="absolute inset-0 flex items-center justify-center text-green-600 font-bold text-2xl pop-animate z-30 pointer-events-none bg-green-500/10 rounded-full"><Icons.Check size={64} className="drop-shadow-lg" /></div>}
+                                                {isCorrect && <div className="absolute inset-0 flex items-center justify-center text-green-600 font-bold text-2xl pop-animate z-30 pointer-events-none bg-green-500/10 rounded-full"><Icons.CheckCircle size={64} className="drop-shadow-lg" /></div>}
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div className="flex flex-wrap justify-center gap-4 mt-2">
+                                <div className="flex flex-wrap justify-center items-center gap-6 mt-2">
                                     {word.syllables.map((sylObj, sIdx) => (
-                                        <div key={sIdx} className="flex gap-1 p-2 bg-slate-50 rounded-lg border border-slate-200">
-                                            {sylObj.chunks.map((chunk) => {
-                                                const placed = placedChunks[chunk.id];
-                                                return (
-                                                    <div key={chunk.id} onDragOver={(e) => e.preventDefault()} onDragEnter={(e) => { e.preventDefault(); e.currentTarget.classList.add('active-target') }} onDragLeave={(e) => e.currentTarget.classList.remove('active-target')} onDrop={(e) => handleDrop(e, word.id, chunk.id)} onClick={() => handleSlotClick(word.id, chunk.id)} className={`cloud-drop-target cursor-pointer ${placed ? 'filled' : ''} px-1 flex items-center justify-center transition-all ${selectedChunk && selectedChunk.wordId === word.id ? 'ring-2 ring-blue-300 ring-offset-2 animate-pulse' : ''}`} style={{ minWidth: '3.5rem', height: `${settings.fontSize * 1.5}px` }}>
-                                                        {placed ? (
-                                                            <div draggable onDragStart={(e) => handleDragStart(e, placed, 'slot', chunk.id)} onDragEnd={handleDragEnd} onClick={(e) => { e.stopPropagation(); handleChunkClick(placed, 'slot', chunk.id); }} className="cursor-grab active:cursor-grabbing text-blue-900 font-bold animate-[popIn_0.3s_ease-out] touch-action-none touch-manipulation select-none touch-none" style={{ fontFamily: settings.fontFamily, fontSize: `${settings.fontSize}px` }}>
-                                                                {placed.text.split('').map((char, cI) => {
-                                                                    const isVowel = /[aeiouyäöüAEIOUYÄÖÜ]/.test(char);
-                                                                    return <span key={cI} className={`inline-block rounded-sm ${showVowels && isVowel ? "bg-yellow-200 shadow-sm" : ""}`}>{char}</span>
-                                                                })}
-                                                            </div>
-                                                        ) : (
-                                                            <div className="w-full h-full flex items-center justify-center gap-[2px]">
-                                                                {chunk.text.split('').map((char, charIdx) => {
-                                                                    return (
-                                                                        <div key={charIdx} className="flex flex-col items-center justify-end" style={{ width: `${settings.fontSize * 0.6}px`, height: '100%' }}>
-                                                                            <div className="w-full h-[2px] bg-slate-300 rounded-full"></div>
-                                                                        </div>
-                                                                    );
-                                                                })}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
+                                        <React.Fragment key={sIdx}>
+                                            {sIdx > 0 && <div className="text-slate-300 font-black text-2xl select-none">•</div>}
+                                            <div className="flex gap-1 p-2 bg-slate-50 rounded-lg border border-slate-200">
+                                                {sylObj.chunks.map((chunk) => {
+                                                    const placed = placedChunks[chunk.id];
+                                                    return (
+                                                        <div key={chunk.id} onDragOver={(e) => e.preventDefault()} onDragEnter={(e) => { e.preventDefault(); e.currentTarget.classList.add('active-target') }} onDragLeave={(e) => e.currentTarget.classList.remove('active-target')} onDrop={(e) => handleDrop(e, word.id, chunk.id)} onClick={() => handleSlotClick(word.id, chunk.id)} className={`cloud-drop-target cursor-pointer ${placed ? 'filled' : ''} px-1 flex items-center justify-center transition-all ${selectedChunk && selectedChunk.wordId === word.id ? 'ring-2 ring-blue-300 ring-offset-2 animate-pulse' : ''}`} style={{ minWidth: '3.5rem', height: `${settings.fontSize * 1.5}px` }}>
+                                                            {placed ? (
+                                                                <div draggable onDragStart={(e) => handleDragStart(e, placed, 'slot', chunk.id)} onDragEnd={handleDragEnd} onClick={(e) => { e.stopPropagation(); handleChunkClick(placed, 'slot', chunk.id); }} className="cursor-grab active:cursor-grabbing text-blue-900 font-bold animate-[popIn_0.3s_ease-out] touch-action-none touch-manipulation select-none touch-none flex items-stretch h-full overflow-hidden rounded-lg " style={{ fontFamily: settings.fontFamily, fontSize: `${settings.fontSize}px` }}>
+                                                                    {placed.text.split('').map((char, cI) => {
+                                                                        const isVowel = /[aeiouyäöüAEIOUYÄÖÜ]/.test(char);
+                                                                        return <span key={cI} className={`flex items-center justify-center px-1.5 min-w-[1.1ch] h-full ${showVowels && isVowel ? "bg-yellow-200 shadow-sm" : ""}`}>{char}</span>
+                                                                    })}
+                                                                </div>
+                                                            ) : (
+                                                                <div className="w-full h-full flex items-center justify-center gap-[2px]">
+                                                                    {chunk.text.split('').map((char, charIdx) => {
+                                                                        return (
+                                                                            <div key={charIdx} className="flex flex-col items-center justify-end" style={{ width: `${settings.fontSize * 0.6}px`, height: '100%' }}>
+                                                                                <div className="w-full h-[2px] bg-slate-300 rounded-full"></div>
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </React.Fragment>
                                     ))}
                                 </div>
                             </div>

@@ -226,7 +226,7 @@ export const SentenceShuffleView = ({ text, settings, setSettings, onClose, titl
                         <input
                             type="range"
                             min="20"
-                            max="64"
+                            max="128"
                             value={settings.fontSize}
                             onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })}
                             className="w-32 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer"
@@ -274,7 +274,7 @@ export const SentenceShuffleView = ({ text, settings, setSettings, onClose, titl
                 {/* Word Cards Container */}
                 <div
                     id="word-container"
-                    className={`flex flex-wrap gap-3 justify-center items-center max-w-4xl p-6 rounded-2xl transition-all duration-300 ${isCorrect ? 'bg-green-50' : 'bg-white'
+                    className={`flex flex-wrap gap-3 justify-center items-center max-w-[95vw] p-4 rounded-2xl transition-all duration-300 ${isCorrect ? 'bg-green-50' : 'bg-white'
                         }`}
                 >
                     {words.map((word, idx) => (
@@ -303,7 +303,7 @@ export const SentenceShuffleView = ({ text, settings, setSettings, onClose, titl
                 {/* Success Checkmark */}
                 {isCorrect && (
                     <div className="mt-6 flex items-center gap-2 text-green-600 font-bold text-xl pop-animate">
-                        <Icons.Check size={32} strokeWidth={3} /> Richtig!
+                        <Icons.CheckCircle size={32} strokeWidth={3} /> Richtig!
                     </div>
                 )}
             </div>

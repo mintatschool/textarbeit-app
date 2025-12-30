@@ -100,7 +100,6 @@ const App = () => {
     const textAreaRef = useRef(null);
     const activeColorRef = useRef(activeColor);
     activeColorRef.current = activeColor; // Keep ref in sync
-    activeColorRef.current = activeColor; // Keep ref in sync
     const { instance: hyphenator } = useHypherLoader();
 
     // Grouping State
@@ -534,10 +533,10 @@ const App = () => {
 
             {!isViewMode ? (
                 <div className="flex-1 flex flex-col items-center justify-center p-4 font-sans animate-fadeIn pb-24">
-                    <div className="bg-white p-8 rounded-3xl shadow-xl w-full max-w-4xl border border-slate-100 flex flex-col h-[70vh]">
-                        <div className="flex justify-between items-center mb-3">
+                    <div className="bg-white pt-3 px-8 pb-8 rounded-3xl shadow-xl w-full max-w-4xl border border-slate-100 flex flex-col h-[70vh]">
+                        <div className="flex justify-between items-center mb-0">
                             <div className="flex items-center">
-                                <img src={`${import.meta.env.BASE_URL}logo.png`} alt="KONTEXT Logo" className="h-14 w-auto object-contain" />
+                                <img src={`${import.meta.env.BASE_URL}logo.png`} alt="KONTEXT Logo" className="h-52 w-auto object-contain -ml-9" />
                             </div>
                             <div className="flex gap-2">
                                 {settings.enableCamera && (
@@ -550,7 +549,7 @@ const App = () => {
                                 </button>
                             </div>
                         </div>
-                        <textarea ref={textAreaRef} className="flex-1 w-full p-6 text-xl border-2 border-slate-200 rounded-2xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all resize-none shadow-inner bg-slate-50 leading-relaxed font-medium text-slate-700 placeholder:text-slate-400" placeholder="Füge hier deinen Text ein..." value={text} onChange={(e) => handleTextChange(e.target.value)} spellCheck={false} inputMode="text"></textarea>
+                        <textarea ref={textAreaRef} className="flex-1 w-full p-6 text-xl border-2 border-slate-200 rounded-2xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all resize-none shadow-inner bg-slate-50 leading-relaxed font-medium text-slate-700 placeholder:text-slate-400 -mt-10" placeholder="Füge hier deinen Text ein..." value={text} onChange={(e) => handleTextChange(e.target.value)} spellCheck={false} inputMode="text"></textarea>
 
                         <div className="mt-6 flex flex-wrap gap-4 justify-between items-center">
                             <div className="flex gap-2">
@@ -814,7 +813,7 @@ const App = () => {
                     {activeView === 'initialSound' && <GapWordsView words={hasMarkings ? exerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} isInitialSound={true} title="Anlaute finden" />}
                     {activeView === 'gapSentences' && <GapSentencesView text={text} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Lückensätze" />}
                     {activeView === 'gapText' && <GapTextView text={text} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Lückentext" />}
-                    {activeView === 'caseExercise' && <CaseExerciseView text={text} settings={settings} onClose={() => setActiveView('text')} title="Groß-/Kleinschreibung" />}
+                    {activeView === 'caseExercise' && <CaseExerciseView text={text} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Groß-/Kleinschreibung" />}
                     {activeView === 'find_letters' && <FindLettersView text={text} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Buchstaben finden" />}
                 </>
             )}

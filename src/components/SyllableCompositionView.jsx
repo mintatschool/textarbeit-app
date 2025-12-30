@@ -11,6 +11,7 @@ import {
 import { Icons } from './Icons';
 import PuzzleTestPiece from './PuzzleTestPiece';
 import { speak, hasAudio } from '../utils/speech';
+import availableSyllables from '../utils/available_syllables.json';
 
 const HorizontalLines = ({ count }) => (
     <div className="flex flex-col gap-[2px] w-4 items-center justify-center">
@@ -347,7 +348,14 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [], ti
                             return stage;
                         });
                         const isStageFinished = nextIdx >= currentStageItemsCount;
-                        return { ...prev, stages: newStages, gameStatus: isStageFinished ? 'stage-complete' : 'playing' };
+                        const isFinalStage = prev.currentStageIndex >= prev.stages.length - 1;
+                        return {
+                            ...prev,
+                            stages: newStages,
+                            gameStatus: isStageFinished
+                                ? (isFinalStage ? 'all-complete' : 'stage-complete')
+                                : 'playing'
+                        };
                     });
                 }, 2000);
             }
@@ -368,16 +376,6 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [], ti
     const handleModeChange = (mode) => {
         setGameState(prev => ({ ...prev, gameMode: mode }));
     };
-
-    // Auto-close after completion
-    useEffect(() => {
-        if (gameState.gameStatus === 'stage-complete') {
-            const timer = setTimeout(() => {
-                onClose();
-            }, 3000);
-            return () => clearTimeout(timer);
-        }
-    }, [gameState.gameStatus, onClose]);
 
 
     if (gameState.gameStatus === 'loading') {
@@ -402,23 +400,31 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [], ti
         );
     }
 
-
-
     // Stage completion view
-    if (gameState.gameStatus === 'stage-complete') {
+    if (gameState.gameStatus === 'stage-complete' || gameState.gameStatus === 'all-complete') {
+        const isAllDone = gameState.gameStatus === 'all-complete';
         return (
             <div className="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center p-6 text-center animate-fadeIn">
                 <div className="flex flex-col items-center animate-[popIn_0.5s_ease-out]">
                     <span className="text-4xl font-black text-green-600 mb-6 flex items-center gap-3">
-                        <Icons.CheckCircle size={64} className="text-green-500" /> Alle Silben gebaut! Super!
+                        <Icons.CheckCircle size={64} className="text-green-500" />
+                        {isAllDone ? 'Alle Silben gebaut! Super!' : 'Level geschafft! Super!'}
                     </span>
                     <div className="flex gap-4">
-                        <button onClick={() => startNewGame()} className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:scale-105 transition-transform flex items-center gap-2">
-                            <Icons.RotateCcw size={20} /> Noch einmal
-                        </button>
-                        <button onClick={onClose} className="bg-slate-100 text-slate-700 px-8 py-3 rounded-xl font-bold shadow-md hover:bg-slate-200 transition-colors border border-slate-200">
-                            Beenden
-                        </button>
+                        {isAllDone ? (
+                            <>
+                                <button onClick={() => startNewGame()} className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:scale-105 transition-transform flex items-center gap-2">
+                                    <Icons.RotateCcw size={20} /> Noch einmal
+                                </button>
+                                <button onClick={onClose} className="bg-slate-100 text-slate-700 px-8 py-3 rounded-xl font-bold shadow-md hover:bg-slate-200 transition-colors border border-slate-200">
+                                    Beenden
+                                </button>
+                            </>
+                        ) : (
+                            <button onClick={() => setGameState(prev => ({ ...prev, currentStageIndex: prev.currentStageIndex + 1, gameStatus: 'playing' }))} className="bg-blue-600 text-white px-12 py-4 rounded-xl font-bold shadow-lg hover:scale-105 transition-transform flex items-center gap-2 text-xl">
+                                Weiter <Icons.ChevronRight size={24} />
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -609,7 +615,7 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [], ti
 
                             <div className={`
                                 absolute transition-all duration-500 ease-out z-30 pointer-events-none
-                                ${showWordSuccess ? 'scale-125 opacity-100 translate-x-12' : 'scale-0 opacity-0 translate-x-0'}
+                                ${showWordSuccess ? 'scale-125 opacity-100 translate-x-20' : 'scale-0 opacity-0 translate-x-0'}
                             `} style={{ left: '100%', top: '50%', transform: 'translateY(-50%)' }}>
                                 <CheckCircle2 className="text-green-500 drop-shadow-2xl" style={{ width: `${80 * gameState.pieceScale}px`, height: `${80 * gameState.pieceScale}px` }} />
                             </div>

@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Icons } from './Icons';
 import { EmptyStateMessage } from './EmptyStateMessage';
+import { speak } from '../utils/speech';
 
 // German letter clusters that should not be split
 const LETTER_CLUSTERS = [

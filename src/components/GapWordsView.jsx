@@ -198,12 +198,22 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
         document.querySelectorAll('.active-target').forEach(el => el.classList.remove('active-target'));
     };
 
+    // Haptic Feedback für iPad
+    const triggerHapticFeedback = () => {
+        if ('vibrate' in navigator) {
+            navigator.vibrate(50);
+        }
+    };
+
     const handleDrop = (e, targetGapId, targetText) => {
         e.preventDefault();
         const dragData = dragItemRef.current;
         if (!dragData) return;
 
         if (dragData.letter.text.toLowerCase() !== targetText.toLowerCase()) return;
+
+        // Haptic Feedback bei erfolgreichem Drop
+        triggerHapticFeedback();
 
         const existingLetter = placedLetters[targetGapId];
 
@@ -251,6 +261,9 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
         }
 
         if (selectedLetter.text.toLowerCase() === correctText.toLowerCase()) {
+            // Haptic Feedback bei erfolgreichem Click-to-Place
+            triggerHapticFeedback();
+
             const letterToPlace = selectedLetter;
             const existingLetter = placedLetters[gapId];
 
@@ -463,7 +476,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
 
                     {groupSolved && currentGroupIdx < groups.length - 1 && (
                         <div className="mt-8 flex flex-col items-center">
-                            <span className="text-green-600 font-bold mb-3 flex items-center gap-2 text-xl"><Icons.Check size={28} /> Prima!</span>
+                            <span className="text-green-600 font-bold mb-3 flex items-center gap-2 text-xl"><Icons.CheckCircle size={28} /> Prima!</span>
                             <button onClick={() => { setCurrentGroupIdx(prev => prev + 1); setGroupSolved(false); }} className="px-8 py-4 bg-green-500 text-white rounded-2xl font-bold shadow-lg hover:bg-green-600 hover:scale-105 transition-all flex items-center gap-2 text-lg">
                                 weiter <Icons.ArrowRight size={20} />
                             </button>
@@ -489,7 +502,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                                     onDragStart={(e) => handleDragStart(e, l, 'pool')}
                                     onDragEnd={handleDragEnd}
                                     onClick={() => handlePoolLetterClick(l)}
-                                    className={`absolute border-2 text-slate-800 font-bold rounded-2xl transition-all flex items-center justify-center p-3 cursor-grab active:cursor-grabbing hover:scale-110 bg-white border-slate-300 shadow-[0_4px_0_0_#cbd5e1] hover:shadow-[0_2px_0_0_#cbd5e1] hover:translate-y-[2px] touch-action-none touch-manipulation select-none ${isVowelTile ? 'bg-yellow-100 border-yellow-400' : ''} ${selectedLetter?.poolId === l.poolId ? 'ring-4 ring-blue-500 shadow-xl !scale-125 z-50' : ''}`}
+                                    className={`absolute border-2 text-slate-800 font-bold rounded-2xl transition-all flex items-center justify-center p-3 cursor-grab active:cursor-grabbing hover:scale-110 bg-white border-slate-300 shadow-[0_4px_0_0_#cbd5e1] hover:shadow-[0_2px_0_0_#cbd5e1] hover:translate-y-[2px] draggable-piece ${isVowelTile ? 'bg-yellow-100 border-yellow-400' : ''} ${selectedLetter?.poolId === l.poolId ? 'selected-piece ring-4 ring-blue-500 !scale-110 z-50' : ''}`}
                                     style={{ left: `${l.x}%`, top: `${l.y}%`, transform: 'translate(-50%, -50%)', fontSize: `${Math.max(20, settings.fontSize * 0.8)}px`, fontFamily: settings.fontFamily, minWidth: '3.5rem' }}
                                 >
                                     {l.text}

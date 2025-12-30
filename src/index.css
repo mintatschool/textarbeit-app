@@ -66,6 +66,69 @@
         user-select: none !important;
     }
 
+    /* iPad Touch Optimierungen */
+    .draggable-piece {
+        min-width: 56px;
+        min-height: 56px;
+        padding: 12px;
+        touch-action: none;
+        -webkit-touch-callout: none;
+        user-select: none;
+        cursor: grab;
+    }
+
+    .draggable-piece:active {
+        cursor: grabbing;
+    }
+
+    /* Erweiterte Drop-Zone für bessere Touch-Akzeptanz */
+    .drop-zone-touch {
+        position: relative;
+    }
+
+    .drop-zone-touch::before {
+        content: '';
+        position: absolute;
+        inset: -16px;
+        z-index: 1;
+    }
+
+    /* Visuelles Feedback für gültige Drop-Ziele */
+    .drop-zone-active {
+        animation: dropZonePulse 1s ease-in-out infinite;
+    }
+
+    @keyframes dropZonePulse {
+
+        0%,
+        100% {
+            box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+        }
+
+        50% {
+            box-shadow: 0 0 0 8px rgba(59, 130, 246, 0);
+        }
+    }
+
+    /* Pulsierender Ring für ausgewähltes Element (Click-to-Place) */
+    .selected-piece {
+        animation: selectedPulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes selectedPulse {
+
+        0%,
+        100% {
+            transform: scale(1);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.5);
+        }
+
+        50% {
+            transform: scale(1.02);
+            box-shadow: 0 0 0 8px rgba(59, 130, 246, 0.3);
+        }
+    }
+
     /* OPTIMIERUNG: Smooth Scrolling für iOS */
     .custom-scroll {
         -webkit-overflow-scrolling: touch;

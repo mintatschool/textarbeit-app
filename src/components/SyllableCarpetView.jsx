@@ -133,7 +133,7 @@ export const SyllableCarpetView = ({ words, settings, setSettings, onClose, titl
                                 style={{ fontFamily: settings.fontFamily, fontSize: `${settings.fontSize}px`, minHeight: `${settings.fontSize * 1.5}px` }}
                             >
                                 {syl}
-                                {isCompleted && <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-green-500/80 pointer-events-none"><Icons.Check size={48} strokeWidth={4} /></div>}
+                                {isCompleted && <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-green-500/80 pointer-events-none"><Icons.CheckCircle size={48} strokeWidth={4} /></div>}
                             </div>
                         );
                     })}

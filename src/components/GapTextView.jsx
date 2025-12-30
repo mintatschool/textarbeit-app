@@ -134,6 +134,13 @@ export const GapTextView = ({ text, settings, setSettings, onClose, title }) => 
         dragItemRef.current = null;
     };
 
+    // Haptic Feedback für iPad
+    const triggerHapticFeedback = () => {
+        if ('vibrate' in navigator) {
+            navigator.vibrate(50);
+        }
+    };
+
     const handleDrop = (e, targetGapId, targetWord) => {
         e.preventDefault();
         const dragData = dragItemRef.current;
@@ -143,6 +150,9 @@ export const GapTextView = ({ text, settings, setSettings, onClose, title }) => 
         const cleanTarget = targetWord.replace(/[^\w\u00C0-\u017F]/g, '').toLowerCase();
 
         if (cleanDragged !== cleanTarget) return;
+
+        // Haptic Feedback bei erfolgreichem Drop
+        triggerHapticFeedback();
 
         const existingWord = placedWords[targetGapId];
 
@@ -193,6 +203,9 @@ export const GapTextView = ({ text, settings, setSettings, onClose, title }) => 
         const cleanTarget = correctText.replace(/[^\w\u00C0-\u017F]/g, '').toLowerCase();
 
         if (cleanSelected === cleanTarget) {
+            // Haptic Feedback bei erfolgreichem Click-to-Place
+            triggerHapticFeedback();
+
             const wordToPlace = selectedWord;
             const existingWord = placedWords[gapId];
 
@@ -326,7 +339,7 @@ export const GapTextView = ({ text, settings, setSettings, onClose, title }) => 
                                 onDragStart={(e) => handleDragStart(e, w, 'pool')}
                                 onDragEnd={handleDragEnd}
                                 onClick={() => handlePoolWordClick(w)}
-                                className={`w-full p-4 font-bold rounded-2xl transition-all flex items-center justify-center cursor-grab active:cursor-grabbing hover:scale-[1.02] touch-action-none touch-manipulation select-none ${w.color} ${selectedWord?.poolId === w.poolId ? 'ring-4 ring-blue-500 shadow-xl scale-105' : 'shadow-sm'}`}
+                                className={`w-full p-4 font-bold rounded-2xl transition-all flex items-center justify-center cursor-grab active:cursor-grabbing hover:scale-[1.02] draggable-piece ${w.color} ${selectedWord?.poolId === w.poolId ? 'selected-piece ring-4 ring-blue-500 z-50' : 'shadow-sm'}`}
                                 style={{ fontFamily: settings.fontFamily, fontSize: `${Math.max(20, settings.fontSize * 0.8)}px` }}
                             >
                                 {w.text}
@@ -334,7 +347,7 @@ export const GapTextView = ({ text, settings, setSettings, onClose, title }) => 
                         ))}
                         {poolWords.length === 0 && (
                             <div className="flex-1 flex flex-col items-center justify-center text-center text-slate-300 gap-4 opacity-50">
-                                <Icons.Check size={48} className="text-green-400" />
+                                <Icons.CheckCircle size={48} className="text-green-400" />
                                 <span className="text-sm font-bold">Alles verteilt!</span>
                             </div>
                         )}

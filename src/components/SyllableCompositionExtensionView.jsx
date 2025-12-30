@@ -366,17 +366,12 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
         return (
             <div className="fixed inset-0 bg-blue-50 z-[100] flex flex-col items-center justify-center animate-in fade-in duration-500">
                 <CheckCircle2 className="w-24 h-24 text-green-500 mb-6 animate-bounce" />
-                <h2 className="text-3xl font-black text-slate-800 mb-2">Fantastisch!</h2>
+                <h2 className="text-3xl font-black text-slate-800 mb-2">Super!</h2>
+
                 <p className="text-slate-600 mb-8 text-xl">Alle Silben gebaut.</p>
                 <div className="flex gap-4">
                     <button onClick={() => startNewGame()} className="bg-blue-600 text-white px-8 py-3 rounded-2xl font-bold shadow-xl text-lg hover:scale-105 transition-all flex items-center gap-2">
                         <RotateCcw /> Noch einmal
-                    </button>
-                    <button
-                        onClick={() => currentStageInfo?.words?.[currentTargetIdx] && speak(currentStageInfo.words[currentTargetIdx].fullWord)}
-                        className="w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all ring-4 ring-white/50 mb-10 shrink-0"
-                    >
-                        <Volume2 className="w-7 h-7" />
                     </button>
                     <button onClick={onClose} className="bg-white text-slate-700 border border-slate-300 px-8 py-3 rounded-2xl font-bold shadow-sm text-lg hover:bg-slate-50 transition-all">Beenden</button>
                 </div>
@@ -500,63 +495,67 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                             const isComplete = completedTargets.has(target.id);
                             return (
                                 <div key={target.id} className={`flex items-center gap-4 transition-all duration-500 ${isComplete ? 'opacity-80 scale-95' : ''}`}>
-                                    {/* Audio/Status Button - Styled like Silbenbau 1 */}
+                                    {/* Slot Row */}
+                                    <div className="relative flex items-center" style={{ height: 110 * gameState.pieceScale }}>
+                                        <div className="flex items-center gap-0" style={{ transform: `scale(${gameState.pieceScale})`, transformOrigin: 'left center', height: 110 }}>
+                                            {Array.from({ length: target.parts.length }).map((_, idx) => {
+                                                const slotKey = `${target.id}-${idx}`;
+                                                const piece = placedPieces[slotKey];
+                                                const isStart = idx === 0;
+                                                const isEnd = idx === target.parts.length - 1;
+
+                                                const overlap = 30;
+                                                const marginLeft = idx === 0 ? 0 : -overlap;
+                                                const targetType = isStart ? 'zigzag-left' : (isEnd ? 'zigzag-right' : 'zigzag-middle');
+
+                                                return (
+                                                    <div
+                                                        key={idx}
+                                                        className="relative flex items-center justify-center group"
+                                                        style={{
+                                                            width: 200, height: 110,
+                                                            marginLeft: marginLeft,
+                                                            zIndex: 10 + idx
+                                                        }}
+                                                        onDragOver={(e) => e.preventDefault()}
+                                                        onDrop={(e) => {
+                                                            e.preventDefault();
+                                                            const pid = e.dataTransfer.getData("pieceId");
+                                                            if (pid && !isComplete) handleDrop(pid, target.id, idx);
+                                                        }}
+                                                    >
+                                                        {!piece && (
+                                                            <div className="pointer-events-none opacity-40">
+                                                                <PuzzleTestPiece label="" type={targetType} isGhost scale={1} fontFamily={settings.fontFamily} />
+                                                            </div>
+                                                        )}
+                                                        {piece && (
+                                                            <div className="cursor-pointer hover:scale-105 transition-transform" onClick={() => handleRemove(target.id, idx)}>
+                                                                <PuzzleTestPiece label={piece.text} type={targetType} colorClass={piece.color} scale={1} id={piece.id} showSeamLine fontFamily={settings.fontFamily} />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+
+                                        {/* Floating Checkmark - matching Silbenbau 1 style and spacing */}
+                                        <div className={`
+                                            absolute left-full transition-all duration-500 ease-out z-30 pointer-events-none
+                                            ${isComplete ? 'scale-125 opacity-100 translate-x-20' : 'scale-0 opacity-0 translate-x-0'}
+                                        `} style={{ top: '50%', transform: 'translateY(-50%)' }}>
+                                            <CheckCircle2 className="text-green-500 drop-shadow-2xl" style={{ width: `${80 * gameState.pieceScale}px`, height: `${80 * gameState.pieceScale}px` }} />
+                                        </div>
+                                    </div>
+
+                                    {/* Audio Button - Moved to Right */}
                                     <button
                                         onClick={() => speak(target.full)}
-                                        className={`w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all shrink-0 ring-4 ring-white/50 translate-y-[-6px] hover:scale-105 active:scale-95 ${isComplete
-                                            ? 'bg-green-500 text-white'
-                                            : 'bg-blue-500 hover:bg-blue-600 text-white'
-                                            }`}
+                                        className="w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg transition-all shrink-0 ring-4 ring-white/50 translate-y-[-6px] hover:scale-105 active:scale-95 ml-24"
+                                        title="Anhören"
                                     >
-                                        {isComplete ? <CheckCircle2 size={24} /> : <Volume2 size={24} />}
+                                        <Volume2 size={24} />
                                     </button>
-
-                                    {/* Slot Row */}
-                                    <div className="flex items-center gap-0 ml-8" style={{ transform: `scale(${gameState.pieceScale})`, transformOrigin: 'left center', height: 110 }}>
-                                        {Array.from({ length: target.parts.length }).map((_, idx) => {
-                                            const slotKey = `${target.id}-${idx}`;
-                                            const piece = placedPieces[slotKey];
-                                            const isStart = idx === 0;
-                                            const isEnd = idx === target.parts.length - 1;
-
-                                            // Layout Adjustment for Zigzag overlap
-                                            // Scale is handled by parent container mostly, but overlap needs pixels.
-                                            // Overlap: 30px (standard base)
-                                            const overlap = 30;
-                                            const marginLeft = idx === 0 ? 0 : -overlap;
-
-                                            const targetType = isStart ? 'zigzag-left' : (isEnd ? 'zigzag-right' : 'zigzag-middle');
-
-                                            return (
-                                                <div
-                                                    key={idx}
-                                                    className="relative flex items-center justify-center group"
-                                                    style={{
-                                                        width: 200, height: 110, // Base size matching Piece component
-                                                        marginLeft: marginLeft,
-                                                        zIndex: 10 + idx
-                                                    }}
-                                                    onDragOver={(e) => e.preventDefault()}
-                                                    onDrop={(e) => {
-                                                        e.preventDefault();
-                                                        const pid = e.dataTransfer.getData("pieceId");
-                                                        if (pid && !isComplete) handleDrop(pid, target.id, idx);
-                                                    }}
-                                                >
-                                                    {!piece && (
-                                                        <div className="pointer-events-none opacity-40">
-                                                            <PuzzleTestPiece label="" type={targetType} isGhost scale={1} fontFamily={settings.fontFamily} />
-                                                        </div>
-                                                    )}
-                                                    {piece && (
-                                                        <div className="cursor-pointer hover:scale-105 transition-transform" onClick={() => handleRemove(target.id, idx)}>
-                                                            <PuzzleTestPiece label={piece.text} type={targetType} colorClass={piece.color} scale={1} id={piece.id} showSeamLine fontFamily={settings.fontFamily} />
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
                                 </div>
                             );
                         })}

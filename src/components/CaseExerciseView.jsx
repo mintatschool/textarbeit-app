@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Icons } from './Icons';
 
-export const CaseExerciseView = ({ text, settings, onClose, title }) => {
+export const CaseExerciseView = ({ text, settings, setSettings, onClose, title }) => {
     const [wordStates, setWordStates] = useState({}); // idx -> 'UPPER' | 'STANDARD' | 'LOWER'
     const [showReward, setShowReward] = useState(false);
     const [checkResults, setCheckResults] = useState(null); // { correctIndices: Set, allCorrect: bool }
@@ -134,6 +134,11 @@ export const CaseExerciseView = ({ text, settings, onClose, title }) => {
                 </div>
 
                 <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg">
+                        <span className="text-xs font-bold text-slate-500">A</span>
+                        <input type="range" min="24" max="100" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-32 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer" />
+                        <span className="text-xl font-bold text-slate-500">A</span>
+                    </div>
                     <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 shadow-sm transition-transform hover:scale-105 flex items-center justify-center min-touch-target sticky right-0">
                         <Icons.X size={24} />
                     </button>
@@ -178,20 +183,20 @@ export const CaseExerciseView = ({ text, settings, onClose, title }) => {
                     </div>
                 </div>
 
-                {/* Fixed Footer for Check Button */}
-                <div className="fixed bottom-12 right-12 flex items-center gap-4 z-30">
-                    <button
-                        onClick={handleCheck}
-                        disabled={checkResults?.allCorrect}
-                        className={`px-12 py-5 rounded-2xl font-black text-xl shadow-2xl transition-all transform hover:scale-105 active:scale-95 flex items-center gap-3 ${checkResults?.allCorrect ? 'bg-green-500 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
-                    >
-                        {checkResults?.allCorrect ? (
-                            <><Icons.Check size={28} /> Alles richtig!</>
-                        ) : (
-                            <><Icons.CheckCircle size={28} /> Prüfen</>
-                        )}
-                    </button>
-                </div>
+                {/* Footer for Check Button */}
+            </div>
+            <div className="p-6 bg-white border-t border-slate-200 flex justify-center gap-4 shrink-0">
+                <button
+                    onClick={handleCheck}
+                    disabled={checkResults?.allCorrect}
+                    className={`px-12 py-4 rounded-xl font-bold text-xl shadow-lg transition-all hover:scale-105 active:scale-95 flex items-center gap-3 min-touch-target ${checkResults?.allCorrect ? 'bg-green-500 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                >
+                    {checkResults?.allCorrect ? (
+                        <><Icons.CheckCircle size={28} /> Alles richtig!</>
+                    ) : (
+                        <><Icons.CheckCircle size={28} /> Prüfen</>
+                    )}
+                </button>
             </div>
         </div>
     );

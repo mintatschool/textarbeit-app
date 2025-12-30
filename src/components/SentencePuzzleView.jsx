@@ -223,18 +223,11 @@ export const SentencePuzzleView = ({ text, mode = 'sentence', onClose, settings,
                 </div>
             </div>
 
-            {/* FOOTER ACTIONS */}
-            <div className="absolute bottom-6 right-6 z-50 pointer-events-none">
-                {/* Only Check Button here? Or Center it? Design requested Check button. 
-                     Let's put it fixed bottom center or similar. 
-                     Actually, standard layout puts actions in footer or absolute positions. 
-                     Let's use a floating action button style for "Check".
-                  */}
-            </div>
-            <div className="fixed bottom-8 right-12 z-50">
+            {/* Footer Actions */}
+            <div className="p-6 bg-white border-t border-slate-200 flex justify-center gap-4 shrink-0">
                 <button
                     onClick={checkOrder}
-                    className={`px-12 py-4 rounded-full font-bold text-xl shadow-xl transition-transform hover:scale-105 active:scale-95 flex items-center gap-3 min-touch-target ${status === 'wrong' ? 'bg-red-500 text-white animate-pulse' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                    className={`px-12 py-4 rounded-xl font-bold text-xl shadow-lg transition-all hover:scale-105 active:scale-95 flex items-center gap-3 min-touch-target ${status === 'wrong' ? 'bg-red-500 text-white animate-pulse' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
                 >
                     {status === 'wrong' ? <><Icons.AlertTriangle /> Stimmt nicht ganz</> : 'Prüfen'}
                 </button>

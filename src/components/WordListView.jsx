@@ -375,12 +375,16 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                     </button>
 
                 </div>
-                <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg w-full md:w-auto justify-center">
-                    <span className="text-xs font-bold text-slate-500">A</span>
-                    <input type="range" min="16" max="64" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-48 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer" />
-                    <span className="text-xl font-bold text-slate-500">A</span>
+                <div className="flex items-center gap-4 ml-auto">
+                    <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg">
+                        <span className="text-xs font-bold text-slate-500">A</span>
+                        <input type="range" min="16" max="64" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-48 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer" />
+                        <span className="text-xl font-bold text-slate-500">A</span>
+                    </div>
+                    <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 shadow-sm transition-transform hover:scale-105 flex items-center justify-center min-touch-target sticky right-0">
+                        <Icons.X size={24} />
+                    </button>
                 </div>
-                <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 shadow-sm transition-transform hover:scale-105 flex items-center justify-center min-touch-target sticky right-0"><Icons.X size={24} /></button>
             </div>
             <div className="flex-1 overflow-x-auto overflow-y-hidden p-6 custom-scroll">
                 <div className={`flex gap-6 h-full transition-all duration-300 ${!sortByColor && columnCount === 1 ? 'w-1/2 min-w-[350px] mr-auto' : 'min-w-full'}`} style={{ width: (!sortByColor && columnCount === 1) ? undefined : `${Math.max(100, columnsState.order.length * 300)}px` }}>
@@ -441,7 +445,7 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                                                             const textContent = sylObj.text;
 
                                                             if (sylObj.isSpace) {
-                                                                styleClass = "bg-transparent mx-1 border-none inline-block w-8"; // WIDER SPACE
+                                                                styleClass = "bg-transparent mx-1 border-none inline-block w-5"; // ADJUSTED SPACE
                                                                 textClass = "text-transparent select-none";
                                                             } else if (settings.visualType === 'block') {
                                                                 styleClass = isEven ? 'bg-blue-100 border-blue-200' : 'bg-blue-200 border-blue-300';

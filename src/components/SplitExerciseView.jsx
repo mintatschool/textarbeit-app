@@ -132,7 +132,7 @@ export const SplitExerciseView = ({ words, onClose, settings, setSettings, title
                 </div>
                 <div className="h-16 flex items-center">
                     {status === 'wrong' && <p className="text-red-500 font-bold text-lg animate-pulse">Das stimmt noch nicht ganz.</p>}
-                    {status === 'correct' && <p className="text-green-600 font-bold text-2xl pop-animate">Richtig!</p>}
+                    {status === 'correct' && <p className="text-green-600 font-bold text-2xl pop-animate flex items-center gap-2"><Icons.CheckCircle size={28} /> Richtig!</p>}
                 </div>
             </div>
 
