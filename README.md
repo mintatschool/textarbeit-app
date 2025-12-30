@@ -4,14 +4,14 @@ Eine moderne Web-App für digitale Textarbeit und Lesehilfe, speziell entwickelt
 
 ## Features
 
-### 📝 Text-Ansicht & Bearbeitung
+### Text-Ansicht & Bearbeitung
 - Anpassbare Schriftgröße (16-80px)
 - Silbenanzeige (Bögen/Boxen)
 - Wortabstand und Zeilenhöhe einstellbar
 - Text-Highlighting und Ausblenden
 - Paragraphen-Erhaltung
 
-### 🎯 Übungen
+### Übungen
 
 #### Silben
 - **Silbenteppich**: Interaktives Silben-Lesen mit Timer
@@ -30,7 +30,7 @@ Eine moderne Web-App für digitale Textarbeit und Lesehilfe, speziell entwickelt
 - **Satzpuzzle**: Sätze in richtige Reihenfolge bringen
 - **Textpuzzle**: Absätze ordnen
 
-### 🔧 Weitere Funktionen
+### Weitere Funktionen
 - QR-Code Export/Import (offline-fähig)
 - JSON Export/Import
 - Zustandsspeicherung
