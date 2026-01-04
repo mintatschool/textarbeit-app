@@ -50,60 +50,110 @@ export const FindLettersView = ({ text, settings, setSettings, onClose, title })
         });
     }, [text, hyphenator]);
 
-    // 2. Generate Targets
-    const availableTargets = useMemo(() => {
-        if (!text) return [];
-        const targets = [];
-        const lowerText = text.toLowerCase();
+    // 2. Frequency Calculation Logic
+    const frequencyCounts = useMemo(() => {
+        const counts = {};
+        const activeClusters = settings.clusters && settings.clusters.length > 0 ? settings.clusters : DEFAULT_CLUSTERS;
 
+        processedWords.forEach(item => {
+            if (item.type !== 'word') return;
+            const wordText = item.word;
+            const syllables = item.syllables;
+
+            // Track characters consumed by clusters
+            const consumed = new Array(wordText.length).fill(false);
+
+            // 1. Count Clusters (Syllable-driven)
+            let currentSylStart = 0;
+            syllables.forEach(sylText => {
+                const sylLower = sylText.toLowerCase();
+                const sylWordStart = currentSylStart;
+
+                activeClusters.forEach(cluster => {
+                    const clLower = cluster.toLowerCase();
+                    let clPos = sylLower.indexOf(clLower);
+                    while (clPos !== -1) {
+                        // Special rule for st/sp: only at syllable start
+                        if ((clLower === 'st' || clLower === 'sp') && clPos !== 0) {
+                            clPos = sylLower.indexOf(clLower, clPos + 1);
+                            continue;
+                        }
+
+                        const actualClusterText = wordText.substring(sylWordStart + clPos, sylWordStart + clPos + cluster.length);
+                        counts[actualClusterText] = (counts[actualClusterText] || 0) + 1;
+
+                        for (let i = 0; i < cluster.length; i++) {
+                            consumed[sylWordStart + clPos + i] = true;
+                        }
+                        clPos = sylLower.indexOf(clLower, clPos + 1);
+                    }
+                });
+                currentSylStart += sylText.length;
+            });
+
+            // 2. Count remaining individual characters
+            for (let i = 0; i < wordText.length; i++) {
+                if (!consumed[i]) {
+                    const char = wordText[i];
+                    if (char.match(/[a-zäöüßA-ZÄÖÜ]/i)) {
+                        counts[char] = (counts[char] || 0) + 1;
+                    }
+                }
+            }
+        });
+        return counts;
+    }, [processedWords, settings.clusters]);
+
+    // 3. Generate Targets
+    const availableTargets = useMemo(() => {
+        const targets = [];
         const activeClusters = settings.clusters && settings.clusters.length > 0 ? settings.clusters : DEFAULT_CLUSTERS;
 
         // Clusters
         activeClusters.forEach(cluster => {
             const lowCluster = cluster.toLowerCase();
-            if (lowerText.includes(lowCluster)) {
-                let label = "";
+            const capCluster = cluster.charAt(0).toUpperCase() + cluster.slice(1).toLowerCase();
 
-                // Special Rule: "ie" and "chs" stay lowercase
-                if (lowCluster === 'ie' || lowCluster === 'chs') {
-                    label = lowCluster;
-                } else {
-                    // Always show "Au au" format
-                    const cap = cluster.charAt(0).toUpperCase() + cluster.slice(1).toLowerCase();
-                    label = `${cap} ${cluster.toLowerCase()}`;
-                }
+            const countCap = frequencyCounts[capCluster] || 0;
+            const countLow = frequencyCounts[lowCluster] || 0;
 
+            // Special Rule: "ie" and "chs" stay lowercase
+            let label = "";
+            if (lowCluster === 'ie' || lowCluster === 'chs') {
+                label = lowCluster;
+            } else {
+                label = `${capCluster} ${lowCluster}`;
+            }
+
+            if (countCap > 0 || countLow > 0) {
                 targets.push({
                     label: label,
                     value: lowCluster,
-                    type: 'cluster'
+                    type: 'cluster',
+                    counts: { upper: countCap, lower: countLow }
                 });
             }
         });
 
-        // Single Letters
-        const letters = new Set();
-        for (let char of lowerText) {
-            if (char.match(/[a-zäöüß]/)) {
-                letters.add(char);
-            }
-        }
+        // Single Letters (Include ALL letters a-z, ä, ö, ü, ß as requested)
+        const ALL_LETTERS = "abcdefghijklmnopqrstuvwxyzäöüß";
+        const lettersList = ALL_LETTERS.split("");
 
-        const sortedLetters = Array.from(letters).sort((a, b) => a.localeCompare(b, 'de'));
-        sortedLetters.forEach(l => {
+        lettersList.forEach(l => {
             const upper = l.toUpperCase();
-            // Always show "A a" format
-            const label = `${upper} ${l}`;
+            const countUpper = frequencyCounts[upper] || 0;
+            const countLower = frequencyCounts[l] || 0;
 
             targets.push({
-                label: label,
+                label: `${upper} ${l}`,
                 value: l,
-                type: 'single'
+                type: 'single',
+                counts: { upper: countUpper, lower: countLower }
             });
         });
 
         return targets.sort((a, b) => a.label.localeCompare(b.label, 'de'));
-    }, [text, settings.clusters]);
+    }, [frequencyCounts, settings.clusters]);
 
     useEffect(() => {
         if (availableTargets.length > 0 && !selectedTarget) {
@@ -121,10 +171,10 @@ export const FindLettersView = ({ text, settings, setSettings, onClose, title })
         setWrongIndices(new Set());
     }, [selectedTarget]);
 
-    // 3. Pre-calculate Correct Indices for selected target
-    const targetIndices = useMemo(() => {
-        const set = new Set();
-        if (!selectedTarget || !processedWords.length) return set;
+    // 3. Pre-calculate Correct Indices and individual Hits for selected target
+    const targetHits = useMemo(() => {
+        const hits = [];
+        if (!selectedTarget || !processedWords.length) return hits;
 
         const targetValue = selectedTarget.value.toLowerCase();
         const activeClusters = settings.clusters && settings.clusters.length > 0 ? settings.clusters : DEFAULT_CLUSTERS;
@@ -173,9 +223,11 @@ export const FindLettersView = ({ text, settings, setSettings, onClose, title })
 
                             if (hitStart >= clusterStart && hitEnd <= clusterEnd) {
                                 if (targetValue === cluster) {
+                                    const hitSet = new Set();
                                     for (let k = 0; k < clLen; k++) {
-                                        set.add(wordStartIndex + currentSylStart + clusterStart + k);
+                                        hitSet.add(wordStartIndex + currentSylStart + clusterStart + k);
                                     }
+                                    hits.push(hitSet);
                                     foundCluster = true;
                                     break;
                                 } else {
@@ -188,20 +240,32 @@ export const FindLettersView = ({ text, settings, setSettings, onClose, title })
                         if (foundCluster) break;
                     }
                     if (!foundCluster) {
+                        const hitSet = new Set();
                         for (let k = 0; k < targetValue.length; k++) {
-                            set.add(wordStartIndex + idx + k);
+                            hitSet.add(wordStartIndex + idx + k);
                         }
+                        hits.push(hitSet);
                     }
                 } else {
+                    const hitSet = new Set();
                     for (let k = 0; k < targetValue.length; k++) {
-                        set.add(wordStartIndex + idx + k);
+                        hitSet.add(wordStartIndex + idx + k);
                     }
+                    hits.push(hitSet);
                 }
                 searchPos = idx + 1;
             }
         });
-        return set;
+        return hits;
     }, [selectedTarget, processedWords, settings.clusters]);
+
+    const targetIndices = useMemo(() => {
+        const set = new Set();
+        targetHits.forEach(hit => {
+            hit.forEach(idx => set.add(idx));
+        });
+        return set;
+    }, [targetHits]);
 
     // Compatible with Word component's expected signature
     // The Word component calls: toggleHighlights(indicesToToggle)
@@ -219,7 +283,25 @@ export const FindLettersView = ({ text, settings, setSettings, onClose, title })
                 // Only flash if the clicked item is actually a target
                 const isCorrectHit = indexArray.some(i => targetIndices.has(i));
                 if (isCorrectHit) {
-                    setFlashMode('correct');
+                    // Check if it's an uppercase or lowercase hit
+                    // We assume the first index in the array gives us a clue
+                    let firstIdx = indexArray[0];
+                    // Find which segment this index belongs to
+                    let foundChar = '';
+                    // Iterate processedWords to find the character at this global index
+                    // This is a bit expensive but robust
+                    for (const item of processedWords) {
+                        if (item.type === 'word' && firstIdx >= item.index && firstIdx < item.index + item.word.length) {
+                            foundChar = item.word[firstIdx - item.index];
+                            break;
+                        }
+                    }
+
+                    if (foundChar && foundChar === foundChar.toUpperCase() && foundChar !== foundChar.toLowerCase()) {
+                        setFlashMode('correct-upper');
+                    } else {
+                        setFlashMode('correct-lower');
+                    }
                     setTimeout(() => setFlashMode(null), 400);
                 } else {
                     setFlashMode('wrong');
@@ -274,16 +356,37 @@ export const FindLettersView = ({ text, settings, setSettings, onClose, title })
                     </h2>
 
                     {!showSelection && (
-                        <button
-                            onClick={() => setShowSelection(true)}
-                            className={`ml-1 flex items-center gap-3 px-3 py-1 border-2 rounded-xl transition-all duration-300 group animate-[fadeIn_0.3s] ${flashMode === 'correct' ? 'bg-green-100 border-green-400 scale-105' : flashMode === 'wrong' ? 'bg-red-100 border-red-400 animate-shake' : 'bg-slate-100 hover:bg-white border-transparent hover:border-blue-300'}`}
-                        >
-                            <span className="text-slate-500 font-bold text-xs uppercase tracking-wider">Gesucht:</span>
-                            <span className={`text-xl font-black transition-colors duration-300 ${flashMode === 'correct' ? 'text-green-600' : flashMode === 'wrong' ? 'text-red-600' : 'text-blue-800'}`} style={{ fontFamily: settings.fontFamily }}>
-                                {selectedTarget?.label || "?"}
-                            </span>
-                            <Icons.ChevronDown size={16} className="text-slate-400 group-hover:text-blue-500" />
-                        </button>
+                        <div className="flex items-center gap-4">
+                            <button
+                                onClick={() => setShowSelection(true)}
+                                className={`ml-1 flex items-center gap-3 px-3 py-1 border-2 rounded-xl transition-all duration-300 group animate-[fadeIn_0.3s] ${flashMode && flashMode.startsWith('correct') ? 'bg-green-100 border-green-400 scale-105' : flashMode === 'wrong' ? 'bg-red-100 border-red-400 animate-shake' : 'bg-slate-100 hover:bg-white border-transparent hover:border-blue-300'
+                                    }`}
+                            >
+                                <span className="text-slate-500 font-bold text-xs uppercase tracking-wider">Gesucht:</span>
+                                <span className={`text-xl font-black transition-colors duration-300 ${flashMode && flashMode.startsWith('correct') ? 'text-green-600' : flashMode === 'wrong' ? 'text-red-600' : 'text-blue-800'
+                                    }`} style={{ fontFamily: settings.fontFamily }}>
+                                    {selectedTarget?.label || "?"}
+                                </span>
+                                <Icons.ChevronDown size={16} className="text-slate-400 group-hover:text-blue-500" />
+                            </button>
+
+                            {selectedTarget && targetHits.length > 0 && (
+                                <div className="flex items-center gap-2 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100">
+                                    <div className="flex items-center gap-1.5">
+                                        <div className="w-2.5 h-2.5 rounded-full bg-blue-500"></div>
+                                        <span className="text-sm font-bold text-blue-800">
+                                            {(() => {
+                                                const foundHits = targetHits.filter(hit =>
+                                                    Array.from(hit).every(idx => markedIndices.has(idx))
+                                                ).length;
+                                                return `${foundHits} / ${targetHits.length}`;
+                                            })()}
+                                        </span>
+                                    </div>
+                                    <span className="text-xs font-semibold text-blue-400 uppercase tracking-tighter">gefunden</span>
+                                </div>
+                            )}
+                        </div>
                     )}
                 </div>
 
@@ -318,16 +421,26 @@ export const FindLettersView = ({ text, settings, setSettings, onClose, title })
                         <button onClick={() => setShowSelection(false)} className="bg-slate-200 text-slate-600 p-2 rounded-lg hover:bg-slate-300"><Icons.X size={16} /></button>
                     </div>
                     <div className="flex-1 overflow-y-auto custom-scroll p-2 flex flex-col gap-2">
-                        {availableTargets.map((target) => (
-                            <button
-                                key={target.label}
-                                onClick={() => { setSelectedTarget(target); setShowSelection(false); }}
-                                className={`w-full p-4 text-left font-bold rounded-xl transition-all border-2 flex items-center justify-between group ${selectedTarget?.label === target.label ? 'border-blue-600 bg-blue-50 text-blue-800' : 'border-transparent hover:bg-slate-100 text-slate-700'}`}
-                            >
-                                <span className="text-2xl" style={{ fontFamily: settings.fontFamily }}>{target.label}</span>
-                                {selectedTarget?.label === target.label && <Icons.Check size={20} className="text-blue-600" />}
-                            </button>
-                        ))}
+                        {availableTargets.map((target) => {
+                            const totalCount = (target.counts?.upper || 0) + (target.counts?.lower || 0);
+                            const isEmpty = totalCount === 0;
+
+                            return (
+                                <button
+                                    key={target.label}
+                                    onClick={() => { setSelectedTarget(target); setShowSelection(false); }}
+                                    className={`w-full p-4 text-left font-bold rounded-xl transition-all border-2 flex items-center justify-between group ${selectedTarget?.label === target.label ? 'border-blue-600 bg-blue-50 text-blue-800' : isEmpty ? 'border-transparent text-slate-300' : 'border-transparent hover:bg-slate-100 text-slate-700'}`}
+                                >
+                                    <div className="flex items-baseline gap-3">
+                                        <span className="text-2xl" style={{ fontFamily: settings.fontFamily }}>{target.label}</span>
+                                        <div className={`text-xl font-medium ${isEmpty ? 'text-slate-300' : 'text-slate-400'}`} style={{ fontFamily: settings.fontFamily }}>
+                                            ({target.counts.upper} / {target.counts.lower})
+                                        </div>
+                                    </div>
+                                    {selectedTarget?.label === target.label && <Icons.Check size={20} className="text-blue-600" />}
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
 
@@ -336,66 +449,99 @@ export const FindLettersView = ({ text, settings, setSettings, onClose, title })
                 )}
 
                 <div className="flex-1 flex flex-col relative z-10 w-full bg-slate-50/50">
-                    <div className="flex-1 overflow-y-auto custom-scroll p-4 md:p-8 flex justify-center w-full relative">
-                        {/* Selected Indicator - Massive Backdrop (Darker Blue) */}
-                        <div className="absolute top-8 left-4 md:left-8 opacity-60 pointer-events-none z-0">
-                            <div
-                                className={`text-[8.5rem] md:text-[13rem] font-black transition-all duration-300 select-none leading-none ${flashMode === 'correct' ? 'text-green-500 scale-105' :
-                                    flashMode === 'wrong' ? 'text-red-500 animate-shake' :
-                                        'text-slate-600'
-                                    }`}
-                                style={{ fontFamily: settings.fontFamily }}
-                            >
-                                {selectedTarget?.label}
-                            </div>
-                        </div>
+                    <div className="flex-1 overflow-y-auto custom-scroll p-0 flex justify-start w-full relative">
+                        <div className="w-full pt-8 pb-24 relative flex items-start transition-all">
+                            {/* Selected Indicator - Sticky Left Column */}
+                            <div className="sticky top-0 shrink-0 z-0 select-none">
+                                <div
+                                    className={`text-[8.5rem] md:text-[13rem] font-black transition-all duration-300 leading-none flex items-baseline ${flashMode === 'wrong' ? 'animate-shake' : ''
+                                        }`}
+                                    style={{ fontFamily: settings.fontFamily }}
+                                >
+                                    {(() => {
+                                        if (!selectedTarget) return null;
+                                        const parts = selectedTarget.label.split(' ');
+                                        // Case 1: Single part (e.g. "ie" or just "A" if strict mode)
+                                        // Actually our logic produces "A a" or "Ch ch" or just "ie"
 
-                        <div className="max-w-7xl w-full pt-8 pb-24 relative pl-16 md:pl-48 transition-all">
-                            <div className={`flex flex-wrap items-baseline content-start ${settings.centerText ? 'justify-center' : 'justify-start'}`} style={{ lineHeight: settings.lineHeight, fontFamily: settings.fontFamily }}>
-                                {(() => {
-                                    // Optimization: Calculate settings once for the loop
-                                    const activeClustersRaw = settings.clusters && settings.clusters.length > 0 ? settings.clusters : DEFAULT_CLUSTERS;
-                                    const activeClustersLower = activeClustersRaw.map(c => c.toLowerCase());
-                                    const wordSettings = {
-                                        ...settings,
-                                        smartSelection: true,
-                                        clusters: activeClustersLower
-                                    };
-
-                                    return processedWords.map((item) => {
-                                        if (item.type === 'newline') return <div key={item.id} className="w-full basis-full" style={{ height: item.count > 1 ? '1.5em' : '0' }}></div>;
-                                        if (item.type === 'space') return <span key={item.id} className="select-none inline-block whitespace-pre">{item.content}</span>;
-                                        if (item.type === 'text') return <span key={item.id} className="text-slate-800 break-words" style={{ fontSize: `${settings.fontSize}px` }}>{item.content}</span>;
-
-                                        const currentWordColors = {};
-                                        for (let i = 0; i < item.word.length; i++) {
-                                            const gIdx = item.index + i;
-                                            if (displayWordColors[gIdx]) currentWordColors[gIdx] = displayWordColors[gIdx];
+                                        if (parts.length === 1) {
+                                            return (
+                                                <span className={`transition-all duration-300 ${flashMode === 'correct-lower' || flashMode === 'correct-upper' ? 'text-green-500 scale-105' :
+                                                        flashMode === 'wrong' ? 'text-red-500' : 'text-slate-600'
+                                                    }`}>
+                                                    {parts[0]}
+                                                </span>
+                                            );
                                         }
 
+                                        // Case 2: Two parts (Upper Lower)
                                         return (
-                                            <Word
-                                                key={item.id}
-                                                {...item}
-                                                startIndex={item.index}
-                                                isHighlighted={Object.keys(currentWordColors).length > 0}
-                                                highlightedIndices={markedIndices}
-                                                isHidden={false}
-                                                toggleHighlights={handleToggleHighlights}
-                                                toggleHidden={() => { }}
-                                                activeTool={null}
-                                                activeColor="yellow" // Force Yellow Mode Trigger
-                                                settings={wordSettings} // Use robust settings object
-                                                manualSyllables={item.syllables}
-                                                hyphenator={hyphenator}
-                                                onEditMode={() => { }}
-                                                isReadingMode={false}
-                                                wordColors={currentWordColors}
-                                                colorPalette={[]}
-                                            />
+                                            <>
+                                                <span className={`transition-all duration-300 ${flashMode === 'correct-upper' ? 'text-green-500 scale-105' :
+                                                        flashMode === 'wrong' ? 'text-red-500' : 'text-slate-600'
+                                                    }`}>
+                                                    {parts[0]}
+                                                </span>
+                                                <span className="whitespace-pre"> </span>
+                                                <span className={`transition-all duration-300 ${flashMode === 'correct-lower' ? 'text-green-500 scale-105' :
+                                                        flashMode === 'wrong' ? 'text-red-500' : 'text-slate-600'
+                                                    }`}>
+                                                    {parts[1]}
+                                                </span>
+                                            </>
                                         );
-                                    });
-                                })()}
+                                    })()}
+                                    &nbsp;&nbsp;&nbsp;
+                                </div>
+                            </div>
+
+                            <div className="flex-1 relative">
+                                <div className={`flex flex-wrap items-baseline content-start ${settings.centerText ? 'justify-center' : 'justify-start'}`} style={{ lineHeight: settings.lineHeight, fontFamily: settings.fontFamily }}>
+                                    {(() => {
+                                        // Optimization: Calculate settings once for the loop
+                                        const activeClustersRaw = settings.clusters && settings.clusters.length > 0 ? settings.clusters : DEFAULT_CLUSTERS;
+                                        const activeClustersLower = activeClustersRaw.map(c => c.toLowerCase());
+                                        const wordSettings = {
+                                            ...settings,
+                                            smartSelection: true,
+                                            clusters: activeClustersLower
+                                        };
+
+                                        return processedWords.map((item) => {
+                                            if (item.type === 'newline') return <div key={item.id} className="w-full basis-full" style={{ height: item.count > 1 ? '1.5em' : '0' }}></div>;
+                                            if (item.type === 'space') return <span key={item.id} className="select-none inline-block whitespace-pre">{item.content}</span>;
+                                            if (item.type === 'text') return <span key={item.id} className="text-slate-800 break-words" style={{ fontSize: `${settings.fontSize}px` }}>{item.content}</span>;
+
+                                            const currentWordColors = {};
+                                            for (let i = 0; i < item.word.length; i++) {
+                                                const gIdx = item.index + i;
+                                                if (displayWordColors[gIdx]) currentWordColors[gIdx] = displayWordColors[gIdx];
+                                            }
+
+                                            return (
+                                                <Word
+                                                    key={item.id}
+                                                    {...item}
+                                                    startIndex={item.index}
+                                                    isHighlighted={Object.keys(currentWordColors).length > 0}
+                                                    highlightedIndices={markedIndices}
+                                                    isHidden={false}
+                                                    toggleHighlights={handleToggleHighlights}
+                                                    toggleHidden={() => { }}
+                                                    activeTool={null}
+                                                    activeColor="yellow" // Force Yellow Mode Trigger
+                                                    settings={wordSettings} // Use robust settings object
+                                                    manualSyllables={item.syllables}
+                                                    hyphenator={hyphenator}
+                                                    onEditMode={() => { }}
+                                                    isReadingMode={false}
+                                                    wordColors={currentWordColors}
+                                                    colorPalette={[]}
+                                                />
+                                            );
+                                        });
+                                    })()}
+                                </div>
                             </div>
                         </div>
                     </div>

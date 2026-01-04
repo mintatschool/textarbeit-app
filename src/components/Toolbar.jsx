@@ -76,6 +76,7 @@ export const Toolbar = ({
     onToggleReadingMode,
     onToggleFullscreen,
     onToolChange, // (toolName) => void
+    onBatchHide,
     onOpenSettings,
     onClearText,
     onOpenScanner,
@@ -110,7 +111,9 @@ export const Toolbar = ({
     settings,
     onMarkAllNeutral, // New prop
     isGrouping,
-    onToggleGrouping
+    onToggleGrouping,
+    hideYellowLetters,
+    onToggleHideLetters
 }) => {
     const [editingColorIndex, setEditingColorIndex] = useState(null);
     const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -125,7 +128,7 @@ export const Toolbar = ({
     return (
         <div className={`bg-white/95 backdrop-blur-md shadow-2xl border-slate-200 z-[90] transition-all font-sans no-scrollbar flex ${containerClasses}`}>
             {/* --- SECTION 1: SYSTEM & GENERAL TOOLS ("Control Room") --- */}
-            <div className="flex flex-col gap-2 items-center p-2 rounded-3xl bg-slate-50/80 border border-slate-200/50 shadow-inner w-[calc(100%-12px)] mx-auto">
+            <div className="flex flex-col gap-3 items-center p-1 rounded-2xl bg-slate-50 border border-slate-200 shadow-inner w-full">
                 <ToolbarButton
                     title="Zurück zur Eingabe"
                     icon={Icons.Edit2}
@@ -154,7 +157,7 @@ export const Toolbar = ({
 
                 <ToolbarButton
                     title={showMarkAllConfirm ? "Bist du sicher?" : "Alles markieren (grauer Kasten)"}
-                    icon={showMarkAllConfirm ? Icons.Check : Icons.Square}
+                    icon={showMarkAllConfirm ? Icons.Check : Icons.MarkAll}
                     onClick={() => {
                         if (showMarkAllConfirm) {
                             onMarkAllNeutral();
@@ -171,31 +174,148 @@ export const Toolbar = ({
                 />
             </div>
 
-            <ToolbarButton
-                title="Silben korrigieren"
-                icon={Icons.SplitVertical}
-                onClick={() => onToolChange(activeTool === 'split' ? null : 'split')}
-                active={activeTool === 'split'}
-                activeColor="teal"
-                disabled={isReadingMode}
-            />
+            {/* --- SECTION 4: MARKING SYSTEM --- */}
+            <div className="flex flex-col gap-3 items-center p-1 rounded-2xl bg-slate-50 border border-slate-200 shadow-inner w-full">
 
-            <ToolbarButton
-                title="Wörter verstecken"
-                icon={Icons.Ghost}
-                onClick={() => onToolChange(activeTool === 'blur' ? null : 'blur')}
-                active={activeTool === 'blur'}
-                activeColor="gray"
-                disabled={isReadingMode}
-            />
+                <div className="flex gap-0.5 items-center justify-end w-full px-0">
+                    {/* 1. NEUTRAL MARKER (Grey Box - Whole Word Frame) */}
+                    <button
+                        onClick={() => onSetActiveColor('neutral')}
+                        className={`w-8 h-6 flex-shrink-0 rounded-lg border-2 transition-all !min-h-0 ${activeColor === 'neutral' ? 'border-slate-500 bg-slate-200 shadow-[0_0_12px_rgba(59,130,246,0.6)] ring-2 ring-blue-400/50 scale-110' : 'border-slate-500 bg-transparent hover:bg-slate-100 hover:border-slate-600'}`}
+                        title="Neutral markieren (Grauer Rahmen)"
+                    />
 
-            <ToolbarButton
-                title="Lesemodus"
-                icon={Icons.Hand}
-                onClick={onToggleReadingMode}
-                active={isReadingMode}
-                activeColor="orange"
-            />
+                    {/* 1b. GHOST BUTTON (Hide words - only if marked) */}
+                    <button
+                        onClick={() => {
+                            // If tool is already active, we want to TOGGLE batch visibility (handled in App.jsx via onBatchHide)
+                            // Wait, if tool is active, clicking again usually deactivates tool (onToolChange(null)).
+                            // User request: "beim erneuten drücken des symbols wieder freigelegt werden"
+                            // If tool IS active, clicking SHOULD call onBatchHide again (which toggles) AND keep tool active?
+                            // OR toggles tool off?
+                            // "Es sollen die versteckten wörter aber auch beim erneuten drücken des symbols wieder freigelegt werden" implies using the button as a toggle for *visibility*.
+                            // But it is also a *tool selector*.
+
+                            // Let's call onBatchHide ALWAYS.
+                            // And toggle tool state?
+                            // If we want to stay in "hiding mode" (allows individual clicking), we should ensure tool is active.
+                            // But maybe user just wants the batch effect.
+                            // If tool is NOT active -> Activate it + Batch Hide.
+                            // If tool IS active -> Batch Unhide? But also Deactivate tool? 
+                            // Standard behavior for toolbar buttons is: Active -> Click -> Inactive.
+
+                            // Let's do:
+                            // Click -> Call Batch Toggle (Hide/Unhide)
+                            // Toggle Tool State (Active/Inactive)
+                            onToolChange(activeTool === 'blur' ? null : 'blur');
+                        }}
+                        className={`p-1 rounded-xl transition flex-shrink-0 ${activeTool === 'blur' ? 'bg-gray-600 text-white shadow-lg' : 'text-slate-600 hover:text-blue-600 hover:bg-slate-100'} ${isReadingMode ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        title="Wörter verstecken"
+                        disabled={isReadingMode}
+                    >
+                        <Icons.Ghost size={24} />
+                    </button>
+                </div>
+
+                {/* 2. YELLOW MARKER BLOCK */}
+                <div className="flex gap-0.5 items-center justify-end w-full px-0">
+                    <button
+                        onClick={() => onSetActiveColor('yellow')}
+                        className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all border-2 !min-h-0 ${activeColor === 'yellow' ? 'border-slate-500 bg-white shadow-[0_0_12px_rgba(59,130,246,0.6)] ring-2 ring-blue-400/50 scale-110' : 'border-transparent hover:bg-slate-100 hover:border-slate-200'}`}
+                        title="Gelb markieren (Buchstaben)"
+                    >
+                        <Icons.LetterMarker size={28} className="text-slate-500" />
+                    </button>
+
+                    <button
+                        onClick={onToggleHideLetters}
+                        className={`p-1 rounded-xl transition flex-shrink-0 ${hideYellowLetters ? 'bg-gray-600 text-white shadow-lg' : 'text-slate-600 hover:text-blue-600 hover:bg-slate-100'} ${isReadingMode ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        title="Gelbe Buchstaben verstecken"
+                        disabled={isReadingMode}
+                    >
+                        <Icons.Ghost size={24} />
+                    </button>
+                </div>
+
+                {/* 3. COLOR PALETTE (Edge-to-Edge Staggered) */}
+                <div className="flex justify-center w-full mb-2">
+                    {/* Left Column (Even indices: Blue, Red, Green...) */}
+                    <div className="flex flex-col gap-3 z-10">
+                        {colorPalette.filter((_, i) => i % 2 === 0).map((color, i) => {
+                            const originalIndex = i * 2;
+                            // Resolve the active palette index if activeColor is 'palette-X'
+                            let isActive = false;
+                            if (typeof activeColor === 'string' && activeColor.startsWith('palette-')) {
+                                const activeIndex = parseInt(activeColor.split('-')[1], 10);
+                                if (activeIndex === originalIndex) isActive = true;
+                            } else if (activeColor === color) {
+                                isActive = true;
+                            }
+
+                            return (
+                                <button
+                                    key={originalIndex}
+                                    onClick={() => {
+                                        if (isActive) {
+                                            setEditingColorIndex(originalIndex);
+                                        } else {
+                                            onSetActiveColor(`palette-${originalIndex}`);
+                                        }
+                                    }}
+                                    className={`w-8 h-8 rounded-full border-2 transition-all min-touch-target ${isActive ? 'scale-110 border-slate-500 shadow-[0_0_12px_rgba(59,130,246,0.6)] ring-2 ring-blue-400/50' : 'border-transparent hover:scale-105 shadow-sm'}`}
+                                    style={{ backgroundColor: color }}
+                                    title="Klicken zum Auswählen, erneut klicken zum Ändern"
+                                />
+                            );
+                        })}
+                    </div>
+
+                    {/* Right Column (Odd indices: Red, Purple...) - Offset & Edge-to-Edge */}
+                    <div className="flex flex-col gap-3 mt-7 -ml-1.5 z-0">
+                        {colorPalette.filter((_, i) => i % 2 !== 0).map((color, i) => {
+                            const originalIndex = i * 2 + 1;
+                            // Resolve the active palette index if activeColor is 'palette-X'
+                            let isActive = false;
+                            if (typeof activeColor === 'string' && activeColor.startsWith('palette-')) {
+                                const activeIndex = parseInt(activeColor.split('-')[1], 10);
+                                if (activeIndex === originalIndex) isActive = true;
+                            } else if (activeColor === color) {
+                                isActive = true;
+                            }
+
+                            return (
+                                <button
+                                    key={originalIndex}
+                                    onClick={() => {
+                                        if (isActive) {
+                                            setEditingColorIndex(originalIndex);
+                                        } else {
+                                            onSetActiveColor(`palette-${originalIndex}`);
+                                        }
+                                    }}
+                                    className={`w-8 h-8 rounded-full border-2 transition-all min-touch-target ${isActive ? 'scale-110 border-slate-500 shadow-[0_0_12px_rgba(59,130,246,0.6)] ring-2 ring-blue-400/50' : 'border-transparent hover:scale-105 shadow-sm'}`}
+                                    style={{ backgroundColor: color }}
+                                    title="Klicken zum Auswählen, erneut klicken zum Ändern"
+                                />
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {/* 2b. GROUPING BUTTON (Only visible if a color is active) */}
+                {(activeColor && activeColor !== 'yellow') && (
+                    <button
+                        onClick={onToggleGrouping}
+                        className={`w-14 h-10 flex items-center justify-center rounded-xl transition-all min-touch-target mt-1 ${isGrouping ? 'bg-slate-800 text-white shadow-lg scale-105' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                        title={isGrouping ? "Verbinden abschließen" : "Wörter verbinden"}
+                    >
+                        <Icons.Group size={24} />
+                    </button>
+                )}
+            </div>
+
+
+
 
             <Separator horizontal={false} />
 
@@ -317,103 +437,6 @@ export const Toolbar = ({
                 </MenuItem>
             </MenuDropdown>
 
-            <Separator horizontal={false} />
-
-            {/* --- SECTION 4: MARKING SYSTEM --- */}
-            <div className="flex flex-col gap-3 items-center p-1 rounded-2xl bg-slate-50 border border-slate-200 shadow-inner w-full">
-
-                {/* 1. NEUTRAL MARKER (Grey Box - Whole Word Frame) */}
-                <button
-                    onClick={() => onSetActiveColor('neutral')}
-                    className={`w-14 h-6 rounded-lg border-2 transition-all !min-h-0 ${activeColor === 'neutral' ? 'border-slate-500 bg-slate-200 shadow-[0_0_12px_rgba(59,130,246,0.6)] ring-2 ring-blue-400/50 scale-110' : 'border-slate-500 bg-transparent hover:bg-slate-100 hover:border-slate-600'}`}
-                    title="Neutral markieren (Grauer Rahmen)"
-                />
-
-                {/* 2. YELLOW MARKER (Character Highlight - Matches Find Letters style) */}
-                <button
-                    onClick={() => onSetActiveColor('yellow')}
-                    className={`w-14 h-12 flex items-center justify-center rounded-xl transition-transform min-touch-target ${activeColor === 'yellow' ? 'bg-white border-2 border-slate-500 shadow-[0_0_12px_rgba(59,130,246,0.6)] ring-2 ring-blue-400/50 scale-110' : 'border-2 border-transparent hover:bg-slate-100'}`}
-                    title="Gelb markieren (Buchstaben)"
-                >
-                    <Icons.LetterMarker size={28} className="text-slate-500" />
-                </button>
-
-                {/* 2b. GROUPING BUTTON (Only visible if a color is active) */}
-                {(activeColor && activeColor !== 'neutral' && activeColor !== 'yellow') && (
-                    <button
-                        onClick={onToggleGrouping}
-                        className={`w-14 h-10 flex items-center justify-center rounded-xl transition-all min-touch-target ${isGrouping ? 'bg-slate-800 text-white shadow-lg scale-105' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
-                        title={isGrouping ? "Verbinden abschließen" : "Wörter verbinden"}
-                    >
-                        <Icons.Group size={24} />
-                    </button>
-                )}
-
-                {/* 3. COLOR PALETTE (Edge-to-Edge Staggered) */}
-                <div className="flex justify-center gap-0 w-full">
-                    {/* Left Column (Even indices: Blue, Red, Green...) */}
-                    <div className="flex flex-col gap-3">
-                        {colorPalette.filter((_, i) => i % 2 === 0).map((color, i) => {
-                            const originalIndex = i * 2;
-                            // Resolve the active palette index if activeColor is 'palette-X'
-                            let isActive = false;
-                            if (typeof activeColor === 'string' && activeColor.startsWith('palette-')) {
-                                const activeIndex = parseInt(activeColor.split('-')[1], 10);
-                                if (activeIndex === originalIndex) isActive = true;
-                            } else if (activeColor === color) {
-                                isActive = true;
-                            }
-
-                            return (
-                                <button
-                                    key={originalIndex}
-                                    onClick={() => {
-                                        if (isActive) {
-                                            setEditingColorIndex(originalIndex);
-                                        } else {
-                                            onSetActiveColor(`palette-${originalIndex}`);
-                                        }
-                                    }}
-                                    className={`w-8 h-8 rounded-full border-2 transition-all min-touch-target ${isActive ? 'scale-110 border-slate-500 shadow-[0_0_12px_rgba(59,130,246,0.6)] ring-2 ring-blue-400/50' : 'border-transparent hover:scale-105 shadow-sm'}`}
-                                    style={{ backgroundColor: color }}
-                                    title="Klicken zum Auswählen, erneut klicken zum Ändern"
-                                />
-                            );
-                        })}
-                    </div>
-
-                    {/* Right Column (Odd indices: Red, Purple...) - Offset & Edge-to-Edge */}
-                    <div className="flex flex-col gap-3 mt-6">
-                        {colorPalette.filter((_, i) => i % 2 !== 0).map((color, i) => {
-                            const originalIndex = i * 2 + 1;
-                            // Resolve the active palette index if activeColor is 'palette-X'
-                            let isActive = false;
-                            if (typeof activeColor === 'string' && activeColor.startsWith('palette-')) {
-                                const activeIndex = parseInt(activeColor.split('-')[1], 10);
-                                if (activeIndex === originalIndex) isActive = true;
-                            } else if (activeColor === color) {
-                                isActive = true;
-                            }
-
-                            return (
-                                <button
-                                    key={originalIndex}
-                                    onClick={() => {
-                                        if (isActive) {
-                                            setEditingColorIndex(originalIndex);
-                                        } else {
-                                            onSetActiveColor(`palette-${originalIndex}`);
-                                        }
-                                    }}
-                                    className={`w-8 h-8 rounded-full border-2 transition-all min-touch-target ${isActive ? 'scale-110 border-slate-500 shadow-[0_0_12px_rgba(59,130,246,0.6)] ring-2 ring-blue-400/50' : 'border-transparent hover:scale-105 shadow-sm'}`}
-                                    style={{ backgroundColor: color }}
-                                    title="Klicken zum Auswählen, erneut klicken zum Ändern"
-                                />
-                            );
-                        })}
-                    </div>
-                </div>
-            </div>
 
             {/* Color Picker Popup - Rendered via Portal to escape Toolbar container */}
             {/* User Request: "Rechts am Bildrand in der Nähe der Symbolleiste" */}
@@ -454,6 +477,23 @@ export const Toolbar = ({
 
             <div className="mt-auto flex flex-col gap-4 w-full items-center">
                 <Separator horizontal={false} />
+
+                <ToolbarButton
+                    title="Silben korrigieren"
+                    icon={Icons.SplitVertical}
+                    onClick={() => onToolChange(activeTool === 'split' ? null : 'split')}
+                    active={activeTool === 'split'}
+                    activeColor="teal"
+                    disabled={isReadingMode}
+                />
+
+                <ToolbarButton
+                    title="Lesemodus"
+                    icon={Icons.Hand}
+                    onClick={onToggleReadingMode}
+                    active={isReadingMode}
+                    activeColor="orange"
+                />
 
                 {/* --- SECTION 5: GLOBAL UTILITIES --- */}
                 <ToolbarButton

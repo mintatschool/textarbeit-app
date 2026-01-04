@@ -60,6 +60,7 @@ export const Icons = {
     Move: (p) => <Icon {...p} path={<><polyline points="5 9 2 12 5 15"></polyline><polyline points="9 5 12 2 15 5"></polyline><polyline points="15 19 12 22 9 19"></polyline><polyline points="19 9 22 12 19 15"></polyline><line x1="2" y1="12" x2="22" y2="12"></line><line x1="12" y1="2" x2="12" y2="22"></line></>} />,
     AlertTriangle: (p) => <Icon {...p} path={<><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></>} />,
     Square: (p) => <Icon {...p} path={<rect x="3" y="3" width="18" height="18" rx="2" ry="2" />} />,
+    MarkAll: (p) => <Icon {...p} path={<g strokeWidth="1.8"><rect x="2" y="3.5" width="9" height="7.5" rx="2.5" ry="2.5" /><rect x="13" y="3.5" width="9" height="7.5" rx="2.5" ry="2.5" /><rect x="2" y="13" width="9" height="7.5" rx="2.5" ry="2.5" /></g>} />,
     GapWords: (p) => <Icon {...p} path={<><line x1="3" y1="12" x2="9" y2="12" strokeWidth="4" /><line x1="15" y1="12" x2="21" y2="12" strokeWidth="4" /><line x1="9.5" y1="16" x2="14.5" y2="16" strokeWidth="2.5" /></>} />,
     InitialSound: (p) => <Icon {...p} path={<><line x1="8" y1="12" x2="20" y2="12" strokeWidth="4" /><line x1="2" y1="16" x2="6" y2="16" strokeWidth="2.5" /></>} />,
     GapSentences: (p) => <Icon {...p} path={<><line x1="3" y1="7" x2="21" y2="7" strokeWidth="2" /><line x1="3" y1="12" x2="10" y2="12" strokeWidth="2" /><line x1="16" y1="12" x2="21" y2="12" strokeWidth="2" /><line x1="3" y1="17" x2="21" y2="17" strokeWidth="2" /></>} />,
@@ -141,5 +142,13 @@ export const Icons = {
         <path d="M9 17L12 7L15 17" />
         <line x1="10" y1="14" x2="14" y2="14" />
     </g>} />,
-    Group: ({ size = 24, className = "" }) => <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 9v6a7 7 0 0 0 14 0v-6" /></svg>,
+    Group: ({ size = 24, className = "" }) => (
+        <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            {/* Two boxes - pushed further apart */}
+            <rect x="2" y="5" width="8" height="6" rx="2.5" />
+            <rect x="14" y="5" width="8" height="6" rx="2.5" />
+            {/* Connecting arc - adjusted for wider gap */}
+            <path d="M6 11v1c0 4 3 6 6 6s6-2 6-6v-1" />
+        </svg>
+    ),
 };

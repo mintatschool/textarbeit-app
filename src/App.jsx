@@ -70,14 +70,10 @@ const App = () => {
         clusters: ['sch', 'chs', 'ch', 'ck', 'ph', 'pf', 'th', 'qu', 'ei', 'ie', 'eu', 'au', 'äu', 'ai', 'sp', 'st']
     });
 
-    // Clear active color when switching modes to prevent accidental coloring
-    useEffect(() => {
-        if (settings.clickAction !== 'light_blue') {
-            setActiveColor(null);
-        }
-    }, [settings.clickAction]);
+
     const [highlightedIndices, setHighlightedIndices] = useState(new Set());
     const [hiddenIndices, setHiddenIndices] = useState(new Set());
+    const [hideYellowLetters, setHideYellowLetters] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
     const [logo, setLogo] = useState(null);
     const [activeTool, setActiveTool] = useState(null); // 'split', 'blur'
@@ -94,7 +90,7 @@ const App = () => {
     // Color Feature State
     const [wordColors, setWordColors] = useState({}); // { index: hexColor }
     const [colorPalette, setColorPalette] = useState(['#3b82f6', '#a855f7', '#ef4444', '#f97316', '#22c55e']); // Reordered for Toolbar Column Layout
-    const [activeColor, setActiveColor] = useState(null); // If set, clicking paints. If null, standard toggle.
+    const [activeColor, setActiveColor] = useState('neutral'); // Default to neutral (grey frame)
     const [colorHeaders, setColorHeaders] = useState({}); // { "#hex": "My Title" }
 
     const textAreaRef = useRef(null);
@@ -308,6 +304,7 @@ const App = () => {
     const toggleHidden = useCallback((key) => {
         setHiddenIndices(prev => { const next = new Set(prev); if (next.has(key)) next.delete(key); else next.add(key); return next; });
     }, []);
+
     const handleCorrectionSave = (newSyllables) => {
         setManualCorrections(prev => ({ ...prev, [correctionData.key]: newSyllables }));
         setShowCorrectionModal(false); setCorrectionData(null); setActiveTool(null);
@@ -366,6 +363,40 @@ const App = () => {
             return { type: 'text', content: segment, index: startIndex, id: `text_${startIndex}` };
         });
     }, [text, manualCorrections, hyphenator]);
+
+    const handleBatchHide = useCallback(() => {
+        const markedWordIds = processedWords
+            .filter(w => {
+                if (w.type !== 'word') return false;
+                const wordChars = Array.from({ length: w.word.length }, (_, i) => w.index + i);
+                const hasHighlight = wordChars.some(idx => highlightedIndices.has(idx));
+                const hasColor = wordColors[w.index] !== undefined;
+                return hasHighlight || hasColor;
+            })
+            .map(w => w.id);
+
+        if (markedWordIds.length === 0) return;
+
+        // Check if all marked words are currently hidden
+        const allHidden = markedWordIds.every(id => hiddenIndices.has(id));
+
+        setHiddenIndices(prev => {
+            const next = new Set(prev);
+            if (allHidden) {
+                // If all are hidden -> Show all (Unhide)
+                markedWordIds.forEach(id => next.delete(id));
+            } else {
+                // If not all are hidden -> Hide all
+                markedWordIds.forEach(id => next.add(id));
+            }
+            return next;
+        });
+    }, [processedWords, highlightedIndices, wordColors, hiddenIndices]);
+
+    const handleToggleHideLetters = useCallback(() => {
+        setHideYellowLetters(prev => !prev);
+    }, []);
+
 
     const handleMarkAllNeutral = useCallback(() => {
         const allIndices = new Set();
@@ -505,6 +536,9 @@ const App = () => {
                     onToggleReadingMode={() => setActiveTool(activeTool === 'read' ? null : 'read')}
                     onToggleFullscreen={toggleFullscreen}
                     onToolChange={setActiveTool}
+                    onBatchHide={handleBatchHide}
+                    hideYellowLetters={hideYellowLetters}
+                    onToggleHideLetters={handleToggleHideLetters}
                     onOpenSettings={() => setShowSettings(true)}
                     onClearText={() => { if (window.confirm('Text wirklich löschen?')) setText(''); }}
                     onOpenScanner={() => setShowScanner(true)}
@@ -704,6 +738,7 @@ const App = () => {
                                                 highlightedIndices={highlightedIndices}
                                                 toggleHighlights={toggleHighlights}
                                                 toggleHidden={toggleHidden}
+                                                hideYellowLetters={hideYellowLetters}
                                                 activeTool={activeTool}
                                                 activeColor={activeColor}
                                                 settings={settings}

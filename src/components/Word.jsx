@@ -2,7 +2,7 @@ import React, { useMemo, useCallback } from 'react';
 import { Icons } from './Icons';
 import { getCachedSyllables, CLUSTERS } from '../utils/syllables';
 
-const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, highlightedIndices, isHidden, toggleHighlights, toggleHidden, activeTool, activeColor, onEditMode, manualSyllables, hyphenator, settings, isReadingMode, wordColors, colorPalette, domRef, isGrouped, isSelection }) => {
+const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, highlightedIndices, isHidden, toggleHighlights, toggleHidden, hideYellowLetters, activeTool, activeColor, onEditMode, manualSyllables, hyphenator, settings, isReadingMode, wordColors, colorPalette, domRef, isGrouped, isSelection }) => {
     const wordKey = `${word}_${startIndex}`;
     const syllables = useMemo(() => manualSyllables || getCachedSyllables(word, hyphenator), [word, manualSyllables, hyphenator]);
 
@@ -82,7 +82,9 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
             onEditMode(word, wordKey, syllables);
             return;
         } else if (activeTool === 'blur') {
-            toggleHidden(wordKey);
+            if (isHighlighted) {
+                toggleHidden(wordKey);
+            }
             return;
         }
 
@@ -186,33 +188,46 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
 
                     if (isYellow) {
                         charClassName += ' bg-yellow-100';
-                        if (settings.smartSelection && (glueLeft || glueRight)) {
-                            if (glueLeft && glueRight) {
-                                rounded = 'rounded-none';
-                                charClassName += ' shadow-border-yellow-mid';
-                            } else if (glueLeft) {
-                                rounded = 'rounded-r-sm rounded-l-none';
-                                charClassName += ' shadow-border-yellow-right';
-                            } else if (glueRight) {
-                                rounded = 'rounded-l-sm rounded-r-none';
-                                charClassName += ' shadow-border-yellow-left';
-                            }
+                        charClassName += ' bg-yellow-100';
+
+                        // Check visual adjacency regardless of smartSelection setting for cohesive look
+                        const simpleLeft = wordColors && wordColors[globalIndex - 1] === 'yellow';
+                        const simpleRight = wordColors && wordColors[globalIndex + 1] === 'yellow';
+
+                        // Determine rounded corners based on adjacency
+                        // Used for BOTH yellow highlight AND hidden grey box
+                        if (simpleLeft && simpleRight) {
+                            rounded = 'rounded-none';
+                            charClassName += ' shadow-border-yellow-mid';
+                        } else if (simpleLeft) {
+                            rounded = 'rounded-r-md rounded-l-none';
+                            charClassName += ' shadow-border-yellow-right';
+                        } else if (simpleRight) {
+                            rounded = 'rounded-l-md rounded-r-none';
+                            charClassName += ' shadow-border-yellow-left';
                         } else {
+                            // Standalone
+                            rounded = 'rounded-md';
                             charClassName += ' shadow-border-yellow';
                         }
                     } else if (isColorMarked) {
+                    } else if (isColorMarked) {
                         rounded = '';
                     }
+
+                    const shouldHideLetter = isYellow && hideYellowLetters;
 
                     return (
                         <span
                             key={i}
                             onMouseDown={(e) => e.stopPropagation()}
                             onClick={(e) => !activeTool && !isReadingMode && handleInteraction(e, globalIndex)} // Char Click
-                            className={`${charClassName} ${rounded}`}
+                            className={`${charClassName} ${rounded} ${shouldHideLetter ? 'blur-letter' : ''} ${shouldHideLetter && rounded === 'rounded-none' ? '!rounded-none' : ''} ${shouldHideLetter && rounded.includes('rounded-l-none') ? '!rounded-l-none' : ''} ${shouldHideLetter && rounded.includes('rounded-r-none') ? '!rounded-r-none' : ''}`}
                             style={charStyle}
                         >
-                            {char}
+                            <span className={shouldHideLetter ? 'blur-letter-content' : ''}>
+                                {char}
+                            </span>
                         </span>
                     );
                 })}
@@ -259,31 +274,38 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                                 if (isYellow) {
                                     style = { backgroundColor: '#feffc7' };
                                     customClasses += ' bg-yellow-100';
-                                    if (settings.smartSelection && (glueLeft || glueRight)) {
-                                        if (glueLeft && glueRight) {
-                                            rounded = 'rounded-none';
-                                            customClasses += ' shadow-border-yellow-mid';
-                                        } else if (glueLeft) {
-                                            rounded = 'rounded-r-sm rounded-l-none';
-                                            customClasses += ' shadow-border-yellow-right';
-                                        } else if (glueRight) {
-                                            rounded = 'rounded-l-sm rounded-r-none';
-                                            customClasses += ' shadow-border-yellow-left';
-                                        }
+
+                                    const simpleLeft = wordColors && wordColors[globalIndex - 1] === 'yellow';
+                                    const simpleRight = wordColors && wordColors[globalIndex + 1] === 'yellow';
+
+                                    if (simpleLeft && simpleRight) {
+                                        rounded = 'rounded-none';
+                                        customClasses += ' shadow-border-yellow-mid';
+                                    } else if (simpleLeft) {
+                                        rounded = 'rounded-r-md rounded-l-none';
+                                        customClasses += ' shadow-border-yellow-right';
+                                    } else if (simpleRight) {
+                                        rounded = 'rounded-l-md rounded-r-none';
+                                        customClasses += ' shadow-border-yellow-left';
                                     } else {
+                                        rounded = 'rounded-md';
                                         customClasses += ' shadow-border-yellow';
                                     }
                                 }
+
+                                const shouldHideLetter = isYellow && hideYellowLetters;
 
                                 return (
                                     <span
                                         key={cIdx}
                                         onMouseDown={(e) => e.stopPropagation()}
                                         onClick={(e) => !activeTool && !isReadingMode && handleInteraction(e, globalIndex)}
-                                        className={`inline-block select-none transition-all duration-200 leading-none pb-0.5 pt-0 ${charStyleClass} ${rounded} ${customClasses}`}
+                                        className={`inline-block select-none transition-all duration-200 leading-none pb-0.5 pt-0 ${charStyleClass} ${rounded} ${customClasses} ${shouldHideLetter ? 'blur-letter' : ''} ${shouldHideLetter && rounded === 'rounded-none' ? '!rounded-none' : ''} ${shouldHideLetter && rounded.includes('rounded-l-none') ? '!rounded-l-none' : ''} ${shouldHideLetter && rounded.includes('rounded-r-none') ? '!rounded-r-none' : ''}`}
                                         style={style}
                                     >
-                                        {char}
+                                        <span className={shouldHideLetter ? 'blur-letter-content' : ''}>
+                                            {char}
+                                        </span>
                                     </span>
                                 );
                             })}
@@ -303,6 +325,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
         prev.prefix === next.prefix &&
         prev.suffix === next.suffix &&
         prev.isHidden === next.isHidden &&
+        prev.hideYellowLetters === next.hideYellowLetters &&
         prev.activeTool === next.activeTool &&
         prev.settings === next.settings &&
         prev.activeColor === next.activeColor && // ADDED VITAL COMPARISON

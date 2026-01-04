@@ -243,6 +243,38 @@
         display: block;
         line-height: 1;
     }
+
+    .blur-letter {
+        position: relative;
+        transition: all 0.3s ease;
+        background-color: #cbd5e1;
+        border-radius: 4px;
+        color: transparent !important;
+        /* Default: Standalone Box */
+        box-shadow: 0 0 0 1px #cbd5e1;
+    }
+
+    /* Start of a sequence (No Right Border) */
+    .blur-letter.rounded-r-none {
+        box-shadow: -1px 0 0 0 #cbd5e1, 0 -1px 0 0 #cbd5e1, 0 1px 0 0 #cbd5e1;
+    }
+
+    /* End of a sequence (No Left Border) */
+    .blur-letter.rounded-l-none {
+        box-shadow: 1px 0 0 0 #cbd5e1, 0 -1px 0 0 #cbd5e1, 0 1px 0 0 #cbd5e1;
+    }
+
+    /* Middle of a sequence (No Left or Right Border) */
+    .blur-letter.rounded-none {
+        box-shadow: 0 -1px 0 0 #cbd5e1, 0 1px 0 0 #cbd5e1;
+    }
+
+    .blur-letter-content {
+        visibility: hidden;
+        opacity: 0 !important;
+        user-select: none !important;
+        pointer-events: none !important;
+    }
 }
 
 @keyframes fadeIn {
