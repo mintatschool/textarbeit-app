@@ -227,15 +227,8 @@ export const WordCloudView = ({ words, settings, setSettings, onClose, title }) 
                 <div className="max-w-4xl mx-auto flex flex-col gap-12">
                     {cloudWords.map((word) => {
                         const activePool = poolChunks.filter(c => c.wordId === word.id); const isCorrect = word.allChunks.every(c => placedChunks[c.id]?.text === c.text); return (
-                            <div key={word.id} onDragOver={(e) => e.preventDefault()} onDrop={(e) => handleCloudReturnDrop(e, word.id)} className={`bg-white rounded-2xl border-2 p-6 flex flex-col items-center gap-6 shadow-sm transition-all ${isCorrect ? 'border-green-200 bg-green-50' : 'border-slate-200'}`}>
+                            <div key={word.id} onDragOver={(e) => e.preventDefault()} onDrop={(e) => handleCloudReturnDrop(e, word.id)} className={`bg-white rounded-2xl border-2 p-6 flex flex-col items-center gap-6 shadow-sm transition-all ${isCorrect ? 'border-slate-200' : 'border-slate-200'}`}>
                                 <div className="relative w-full max-w-md h-64 flex items-center justify-center">
-                                    <button
-                                        onClick={() => speakWord(word.fullWord)}
-                                        className="absolute -left-2 top-0 w-12 h-12 bg-blue-500 hover:bg-blue-600 text-white rounded-full shadow-lg hover:scale-105 active:scale-95 transition-all flex items-center justify-center shrink-0 ring-4 ring-white/50 z-20"
-                                        title="Wort anhören"
-                                    >
-                                        <Icons.Volume2 size={24} />
-                                    </button>
                                     <div className="absolute inset-0 text-blue-100/50 drop-shadow-sm flex items-center justify-center">
                                         <svg viewBox="0 0 24 24" className="w-full h-full overflow-visible pointer-events-none" preserveAspectRatio="none">
                                             <path d={cloudSVGPath} fill="currentColor" stroke="#93c5fd" strokeWidth="1" vectorEffect="non-scaling-stroke" />
@@ -264,44 +257,53 @@ export const WordCloudView = ({ words, settings, setSettings, onClose, title }) 
                                                         })}
                                                     </div>
                                                 ))}
-                                                {isCorrect && <div className="absolute inset-0 flex items-center justify-center text-green-600 font-bold text-2xl pop-animate z-30 pointer-events-none bg-green-500/10 rounded-full"><Icons.CheckCircle size={64} className="drop-shadow-lg" /></div>}
+                                                {isCorrect && <div className="absolute inset-0 flex items-center justify-center text-green-600 font-bold text-2xl pop-animate z-30 pointer-events-none rounded-full"><Icons.CheckCircle size={settings.fontSize * 1.5} className="drop-shadow-lg" /></div>}
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div className="flex flex-wrap justify-center items-center gap-6 mt-2">
-                                    {word.syllables.map((sylObj, sIdx) => (
-                                        <React.Fragment key={sIdx}>
-                                            {sIdx > 0 && <div className="text-slate-300 font-black text-2xl select-none">•</div>}
-                                            <div className="flex gap-1 p-2 bg-slate-50 rounded-lg border border-slate-200">
-                                                {sylObj.chunks.map((chunk) => {
-                                                    const placed = placedChunks[chunk.id];
-                                                    return (
-                                                        <div key={chunk.id} onDragOver={(e) => e.preventDefault()} onDragEnter={(e) => { e.preventDefault(); e.currentTarget.classList.add('active-target') }} onDragLeave={(e) => e.currentTarget.classList.remove('active-target')} onDrop={(e) => handleDrop(e, word.id, chunk.id)} onClick={() => handleSlotClick(word.id, chunk.id)} className={`cloud-drop-target cursor-pointer ${placed ? 'filled' : ''} px-1 flex items-center justify-center transition-all ${selectedChunk && selectedChunk.wordId === word.id ? 'ring-2 ring-blue-300 ring-offset-2 animate-pulse' : ''}`} style={{ minWidth: '3.5rem', height: `${settings.fontSize * 1.5}px` }}>
-                                                            {placed ? (
-                                                                <div draggable onDragStart={(e) => handleDragStart(e, placed, 'slot', chunk.id)} onDragEnd={handleDragEnd} onClick={(e) => { e.stopPropagation(); handleChunkClick(placed, 'slot', chunk.id); }} className="cursor-grab active:cursor-grabbing text-blue-900 font-bold animate-[popIn_0.3s_ease-out] touch-action-none touch-manipulation select-none touch-none flex items-stretch h-full overflow-hidden rounded-lg " style={{ fontFamily: settings.fontFamily, fontSize: `${settings.fontSize}px` }}>
-                                                                    {placed.text.split('').map((char, cI) => {
-                                                                        const isVowel = /[aeiouyäöüAEIOUYÄÖÜ]/.test(char);
-                                                                        return <span key={cI} className={`flex items-center justify-center px-1.5 min-w-[1.1ch] h-full ${showVowels && isVowel ? "bg-yellow-200 shadow-sm" : ""}`}>{char}</span>
-                                                                    })}
-                                                                </div>
-                                                            ) : (
-                                                                <div className="w-full h-full flex items-center justify-center gap-[2px]">
-                                                                    {chunk.text.split('').map((char, charIdx) => {
-                                                                        return (
-                                                                            <div key={charIdx} className="flex flex-col items-center justify-end" style={{ width: `${settings.fontSize * 0.6}px`, height: '100%' }}>
-                                                                                <div className="w-full h-[2px] bg-slate-300 rounded-full"></div>
-                                                                            </div>
-                                                                        );
-                                                                    })}
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        </React.Fragment>
-                                    ))}
+                                <div className="flex flex-wrap justify-center items-center gap-6 mt-2 relative">
+                                    <div className="flex flex-wrap justify-center items-center gap-1">
+                                        {word.syllables.map((sylObj, sIdx) => {
+                                            const isEven = sIdx % 2 === 0;
+                                            return (
+                                                <div key={sIdx} className={`flex gap-1 p-2 rounded-xl border transition-colors ${isCorrect ? 'bg-green-100 border-green-200' : (isEven ? 'bg-blue-100 border-blue-200/50' : 'bg-blue-200 border-blue-300/50')}`}>
+                                                    {sylObj.chunks.map((chunk) => {
+                                                        const placed = placedChunks[chunk.id];
+                                                        return (
+                                                            <div key={chunk.id} onDragOver={(e) => e.preventDefault()} onDragEnter={(e) => { e.preventDefault(); e.currentTarget.classList.add('active-target') }} onDragLeave={(e) => e.currentTarget.classList.remove('active-target')} onDrop={(e) => handleDrop(e, word.id, chunk.id)} onClick={() => handleSlotClick(word.id, chunk.id)} className={`cloud-drop-target cursor-pointer ${placed ? 'filled' : ''} px-1 flex items-center justify-center transition-all ${selectedChunk && selectedChunk.wordId === word.id ? 'ring-2 ring-blue-300 ring-offset-2 animate-pulse' : ''}`} style={{ minWidth: '3.5rem', height: `${settings.fontSize * 1.5}px` }}>
+                                                                {placed ? (
+                                                                    <div draggable onDragStart={(e) => handleDragStart(e, placed, 'slot', chunk.id)} onDragEnd={handleDragEnd} onClick={(e) => { e.stopPropagation(); handleChunkClick(placed, 'slot', chunk.id); }} className="cursor-grab active:cursor-grabbing text-blue-900 font-bold animate-[popIn_0.3s_ease-out] touch-action-none touch-manipulation select-none touch-none flex items-stretch h-full overflow-hidden rounded-lg " style={{ fontFamily: settings.fontFamily, fontSize: `${settings.fontSize}px` }}>
+                                                                        {placed.text.split('').map((char, cI) => {
+                                                                            const isVowel = /[aeiouyäöüAEIOUYÄÖÜ]/.test(char);
+                                                                            return <span key={cI} className={`flex items-center justify-center px-1.5 min-w-[1.1ch] h-full ${showVowels && isVowel ? "bg-yellow-200 shadow-sm" : ""}`}>{char}</span>
+                                                                        })}
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="w-full h-full flex items-center justify-center gap-[2px]">
+                                                                        {chunk.text.split('').map((char, charIdx) => {
+                                                                            return (
+                                                                                <div key={charIdx} className="flex flex-col items-center justify-end" style={{ width: `${settings.fontSize * 0.6}px`, height: '100%' }}>
+                                                                                    <div className="w-full h-[2px] bg-slate-400 rounded-full"></div>
+                                                                                </div>
+                                                                            );
+                                                                        })}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                    <button
+                                        onClick={() => speakWord(word.fullWord)}
+                                        className="w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg transition-all shrink-0 ring-4 ring-white/50 hover:scale-105 active:scale-95"
+                                        title="Wort anhören"
+                                    >
+                                        <Icons.Volume2 size={24} />
+                                    </button>
                                 </div>
                             </div>
                         );

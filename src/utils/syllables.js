@@ -13,7 +13,8 @@ const SYLLABLE_CACHE = new Map();
 export const isVowel = (char) => VOWEL_REGEX.test(char);
 
 export const syllabifyImproved = (word) => {
-    if (word.length <= 3) return [word];
+    // Removed length check to allow "Oma" -> "O-ma"
+    // if (word.length <= 3) return [word];
     const result = [];
     let buffer = "";
     for (let i = 0; i < word.length; i++) {
@@ -52,9 +53,25 @@ export const enforceVowelRule = (word, generatedSyllables) => {
     let buffer = generatedSyllables[0] || "";
     for (let i = 1; i < generatedSyllables.length; i++) {
         const nextSyllable = generatedSyllables[i];
-        if (!VOWEL_REGEX.test(nextSyllable)) buffer += nextSyllable;
-        else if (!VOWEL_REGEX.test(buffer)) buffer += nextSyllable;
-        else { corrected.push(buffer); buffer = nextSyllable; }
+        // Original Logic: Merge if next syllable has no vowel? Or previous?
+        // This function seems to try to ensure every syllable has a vowel.
+        // If nextSyllable has no vowel, append to buffer.
+
+        // Wait, standard `enforceVowelRule` logic check:
+        // "buffer" is previous syllable. "nextSyllable" is current.
+
+        if (!VOWEL_REGEX.test(nextSyllable)) {
+            // Next part has no vowel, attach it to previous (buffer)
+            buffer += nextSyllable;
+        } else if (!VOWEL_REGEX.test(buffer)) {
+            // Previous part (buffer) has no vowel? This shouldn't happen usually if we iterate properly,
+            // but if it does, attach current to it.
+            buffer += nextSyllable;
+        } else {
+            // Both have vowels, push buffer and start new
+            corrected.push(buffer);
+            buffer = nextSyllable;
+        }
     }
     corrected.push(buffer);
     if (corrected.join('') !== word) return [word];
@@ -81,7 +98,52 @@ export const getCachedSyllables = (word, hyphenator) => {
     if (MONOSYLLABIC_EXCEPTIONS.includes(word) || MONOSYLLABIC_EXCEPTIONS.includes(word.toLowerCase())) {
         s = [word];
     } else if (hyphenator) {
-        try { s = hyphenator.hyphenate(word); } catch { s = syllabifyImproved(word); }
+        try {
+            // 1. Get Standard Hyphenation
+            const standardParts = hyphenator.hyphenate(word);
+
+            // 2. Get Heuristic Hyphenation (which now allows O-ma)
+            const heuristicParts = syllabifyImproved(word);
+
+            // 3. Merge Strategy: Prefer Heuristic for Single-Vowel-Start
+            // Only if heuristic starts with a single vowel and standard doesn't?
+            // Or if heuristic splits a vowel at start.
+
+            // Example: O-ma (Heuristic) vs Oma (Standard)
+            // Example: O-ran-ge (Heuristic) vs Oran-ge (Standard - maybe?)
+
+            // Check if heuristic has a single-letter first syllable that is a vowel
+            if (heuristicParts.length > 0 &&
+                heuristicParts[0].length === 1 &&
+                isVowel(heuristicParts[0])) {
+
+                // If standard doesn't have it, we might want to use heuristic or force the split.
+                // Simple approach: If heuristic suggests a single vowel start, trust it for that split.
+
+                // Let's reconstruct standard to see if we can inject the split.
+                // Or: simpler, if standard yields 1 part (Oma) and heuristic yields O-ma, use heuristic.
+
+                if (standardParts.length === 1 && heuristicParts.length > 1) {
+                    s = heuristicParts;
+                } else if (standardParts.length > 1 && standardParts[0].toLowerCase() !== heuristicParts[0].toLowerCase()) {
+                    // Standard: O-ran-ge (Wait, Hypher might do O-range or Or-ange?)
+                    // If Hypher does Or-ange and Heuristic does O-ran-ge.
+                    // We prefer O-ran-ge.
+
+                    // Use heuristic if it starts with vowel?
+                    s = heuristicParts;
+                } else {
+                    s = standardParts;
+                }
+            } else {
+                s = standardParts;
+            }
+
+            // Allow override if resulting standard parts are weirdly joined? 
+            // User specifically asked for "O-ma", "O-ran-ge".
+            // The check above: if heuristic starts with single vowel, use heuristic.
+
+        } catch { s = syllabifyImproved(word); }
     } else {
         s = syllabifyImproved(word);
     }

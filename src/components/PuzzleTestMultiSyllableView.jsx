@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
     CheckCircle2,
     AlertCircle,
@@ -7,6 +7,7 @@ import {
     Plus
 } from 'lucide-react';
 import { Icons } from './Icons';
+import { ProgressBar } from './ProgressBar';
 import PuzzleTestPiece from './PuzzleTestPiece';
 import { speak } from '../utils/speech';
 
@@ -62,8 +63,10 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title })
     const startNewGame = useCallback((currWps) => {
         const wps = currWps !== undefined ? currWps : gameState.wordsPerStage;
 
-        if (!words || words.length === 0) {
-            setGameState(prev => ({ ...prev, gameStatus: 'loading' }));
+        console.log("Starting new game with words:", words);
+
+        if ((!words || !Array.isArray(words) || words.length === 0) && (!gameState.stages || gameState.stages.length === 0)) {
+            setGameState(prev => ({ ...prev, gameStatus: 'no_words' }));
             return;
         }
 
@@ -84,20 +87,18 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title })
             return;
         }
 
-        // Shuffle words and create stages
         const shuffled = [...validWords].sort(() => Math.random() - 0.5);
-        const newStages = [];
-
+        const stages = [];
         for (let i = 0; i < shuffled.length; i += wps) {
             const chunk = shuffled.slice(i, i + wps);
             if (chunk.length > 0) {
-                newStages.push({ items: chunk });
+                stages.push({ items: chunk });
             }
         }
 
         setGameState(prev => ({
             ...prev,
-            stages: newStages,
+            stages,
             currentStageIndex: 0,
             gameStatus: 'playing',
             wordsPerStage: wps
@@ -197,27 +198,27 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title })
 
         if (!foundPiece) return;
 
-        const targetLength = parseInt(wordId); // wordId here is actually length passed from render
-        // We need to verify piece fits slot type.
+        // Find the target word to check its syllable count for type validation
+        const currentStage = gameState.stages[gameState.currentStageIndex];
+        const targetWord = currentStage.items.find(w => w.id === wordId);
+        if (!targetWord) return;
+
+        const targetLength = targetWord.syllables.length;
+        // Verify piece fits slot type
         const requiredType = slotIndex === 0 ? 'left' : (slotIndex === targetLength - 1 ? 'right' : 'middle');
         if (foundPiece.type !== requiredType) return;
 
         // Place piece
-        const slotKey = `${targetLength}-${slotIndex}`;
+        const slotKey = `${wordId}-${slotIndex}`;
 
-        setSlots(prev => {
-            const next = { ...prev };
-            // Remove piece if already elsewhere (unlikely with unique IDs)
-            Object.keys(next).forEach(k => {
-                if (next[k] && next[k].id === pieceId) delete next[k];
-            });
-            next[slotKey] = foundPiece;
-            return next;
-        });
+        setSlots(prev => ({
+            ...prev,
+            [slotKey]: foundPiece
+        }));
     };
 
-    const removePieceFromSlot = (slotKey) => {
-        if (highlightedWordId) return; // Block interaction during success animation if needed
+    const removePieceFromSlot = (slotKey, wordId) => {
+        if (completedWords.has(wordId)) return;
         setSlots(prev => {
             const next = { ...prev };
             delete next[slotKey];
@@ -225,38 +226,19 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title })
         });
     };
 
-    // Audio Aid
-    const handleSpeakHelp = () => {
-        // 1. If pieces are in slots, speak the word of the FIRST piece
-        const slotKeys = Object.keys(slots);
-        if (slotKeys.length > 0) {
-            // Find first slot
-            const sortedKeys = slotKeys.sort();
-            const firstPiece = slots[sortedKeys[0]];
-            if (firstPiece && firstPiece.wordId) {
-                const w = words.find(x => x.id === firstPiece.wordId);
-                if (w) speak(w.word);
-            }
-            return;
-        }
-
-        // 2. No pieces in slots? Recommend a word.
-        // Find a word from the CURRENT STAGE that is not yet completed.
-        const stageWords = gameState.stages[gameState.currentStageIndex].items;
-        const pendingWord = stageWords.find(w => !completedWords.has(w.id));
-
-        if (pendingWord) {
-            speak(pendingWord.word);
-
-            // VISUAL HIGHLIGHT
-            setHighlightedWordId(pendingWord.id);
-            if (audioHighlightTimerRef.current) clearTimeout(audioHighlightTimerRef.current);
-            audioHighlightTimerRef.current = setTimeout(() => {
-                setHighlightedWordId(null);
-            }, 1000);
-        }
+    const handleReturnToPool = (pieceId) => {
+        setSlots(prev => {
+            const next = { ...prev };
+            let modified = false;
+            Object.keys(next).forEach(key => {
+                if (next[key]?.id === pieceId) {
+                    delete next[key];
+                    modified = true;
+                }
+            });
+            return modified ? next : prev;
+        });
     };
-
 
     // --------------------------------------------------------------------------------
     // 4. VALIDATION LOOP
@@ -265,47 +247,31 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title })
         if (!gameState.stages[gameState.currentStageIndex]) return;
         const currentStageWords = gameState.stages[gameState.currentStageIndex].items;
 
-        // Group words by length
-        const stageLengths = [...new Set(currentStageWords.map(w => w.syllables.length))];
+        currentStageWords.forEach(word => {
+            if (completedWords.has(word.id)) return;
 
-        stageLengths.forEach(len => {
-            // Check the row for this length
             let isFull = true;
             const rowPieces = [];
+            const len = word.syllables.length;
+
             for (let i = 0; i < len; i++) {
-                const p = slots[`${len}-${i}`];
+                const p = slots[`${word.id}-${i}`];
                 if (!p) { isFull = false; break; }
                 rowPieces.push(p);
             }
 
             if (isFull) {
-                const formedWord = rowPieces.map(p => p.text).join('');
-                // Check against valid words in THIS stage
-                const match = currentStageWords.find(w => w.syllables.join('') === formedWord);
+                const formedWord = rowPieces.map(p => p.text).join('').toLowerCase();
+                const targetWord = word.syllables.join('').toLowerCase();
 
-                if (match) {
+                if (formedWord === targetWord) {
                     // Success!
-                    // Mark word complete
-                    setCompletedWords(prev => new Set(prev).add(match.id));
-                    setSlots(prev => {
-                        const next = { ...prev };
-                        for (let i = 0; i < len; i++) delete next[`${len}-${i}`];
-                        return next;
-                    });
-
-                    // Remove pieces from pool permanently for this stage
-                    setPieces(prev => {
-                        const next = { ...prev };
-                        ['left', 'middle', 'right'].forEach(zone => {
-                            next[zone] = next[zone].filter(p => !rowPieces.some(used => used.id === p.id));
-                        });
-                        return next;
-                    });
+                    setCompletedWords(prev => new Set(prev).add(word.id));
                 }
             }
         });
 
-    }, [slots, gameState.stages, gameState.currentStageIndex]);
+    }, [slots, completedWords, gameState.stages, gameState.currentStageIndex]);
 
     // Check Stage Completion
     useEffect(() => {
@@ -332,8 +298,16 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title })
 
 
     // --------------------------------------------------------------------------------
-    // 5. RENDER HELPERS
+    // 5. RENDER HELPERS (Hooks must be before any early returns)
     // --------------------------------------------------------------------------------
+
+    const totalWords = useMemo(() => gameState.stages.reduce((acc, stage) => acc + stage.items.length, 0), [gameState.stages]);
+    const progress = useMemo(() => {
+        if (totalWords === 0) return 0;
+        const previousStagesWords = gameState.stages.slice(0, gameState.currentStageIndex).reduce((acc, stage) => acc + stage.items.length, 0);
+        const currentStageCompletedCount = completedWords.size;
+        return Math.min(100, ((previousStagesWords + currentStageCompletedCount + 1) / totalWords) * 100);
+    }, [gameState.stages, gameState.currentStageIndex, completedWords, totalWords]);
 
     const handleWordsCountChange = (delta) => {
         const next = Math.max(1, Math.min(6, gameState.wordsPerStage + delta));
@@ -343,15 +317,6 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title })
         debounceTimerRef.current = setTimeout(() => {
             startNewGame(next);
         }, 800);
-    };
-
-    const getVisibleLengths = () => {
-        if (!gameState.stages[gameState.currentStageIndex]) return [];
-        // Only show lengths that have pending words in THIS stage
-        const stageWords = gameState.stages[gameState.currentStageIndex].items;
-        const pending = stageWords.filter(w => !completedWords.has(w.id));
-        const lengths = [...new Set(pending.map(w => w.syllables.length))].sort((a, b) => a - b);
-        return lengths;
     };
 
     const getVisiblePieces = (zone) => {
@@ -369,7 +334,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title })
             width: `${pieceWidth * gameState.pieceScale}px`,
             height: `${110 * gameState.pieceScale}px`,
             marginLeft: index === 0 ? 0 : `-${overlap}px`,
-            zIndex: 10 + (20 - index)
+            zIndex: 10 + index
         };
     };
 
@@ -377,13 +342,18 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title })
     // 6. RENDER
     // --------------------------------------------------------------------------------
 
-    if (gameState.gameStatus === 'no_words') {
+    if ((gameState.gameStatus === 'playing' && (!gameState.stages[gameState.currentStageIndex] || gameState.stages.length === 0)) || gameState.gameStatus === 'no_words') {
         return (
-            <div className="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center p-6 text-center">
+            <div className="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center p-6 text-center animate-in fade-in">
                 <AlertCircle className="w-16 h-16 text-blue-500 mb-4" />
                 <h2 className="text-xl font-bold text-slate-800 mb-2">Keine geeigneten Wörter gefunden.</h2>
-                <p className="text-slate-600 mb-6">Bitte markiere Wörter mit mindestens 2 Silben.</p>
-                <button onClick={onClose} className="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold shadow-lg">Zurück</button>
+                <p className="text-slate-600 mb-6 font-medium max-w-md">Bitte markiere Wörter mit mindestens 2 Silben.</p>
+                <div className="flex gap-4">
+                    <button onClick={() => startNewGame()} className="bg-blue-600 text-white px-8 py-2 rounded-xl font-bold shadow-lg flex items-center gap-2 hover:scale-105 transition-transform">
+                        <Icons.RotateCcw size={18} /> Aktualisieren
+                    </button>
+                    <button onClick={onClose} className="bg-slate-100 text-slate-700 px-8 py-2 rounded-xl font-bold shadow-md hover:bg-slate-200 transition-colors border border-slate-200">Zurück</button>
+                </div>
             </div>
         );
     }
@@ -417,20 +387,33 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title })
 
     if (gameState.gameStatus === 'loading') return <div className="fixed inset-0 bg-white z-[100]" />;
 
-    const visibleLengths = getVisibleLengths();
+    const currentStageItems = gameState.stages[gameState.currentStageIndex]?.items || [];
 
     return (
         <div className="fixed inset-0 bg-blue-50 z-[100] flex flex-col font-sans no-select select-none">
             {/* Header */}
             <header className="bg-white border-b border-slate-200 px-6 py-3 flex justify-between items-center z-20 shadow-sm shrink-0">
                 <div className="flex items-center gap-3">
-                    <Icons.SyllableTestMulti className="text-blue-600 w-8 h-8" />
+                    <Icons.PuzzleZigzag className="text-blue-600 w-8 h-8" />
                     <span className="text-xl font-bold text-slate-800 hidden md:inline">{title || "Silbenpuzzle 2"}</span>
 
-                    {/* Stage Indicator */}
-                    <div className="flex items-center gap-1 ml-4 overflow-x-auto max-w-[200px] no-scrollbar">
+                    {/* Numeric Progress Indicator (Standardized) */}
+                    <div className="flex items-center gap-1 ml-4 overflow-x-auto max-w-[400px] no-scrollbar">
                         {gameState.stages.map((_, i) => (
-                            <div key={i} className={`h-2 w-2 rounded-full transition-colors ${i === gameState.currentStageIndex ? 'bg-blue-600 scale-125' : i < gameState.currentStageIndex ? 'bg-emerald-400' : 'bg-slate-200'}`} />
+                            <div
+                                key={i}
+                                className={`
+                                    w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-all shrink-0
+                                    ${i === gameState.currentStageIndex
+                                        ? 'bg-blue-600 text-white scale-110 shadow-md'
+                                        : i < gameState.currentStageIndex
+                                            ? 'bg-emerald-500 text-white'
+                                            : 'bg-gray-100 text-gray-300'
+                                    }
+                                `}
+                            >
+                                {i + 1}
+                            </div>
                         ))}
                     </div>
                 </div>
@@ -466,46 +449,43 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title })
                         />
                         <span className="text-xl font-bold text-slate-500">A</span>
                     </div>
-                    <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 flex items-center justify-center transition-colors shadow-sm">
+                    <button onClick={onClose} className="bg-red-500 text-white rounded-lg w-10 h-10 flex items-center justify-center border-b-4 border-red-700 active:border-b-0 active:translate-y-1 transition-all">
                         <Icons.X size={24} />
                     </button>
                 </div>
             </header>
-
-            <div className="flex flex-col items-center pt-8 bg-blue-50/30">
-                <button
-                    onClick={handleSpeakHelp}
-                    className="w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all ring-4 ring-white/50 shrink-0"
-                    title="Wort anhören"
-                >
-                    <Icons.Volume2 size={24} />
-                </button>
-            </div>
+            <ProgressBar progress={progress} />
 
 
             {/* Main Content */}
             <div className="flex-1 relative flex overflow-hidden">
 
-                {/* LEFT ZONE - Vertical Scroll Stacking */}
-                <div className="w-1/5 bg-slate-100/50 border-r border-slate-200 flex flex-col overflow-hidden shrink-0">
-                    <div className="bg-slate-100/90 py-2 w-full text-center text-xs font-bold text-slate-400 uppercase tracking-widest pointer-events-none z-10 border-b border-slate-200 shrink-0">Anfang</div>
-                    <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-8 no-scrollbar">
+                {/* LEFT ZONE - Anfangsstücke */}
+                <div className="w-[180px] bg-slate-100/50 border-r border-slate-200 flex flex-col shrink-0"
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                        e.preventDefault();
+                        const pid = e.dataTransfer.getData("application/puzzle-piece-id");
+                        if (pid) handleReturnToPool(pid);
+                    }}
+                >
+                    <div className="bg-slate-200/50 py-1 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Anfang</div>
+                    <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center gap-4">
                         {getVisiblePieces('left').map(p => {
                             const isHighlighted = highlightedWordId === p.wordId;
                             return (
                                 <div key={p.id}
-                                    className={`flex justify-center transition-transform cursor-grab active:cursor-grabbing transform-gpu
-                                        ${isHighlighted ? 'scale-125 z-50 drop-shadow-xl' : 'hover:scale-105 active:scale-95'}
+                                    className={`cursor-grab active:cursor-grabbing transition-transform
+                                        ${isHighlighted ? 'scale-110 drop-shadow-xl' : 'hover:scale-105'}
                                     `}
-                                    style={{ transform: `rotate(${p.rotation}deg) scale(${gameState.pieceScale})` }}>
+                                    draggable onDragStart={(e) => { e.dataTransfer.setData("application/puzzle-piece-id", p.id); setIsDragging(p.id); }}
+                                    onDragEnd={() => setIsDragging(null)}>
                                     <PuzzleTestPiece
-                                        id={p.id}
                                         label={p.text}
                                         type="left"
                                         colorClass={p.color}
                                         dynamicWidth={p.width}
-                                        onDragStart={(e) => { e.dataTransfer.setData("application/puzzle-piece-id", p.id); setIsDragging(p.id); }}
-                                        onDragEnd={() => setIsDragging(null)}
+                                        scale={gameState.pieceScale * 0.8}
                                         fontFamily={settings.fontFamily}
                                     />
                                 </div>
@@ -517,25 +497,32 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title })
                 {/* MIDDLE ZONE + CENTER */}
                 <div className="flex-1 flex flex-col relative bg-white">
                     {/* Top strip for Middle Pieces */}
-                    <div className="h-[40%] bg-slate-50 border-b-2 border-slate-100 relative overflow-hidden w-full flex-shrink-0 z-10 transition-all duration-300">
-                        <div className="absolute top-2 left-0 w-full text-center text-xs font-bold text-slate-400 uppercase tracking-widest pointer-events-none z-10">Mitte</div>
-                        <div className="w-full h-full relative">
+                    <div className="h-[25%] bg-blue-50/30 border-b border-blue-100 relative w-full overflow-hidden shrink-0"
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={(e) => {
+                            e.preventDefault();
+                            const pid = e.dataTransfer.getData("application/puzzle-piece-id");
+                            if (pid) handleReturnToPool(pid);
+                        }}
+                    >
+                        <div className="absolute top-1 left-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Mitte</div>
+                        <div className="w-full h-full relative p-4">
                             {getVisiblePieces('middle').map(p => {
                                 const isHighlighted = highlightedWordId === p.wordId;
                                 return (
                                     <div key={p.id}
-                                        className={`absolute transition-transform cursor-grab active:cursor-grabbing
-                                            ${isHighlighted ? 'z-[100] scale-125 drop-shadow-xl' : 'hover:z-50'}
+                                        className={`absolute cursor-grab active:cursor-grabbing transition-transform
+                                            ${isHighlighted ? 'scale-110 z-[100] drop-shadow-xl' : 'hover:z-50'}
                                         `}
-                                        style={{ left: `${p.x}%`, top: `${p.y}%`, transform: `rotate(${p.rotation}deg) scale(${gameState.pieceScale})` }}>
+                                        style={{ left: `${p.x}%`, top: `${p.y}%`, transform: `rotate(${p.rotation}deg)` }}
+                                        draggable onDragStart={(e) => { e.dataTransfer.setData("application/puzzle-piece-id", p.id); setIsDragging(p.id); }}
+                                        onDragEnd={() => setIsDragging(null)}>
                                         <PuzzleTestPiece
-                                            id={p.id}
                                             label={p.text}
                                             type="middle"
                                             colorClass={p.color}
                                             dynamicWidth={p.width}
-                                            onDragStart={(e) => { e.dataTransfer.setData("application/puzzle-piece-id", p.id); setIsDragging(p.id); }}
-                                            onDragEnd={() => setIsDragging(null)}
+                                            scale={gameState.pieceScale * 0.8}
                                             fontFamily={settings.fontFamily}
                                         />
                                     </div>
@@ -544,98 +531,124 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title })
                         </div>
                     </div>
 
-                    {/* Templates Area */}
-                    <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center gap-4 w-full mt-6 no-scrollbar pb-32">
-                        {visibleLengths.map(len => (
-                            <div key={len} className="flex flex-col items-center gap-3 w-full animate-fadeIn shrink-0">
-                                <span className="text-xs font-bold text-slate-300 uppercase tracking-widest">{len} Silben</span>
+                    {/* Word Rows Area */}
+                    <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center gap-8 bg-slate-50/30">
+                        {currentStageItems.map(word => {
+                            const isComplete = completedWords.has(word.id);
+                            return (
+                                <div key={word.id} className={`flex items-center gap-6 transition-all duration-500 ${isComplete ? 'opacity-80 scale-95' : ''}`}>
+                                    <div className="relative flex items-center" style={{ height: 110 * gameState.pieceScale }}>
+                                        <div className="flex items-center gap-0" style={{ transform: `scale(${gameState.pieceScale})`, transformOrigin: 'left center', height: 110 }}>
+                                            {word.syllables.map((syl, idx) => {
+                                                const slotKey = `${word.id}-${idx}`;
+                                                const piece = slots[slotKey];
+                                                const len = word.syllables.length;
+                                                const type = idx === 0 ? 'left' : (idx === len - 1 ? 'right' : 'middle');
+                                                const slotStyles = getSlotStyles(piece, idx, len);
 
-                                <div className={`
-                                    relative flex items-center justify-center transition-all duration-500 py-4
-                                `}>
-                                    <div className="flex items-center">
-                                        {Array.from({ length: len }).map((_, idx) => {
-                                            const slotKey = `${len}-${idx}`;
-                                            const piece = slots[slotKey];
-                                            const type = idx === 0 ? 'left' : (idx === len - 1 ? 'right' : 'middle');
-                                            const slotStyles = getSlotStyles(piece, idx, len);
+                                                return (
+                                                    <div
+                                                        key={idx}
+                                                        className="relative flex items-center justify-center transition-all duration-300 group"
+                                                        style={slotStyles}
+                                                        onDragOver={(e) => e.preventDefault()}
+                                                        onDrop={(e) => {
+                                                            e.preventDefault();
+                                                            const id = e.dataTransfer.getData("application/puzzle-piece-id");
+                                                            if (!isComplete) handleDrop(id, word.id, idx);
+                                                        }}
+                                                    >
+                                                        {!piece && (
+                                                            <div className="pointer-events-none opacity-40">
+                                                                <PuzzleTestPiece
+                                                                    label=""
+                                                                    type={type}
+                                                                    isGhost={true}
+                                                                    scale={1}
+                                                                    fontFamily={settings.fontFamily}
+                                                                />
+                                                            </div>
+                                                        )}
 
-                                            return (
-                                                <div
-                                                    key={idx}
-                                                    className="relative flex items-center justify-center transition-all duration-300 group"
-                                                    style={slotStyles}
-                                                    onDragOver={(e) => e.preventDefault()}
-                                                    onDrop={(e) => {
-                                                        e.preventDefault();
-                                                        const id = e.dataTransfer.getData("application/puzzle-piece-id");
-                                                        handleDrop(id, len, idx); // Pass LENGTH as 2nd arg
-                                                    }}
-                                                >
-                                                    {/* TRANSPARENT HIT AREA */}
-                                                    <div className="absolute inset-[-20px] z-0" />
+                                                        {piece && (
+                                                            <div
+                                                                className="cursor-pointer hover:scale-105 transition-transform"
+                                                                draggable
+                                                                onDragStart={(e) => {
+                                                                    e.dataTransfer.setData("application/puzzle-piece-id", piece.id);
+                                                                    // Do not set isDragging(piece.id) to avoid hiding it in the slot immediately, or do?
+                                                                    // Usually we want it visible while dragging until dropped.
+                                                                }}
+                                                                onClick={() => removePieceFromSlot(slotKey, word.id)}
+                                                            >
+                                                                <PuzzleTestPiece
+                                                                    label={piece.text}
+                                                                    type={type}
+                                                                    colorClass={piece.color}
+                                                                    scale={1}
+                                                                    dynamicWidth={piece.width}
+                                                                    showSeamLine={true}
+                                                                    fontFamily={settings.fontFamily}
+                                                                />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
 
-                                                    {/* Empty Slot Ghost */}
-                                                    {!piece && (
-                                                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                                                            <PuzzleTestPiece
-                                                                label=""
-                                                                type={type}
-                                                                isGhost={true}
-                                                                scale={gameState.pieceScale}
-                                                                fontFamily={settings.fontFamily}
-                                                            />
-                                                        </div>
-                                                    )}
-
-                                                    {/* Filled Slot */}
-                                                    {piece && (
-                                                        <div
-                                                            className="absolute inset-0 flex items-center justify-center cursor-pointer hover:scale-105 transition-transform"
-                                                            onClick={() => removePieceFromSlot(slotKey)}
-                                                        >
-                                                            <PuzzleTestPiece
-                                                                id={piece.id}
-                                                                label={piece.text}
-                                                                type={type}
-                                                                colorClass={piece.color}
-                                                                scale={gameState.pieceScale}
-                                                                dynamicWidth={piece.width}
-                                                                showSeamLine={true}
-                                                                fontFamily={settings.fontFamily}
-                                                            />
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
+                                        {/* Success Checkmark */}
+                                        <div className={`
+                                            absolute left-full transition-all duration-500 ease-out z-30 pointer-events-none flex items-center
+                                            ${isComplete ? 'scale-125 opacity-100' : 'scale-0 opacity-0'}
+                                        `} style={{ top: '50%', transform: 'translateY(-50%)', paddingLeft: '160px' }}>
+                                            <CheckCircle2 className="text-green-500 drop-shadow-2xl" style={{ width: `${60 * gameState.pieceScale}px`, height: `${60 * gameState.pieceScale}px` }} />
+                                        </div>
                                     </div>
+
+                                    {/* Audio Button per word */}
+                                    {/* Audio Button per word - consistent gap with Silbenbau 1 */}
+                                    <button
+                                        onClick={() => speak(word.word)}
+                                        className="w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg transition-all shrink-0 ring-4 ring-white/50 translate-y-[-4px] hover:scale-105 active:scale-95 ml-6"
+                                        title="Anhören"
+                                    >
+                                        <Icons.Volume2 size={24} />
+                                    </button>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
+                        {/* Spacer for scrolling */}
+                        <div className="h-20 w-full" />
                     </div>
                 </div>
 
-                {/* RIGHT ZONE - Vertical Scroll Stacking */}
-                <div className="w-1/5 bg-slate-100/50 border-l border-slate-200 flex flex-col overflow-hidden shrink-0">
-                    <div className="bg-slate-100/90 py-2 w-full text-center text-xs font-bold text-slate-400 uppercase tracking-widest pointer-events-none z-10 border-b border-slate-200 shrink-0">Ende</div>
-                    <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-8 no-scrollbar">
+                {/* RIGHT ZONE - Endstücke */}
+                <div className="w-[180px] bg-slate-100/50 border-l border-slate-200 flex flex-col shrink-0"
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                        e.preventDefault();
+                        const pid = e.dataTransfer.getData("application/puzzle-piece-id");
+                        if (pid) handleReturnToPool(pid);
+                    }}
+                >
+                    <div className="bg-slate-200/50 py-1 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ende</div>
+                    <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center gap-4">
                         {getVisiblePieces('right').map(p => {
                             const isHighlighted = highlightedWordId === p.wordId;
                             return (
                                 <div key={p.id}
-                                    className={`flex justify-center transition-transform cursor-grab active:cursor-grabbing transform-gpu
-                                        ${isHighlighted ? 'scale-125 z-50 drop-shadow-xl' : 'hover:scale-105 active:scale-95'}
+                                    className={`cursor-grab active:cursor-grabbing transition-transform
+                                        ${isHighlighted ? 'scale-110 drop-shadow-xl' : 'hover:scale-105'}
                                     `}
-                                    style={{ transform: `rotate(${p.rotation}deg) scale(${gameState.pieceScale})` }}>
+                                    draggable onDragStart={(e) => { e.dataTransfer.setData("application/puzzle-piece-id", p.id); setIsDragging(p.id); }}
+                                    onDragEnd={() => setIsDragging(null)}>
                                     <PuzzleTestPiece
-                                        id={p.id}
                                         label={p.text}
                                         type="right"
                                         colorClass={p.color}
                                         dynamicWidth={p.width}
-                                        onDragStart={(e) => { e.dataTransfer.setData("application/puzzle-piece-id", p.id); setIsDragging(p.id); }}
-                                        onDragEnd={() => setIsDragging(null)}
+                                        scale={gameState.pieceScale * 0.8}
                                         fontFamily={settings.fontFamily}
                                     />
                                 </div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Icons } from './Icons';
+import { Minus, Plus } from 'lucide-react';
 import { EmptyStateMessage } from './EmptyStateMessage';
 import { speak } from '../utils/speech';
 
@@ -14,7 +15,17 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
     const [solvedWordIds, setSolvedWordIds] = useState(new Set());
     const [isDragging, setIsDragging] = useState(false);
     const [selectedLetter, setSelectedLetter] = useState(null); // For Click-to-Place
+    const [wordsPerStage, setWordsPerStage] = useState(5);
     const dragItemRef = useRef(null);
+
+    // Helper component for horizontal lines in the stepper control
+    const HorizontalLines = ({ count }) => (
+        <div className="flex flex-col gap-[2px] w-4 items-center justify-center">
+            {Array.from({ length: count }).map((_, i) => (
+                <div key={i} className="h-[2px] w-full bg-slate-300 rounded-full" />
+            ))}
+        </div>
+    );
 
     // iPad Fix: Prevent touch scrolling during drag
     useEffect(() => {
@@ -41,7 +52,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
         if (!words || words.length === 0) return;
 
         const partition = (n) => {
-            const size = 5;
+            const size = wordsPerStage;
             const result = [];
             for (let i = 0; i < n; i += size) {
                 result.push(Math.min(size, n - i));
@@ -58,7 +69,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
         });
         setGroups(newGroups);
         setCurrentGroupIdx(0);
-    }, [words]);
+    }, [words, wordsPerStage]);
 
     // Helper to check for clusters and vowels
     const isVowel = (char) => /[aeiouyäöüAEIOUYÄÖÜ]/.test(char);
@@ -139,10 +150,85 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
             const syllables = w.syllables.map((syl, sIdx) => {
                 const chunks = getWordChunks(syl, mode, sIdx === 0, sIdx === 0).map((chunk, cIdx) => ({
                     ...chunk,
-                    id: `${w.id}_s${sIdx}_c${cIdx}`
+                    id: `${w.id}_s${sIdx}_c${cIdx}`,
+                    syllableIdx: sIdx
                 }));
                 return { text: syl, chunks };
             });
+
+            // Refined Consonants Mode logic: for "long" words (2+ syllables), exactly 2 gaps, different syllables, not adjacent.
+            if (mode === 'consonants' && !isInitialSound && syllables.length >= 2) {
+                const allPotentialTargets = [];
+                syllables.forEach((syl, sIdx) => {
+                    syl.chunks.forEach((chunk, cIdx) => {
+                        if (chunk.isTarget) {
+                            allPotentialTargets.push({ ...chunk, sIdx, cIdx });
+                        }
+                    });
+                });
+
+                let selectedIds = [];
+                if (allPotentialTargets.length >= 2) {
+                    const candidates = [];
+                    const flatChunks = syllables.flatMap(s => s.chunks);
+
+                    for (let i = 0; i < allPotentialTargets.length; i++) {
+                        for (let j = i + 1; j < allPotentialTargets.length; j++) {
+                            const t1 = allPotentialTargets[i];
+                            const t2 = allPotentialTargets[j];
+
+                            if (t1.sIdx === t2.sIdx) continue;
+
+                            const idx1 = flatChunks.findIndex(c => c.id === t1.id);
+                            const idx2 = flatChunks.findIndex(c => c.id === t2.id);
+
+                            if (Math.abs(idx1 - idx2) > 1) {
+                                candidates.push([t1.id, t2.id]);
+                            }
+                        }
+                    }
+
+                    if (candidates.length > 0) {
+                        selectedIds = candidates[Math.floor(Math.random() * candidates.length)];
+                    } else if (allPotentialTargets.length > 0) {
+                        selectedIds = [allPotentialTargets[Math.floor(Math.random() * allPotentialTargets.length)].id];
+                    }
+                } else if (allPotentialTargets.length > 0) {
+                    selectedIds = [allPotentialTargets[0].id];
+                }
+
+                syllables.forEach(syl => {
+                    syl.chunks.forEach(chunk => {
+                        if (chunk.isTarget) {
+                            chunk.isTarget = selectedIds.includes(chunk.id);
+                        }
+                    });
+                });
+            } else if (mode === 'consonants' && !isInitialSound && syllables.length === 1) {
+                const targets = syllables[0].chunks.filter(c => c.isTarget);
+                if (targets.length > 1) {
+                    const pickedId = targets[Math.floor(Math.random() * targets.length)].id;
+                    syllables[0].chunks.forEach(chunk => {
+                        if (chunk.isTarget) chunk.isTarget = (chunk.id === pickedId);
+                    });
+                }
+            }
+
+            // Fallback: Ensure at least one gap per word
+            const hasAnyGap = syllables.some(s => s.chunks.some(c => c.isTarget));
+            if (!hasAnyGap) {
+                // Try to find any consonant (even if protected)
+                const allChunks = syllables.flatMap(s => s.chunks);
+                const anyConsonant = allChunks.find(c => [...c.text.toLowerCase()].some(ch => /[a-zäöü]/.test(ch) && !isVowel(ch)));
+                if (anyConsonant) {
+                    anyConsonant.isTarget = true;
+                } else {
+                    // Last resort: pick any letter (vowel)
+                    const anyLetter = allChunks.find(c => /[a-zA-ZäöüÄÖÜ]/.test(c.text));
+                    if (anyLetter) anyLetter.isTarget = true;
+                }
+            }
+
             return { ...w, syllables };
         });
     }, [groups, currentGroupIdx, mode, isInitialSound]);
@@ -279,6 +365,11 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
         }
     };
 
+    const handleWordsCountChange = (delta) => {
+        const next = Math.max(1, Math.min(6, wordsPerStage + delta));
+        setWordsPerStage(next);
+    };
+
     // Progress Tracking
     useEffect(() => {
         if (currentWords.length === 0) return;
@@ -371,6 +462,24 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                             </button>
                         </div>
                     )}
+
+                    {/* Words Count Control */}
+                    <div className="flex items-center gap-2 bg-slate-50 px-2 py-1 rounded-2xl border border-slate-200 hidden lg:flex">
+                        <HorizontalLines count={2} />
+                        <button onClick={() => handleWordsCountChange(-1)} disabled={wordsPerStage <= 1} className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 active:scale-90 transition-all shadow-sm disabled:opacity-20 ml-1">
+                            <Minus className="w-4 h-4" />
+                        </button>
+                        <div className="flex flex-col items-center min-w-[24px]">
+                            <span className="text-xl font-black text-slate-800 leading-none">
+                                {wordsPerStage}
+                            </span>
+                        </div>
+                        <button onClick={() => handleWordsCountChange(1)} disabled={wordsPerStage >= 6} className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 active:scale-90 transition-all shadow-sm disabled:opacity-20 mr-1">
+                            <Plus className="w-4 h-4" />
+                        </button>
+                        <HorizontalLines count={5} />
+                    </div>
+
                     <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg">
                         <span className="text-xs font-bold text-slate-500">A</span>
                         <input type="range" min="24" max="100" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-32 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer" />
@@ -390,85 +499,89 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                 </div>
             </div>
 
-            <div className="flex-1 flex overflow-hidden">
-                <div className="w-[70%] p-8 overflow-y-auto custom-scroll flex flex-col items-center justify-center gap-12 bg-white/50">
+            <div className={`flex-1 flex overflow-hidden ${isInitialSound ? 'flex-row-reverse' : ''}`}>
+                <div className="flex-1 p-8 overflow-y-auto custom-scroll flex flex-col items-center justify-center gap-12 bg-white/50">
                     <div className="w-full max-w-4xl space-y-8">
                         {currentWords.map((word) => {
                             const isSolved = solvedWordIds.has(word.id);
                             return (
-                                <div key={word.id} className={`p-8 bg-white rounded-3xl border shadow-sm flex flex-wrap justify-center gap-x-1 gap-y-4 transition-all duration-500 transform relative ${isSolved ? 'border-green-300 bg-green-50/50 scale-[1.01] shadow-md' : 'border-slate-100 hover:border-slate-200'}`}>
+                                <div key={word.id} className={`p-8 bg-white rounded-3xl border shadow-sm flex flex-wrap justify-center items-center gap-x-4 gap-y-4 transition-all duration-500 transform relative ${isSolved ? 'border-green-300 bg-green-50/50 scale-[1.01] shadow-md' : 'border-slate-100 hover:border-slate-200'}`}>
+                                    <div className="flex flex-wrap justify-center gap-x-1 gap-y-4">
+                                        {word.syllables.map((syl, sIdx) => {
+                                            const isEven = sIdx % 2 === 0;
+                                            let styleClass = "";
+                                            let textClass = "";
+                                            if (settings.visualType === 'block') {
+                                                styleClass = isEven ? 'bg-blue-100 border-blue-200/50' : 'bg-blue-200 border-blue-300/50';
+                                                styleClass += " border rounded px-1.5 py-0.5 mx-[1px] shadow-sm";
+                                            } else if (settings.visualType === 'black_gray') {
+                                                textClass = isEven ? "text-slate-800" : "text-slate-400";
+                                            } else {
+                                                textClass = isEven ? "text-blue-700" : "text-red-600";
+                                            }
+
+                                            return (
+                                                <div key={sIdx} className={`relative flex items-center ${styleClass}`} style={{ fontSize: `${settings.fontSize}px`, fontFamily: settings.fontFamily }}>
+                                                    {syl.chunks.map((chunk) => {
+                                                        const isVowelChunk = [...chunk.text.toLowerCase()].some(isVowel);
+                                                        const showYellowStatic = mode === 'consonants' && isVowelChunk;
+
+                                                        if (!chunk.isTarget) return (
+                                                            <span
+                                                                key={chunk.id}
+                                                                className={`font-bold ${textClass} ${showYellowStatic ? 'bg-yellow-100 shadow-border-yellow text-slate-900 mx-px px-0.5 rounded-sm' : ''}`}
+                                                            >
+                                                                {chunk.text}
+                                                            </span>
+                                                        );
+                                                        const placed = placedLetters[chunk.id];
+                                                        // showYellowStyle logic:
+                                                        // 1. In vowels mode: only when placed
+                                                        // 2. In consonants mode: always for vowels as hints
+                                                        const showYellowStyle = (mode === 'vowels' && placed) || (mode === 'consonants' && isVowelChunk);
+
+                                                        return (
+                                                            <div
+                                                                key={chunk.id}
+                                                                onDragOver={(e) => e.preventDefault()}
+                                                                onDragEnter={(e) => { e.preventDefault(); e.currentTarget.classList.add('active-target'); }}
+                                                                onDragLeave={(e) => { e.currentTarget.classList.remove('active-target'); }}
+                                                                onDrop={(e) => { e.currentTarget.classList.remove('active-target'); handleDrop(e, chunk.id, chunk.text); }}
+                                                                onClick={() => handleGapClick(chunk.id, chunk.text)}
+                                                                className={`relative flex items-center justify-center transition-all border-b-4 mx-2 rounded-t-xl gap-zone cursor-pointer ${placed ? 'border-transparent' : 'border-slate-400 bg-slate-50/50 hover:bg-slate-100 hover:border-slate-500'} ${selectedLetter ? 'ring-2 ring-blue-300 ring-offset-2 animate-pulse' : ''}`}
+                                                                style={{ minWidth: `${Math.max(1.5, chunk.text.length * 1.2)}em`, height: '2.2em' }}
+                                                            >
+                                                                {placed ? (
+                                                                    <div
+                                                                        draggable
+                                                                        onDragStart={(e) => handleDragStart(e, placed, 'gap', chunk.id)}
+                                                                        onDragEnd={handleDragEnd}
+                                                                        className={`font-bold transition-all px-1 rounded-sm cursor-grab active:cursor-grabbing animate-[popIn_0.3s_ease-out] touch-action-none touch-manipulation select-none ${showYellowStyle ? 'bg-yellow-100 shadow-border-yellow text-slate-900 mx-px' : 'text-blue-600'}`}
+                                                                    >
+                                                                        {placed.text}
+                                                                    </div>
+                                                                ) : (
+                                                                    <span className="opacity-0">{chunk.text}</span>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                    {settings.visualType === 'arc' && (
+                                                        <svg className="absolute -bottom-1 left-0 w-full h-2 pointer-events-none" viewBox="0 0 100 20" preserveAspectRatio="none"><path d="M 5 5 Q 50 20 95 5" fill="none" stroke={isEven ? '#2563eb' : '#dc2626'} strokeWidth="10" strokeLinecap="round" /></svg>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+
+                                    {/* Audio Button per word */}
                                     <button
                                         onClick={() => speakWord(word.word)}
-                                        className="absolute left-4 top-4 w-12 h-12 bg-blue-500 hover:bg-blue-600 text-white rounded-xl shadow-lg hover:scale-105 active:scale-95 transition-all flex items-center justify-center shrink-0 ring-4 ring-white/50 z-10"
-                                        title="Wort anhören"
+                                        className="w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg transition-all shrink-0 ring-4 ring-white/50 hover:scale-105 active:scale-95 ml-4"
+                                        title="Anhören"
                                     >
                                         <Icons.Volume2 size={24} />
                                     </button>
-                                    {word.syllables.map((syl, sIdx) => {
-                                        const isEven = sIdx % 2 === 0;
-                                        let styleClass = "";
-                                        let textClass = "";
-                                        if (settings.visualType === 'block') {
-                                            styleClass = isEven ? 'bg-blue-100 border-blue-200/50' : 'bg-blue-200 border-blue-300/50';
-                                            styleClass += " border rounded px-1.5 py-0.5 mx-[1px] shadow-sm";
-                                        } else if (settings.visualType === 'black_gray') {
-                                            textClass = isEven ? "text-slate-800" : "text-slate-400";
-                                        } else {
-                                            textClass = isEven ? "text-blue-700" : "text-red-600";
-                                        }
-
-                                        return (
-                                            <div key={sIdx} className={`relative flex items-center ${styleClass}`} style={{ fontSize: `${settings.fontSize}px`, fontFamily: settings.fontFamily }}>
-                                                {syl.chunks.map((chunk) => {
-                                                    const isVowelChunk = [...chunk.text.toLowerCase()].some(isVowel);
-                                                    const showYellowStatic = mode === 'consonants' && isVowelChunk;
-
-                                                    if (!chunk.isTarget) return (
-                                                        <span
-                                                            key={chunk.id}
-                                                            className={`font-bold ${textClass} ${showYellowStatic ? 'bg-yellow-100 shadow-border-yellow text-slate-900 mx-px px-0.5 rounded-sm' : ''}`}
-                                                        >
-                                                            {chunk.text}
-                                                        </span>
-                                                    );
-                                                    const placed = placedLetters[chunk.id];
-                                                    // showYellowStyle logic:
-                                                    // 1. In vowels mode: only when placed
-                                                    // 2. In consonants mode: always for vowels as hints
-                                                    const showYellowStyle = (mode === 'vowels' && placed) || (mode === 'consonants' && isVowelChunk);
-
-                                                    return (
-                                                        <div
-                                                            key={chunk.id}
-                                                            onDragOver={(e) => e.preventDefault()}
-                                                            onDragEnter={(e) => { e.preventDefault(); e.currentTarget.classList.add('active-target'); }}
-                                                            onDragLeave={(e) => { e.currentTarget.classList.remove('active-target'); }}
-                                                            onDrop={(e) => { e.currentTarget.classList.remove('active-target'); handleDrop(e, chunk.id, chunk.text); }}
-                                                            onClick={() => handleGapClick(chunk.id, chunk.text)}
-                                                            className={`relative flex items-center justify-center transition-all border-b-4 mx-2 rounded-t-xl gap-zone cursor-pointer ${placed ? 'border-transparent' : 'border-slate-300 bg-slate-50/50 hover:bg-slate-100 hover:border-slate-400'} ${selectedLetter ? 'ring-2 ring-blue-300 ring-offset-2 animate-pulse' : ''}`}
-                                                            style={{ minWidth: `${Math.max(1.5, chunk.text.length * 1.2)}em`, height: '2.2em' }}
-                                                        >
-                                                            {placed ? (
-                                                                <div
-                                                                    draggable
-                                                                    onDragStart={(e) => handleDragStart(e, placed, 'gap', chunk.id)}
-                                                                    onDragEnd={handleDragEnd}
-                                                                    className={`font-bold transition-all px-1 rounded-sm cursor-grab active:cursor-grabbing animate-[popIn_0.3s_ease-out] touch-action-none touch-manipulation select-none ${showYellowStyle ? 'bg-yellow-100 shadow-border-yellow text-slate-900 mx-px' : 'text-blue-600'}`}
-                                                                >
-                                                                    {placed.text}
-                                                                </div>
-                                                            ) : (
-                                                                <span className="opacity-0">{chunk.text}</span>
-                                                            )}
-                                                        </div>
-                                                    );
-                                                })}
-                                                {settings.visualType === 'arc' && (
-                                                    <svg className="absolute -bottom-1 left-0 w-full h-2 pointer-events-none" viewBox="0 0 100 20" preserveAspectRatio="none"><path d="M 5 5 Q 50 20 95 5" fill="none" stroke={isEven ? '#2563eb' : '#dc2626'} strokeWidth="10" strokeLinecap="round" /></svg>
-                                                )}
-                                            </div>
-                                        );
-                                    })}
                                 </div>
                             );
                         })}
@@ -484,11 +597,11 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                     )}
                 </div>
 
-                <div className="w-[30%] bg-slate-200/50 border-l border-slate-300 flex flex-col" onDragOver={(e) => e.preventDefault()} onDrop={handlePoolDrop}>
+                <div className={`${isInitialSound ? 'w-[200px]' : 'w-[30%]'} bg-slate-200/50 border-l border-r border-slate-300 flex flex-col shadow-inner`} onDragOver={(e) => e.preventDefault()} onDrop={handlePoolDrop}>
                     <div className="p-4 bg-white/80 border-b border-slate-200 shadow-sm space-y-3">
                         <div className="flex items-center justify-between">
-                            <span className="font-bold text-slate-600 flex items-center gap-2 uppercase tracking-wider text-xs">Buchstaben</span>
-                            <span className="text-xs bg-blue-100 text-blue-700 font-bold px-2 py-1 rounded-full">{poolLetters.length}</span>
+                            <span className="font-bold text-slate-600 flex items-center gap-2 uppercase tracking-wider text-[10px]">Pool</span>
+                            <span className="text-[10px] bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded-full">{poolLetters.length}</span>
                         </div>
 
                     </div>

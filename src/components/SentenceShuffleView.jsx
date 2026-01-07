@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Icons } from './Icons';
+import { ProgressBar } from './ProgressBar';
 import { EmptyStateMessage } from './EmptyStateMessage';
 
 // Pastel colors for words
@@ -215,9 +216,21 @@ export const SentenceShuffleView = ({ text, settings, setSettings, onClose, titl
                     <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
                         <Icons.Shuffle className="text-blue-600" /> {title || "Schüttelsätze"}
                     </h2>
-                    <span className="bg-slate-100 px-3 py-1 rounded-full text-slate-600 font-bold text-sm">
-                        {currentIndex + 1} / {sentences.length}
-                    </span>
+                    <div className="flex items-center gap-2">
+                        {sentences.map((_, idx) => (
+                            <div
+                                key={idx}
+                                className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-all ${completedSentences.has(idx)
+                                    ? 'bg-green-500 text-white'
+                                    : idx === currentIndex
+                                        ? 'bg-blue-600 text-white scale-110 shadow-md'
+                                        : 'bg-gray-100 text-gray-300'
+                                    }`}
+                            >
+                                {completedSentences.has(idx) ? <Icons.Check size={16} /> : idx + 1}
+                            </div>
+                        ))}
+                    </div>
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -242,34 +255,11 @@ export const SentenceShuffleView = ({ text, settings, setSettings, onClose, titl
                 </div>
             </div>
 
-            {/* Progress Bar */}
-            <div className="px-6 py-2 bg-white border-b border-slate-200">
-                <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                    <div
-                        className="bg-gradient-to-r from-blue-500 to-cyan-500 h-full rounded-full transition-all duration-500"
-                        style={{ width: `${progress}%` }}
-                    ></div>
-                </div>
-            </div>
+            <ProgressBar progress={progress} />
 
             {/* Main Content */}
             <div className="flex-1 flex flex-col items-center justify-center p-6 overflow-y-auto custom-scroll">
-                {/* Sentence indicator badges */}
-                <div className="flex flex-wrap gap-2 mb-8 justify-center">
-                    {sentences.map((_, idx) => (
-                        <div
-                            key={idx}
-                            className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-all ${completedSentences.has(idx)
-                                ? 'bg-green-500 text-white'
-                                : idx === currentIndex
-                                    ? 'bg-blue-500 text-white scale-110 shadow-lg'
-                                    : 'bg-slate-200 text-slate-500'
-                                }`}
-                        >
-                            {completedSentences.has(idx) ? <Icons.Check size={16} /> : idx + 1}
-                        </div>
-                    ))}
-                </div>
+
 
                 {/* Word Cards Container */}
                 <div

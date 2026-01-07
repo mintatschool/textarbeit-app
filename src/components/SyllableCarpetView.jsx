@@ -19,7 +19,7 @@ export const SyllableCarpetView = ({ words, settings, setSettings, onClose, titl
     const [timer, setTimer] = useState(0);
     const [timerActive, setTimerActive] = useState(false);
 
-    const uniqueSyllables = useMemo(() => { const set = new Set(); words.forEach(w => { if (w.syllables) w.syllables.forEach(s => set.add(s)); }); return Array.from(set).sort((a, b) => a.localeCompare(b, 'de')); }, [JSON.stringify(words)]);
+    const uniqueSyllables = useMemo(() => { const set = new Set(); words.forEach(w => { if (w.syllables) w.syllables.forEach(s => set.add(s.toLowerCase().trim())); }); return Array.from(set).sort((a, b) => a.localeCompare(b, 'de')); }, [JSON.stringify(words)]);
     useEffect(() => { setShuffledSyllables(uniqueSyllables); }, [uniqueSyllables]);
     useEffect(() => { let interval; if (timerActive) { interval = setInterval(() => setTimer(t => t + 1), 1000); } return () => clearInterval(interval); }, [timerActive]);
 
@@ -81,10 +81,10 @@ export const SyllableCarpetView = ({ words, settings, setSettings, onClose, titl
                     {isGameMode && (
                         <button
                             onClick={() => targetSyllable && speak(targetSyllable)}
-                            className="p-2.5 bg-blue-50 border-2 border-blue-200 text-blue-600 rounded-xl hover:bg-blue-100 transition shadow-sm font-bold flex items-center gap-2 min-touch-target"
+                            className="w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl flex items-center justify-center shadow-lg transition-all hover:scale-105 active:scale-95 border-b-4 border-blue-800 active:border-b-0 active:translate-y-1"
                             title="Nochmal hören"
                         >
-                            <Icons.RotateCcw size={22} />
+                            <Icons.Volume2 size={32} />
                         </button>
                     )}
                     <button

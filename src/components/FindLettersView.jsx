@@ -140,16 +140,27 @@ export const FindLettersView = ({ text, settings, setSettings, onClose, title })
         const lettersList = ALL_LETTERS.split("");
 
         lettersList.forEach(l => {
-            const upper = l.toUpperCase();
-            const countUpper = frequencyCounts[upper] || 0;
-            const countLower = frequencyCounts[l] || 0;
+            // ß has no uppercase variant in common usage, show only lowercase
+            if (l === 'ß') {
+                const countLower = frequencyCounts[l] || 0;
+                targets.push({
+                    label: 'ß',
+                    value: l,
+                    type: 'single',
+                    counts: { upper: 0, lower: countLower }
+                });
+            } else {
+                const upper = l.toUpperCase();
+                const countUpper = frequencyCounts[upper] || 0;
+                const countLower = frequencyCounts[l] || 0;
 
-            targets.push({
-                label: `${upper} ${l}`,
-                value: l,
-                type: 'single',
-                counts: { upper: countUpper, lower: countLower }
-            });
+                targets.push({
+                    label: `${upper} ${l}`,
+                    value: l,
+                    type: 'single',
+                    counts: { upper: countUpper, lower: countLower }
+                });
+            }
         });
 
         return targets.sort((a, b) => a.label.localeCompare(b.label, 'de'));
@@ -420,27 +431,39 @@ export const FindLettersView = ({ text, settings, setSettings, onClose, title })
                         <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Auswahl</span>
                         <button onClick={() => setShowSelection(false)} className="bg-slate-200 text-slate-600 p-2 rounded-lg hover:bg-slate-300"><Icons.X size={16} /></button>
                     </div>
-                    <div className="flex-1 overflow-y-auto custom-scroll p-2 flex flex-col gap-2">
-                        {availableTargets.map((target) => {
-                            const totalCount = (target.counts?.upper || 0) + (target.counts?.lower || 0);
-                            const isEmpty = totalCount === 0;
+                    <div className="flex-1 overflow-y-auto custom-scroll p-2 flex flex-col gap-1">
+                        {(() => {
+                            const maxCount = Math.max(...availableTargets.map(t => (t.counts?.upper || 0) + (t.counts?.lower || 0)), 1);
 
-                            return (
-                                <button
-                                    key={target.label}
-                                    onClick={() => { setSelectedTarget(target); setShowSelection(false); }}
-                                    className={`w-full p-4 text-left font-bold rounded-xl transition-all border-2 flex items-center justify-between group ${selectedTarget?.label === target.label ? 'border-blue-600 bg-blue-50 text-blue-800' : isEmpty ? 'border-transparent text-slate-300' : 'border-transparent hover:bg-slate-100 text-slate-700'}`}
-                                >
-                                    <div className="flex items-baseline gap-3">
-                                        <span className="text-2xl" style={{ fontFamily: settings.fontFamily }}>{target.label}</span>
-                                        <div className={`text-xl font-medium ${isEmpty ? 'text-slate-300' : 'text-slate-400'}`} style={{ fontFamily: settings.fontFamily }}>
-                                            ({target.counts.upper} / {target.counts.lower})
+                            return availableTargets.map((target) => {
+                                const totalCount = (target.counts?.upper || 0) + (target.counts?.lower || 0);
+                                const isEmpty = totalCount === 0;
+
+                                // Frequency-based scaling
+                                // Base size: 1.125rem (18px)
+                                // Max bonus: 1.375rem (22px)
+                                // Total range: 1.125rem to 2.5rem
+                                const scale = totalCount / maxCount;
+                                const labelSize = 1.125 + (scale * 1.375);
+                                const countSize = 0.875 + (scale * 0.375);
+
+                                return (
+                                    <button
+                                        key={target.label}
+                                        onClick={() => { setSelectedTarget(target); setShowSelection(false); }}
+                                        className={`w-full px-4 py-3 text-left font-bold rounded-xl transition-all border-2 flex items-center justify-between group ${selectedTarget?.label === target.label ? 'border-blue-600 bg-blue-50 text-blue-800' : isEmpty ? 'border-transparent text-slate-400' : 'border-transparent hover:bg-slate-100 text-slate-700'}`}
+                                    >
+                                        <div className="flex items-baseline gap-2">
+                                            <span style={{ fontFamily: settings.fontFamily, fontSize: `${labelSize}rem`, lineHeight: 1.2 }}>{target.label}</span>
+                                            <div className={`font-medium ${isEmpty ? 'text-slate-400' : 'text-slate-400'}`} style={{ fontFamily: settings.fontFamily, fontSize: `${countSize}rem` }}>
+                                                ({target.counts.upper}/{target.counts.lower})
+                                            </div>
                                         </div>
-                                    </div>
-                                    {selectedTarget?.label === target.label && <Icons.Check size={20} className="text-blue-600" />}
-                                </button>
-                            );
-                        })}
+                                        {selectedTarget?.label === target.label && <Icons.Check size={20} className="text-blue-600 shrink-0" />}
+                                    </button>
+                                );
+                            });
+                        })()}
                     </div>
                 </div>
 
@@ -454,7 +477,7 @@ export const FindLettersView = ({ text, settings, setSettings, onClose, title })
                             {/* Selected Indicator - Sticky Left Column */}
                             <div className="sticky top-0 shrink-0 z-0 select-none">
                                 <div
-                                    className={`text-[8.5rem] md:text-[13rem] font-black transition-all duration-300 leading-none flex items-baseline ${flashMode === 'wrong' ? 'animate-shake' : ''
+                                    className={`text-[7rem] md:text-[10rem] font-black transition-all duration-300 leading-none flex items-baseline ${flashMode === 'wrong' ? 'animate-shake' : ''
                                         }`}
                                     style={{ fontFamily: settings.fontFamily }}
                                 >
@@ -467,7 +490,7 @@ export const FindLettersView = ({ text, settings, setSettings, onClose, title })
                                         if (parts.length === 1) {
                                             return (
                                                 <span className={`transition-all duration-300 ${flashMode === 'correct-lower' || flashMode === 'correct-upper' ? 'text-green-500 scale-105' :
-                                                        flashMode === 'wrong' ? 'text-red-500' : 'text-slate-600'
+                                                    flashMode === 'wrong' ? 'text-red-500' : 'text-slate-600'
                                                     }`}>
                                                     {parts[0]}
                                                 </span>
@@ -478,13 +501,13 @@ export const FindLettersView = ({ text, settings, setSettings, onClose, title })
                                         return (
                                             <>
                                                 <span className={`transition-all duration-300 ${flashMode === 'correct-upper' ? 'text-green-500 scale-105' :
-                                                        flashMode === 'wrong' ? 'text-red-500' : 'text-slate-600'
+                                                    flashMode === 'wrong' ? 'text-red-500' : 'text-slate-600'
                                                     }`}>
                                                     {parts[0]}
                                                 </span>
                                                 <span className="whitespace-pre"> </span>
                                                 <span className={`transition-all duration-300 ${flashMode === 'correct-lower' ? 'text-green-500 scale-105' :
-                                                        flashMode === 'wrong' ? 'text-red-500' : 'text-slate-600'
+                                                    flashMode === 'wrong' ? 'text-red-500' : 'text-slate-600'
                                                     }`}>
                                                     {parts[1]}
                                                 </span>

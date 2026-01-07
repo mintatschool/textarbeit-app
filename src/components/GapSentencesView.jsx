@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Icons } from './Icons';
+import { Minus, Plus } from 'lucide-react';
 import { EmptyStateMessage } from './EmptyStateMessage';
 
 // Pastel colors for words
@@ -23,7 +24,17 @@ const WORD_COLORS = [
     'bg-rose-100 text-rose-700'
 ];
 
-export const GapSentencesView = ({ text, settings, setSettings, onClose, title }) => {
+const HorizontalLines = ({ count }) => (
+    <div className="flex flex-col gap-[2px] w-4 items-center justify-center">
+        {Array.from({ length: count }).map((_, i) => (
+            <div key={i} className="h-[2px] w-full bg-slate-300 rounded-full" />
+        ))}
+    </div>
+);
+
+export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordColors = {}, settings, setSettings, onClose, title }) => {
+    const [mode, setMode] = useState('random'); // 'random' or 'marked'
+    const [itemsPerStage, setItemsPerStage] = useState(5);
     const [currentGroupIdx, setCurrentGroupIdx] = useState(0);
     const [groups, setGroups] = useState([]);
     const [placedWords, setPlacedWords] = useState({}); // { gapId: wordObj }
@@ -48,66 +59,97 @@ export const GapSentencesView = ({ text, settings, setSettings, onClose, title }
 
     // Sentence Splitting Logic
     const splitSentences = (txt) => {
-        return txt.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 5);
+        const sentences = txt.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 5);
+        let lastIndex = 0;
+        return sentences.map(s => {
+            const index = txt.indexOf(s, lastIndex);
+            lastIndex = index + s.length;
+            return { text: s, startIndex: index };
+        });
     };
 
     // Word Logic: find 3 longest words, pick one
-    const processSentence = (sentence, sIdx) => {
-        const wordsInSentence = sentence.split(/\s+/).filter(w => w.length > 0);
+    const processSentence = (sentenceObj, sIdx) => {
+        const { text: sentence, startIndex: sentenceOffset } = sentenceObj;
 
-        // Clean words for length calculation (strip punctuation)
-        const cleanWords = wordsInSentence.map((w, i) => ({
-            text: w,
-            clean: w.replace(/[^\w\u00C0-\u017F]/g, ''),
-            index: i
-        })).filter(w => w.clean.length > 2);
-
-        if (cleanWords.length < 3) return null;
-
-        // Scoring System
-        const calculateScore = (wInfo, isStart) => {
-            let score = 0;
-            const { text, clean } = wInfo;
-            if (clean.length > 5) score += 5;
-            if (text[0] === text[0].toLowerCase() && clean.endsWith('en')) score += 10;
-            if (text[0] === text[0].toUpperCase() && !isStart) score += 12;
-            const articles = ['der', 'die', 'das', 'dem', 'den', 'des', 'ein', 'eine', 'einer', 'einem', 'einen', 'eines', 'im', 'am', 'ins'];
-            if (articles.includes(clean.toLowerCase())) score -= 20;
-            return score;
-        };
-
-        const scoredWords = cleanWords.map(w => ({ ...w, score: calculateScore(w, w.index === 0) }));
-        const maxScore = Math.max(...scoredWords.map(w => w.score));
-        const candidates = scoredWords.filter(w => w.score === maxScore);
-        const target = candidates[Math.floor(Math.random() * candidates.length)];
-
-        const parts = [];
-        wordsInSentence.forEach((w, i) => {
-            if (i === target.index) {
-                const trailingPunctuation = w.match(/[.,!?;:]+$/);
-                if (trailingPunctuation) {
-                    const cleanWord = w.substring(0, w.length - trailingPunctuation[0].length);
-                    parts.push({ type: 'gap', id: `gap_${sIdx}`, correctText: cleanWord, cleanText: target.clean });
-                    parts.push({ type: 'text', text: trailingPunctuation[0] });
-                } else {
-                    parts.push({ type: 'gap', id: `gap_${sIdx}`, correctText: w, cleanText: target.clean });
-                }
-            } else {
-                parts.push({ type: 'text', text: w });
+        const wordsInSentence = [];
+        let currentOffset = 0;
+        sentence.split(/(\s+)/).forEach(seg => {
+            if (seg.match(/^\s+$/)) {
+                currentOffset += seg.length;
+            } else if (seg.length > 0) {
+                wordsInSentence.push({
+                    text: seg,
+                    offset: currentOffset,
+                    globalIndex: sentenceOffset + currentOffset
+                });
+                currentOffset += seg.length;
             }
         });
 
-        const targetCleanWord = target.text.replace(/[.,!?;:]+$/, '');
+        const cleanWords = wordsInSentence.map((w, i) => {
+            const clean = w.text.replace(/[^\w\u00C0-\u017F]/g, '');
+            return {
+                ...w,
+                clean,
+                index: i,
+                isMarked: Array.from({ length: w.text.length }, (_, k) => w.globalIndex + k).some(idx => highlightedIndices.has(idx)) || !!wordColors[w.globalIndex]
+            };
+        }).filter(w => w.clean.length > 2);
+
+        if (cleanWords.length < 1) return null;
+
+        let targets = [];
+        if (mode === 'marked') {
+            targets = cleanWords.filter(w => w.isMarked);
+            if (targets.length === 0) return null;
+        } else {
+            // Scoring System
+            const calculateScore = (wInfo, isStart) => {
+                let score = 0;
+                const { text, clean } = wInfo;
+                if (clean.length > 5) score += 5;
+                if (text[0] === text[0].toLowerCase() && clean.endsWith('en')) score += 10;
+                if (text[0] === text[0].toUpperCase() && !isStart) score += 12;
+                const articles = ['der', 'die', 'das', 'dem', 'den', 'des', 'ein', 'eine', 'einer', 'einem', 'einen', 'eines', 'im', 'am', 'ins'];
+                if (articles.includes(clean.toLowerCase())) score -= 20;
+                return score;
+            };
+
+            const scoredWords = cleanWords.map(w => ({ ...w, score: calculateScore(w, w.index === 0) }));
+            const maxScore = Math.max(...scoredWords.map(w => w.score));
+            const candidates = scoredWords.filter(w => w.score === maxScore);
+            targets = [candidates[Math.floor(Math.random() * candidates.length)]];
+        }
+
+        const parts = [];
+        const targetIndices = new Set(targets.map(t => t.index));
+
+        wordsInSentence.forEach((w, i) => {
+            if (targetIndices.has(i)) {
+                const target = targets.find(t => t.index === i);
+                const trailingPunctuation = w.text.match(/[.,!?;:]+$/);
+                if (trailingPunctuation) {
+                    const cleanWord = w.text.substring(0, w.text.length - trailingPunctuation[0].length);
+                    parts.push({ type: 'gap', id: `gap_${sIdx}_${i}`, correctText: cleanWord, cleanText: target.clean });
+                    parts.push({ type: 'text', text: trailingPunctuation[0] });
+                } else {
+                    parts.push({ type: 'gap', id: `gap_${sIdx}_${i}`, correctText: w.text, cleanText: target.clean });
+                }
+            } else {
+                parts.push({ type: 'text', text: w.text });
+            }
+        });
 
         return {
             id: `s_${sIdx}`,
             parts,
-            target: {
-                ...target,
-                text: targetCleanWord, // Clean word for pool card
-                id: `gap_${sIdx}`,
-                color: WORD_COLORS[sIdx % WORD_COLORS.length]
-            }
+            targets: targets.map(t => ({
+                ...t,
+                text: t.text.replace(/[.,!?;:]+$/, ''), // Clean word for pool card
+                id: `gap_${sIdx}_${t.index}`,
+                color: WORD_COLORS[(sIdx + t.index) % WORD_COLORS.length]
+            }))
         };
     };
 
@@ -120,8 +162,9 @@ export const GapSentencesView = ({ text, settings, setSettings, onClose, title }
         if (processed.length === 0) return;
 
         const partition = (n) => {
-            if (n <= 5) return [n];
-            const size = n / Math.ceil(n / 5);
+            if (n <= itemsPerStage) return [n];
+            const count = Math.ceil(n / itemsPerStage);
+            const size = n / count;
             const sizes = [];
             let rem = n;
             while (rem > 0) {
@@ -141,15 +184,16 @@ export const GapSentencesView = ({ text, settings, setSettings, onClose, title }
         });
 
         setGroups(newGroups);
+        setGroups(newGroups);
         setCurrentGroupIdx(0);
-    }, [text]);
+    }, [text, mode, highlightedIndices, wordColors, itemsPerStage]);
 
     const currentGroup = useMemo(() => groups[currentGroupIdx] || [], [groups, currentGroupIdx]);
 
     // Pool Management
     useEffect(() => {
         if (currentGroup.length === 0) return;
-        const targets = currentGroup.map(s => ({ ...s.target, poolId: `pool_${s.target.id}` }));
+        const targets = currentGroup.flatMap(s => s.targets).map(t => ({ ...t, poolId: `pool_${t.id}` }));
         const shuffled = [...targets].sort(() => Math.random() - 0.5);
         setPoolWords(shuffled);
         setPlacedWords({});
@@ -249,7 +293,7 @@ export const GapSentencesView = ({ text, settings, setSettings, onClose, title }
     // Solution Checking
     useEffect(() => {
         if (currentGroup.length === 0) return;
-        const totalGaps = currentGroup.length;
+        const totalGaps = currentGroup.reduce((acc, s) => acc + s.targets.length, 0);
         if (Object.keys(placedWords).length === totalGaps) {
             setGroupSolved(true);
             if (currentGroupIdx === groups.length - 1) {
@@ -303,9 +347,50 @@ export const GapSentencesView = ({ text, settings, setSettings, onClose, title }
                     <span className="bg-slate-100 px-3 py-1 rounded-full text-slate-600 font-bold text-sm">
                         {currentGroupIdx + 1} / {groups.length}
                     </span>
+
+                    <div className="flex bg-slate-100 p-1 rounded-xl ml-4">
+                        <button
+                            onClick={() => setMode('marked')}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all font-bold text-xs ${mode === 'marked' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                            <Icons.Square size={16} className={mode === 'marked' ? 'text-blue-500' : 'text-slate-400'} />
+                            markierte Wörter
+                        </button>
+                        <button
+                            onClick={() => setMode('random')}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all font-bold text-xs ${mode === 'random' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                            <Icons.Dice5 size={16} className={mode === 'random' ? 'text-blue-500' : 'text-slate-400'} />
+                            zufällige Wörter
+                        </button>
+                    </div>
                 </div>
 
                 <div className="flex items-center gap-4">
+                    {/* Words per Stage Control */}
+                    <div className="flex items-center gap-2 bg-slate-50 px-2 py-1 rounded-2xl border border-slate-200 hidden lg:flex">
+                        <HorizontalLines count={2} />
+                        <button
+                            onClick={() => setItemsPerStage(prev => Math.max(2, prev - 1))}
+                            className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 active:scale-90 transition-all shadow-sm disabled:opacity-20 ml-1"
+                            disabled={itemsPerStage <= 2}
+                        >
+                            <Minus className="w-4 h-4" />
+                        </button>
+                        <div className="flex flex-col items-center min-w-[24px]">
+                            <span className="text-xl font-black text-slate-800 leading-none">
+                                {itemsPerStage}
+                            </span>
+                        </div>
+                        <button
+                            onClick={() => setItemsPerStage(prev => Math.min(10, prev + 1))}
+                            className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 active:scale-90 transition-all shadow-sm disabled:opacity-20 mr-1"
+                            disabled={itemsPerStage >= 10}
+                        >
+                            <Plus className="w-4 h-4" />
+                        </button>
+                        <HorizontalLines count={5} />
+                    </div>
                     <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg">
                         <span className="text-xs font-bold text-slate-500">A</span>
                         <input type="range" min="20" max="128" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-32 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer" />

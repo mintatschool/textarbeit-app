@@ -82,13 +82,16 @@ const PuzzleTestPiece = ({
     // Determine padding to center text visually in the "body" excluding knobs
     const getTextPadding = () => {
         // Start pieces (Knob/Arrow on Right) -> Need Padding Right to shift text Left
-        if (type === 'left' || type === 'zigzag-left') return 'pr-8';
+        if (type === 'left' || type === 'zigzag-left') return 'pr-12';
 
         // End pieces (Hole/Arrow-In on Left) -> Need Padding Left to shift text Right
-        if (type === 'right' || type === 'zigzag-right') return 'pl-8';
+        // Reduced from pl-8 to pl-2 to shift text further left
+        if (type === 'right' || type === 'zigzag-right') return 'pl-2';
 
-        if (type === 'zigzag-middle') return 'px-2';
-        return 'px-2';
+        // Middle pieces (Hole Left, Knob Right) -> Shift left
+        if (type === 'middle' || type === 'zigzag-middle') return 'pl-2 pr-10';
+
+        return 'pr-4 pl-1';
     };
 
     return (

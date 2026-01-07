@@ -10,7 +10,6 @@ import { QRCodeModal } from './components/QRCodeModal';
 import { QRScannerModal } from './components/QRScannerModal';
 import { CorrectionModal } from './components/CorrectionModal';
 import { SplitExerciseView } from './components/SplitExerciseView';
-import { SyllablePuzzleView } from './components/SyllablePuzzleView';
 import { PuzzleTestTwoSyllableView } from './components/PuzzleTestTwoSyllableView';
 import { PuzzleTestMultiSyllableView } from './components/PuzzleTestMultiSyllableView';
 import { SyllableCompositionView } from './components/SyllableCompositionView';
@@ -28,6 +27,7 @@ import { CaseExerciseView } from './components/CaseExerciseView';
 import { FindLettersView } from './components/FindLettersView';
 import { Toolbar } from './components/Toolbar';
 import { getCachedSyllables } from './utils/syllables';
+import { SpeedReadingView } from './components/SpeedReadingView';
 import { ConnectionOverlay } from './components/ConnectionOverlay';
 
 // Initialize mobile-drag-drop polyfill
@@ -92,6 +92,10 @@ const App = () => {
     const [colorPalette, setColorPalette] = useState(['#3b82f6', '#a855f7', '#ef4444', '#f97316', '#22c55e']); // Reordered for Toolbar Column Layout
     const [activeColor, setActiveColor] = useState('neutral'); // Default to neutral (grey frame)
     const [colorHeaders, setColorHeaders] = useState({}); // { "#hex": "My Title" }
+
+    // WordList View Specific Persistence
+    const [wordListSortByColor, setWordListSortByColor] = useState(false);
+    const [wordListColumnCount, setWordListColumnCount] = useState(1);
 
     const textAreaRef = useRef(null);
     const activeColorRef = useRef(activeColor);
@@ -356,8 +360,9 @@ const App = () => {
                 const suffix = match[3];
                 // Word starts after prefix
                 const wordStartIndex = startIndex + prefix.length;
-                const key = `${cleanWord}_${wordStartIndex}`;
-                const syllables = manualCorrections[key] || getCachedSyllables(cleanWord, hyphenator);
+                const key = `word_${wordStartIndex}`;
+                const lookupKey = `${cleanWord}_${wordStartIndex}`;
+                const syllables = manualCorrections[lookupKey] || getCachedSyllables(cleanWord, hyphenator);
                 return { type: 'word', word: cleanWord, prefix, suffix, index: wordStartIndex, id: key, syllables };
             }
             return { type: 'text', content: segment, index: startIndex, id: `text_${startIndex}` };
@@ -545,14 +550,6 @@ const App = () => {
 
                     setShowList={(v) => v && setActiveView('list')}
                     setShowCarpet={(v) => v && setActiveView('carpet')}
-                    setShowPuzzle={(v) => v && setActiveView('puzzle')}
-                    setShowPuzzleTestTwo={(v) => v && setActiveView('puzzletest_two')}
-                    setShowPuzzleTestMulti={(v) => v && setActiveView('puzzletest_multi')}
-                    setShowSyllableComposition={(v) => v && setActiveView('syllable_composition')}
-                    setShowSyllableExtension={(v) => v && setActiveView('syllable_composition_extension')}
-                    setShowCloud={(v) => v && setActiveView('cloud')}
-                    setShowSentencePuzzle={(v) => v && setActiveView('sentence')}
-                    setShowSplitExercise={(v) => v && setActiveView('split')}
                     setShowStaircase={(v) => v && setActiveView('staircase')}
                     setShowTextPuzzle={(v) => v && setActiveView('textpuzzle')}
                     setShowSentenceShuffle={(v) => v && setActiveView('sentenceshuffle')}
@@ -562,6 +559,14 @@ const App = () => {
                     setShowGapText={() => setActiveView('gapText')}
                     setShowCaseExercise={() => setActiveView('caseExercise')}
                     setShowFindLetters={() => setActiveView('find_letters')}
+                    setShowSpeedReading={() => setActiveView('speed_reading')}
+                    setShowPuzzleTestTwo={(v) => v && setActiveView('puzzletest_two')}
+                    setShowPuzzleTestMulti={(v) => v && setActiveView('puzzletest_multi')}
+                    setShowSyllableComposition={(v) => v && setActiveView('syllable_composition')}
+                    setShowSyllableExtension={(v) => v && setActiveView('syllable_composition_extension')}
+                    setShowCloud={(v) => v && setActiveView('cloud')}
+                    setShowSentencePuzzle={(v) => v && setActiveView('sentence')}
+                    setShowSplitExercise={(v) => v && setActiveView('split')}
                 />
             )}
 
@@ -763,13 +768,13 @@ const App = () => {
 
 
 
-                    {activeView === 'puzzle' && <SyllablePuzzleView words={hasMarkings ? exerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Silbenpuzzle alt" />}
                     {activeView === 'puzzletest_two' && <PuzzleTestTwoSyllableView words={hasMarkings ? exerciseWords : []} settings={settings} onClose={() => setActiveView('text')} title="Silbenpuzzle 1" />}
                     {activeView === 'syllable_composition' && <SyllableCompositionView words={hasMarkings ? exerciseWords : []} settings={settings} onClose={() => setActiveView('text')} title="Silbenbau 1" />}
                     {activeView === 'syllable_composition_extension' && <SyllableCompositionExtensionView words={hasMarkings ? exerciseWords : []} settings={settings} onClose={() => setActiveView('text')} title="Silbenbau 2" />}
                     {activeView === 'puzzletest_multi' && <PuzzleTestMultiSyllableView words={hasMarkings ? exerciseWords : []} settings={settings} onClose={() => setActiveView('text')} title="Silbenpuzzle 2" />}
                     {activeView === 'cloud' && <WordCloudView words={hasMarkings ? exerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Wortwolke" />}
                     {activeView === 'carpet' && <SyllableCarpetView words={hasMarkings ? exerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Silbenteppich" />}
+                    {activeView === 'speed_reading' && <SpeedReadingView words={hasMarkings ? exerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Blitzlesen" />}
                     {activeView === 'list' && <WordListView
                         words={exerciseWords}
                         columnsState={columnsState}
@@ -829,11 +834,14 @@ const App = () => {
                             }
                         }}
                         title="Wortliste/Tabelle"
+                        sortByColor={wordListSortByColor}
+                        setSortByColor={setWordListSortByColor}
+                        columnCount={wordListColumnCount}
+                        setColumnCount={setWordListColumnCount}
                         onWordUpdate={(wordId, newText) => {
-                            const parts = wordId.split('_');
-                            const index = parseInt(parts[parts.length - 1], 10);
+                            const index = parseInt(wordId.replace('word_', ''), 10);
                             if (isNaN(index)) return;
-                            const target = processedWords.find(w => w.id === wordId);
+                            const target = processedWords.find(w => w.index === index);
                             if (!target) return;
                             const before = text.substring(0, index);
                             const after = text.substring(index + target.word.length);
@@ -846,7 +854,7 @@ const App = () => {
                     {activeView === 'split' && <SplitExerciseView words={hasMarkings ? exerciseWords : []} onClose={() => setActiveView('text')} settings={settings} setSettings={setSettings} title="Wörter trennen" />}
                     {activeView === 'gapWords' && <GapWordsView words={hasMarkings ? exerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Lückenwörter" />}
                     {activeView === 'initialSound' && <GapWordsView words={hasMarkings ? exerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} isInitialSound={true} title="Anlaute finden" />}
-                    {activeView === 'gapSentences' && <GapSentencesView text={text} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Lückensätze" />}
+                    {activeView === 'gapSentences' && <GapSentencesView text={text} highlightedIndices={highlightedIndices} wordColors={wordColors} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Lückensätze" />}
                     {activeView === 'gapText' && <GapTextView text={text} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Lückentext" />}
                     {activeView === 'caseExercise' && <CaseExerciseView text={text} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Groß-/Kleinschreibung" />}
                     {activeView === 'find_letters' && <FindLettersView text={text} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Buchstaben finden" />}

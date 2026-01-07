@@ -79,7 +79,7 @@ export const SyllablePuzzleView = ({ words, settings, setSettings, onClose, titl
         });
         setSelectedPiece(null);
     };
-    const getPieceStyle = (piece, isPlaced) => { let base = "relative flex items-center justify-center border font-bold select-none min-w-[3rem] px-4 shadow-sm touch-action-none touch-manipulation "; base += "touch-none select-none "; base += isPlaced ? "bg-blue-200 text-blue-900 border-blue-300 " : "bg-blue-100 text-blue-900 border-blue-300 "; if (!piece.isStart && !piece.isSolo) base += "pl-6 "; if (!piece.isEnd && !piece.isSolo) base += "pr-6 "; if (piece.isStart || piece.isSolo) base += "rounded-l-2xl "; if (piece.isEnd || piece.isSolo) base += "rounded-r-2xl "; return base; };
+    const getPieceStyle = (piece, isPlaced) => { let base = "relative flex items-center justify-center border font-bold select-none min-w-[3rem] px-4 shadow-sm touch-action-none touch-manipulation "; base += "touch-none select-none "; base += isPlaced ? "bg-blue-200 text-blue-900 border-blue-300 " : "bg-blue-100 text-blue-900 border-blue-300 "; if (!piece.isStart && !piece.isSolo) base += "pl-2 "; if (!piece.isEnd && !piece.isSolo) base += "pr-10 "; if (piece.isStart || piece.isSolo) base += "rounded-l-2xl pl-2 "; if (piece.isEnd || piece.isSolo) base += "rounded-r-2xl "; return base; };
     const dynamicHeight = Math.max(56, settings.fontSize * 1.5);
 
     return (

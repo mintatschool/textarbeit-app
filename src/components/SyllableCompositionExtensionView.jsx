@@ -10,6 +10,7 @@ import {
     Plus
 } from 'lucide-react';
 import { Icons } from './Icons';
+import { ProgressBar } from './ProgressBar';
 import PuzzleTestPiece from './PuzzleTestPiece';
 import { speak } from '../utils/speech';
 
@@ -59,6 +60,14 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
     const moveTimerRef = useRef(null);
 
     const allowedClusters = useMemo(() => new Set(settings.clusters || []), [settings.clusters]);
+
+    const totalWords = useMemo(() => gameState.stages.reduce((acc, stage) => acc + stage.items.length, 0), [gameState.stages]);
+    const progress = useMemo(() => {
+        if (totalWords === 0) return 0;
+        const previousStagesWords = gameState.stages.slice(0, gameState.currentStageIndex).reduce((acc, stage) => acc + stage.items.length, 0);
+        const currentStageCompletedCount = completedTargets.size;
+        return Math.min(100, ((previousStagesWords + currentStageCompletedCount + 1) / totalWords) * 100);
+    }, [gameState.stages, gameState.currentStageIndex, completedTargets, totalWords]);
 
     // --------------------------------------------------------------------------------
     // 1. GENERATE PUZZLE DATA
@@ -250,8 +259,6 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
 
         if (!foundPiece) return;
 
-        // Determine destination type requirement
-        // We know targetId and slotIndex. We need to find the Target Definition to know length/type?
         const currentStage = gameState.stages[gameState.currentStageIndex];
         const target = currentStage.items.find(t => t.id === targetId);
         if (!target) return;
@@ -287,6 +294,21 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
             const next = { ...prev };
             delete next[slotKey];
             return next;
+        });
+    };
+
+    const handleReturnToPool = (pieceId) => {
+        // Find if this piece is in placedPieces and remove it
+        setPlacedPieces(prev => {
+            const next = { ...prev };
+            let modified = false;
+            Object.keys(next).forEach(key => {
+                if (next[key]?.id === pieceId) {
+                    delete next[key];
+                    modified = true;
+                }
+            });
+            return modified ? next : prev;
         });
     };
 
@@ -335,14 +357,18 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
         if (currentStage.items.length > 0 && currentStage.items.every(t => completedTargets.has(t.id))) {
             // Stage Complete
             const timer = setTimeout(() => {
-                if (gameState.currentStageIndex < gameState.stages.length - 1) {
-                    setGameState(prev => ({
-                        ...prev,
-                        currentStageIndex: prev.currentStageIndex + 1
-                    }));
-                } else {
-                    setGameState(prev => ({ ...prev, gameStatus: 'finished' }));
-                }
+                setGameState(prev => {
+                    const isLastStage = prev.currentStageIndex >= prev.stages.length - 1;
+                    if (isLastStage) {
+                        return { ...prev, gameStatus: 'finished' };
+                    } else {
+                        return {
+                            ...prev,
+                            currentStageIndex: prev.currentStageIndex + 1,
+                            gameStatus: 'playing' // Ensure it's playing
+                        };
+                    }
+                });
             }, 1500);
             return () => clearTimeout(timer);
         }
@@ -383,15 +409,24 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
         return <div className="fixed inset-0 bg-white z-[100]" />;
     }
 
-    if (!gameState.stages[gameState.currentStageIndex]) {
+    // Safe guard: If playing but no stages or invalid index
+    if (gameState.gameStatus === 'playing' && (!gameState.stages[gameState.currentStageIndex] || gameState.stages.length === 0)) {
         return (
-            <div className="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center p-6 text-center">
+            <div className="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center p-6 text-center animate-in fade-in">
                 <AlertCircle className="w-16 h-16 text-blue-500 mb-4" />
-                <h2 className="text-xl font-bold text-slate-800 mb-2">Keine Silben gefunden</h2>
-                <button onClick={onClose} className="bg-blue-600 text-white px-6 py-2 rounded-xl mt-4">Zurück</button>
+                <h2 className="text-xl font-bold text-slate-800 mb-2">Keine passenden Silben gefunden.</h2>
+                <p className="text-slate-600 mb-6 font-medium max-w-md">Bitte markiere Wörter, deren Silben sich für den Silbenbau eignen.</p>
+                <div className="flex gap-4">
+                    <button onClick={() => startNewGame()} className="bg-blue-600 text-white px-8 py-2 rounded-xl font-bold shadow-lg flex items-center gap-2 hover:scale-105 transition-transform">
+                        <Icons.RotateCcw size={18} /> Aktualisieren
+                    </button>
+                    <button onClick={onClose} className="bg-slate-100 text-slate-700 px-8 py-2 rounded-xl font-bold shadow-md hover:bg-slate-200 transition-colors border border-slate-200">Zurück</button>
+                </div>
             </div>
         );
     }
+
+
 
     const currentStage = gameState.stages[gameState.currentStageIndex];
 
@@ -410,10 +445,23 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                     <Icons.PuzzleZigzag className="text-blue-600 w-8 h-8" />
                     <span className="text-xl font-bold text-slate-800 hidden md:inline">{title || "Silbenbau 2"}</span>
 
-                    {/* Stage Indicator */}
-                    <div className="flex items-center gap-1 ml-4 overflow-x-auto max-w-[200px] no-scrollbar">
+                    {/* Numeric Progress Indicator (Standardized) */}
+                    <div className="flex items-center gap-1 ml-4 overflow-x-auto max-w-[400px] no-scrollbar">
                         {gameState.stages.map((_, i) => (
-                            <div key={i} className={`h-2 w-2 rounded-full transition-colors ${i === gameState.currentStageIndex ? 'bg-blue-600 scale-125' : i < gameState.currentStageIndex ? 'bg-emerald-400' : 'bg-slate-200'}`} />
+                            <div
+                                key={i}
+                                className={`
+                                    w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-all shrink-0
+                                    ${i === gameState.currentStageIndex
+                                        ? 'bg-blue-600 text-white scale-110 shadow-md'
+                                        : i < gameState.currentStageIndex
+                                            ? 'bg-emerald-500 text-white'
+                                            : 'bg-gray-100 text-gray-300'
+                                    }
+                                `}
+                            >
+                                {i + 1}
+                            </div>
                         ))}
                     </div>
                 </div>
@@ -456,16 +504,24 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                     </button>
                 </div>
             </header>
+            <ProgressBar progress={progress} />
 
             <div className="flex-1 relative flex overflow-hidden">
                 {/* LEFT SIDEBAR (Start Pieces) */}
-                <div className="w-[180px] bg-slate-100/50 border-r border-slate-200 flex flex-col shrink-0">
+                <div className="w-[180px] bg-slate-100/50 border-r border-slate-200 flex flex-col shrink-0"
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                        e.preventDefault();
+                        const pid = e.dataTransfer.getData("pieceId");
+                        if (pid) handleReturnToPool(pid);
+                    }}
+                >
                     <div className="bg-slate-200/50 py-1 text-center text-[10px] font-bold text-slate-400 uppercase">Anfang</div>
                     <div className="flex-1 overflow-y-auto p-4 content-center gap-4 flex flex-col items-center">
                         {leftVisible.map(p => (
                             <div key={p.id} className="cursor-grab active:cursor-grabbing hover:scale-105 transition-transform"
                                 draggable onDragStart={(e) => { e.dataTransfer.setData("pieceId", p.id); setIsDragging(p.id); }} onDragEnd={() => setIsDragging(null)}>
-                                <PuzzleTestPiece label={p.text} type="zigzag-left" colorClass={p.color} scale={gameState.pieceScale * 0.8} fontFamily={settings.fontFamily} />
+                                <PuzzleTestPiece label={p.text} type="zigzag-left" colorClass={p.color} scale={gameState.pieceScale * 0.8} fontFamily={settings.fontFamily} onDragStart={() => { }} />
                             </div>
                         ))}
                     </div>
@@ -474,7 +530,14 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                 {/* MAIN AREA */}
                 <div className="flex-1 flex flex-col relative bg-white">
                     {/* Middle Pieces Pool (Top Strip) */}
-                    <div className="h-[25%] bg-blue-50/30 border-b border-blue-100 relative w-full overflow-hidden shrink-0">
+                    <div className="h-[25%] bg-blue-50/30 border-b border-blue-100 relative w-full overflow-hidden shrink-0"
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={(e) => {
+                            e.preventDefault();
+                            const pid = e.dataTransfer.getData("pieceId");
+                            if (pid) handleReturnToPool(pid);
+                        }}
+                    >
                         <div className="absolute top-1 left-2 text-[10px] font-bold text-slate-400 uppercase">Mitte</div>
                         <div className="w-full h-full relative p-4">
                             {middleVisible.map(p => (
@@ -483,7 +546,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                                     style={{ left: `${p.x}%`, top: `${p.y}%`, transform: `rotate(${p.rotation}deg)` }}
                                     draggable onDragStart={(e) => { e.dataTransfer.setData("pieceId", p.id); setIsDragging(p.id); }} onDragEnd={() => setIsDragging(null)}
                                 >
-                                    <PuzzleTestPiece label={p.text} type="zigzag-middle" colorClass={p.color} scale={gameState.pieceScale * 0.8} fontFamily={settings.fontFamily} />
+                                    <PuzzleTestPiece label={p.text} type="zigzag-middle" colorClass={p.color} scale={gameState.pieceScale * 0.8} fontFamily={settings.fontFamily} onDragStart={() => { }} />
                                 </div>
                             ))}
                         </div>
@@ -494,7 +557,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                         {currentStage.items.map(target => {
                             const isComplete = completedTargets.has(target.id);
                             return (
-                                <div key={target.id} className={`flex items-center gap-4 transition-all duration-500 ${isComplete ? 'opacity-80 scale-95' : ''}`}>
+                                <div key={target.id} className={`flex items-center gap-6 transition-all duration-500 ${isComplete ? 'opacity-80 scale-95' : ''}`}>
                                     {/* Slot Row */}
                                     <div className="relative flex items-center" style={{ height: 110 * gameState.pieceScale }}>
                                         <div className="flex items-center gap-0" style={{ transform: `scale(${gameState.pieceScale})`, transformOrigin: 'left center', height: 110 }}>
@@ -530,7 +593,19 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                                                             </div>
                                                         )}
                                                         {piece && (
-                                                            <div className="cursor-pointer hover:scale-105 transition-transform" onClick={() => handleRemove(target.id, idx)}>
+                                                            <div className="cursor-pointer hover:scale-105 transition-transform relative z-50"
+                                                                onClick={(e) => { e.stopPropagation(); handleRemove(target.id, idx); }}
+                                                                draggable
+                                                                onDragStart={(e) => {
+                                                                    // Allow "pulling out" via drag
+                                                                    e.dataTransfer.setData("pieceId", piece.id);
+                                                                    setIsDragging(piece.id);
+                                                                    // We don't remove immediately to allow cancel, 
+                                                                    // but we need a way to detect it was dropped OUTSIDE.
+                                                                    // Simplest: just remove on dragStart if the user expects "herausziehen" to mean "take it away".
+                                                                    // But that's destructive.
+                                                                }}
+                                                            >
                                                                 <PuzzleTestPiece label={piece.text} type={targetType} colorClass={piece.color} scale={1} id={piece.id} showSeamLine fontFamily={settings.fontFamily} />
                                                             </div>
                                                         )}
@@ -541,9 +616,9 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
 
                                         {/* Floating Checkmark - matching Silbenbau 1 style and spacing */}
                                         <div className={`
-                                            absolute left-full transition-all duration-500 ease-out z-30 pointer-events-none
-                                            ${isComplete ? 'scale-125 opacity-100 translate-x-20' : 'scale-0 opacity-0 translate-x-0'}
-                                        `} style={{ top: '50%', transform: 'translateY(-50%)' }}>
+                                            absolute left-full transition-all duration-500 ease-out z-30 pointer-events-none flex items-center
+                                            ${isComplete ? 'scale-125 opacity-100' : 'scale-0 opacity-0'}
+                                        `} style={{ top: '50%', transform: 'translateY(-50%)', paddingLeft: '160px' }}>
                                             <CheckCircle2 className="text-green-500 drop-shadow-2xl" style={{ width: `${80 * gameState.pieceScale}px`, height: `${80 * gameState.pieceScale}px` }} />
                                         </div>
                                     </div>
@@ -551,7 +626,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                                     {/* Audio Button - Moved to Right */}
                                     <button
                                         onClick={() => speak(target.full)}
-                                        className="w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg transition-all shrink-0 ring-4 ring-white/50 translate-y-[-6px] hover:scale-105 active:scale-95 ml-24"
+                                        className="w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg transition-all shrink-0 ring-4 ring-white/50 hover:scale-105 active:scale-95 ml-6"
                                         title="Anhören"
                                     >
                                         <Volume2 size={24} />
@@ -565,13 +640,20 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                 </div>
 
                 {/* RIGHT SIDEBAR (End Pieces) */}
-                <div className="w-[180px] bg-slate-100/50 border-l border-slate-200 flex flex-col shrink-0">
+                <div className="w-[180px] bg-slate-100/50 border-l border-slate-200 flex flex-col shrink-0"
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                        e.preventDefault();
+                        const pid = e.dataTransfer.getData("pieceId");
+                        if (pid) handleReturnToPool(pid);
+                    }}
+                >
                     <div className="bg-slate-200/50 py-1 text-center text-[10px] font-bold text-slate-400 uppercase">Ende</div>
                     <div className="flex-1 overflow-y-auto p-4 content-center gap-4 flex flex-col items-center">
                         {rightVisible.map(p => (
                             <div key={p.id} className="cursor-grab active:cursor-grabbing hover:scale-105 transition-transform"
                                 draggable onDragStart={(e) => { e.dataTransfer.setData("pieceId", p.id); setIsDragging(p.id); }} onDragEnd={() => setIsDragging(null)}>
-                                <PuzzleTestPiece label={p.text} type="zigzag-right" colorClass={p.color} scale={gameState.pieceScale * 0.8} fontFamily={settings.fontFamily} />
+                                <PuzzleTestPiece label={p.text} type="zigzag-right" colorClass={p.color} scale={gameState.pieceScale * 0.8} fontFamily={settings.fontFamily} onDragStart={() => { }} />
                             </div>
                         ))}
                     </div>

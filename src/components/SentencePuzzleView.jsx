@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Icons } from './Icons';
+import { ProgressBar } from './ProgressBar';
 import { EmptyStateMessage } from './EmptyStateMessage';
 
 // --- UTILS ---
@@ -174,8 +175,7 @@ export const SentencePuzzleView = ({ text, mode = 'sentence', onClose, settings,
                 </div>
             )}
 
-            {/* HEADER */}
-            <div className="bg-white px-6 py-4 shadow-sm flex justify-between items-center z-10 shrink-0 flex-wrap gap-4">
+            <header className="bg-white px-6 py-4 shadow-sm flex justify-between items-center z-10 shrink-0 flex-wrap gap-4">
                 <div className="flex items-center gap-4">
                     <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
                         {mode === 'sentence' ? <Icons.Sentence className="text-pink-500" /> : <Icons.TextBlocks className="text-emerald-500" />}
@@ -191,7 +191,8 @@ export const SentencePuzzleView = ({ text, mode = 'sentence', onClose, settings,
                     </div>
                     <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 shadow-sm transition-transform hover:scale-105 flex items-center justify-center min-touch-target sticky right-0"><Icons.X size={24} /></button>
                 </div>
-            </div>
+            </header>
+            <ProgressBar progress={status === 'correct' ? 100 : 0} />
 
             {/* CONTENT */}
             <div className="flex-1 overflow-y-auto custom-scroll p-6 bg-slate-50/50">

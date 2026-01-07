@@ -84,7 +84,6 @@ export const Toolbar = ({
     // Modal Toggles
     setShowList,
     setShowCarpet,
-    setShowPuzzle,
     setShowStaircase,
     setShowCloud,
     setShowPuzzleTestTwo,
@@ -101,6 +100,7 @@ export const Toolbar = ({
     setShowGapSentences,   // New: Missing words in sentences
     setShowGapText,        // New: Full text with gaps
     setShowFindLetters,    // New: Find letters exercise
+    setShowSpeedReading,   // New: Speed reading exercise
 
 
     // Color Props
@@ -322,8 +322,8 @@ export const Toolbar = ({
             {/* --- SECTION 2: DATA VIEW --- */}
 
             <ToolbarButton
-                title="Wortliste/Tabelle"
-                icon={Icons.List}
+                title=""
+                icon={Icons.Table}
                 onClick={() => setShowList(true)}
                 disabled={isReadingMode}
                 activeColor="purple"
@@ -372,8 +372,17 @@ export const Toolbar = ({
                 align="right"
                 className="bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-600 hover:border-blue-300 rounded-xl"
             >
-                <MenuItem onClick={() => setShowStaircase(true)} icon={<Icons.Stairs size={20} className="text-indigo-600" />}>
+                <MenuItem onClick={() => setShowStaircase(true)} icon={<Icons.Stairs size={20} className="text-purple-600" />}>
                     Treppenwörter
+                </MenuItem>
+                <MenuItem onClick={() => setShowSpeedReading(true)} icon={<Icons.Zap size={20} className="text-purple-600" />}>
+                    Blitzlesen
+                </MenuItem>
+                <MenuItem onClick={() => setShowPuzzleTestTwo(true)} icon={<Icons.SyllableTestTwo size={20} className="text-blue-600" />}>
+                    Silbenpuzzle 1
+                </MenuItem>
+                <MenuItem onClick={() => setShowPuzzleTestMulti(true)} icon={<Icons.SyllableTestMulti size={20} className="text-blue-600" />}>
+                    Silbenpuzzle 2
                 </MenuItem>
                 <MenuItem onClick={() => setShowInitialSound(true)} icon={<Icons.InitialSound size={20} className="text-blue-600" />}>
                     Anlaute finden
@@ -381,24 +390,11 @@ export const Toolbar = ({
                 <MenuItem onClick={() => setShowGapWords(true)} icon={<Icons.GapWords size={20} className="text-blue-600" />}>
                     Lückenwörter
                 </MenuItem>
-                <MenuItem onClick={() => setShowCloud(true)} icon={<Icons.Cloud size={20} className="text-blue-500" />}>
+                <MenuItem onClick={() => setShowCloud(true)} icon={<Icons.Cloud size={20} className="text-blue-600" />}>
                     Wortwolke
                 </MenuItem>
-                <MenuItem onClick={() => setShowSplitExercise(true)} icon={<Icons.Scissors size={20} className="text-orange-500 -rotate-90" />}>
+                <MenuItem onClick={() => setShowSplitExercise(true)} icon={<Icons.Scissors size={20} className="text-blue-600 -rotate-90" />}>
                     Wörter trennen
-                </MenuItem>
-                <MenuItem onClick={() => setShowPuzzleTestTwo(true)} icon={<Icons.SyllableTestTwo size={20} className="text-blue-500" />}>
-                    Silbenpuzzle 1
-                </MenuItem>
-                <MenuItem onClick={() => setShowPuzzleTestMulti(true)} icon={<Icons.SyllableTestMulti size={20} className="text-blue-500" />}>
-                    Silbenpuzzle 2
-                </MenuItem>
-                <MenuItem
-                    onClick={() => setShowPuzzle(true)}
-                    icon={<Icons.Puzzle size={20} className="text-slate-300" />}
-                    className="!text-slate-300 hover:!text-blue-700"
-                >
-                    Silbenpuzzle alt
                 </MenuItem>
             </MenuDropdown>
 

@@ -1,15 +1,16 @@
 import React from 'react';
 
-const Icon = ({ path, size = 24, className = "" }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+const Icon = ({ path, size = 24, className = "", viewBox = "0 0 24 24", ...props }) => (
+    <svg width={size} height={size} viewBox={viewBox} fill="none" stroke="currentColor"
         strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-        className={className} style={{ transformBox: 'fill-box' }}>{path}</svg>
+        className={className} style={{ transformBox: 'fill-box' }} {...props}>{path}</svg>
 );
 
 export const Icons = {
     Edit2: (p) => <Icon {...p} path={<path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />} />,
     RotateCcw: (p) => <Icon {...p} path={<><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></>} />,
     List: (p) => <Icon {...p} path={<><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></>} />,
+    Table: (p) => <Icon {...p} path={<><rect x="3" y="6" width="18" height="12" rx="2" /><line x1="9" y1="6" x2="9" y2="18" /><line x1="15" y1="6" x2="15" y2="18" /></>} />,
 
     // Menü-Icons
     MenuSyllables: (p) => <Icon {...p} path={<><line x1="4" y1="12" x2="9" y2="12" strokeWidth="4" /><line x1="15" y1="12" x2="20" y2="12" strokeWidth="4" /></>} />,
@@ -33,14 +34,14 @@ export const Icons = {
     Maximize: (p) => <Icon {...p} path={<><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" /></>} />,
     Minimize: (p) => <Icon {...p} path={<><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3" /></>} />,
     SplitVertical: (p) => <Icon {...p} path={<><path d="M3 16a4 4 0 0 0 8 0" strokeWidth="2" /><path d="M13 16a4 4 0 0 0 8 0" strokeWidth="2" /><path d="M12 12 L15 11 L21 5 A 1.42 1.42 0 0 1 19 3 L13 9 Z" strokeWidth="2" /></>} />,
-    Settings: (p) => <Icon {...p} path={<><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></>} />,
+    Settings: (p) => <Icon {...p} path={<><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1-2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></>} />,
     QrCode: (p) => <Icon {...p} path={<><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></>} />,
     Edit3: (p) => <Icon {...p} path={<path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />} />,
 
     // View/Edit Mode
     Eye: (p) => <Icon {...p} path={<><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></>} />,
     Camera: (p) => <Icon {...p} path={<><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" /></>} />,
-    Trash2: (p) => <Icon {...p} path={<><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></>} />,
+    Trash2: (p) => <Icon {...p} path={<><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1-2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></>} />,
     ChevronDown: (p) => <Icon {...p} path={<polyline points="6 9 12 15 18 9" />} />,
     Check: (p) => <Icon {...p} path={<polyline points="20 6 9 17 4 12" />} />,
     X: (p) => <Icon {...p} path={<><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></>} />,
@@ -151,4 +152,8 @@ export const Icons = {
             <path d="M6 11v1c0 4 3 6 6 6s6-2 6-6v-1" />
         </svg>
     ),
+    Dice5: (p) => <Icon {...p} path={<><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><path d="M16 8h.01" strokeWidth="3" /><path d="M8 8h.01" strokeWidth="3" /><path d="M8 16h.01" strokeWidth="3" /><path d="M16 16h.01" strokeWidth="3" /><path d="M12 12h.01" strokeWidth="3" /></>} />,
+    Zap: (p) => <Icon {...p} path={<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />} />,
+    Rabbit: (p) => <Icon {...p} viewBox="0 0 1000 1000" path={<path d="M490,300h70v10h-70zM480,310h10v10h-10zM540,310h60v10h-60zM470,320h20v10h-20zM580,320h40v10h-40zM480,330h20v10h-20zM610,330h40v10h-40zM490,340h30v10h-30zM630,340h30v10h-30zM500,350h30v10h-30zM650,350h30v10h-30zM410,360h90v10h-90zM520,360h40v10h-40zM670,360h30v10h-30zM400,370h20v10h-20zM470,370h110v10h-110zM680,370h30v10h-30zM390,380h10v10h-10zM530,380h70v10h-70zM700,380h30v10h-30zM390,390h20v10h-20zM570,390h30v10h-30zM710,390h30v10h-30zM400,400h20v10h-20zM730,400h80v10h-80zM410,410h20v10h-20zM790,410h50v10h-50zM420,420h30v10h-30zM820,420h30v10h-30zM440,430h40v10h-40zM840,430h30v10h-30zM460,440h60v10h-60zM850,440h30v10h-30zM490,450h80v10h-80zM860,450h30v10h-30zM250,460h30v10h-30zM540,140v10h-140zM870,460h30v10h-30zM240,470h20v10h-20zM270,470h30h10v10h-30zM670,470h10v10h-10zM880,470h30v10h-30zM230,480h10v10h-10zM280,480h20v10h-20zM360,480h90v10h-90zM660,480h10v10h-10zM890,480h20v10h-20zM220,490h10v10h-10zM290,490h20v10h-20zM320,490h10v10h-10zM330,490h11v10h-11z" fill="currentColor" stroke="none" />} />,
+    Snail: (p) => <Icon {...p} viewBox="0 0 1000 1000" path={<path d="M340,360h160v10h-160zM310,370h40v10h-40zM480,370h50v10h-50zM290,380h30v10h-30zM520,380h40v10h-40zM270,390h30v10h-30zM550,390h40v10h-40zM250,400h30v10h-30zM580,400h30v10h-30zM240,410h20v10h-20zM600,410h30v10h-30zM220,420h30v10h-30zM620,420h30v10h-30zM210,430h20v10h-20zM640,430h30v10h-30zM200,440h20v10h-20zM660,440h30v10h-30zM190,450h20v10h-20zM680,450h30v10h-30zM180,460h30v10h-30zM700,460h100v10h-100zM170,470h20v10h-20zM790,470h20v10h-20zM160,480h30v10h-30zM790,480h20v10h-20zM150,490h30v10h-30zM790,490h20v10h-20zM140,500h30v10h-30zM790,500h20v10h-20zM130,510h40v10h-40zM790,510h20v10h-20zM120,520h40v10h-40zM790,520h20v10h-20zM110,530h40v10h-40zM790,530h20v10h-20z" fill="currentColor" stroke="none" />} />,
 };

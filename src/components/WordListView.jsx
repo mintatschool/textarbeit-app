@@ -2,10 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Icons } from './Icons';
 import { EmptyStateMessage } from './EmptyStateMessage';
 
-export const WordListView = ({ words, columnsState, setColumnsState, onClose, settings, setSettings, onRemoveWord, onWordUpdate, wordColors = {}, colorHeaders = {}, setColorHeaders, colorPalette = [], title, groups = [] }) => {
+export const WordListView = ({ words, columnsState, setColumnsState, onClose, settings, setSettings, onRemoveWord, onWordUpdate, wordColors = {}, colorHeaders = {}, setColorHeaders, colorPalette = [], title, groups = [], sortByColor, setSortByColor, columnCount, setColumnCount }) => {
     if (!words || words.length === 0) return (<div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans"><EmptyStateMessage onClose={onClose} /></div>);
-    const [columnCount, setColumnCount] = useState(1);
-    const [sortByColor, setSortByColor] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
     const dragItemRef = useRef(null);
     const prevWordsProp = useRef(null);
@@ -150,82 +148,55 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
         if (prevWordsProp.current === words) return;
         prevWordsProp.current = words;
 
-        // Current words set for quick lookup
-        const currentWordIds = new Set(words.map(w => w.id));
-
         setColumnsState(prevState => {
             const newCols = { ...prevState.cols };
             let hasChanges = false;
 
-            // 1. Remove deleted words from columns
-            Object.keys(newCols).forEach(colId => {
-                const col = newCols[colId];
-                const filteredItems = col.items.filter(item => {
-                    // For groups, check if the group ID still exists (needs logic?) 
-                    // Actually, if a group is removed by user, it's removed from 'groups' prop, 
-                    // which triggers the main effect (index 1).
-                    // But if a single word is removed, we might need to update group content?
-                    // For now, let's focus on top-level items in displayWords.
-                    // The 'words' prop here is actually 'displayWords' from parent? 
-                    // No, 'words' is raw exerciseWords. 
-
-                    // But wait, 'displayWords' is computed from 'words' and 'groups'.
-                    // If 'words' prop changes, 'displayWords' changes.
-                    // THIS effect listens to 'words'. 
-                    // We need to sync against 'displayWords' actually?
-                    // But displayWords is calculated inside this component.
-                    return true;
-                });
-
-                // If we filter against 'words' prop (which contains raw words)...
-                // We need to check if the item in the column is still valid.
-                // Items in columns are either single words or groups.
-                // Single words have 'id'. Groups have 'id' (group-...).
-
-                // Let's rely on 'displayWords' (derived state) instead of raw 'words'?
-                // No, 'displayWords' is recreated every render.
-            });
-
-            // BETTER STRATEGY:
-            // Syncing based on 'displayWords' is cleaner but requires checking what's new/gone.
-            // Let's use 'displayWords' which IS updated when 'words' changes.
-
             const currentDisplayWords = displayWords;
-            const existingIds = new Set();
-            Object.values(newCols).forEach(c => c.items.forEach(i => existingIds.add(i.id)));
+            const newDisplayMap = new Map(currentDisplayWords.map(w => [w.id, w]));
+            const existingIdsInCols = new Set();
 
-            // Find Removed Items
-            const newDisplayIds = new Set(currentDisplayWords.map(w => w.id));
+            // 1. Update existing items and remove deleted ones
             Object.keys(newCols).forEach(colId => {
                 const col = newCols[colId];
-                const newItems = col.items.filter(item => newDisplayIds.has(item.id));
-                if (newItems.length !== col.items.length) {
-                    newCols[colId] = { ...col, items: newItems };
+                let colHasChanges = false;
+
+                const updatedItems = col.items.map(item => {
+                    const freshData = newDisplayMap.get(item.id);
+                    if (freshData) {
+                        existingIdsInCols.add(item.id);
+                        // Check if content actually changed to avoid unnecessary state updates
+                        if (JSON.stringify(freshData) !== JSON.stringify(item)) {
+                            colHasChanges = true;
+                            return freshData;
+                        }
+                        return item;
+                    }
+                    colHasChanges = true;
+                    return null; // Mark for removal
+                }).filter(Boolean);
+
+                if (colHasChanges) {
+                    newCols[colId] = { ...col, items: updatedItems };
                     hasChanges = true;
                 }
             });
 
-            // Find Added Items (That are NOT in any column)
-            const addedItems = currentDisplayWords.filter(w => !existingIds.has(w.id));
+            // 2. Find Added Items (That are NOT in any column)
+            const addedItems = currentDisplayWords.filter(w => !existingIdsInCols.has(w.id));
             if (addedItems.length > 0) {
-                // Determine target column
                 addedItems.forEach(newItem => {
                     let targetColId;
                     if (sortByColor) {
-                        // Find suitable color column
                         const color = wordColors[newItem.index];
-                        // Find column with this color
                         const colEntry = Object.entries(newCols).find(([_, c]) => c.color === color);
                         if (colEntry) {
                             targetColId = colEntry[0];
                         } else {
-                            // Fallback or create? For now fallback to first or no-color
-                            // If no color column exists, maybe put in no-color
                             const noColorEntry = Object.entries(newCols).find(([_, c]) => !c.color);
                             targetColId = noColorEntry ? noColorEntry[0] : prevState.order[0];
                         }
                     } else {
-                        // Standard mode: Add to first column (usually col-1)
                         targetColId = prevState.order[0];
                     }
 
@@ -354,7 +325,10 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
         <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans">
             <div className="bg-white px-6 py-4 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center z-10 shrink-0">
                 <div className="flex items-center gap-6 w-full md:w-auto justify-between md:justify-start">
-                    <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2"><Icons.List className="text-blue-600" /> {title || "Wortliste/Tabelle"}</h2>
+                    <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                        <Icons.Table className="text-blue-600" size={32} />
+                        {title || "Wörterliste/Tabelle"}
+                    </h2>
 
                     {/* Column Controls */}
                     <div className={`flex items-center gap-4 ${sortByColor ? 'opacity-50 pointer-events-none grayscale' : ''}`}>

@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Icons } from './Icons';
 import { EmptyStateMessage } from './EmptyStateMessage';
+import { ProgressBar } from './ProgressBar';
+import { speak } from '../utils/speech';
 
 export const SplitExerciseView = ({ words, onClose, settings, setSettings, title }) => {
     if (!words || words.length === 0) return (<div className="fixed inset-0 z-[130] bg-slate-100 modal-animate font-sans flex flex-col"><EmptyStateMessage onClose={onClose} /></div>);
@@ -90,45 +92,37 @@ export const SplitExerciseView = ({ words, onClose, settings, setSettings, title
                 </div>
             </div>
 
-            {/* Progress Bar */}
-            <div className="px-6 py-2 bg-white border-b border-slate-200">
-                <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                    <div
-                        className="bg-gradient-to-r from-blue-500 to-cyan-500 h-full rounded-full transition-all duration-500"
-                        style={{ width: `${progress}%` }}
-                    ></div>
-                </div>
-            </div>
+            <ProgressBar progress={progress} />
 
             <div className="flex-1 flex flex-col items-center justify-center p-4 bg-white/50 overflow-y-auto custom-scroll">
-                <div className="mb-8">
+                <div className="flex flex-wrap justify-center items-end gap-16 py-4">
+                    <div className="flex flex-wrap justify-center items-end select-none" style={{ fontFamily: settings.fontFamily }}>
+                        {fullWord.split('').map((char, i) => {
+                            const vStat = vowelStatus[i]; let vowelClass = ""; let borderStyle = "";
+                            if (showVowels && vStat) { vowelClass = "bg-yellow-100"; if (vStat.type === 'single') borderStyle = "shadow-border-yellow rounded-sm"; else if (vStat.type === 'start') borderStyle = "shadow-border-yellow-left rounded-l-md pr-3 md:pr-6 -mr-1 md:-mr-2 z-10"; else if (vStat.type === 'end') borderStyle = "shadow-border-yellow-right rounded-r-md pl-3 md:pl-6 -ml-1 md:-ml-2 z-10"; else if (vStat.type === 'mid') borderStyle = "shadow-border-yellow-mid px-3 md:px-6 -mx-1 md:-mx-2 z-10"; }
+                            return (
+                                <React.Fragment key={i}>
+                                    <div className="relative flex flex-col items-center justify-end">
+                                        <div className={`font-bold text-slate-800 leading-none px-0 py-1 transition-all ${vowelClass} ${borderStyle}`} style={{ fontSize: `${settings.fontSize * 2.5}px` }}>
+                                            {char}
+                                        </div>
+                                    </div>
+                                    {i < fullWord.length - 1 && (
+                                        <div onClick={() => handleGapClick(i)} className="group relative w-6 md:w-12 h-20 md:h-36 -mb-2 cursor-pointer flex justify-center items-end hover:bg-blue-50 rounded mx-1 transition-colors">
+                                            <div className={`w-2 md:w-3 h-16 md:h-28 rounded-full transition-all duration-200 ${userSplits.has(i) ? 'bg-blue-600 shadow-lg scale-y-100' : 'bg-slate-200 scale-y-50 group-hover:scale-y-75'}`}></div>
+                                        </div>
+                                    )}
+                                </React.Fragment>
+                            );
+                        })}
+                    </div>
                     <button
                         onClick={() => speak(fullWord)}
-                        className="w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all ring-4 ring-white/50 shrink-0"
+                        className="w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all ring-4 ring-white/50 shrink-0 mb-8"
                         title="Wort anhören"
                     >
                         <Icons.Volume2 size={24} />
                     </button>
-                </div>
-                <div className="flex flex-wrap justify-center items-end select-none py-4" style={{ fontFamily: settings.fontFamily }}>
-                    {fullWord.split('').map((char, i) => {
-                        const vStat = vowelStatus[i]; let vowelClass = ""; let borderStyle = "";
-                        if (showVowels && vStat) { vowelClass = "bg-yellow-100"; if (vStat.type === 'single') borderStyle = "shadow-border-yellow rounded-sm"; else if (vStat.type === 'start') borderStyle = "shadow-border-yellow-left rounded-l-md pr-3 md:pr-6 -mr-1 md:-mr-2 z-10"; else if (vStat.type === 'end') borderStyle = "shadow-border-yellow-right rounded-r-md pl-3 md:pl-6 -ml-1 md:-ml-2 z-10"; else if (vStat.type === 'mid') borderStyle = "shadow-border-yellow-mid px-3 md:px-6 -mx-1 md:-mx-2 z-10"; }
-                        return (
-                            <React.Fragment key={i}>
-                                <div className="relative flex flex-col items-center justify-end">
-                                    <div className={`font-bold text-slate-800 leading-none px-0 py-1 transition-all ${vowelClass} ${borderStyle}`} style={{ fontSize: `${settings.fontSize * 2.5}px` }}>
-                                        {char}
-                                    </div>
-                                </div>
-                                {i < fullWord.length - 1 && (
-                                    <div onClick={() => handleGapClick(i)} className="group relative w-6 md:w-12 h-20 md:h-36 -mb-2 cursor-pointer flex justify-center items-end hover:bg-blue-50 rounded mx-1 transition-colors">
-                                        <div className={`w-2 md:w-3 h-16 md:h-28 rounded-full transition-all duration-200 ${userSplits.has(i) ? 'bg-blue-600 shadow-lg scale-y-100' : 'bg-slate-200 scale-y-50 group-hover:scale-y-75'}`}></div>
-                                    </div>
-                                )}
-                            </React.Fragment>
-                        );
-                    })}
                 </div>
                 <div className="h-16 flex items-center">
                     {status === 'wrong' && <p className="text-red-500 font-bold text-lg animate-pulse">Das stimmt noch nicht ganz.</p>}
