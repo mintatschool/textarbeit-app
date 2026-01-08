@@ -383,7 +383,7 @@ export const Toolbar = ({
                     Lückenwörter
                 </MenuItem>
                 <MenuItem onClick={() => setShowCloud(true)} icon={<Icons.Cloud size={20} className="text-blue-600" />}>
-                    Wortwolke
+                    Schüttelwörter
                 </MenuItem>
                 <MenuItem onClick={() => setShowSplitExercise(true)} icon={<Icons.Scissors size={20} className="text-blue-600 -rotate-90" />}>
                     Wörter trennen

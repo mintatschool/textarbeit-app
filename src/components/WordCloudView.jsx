@@ -153,42 +153,42 @@ export const WordCloudView = ({ words, settings, setSettings, onClose, title }) 
                 <div className="max-w-4xl mx-auto flex flex-col gap-12">
                     {cloudWords.map((word) => {
                         const activePool = poolChunks.filter(c => c.wordId === word.id); const isCorrect = word.allChunks.every(c => placedChunks[c.id]?.text === c.text); return (
-                            <div key={word.id} onDragOver={(e) => e.preventDefault()} onDrop={(e) => handleCloudReturnDrop(e, word.id)} className={`bg-white rounded-2xl border-2 p-6 flex flex-col items-center gap-6 shadow-sm transition-all ${isCorrect ? 'border-slate-200' : 'border-slate-200'}`}>
-                                <div className="relative w-full max-w-md h-64 flex items-center justify-center">
+                            <div key={word.id} onDragOver={(e) => e.preventDefault()} onDrop={(e) => handleCloudReturnDrop(e, word.id)} className={`bg-white rounded-2xl border-2 p-6 flex flex-col items-center gap-6 shadow-sm transition-all w-fit max-w-full mx-auto ${isCorrect ? 'border-slate-200' : 'border-slate-200'}`}>
+                                <div className="relative w-full min-w-[20rem] max-w-full min-h-[16rem] flex items-center justify-center">
                                     <div className="absolute inset-0 text-blue-100/50 drop-shadow-sm flex items-center justify-center">
                                         <svg viewBox="0 0 24 24" className="w-full h-full overflow-visible pointer-events-none" preserveAspectRatio="none">
                                             <path d={cloudSVGPath} fill="currentColor" stroke="#93c5fd" strokeWidth="1" vectorEffect="non-scaling-stroke" />
                                         </svg>
-                                        <div className="absolute inset-0 z-10 overflow-hidden rounded-3xl opacity-100 pointer-events-none">
-                                            <div className="relative w-full h-full pointer-events-auto flex flex-wrap justify-center items-center content-center gap-3 p-8">
-                                                {activePool.map((chunk, idx) => {
-                                                    // Pseudo-random rotation based on index to be stable but playful
-                                                    const rotate = (idx % 2 === 0 ? 1 : -1) * ((idx * 3) % 4 + 1);
-                                                    return (
-                                                        <div key={chunk.id} draggable
-                                                            onDragStart={(e) => handleDragStart(e, chunk, 'pool')}
-                                                            onDragEnd={handleDragEnd}
-                                                            onClick={(e) => { e.stopPropagation(); handleChunkClick(chunk, 'pool'); }}
-                                                            onContextMenu={(e) => e.preventDefault()}
-                                                            className={`cursor-grab active:cursor-grabbing bg-white border-2 border-blue-400 shadow-md rounded-lg flex items-center justify-center font-bold text-slate-800 hover:scale-110 active:scale-95 transition-all touch-action-none touch-manipulation select-none touch-none ${selectedChunk?.id === chunk.id ? 'ring-4 ring-blue-500 scale-125 z-50' : 'z-20'}`}
-                                                            style={{
-                                                                fontFamily: settings.fontFamily,
-                                                                fontSize: `${Math.max(16, settings.fontSize * 0.75)}px`,
-                                                                transform: `rotate(${rotate}deg)`,
-                                                                padding: '0.3em 0.6em',
-                                                                margin: '2px'
-                                                            }}
-                                                        >
-                                                            {chunk.text.split('').map((char, cI) => {
-                                                                const isVowel = /[aeiouyäöüAEIOUYÄÖÜ]/.test(char);
-                                                                return <span key={cI} className={`flex items-center justify-center ${showVowels && isVowel ? "bg-yellow-200 text-yellow-900 rounded px-1" : ""}`}>{char}</span>
-                                                            })}
-                                                        </div>
-                                                    );
-                                                })}
-                                                {isCorrect && <div className="absolute inset-0 flex items-center justify-center text-green-600 font-bold text-2xl pop-animate z-30 pointer-events-none rounded-full"><Icons.CheckCircle size={settings.fontSize * 1.5} className="drop-shadow-lg" /></div>}
-                                            </div>
-                                        </div>
+                                    </div>
+
+                                    <div className="relative z-10 w-full h-full flex flex-wrap justify-center items-center content-center gap-3 p-12">
+                                        {activePool.map((chunk, idx) => {
+                                            // Pseudo-random rotation
+                                            const rotate = (idx % 2 === 0 ? 1 : -1) * ((idx * 3) % 4 + 1);
+                                            return (
+                                                <div key={chunk.id} draggable
+                                                    onDragStart={(e) => handleDragStart(e, chunk, 'pool')}
+                                                    onDragEnd={handleDragEnd}
+                                                    onClick={(e) => { e.stopPropagation(); handleChunkClick(chunk, 'pool'); }}
+                                                    onContextMenu={(e) => e.preventDefault()}
+                                                    className={`cursor-grab active:cursor-grabbing bg-white border-2 border-blue-400 shadow-md rounded-lg flex items-center justify-center font-bold text-slate-800 hover:scale-110 active:scale-95 transition-all touch-action-none touch-manipulation select-none touch-none ${selectedChunk?.id === chunk.id ? 'ring-4 ring-blue-500 scale-125 z-50' : 'z-20'}`}
+                                                    style={{
+                                                        fontFamily: settings.fontFamily,
+                                                        fontSize: `${Math.max(16, settings.fontSize * 0.75)}px`,
+                                                        transform: `rotate(${rotate}deg)`,
+                                                        padding: '0.2em 0.5em',
+                                                        margin: '2px',
+                                                        width: 'min-content'
+                                                    }}
+                                                >
+                                                    {chunk.text.split('').map((char, cI) => {
+                                                        const isVowel = /[aeiouyäöüAEIOUYÄÖÜ]/.test(char);
+                                                        return <span key={cI} className={`flex items-center justify-center ${showVowels && isVowel ? "bg-yellow-200 text-yellow-900 rounded px-0.5" : ""}`}>{char}</span>
+                                                    })}
+                                                </div>
+                                            );
+                                        })}
+                                        {isCorrect && <div className="absolute inset-0 flex items-center justify-center text-green-600 font-bold text-2xl pop-animate z-30 pointer-events-none rounded-full"><Icons.CheckCircle size={settings.fontSize * 1.5} className="drop-shadow-lg" /></div>}
                                     </div>
                                 </div>
                                 <div className="flex flex-wrap justify-center items-center gap-6 mt-2 relative">
@@ -200,7 +200,7 @@ export const WordCloudView = ({ words, settings, setSettings, onClose, title }) 
                                                     {sylObj.chunks.map((chunk) => {
                                                         const placed = placedChunks[chunk.id];
                                                         return (
-                                                            <div key={chunk.id} onDragOver={(e) => e.preventDefault()} onDragEnter={(e) => { e.preventDefault(); e.currentTarget.classList.add('active-target') }} onDragLeave={(e) => e.currentTarget.classList.remove('active-target')} onDrop={(e) => handleDrop(e, word.id, chunk.id)} onClick={() => handleSlotClick(word.id, chunk.id)} className={`cloud-drop-target cursor-pointer ${placed ? 'filled' : ''} px-1 flex items-center justify-center transition-all ${selectedChunk && selectedChunk.wordId === word.id ? 'ring-2 ring-blue-300 ring-offset-2 animate-pulse' : ''}`} style={{ minWidth: '3.5rem', height: `${settings.fontSize * 1.5}px` }}>
+                                                            <div key={chunk.id} onDragOver={(e) => e.preventDefault()} onDragEnter={(e) => { e.preventDefault(); e.currentTarget.classList.add('active-target') }} onDragLeave={(e) => e.currentTarget.classList.remove('active-target')} onDrop={(e) => handleDrop(e, word.id, chunk.id)} onClick={() => handleSlotClick(word.id, chunk.id)} className={`cloud-drop-target cursor-pointer ${placed ? 'filled' : ''} px-1 flex items-center justify-center transition-all ${selectedChunk && selectedChunk.wordId === word.id ? 'ring-2 ring-blue-300 ring-offset-2 animate-pulse' : ''}`} style={{ minWidth: `${Math.max(2.5, settings.fontSize * 0.08)}rem`, height: `${settings.fontSize * 1.5}px` }}>
                                                                 {placed ? (
                                                                     <div draggable onDragStart={(e) => handleDragStart(e, placed, 'slot', chunk.id)} onDragEnd={handleDragEnd} onClick={(e) => { e.stopPropagation(); handleChunkClick(placed, 'slot', chunk.id); }} className="cursor-grab active:cursor-grabbing text-blue-900 font-bold animate-[popIn_0.3s_ease-out] touch-action-none touch-manipulation select-none touch-none flex items-stretch h-full overflow-hidden rounded-lg " style={{ fontFamily: settings.fontFamily, fontSize: `${settings.fontSize}px` }}>
                                                                         {placed.text.split('').map((char, cI) => {
