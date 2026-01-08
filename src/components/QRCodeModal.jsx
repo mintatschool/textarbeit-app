@@ -117,7 +117,7 @@ export const QRCodeModal = ({ text, onClose }) => {
         const rawString = contentToEncode.length > 300 ? contentToEncode : (contentToEncode.startsWith('{') ? contentToEncode : JSON.stringify({ text: contentToEncode }));
         return toUtf8Bytes(rawString);
 
-    }, [text, parsedData, showHashes]);
+    }, [text, parsedData, showHashes, mode]);
 
     // QR-Code für Text rendern
     useEffect(() => {
