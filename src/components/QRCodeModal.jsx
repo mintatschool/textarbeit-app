@@ -8,7 +8,7 @@ export const QRCodeModal = ({ text, onClose }) => {
     const [linkInput, setLinkInput] = useState("");
     const [isMaximized, setIsMaximized] = useState(false);
     const [tooLongError, setTooLongError] = useState(false);
-    const [mode, setMode] = useState('text'); // 'text' (full state), 'raw' (just plain text), or 'link'
+    const [mode, setMode] = useState('raw'); // Standard auf 'raw' für maximale Kompatibilität
 
     // UTF-8 Encoding Fix für Umlaute
     const toUtf8Bytes = (str) => {
