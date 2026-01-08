@@ -161,13 +161,18 @@ const App = () => {
             const data = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
             if (data.text) setText(data.text);
             if (data.settings) setSettings(prev => ({ ...prev, ...data.settings }));
-            if (data.highlights) setHighlightedIndices(new Set(data.highlights));
-            if (data.hidden) setHiddenIndices(new Set(data.hidden));
+
+            // Robust loading with defaults for missing keys
+            setHighlightedIndices(new Set(data.highlights || []));
+            setHiddenIndices(new Set(data.hidden || []));
+
             if (data.logo) setLogo(data.logo);
-            if (data.manualCorrections) setManualCorrections(data.manualCorrections);
-            if (data.columnsState) setColumnsState(data.columnsState);
-            if (data.wordColors) setWordColors(data.wordColors); // Load colors
+            setManualCorrections(data.manualCorrections || {});
+            setColumnsState(data.columnsState || { cols: {}, order: [] });
+            setWordColors(data.wordColors || {});
+
             if (data.colorPalette) setColorPalette(data.colorPalette);
+
             setIsViewMode(true);
         } catch (e) { alert("Fehler beim Laden der Datei."); }
     };
@@ -863,7 +868,16 @@ const App = () => {
 
             {showSettings && <SettingsModal settings={settings} setSettings={setSettings} onClose={() => setShowSettings(false)} onExport={exportState} onImport={loadState} onPrint={handlePrint} logo={logo} setLogo={setLogo} onClearHighlights={() => { setHighlightedIndices(new Set()); setWordColors({}); }} onShowQR={() => { setShowSettings(false); setShowQR(true); }} />}
             {showCorrectionModal && correctionData && <CorrectionModal word={correctionData.word} currentSyllables={correctionData.syllables} font={settings.fontFamily} onSave={handleCorrectionSave} onClose={() => setShowCorrectionModal(false)} />}
-            {showQR && <QRCodeModal text={JSON.stringify({ text, settings, highlights: Array.from(highlightedIndices), hidden: Array.from(hiddenIndices), manualCorrections, columnsState, wordColors, colorPalette })} onClose={() => setShowQR(false)} />}
+            {showQR && <QRCodeModal text={JSON.stringify({
+                text,
+                settings,
+                highlights: highlightedIndices.size > 0 ? Array.from(highlightedIndices) : undefined,
+                hidden: hiddenIndices.size > 0 ? Array.from(hiddenIndices) : undefined,
+                manualCorrections: Object.keys(manualCorrections).length > 0 ? manualCorrections : undefined,
+                columnsState: Object.keys(columnsState.cols).length > 0 ? columnsState : undefined,
+                wordColors: Object.keys(wordColors).length > 0 ? wordColors : undefined,
+                colorPalette: JSON.stringify(colorPalette) !== JSON.stringify(['#3b82f6', '#a855f7', '#ef4444', '#f97316', '#22c55e']) ? colorPalette : undefined
+            })} onClose={() => setShowQR(false)} />}
             {showScanner && <QRScannerModal onClose={() => setShowScanner(false)} onScanSuccess={(decodedText) => {
                 setShowScanner(false);
                 const trimmed = decodedText.trim();
