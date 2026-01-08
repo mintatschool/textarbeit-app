@@ -160,28 +160,32 @@ export const WordCloudView = ({ words, settings, setSettings, onClose, title }) 
                                             <path d={cloudSVGPath} fill="currentColor" stroke="#93c5fd" strokeWidth="1" vectorEffect="non-scaling-stroke" />
                                         </svg>
                                         <div className="absolute inset-0 z-10 overflow-hidden rounded-3xl opacity-100 pointer-events-none">
-                                            <div className="relative w-full h-full pointer-events-auto flex flex-wrap justify-center items-center content-center gap-4 p-8">
-                                                {activePool.map((chunk) => (
-                                                    <div key={chunk.id} draggable
-                                                        onDragStart={(e) => handleDragStart(e, chunk, 'pool')}
-                                                        onDragEnd={handleDragEnd}
-                                                        onClick={(e) => { e.stopPropagation(); handleChunkClick(chunk, 'pool'); }}
-                                                        onContextMenu={(e) => e.preventDefault()}
-                                                        className={`cursor-grab active:cursor-grabbing bg-white border-2 border-blue-400 shadow-lg rounded-xl flex items-stretch overflow-hidden font-bold text-slate-800 hover:scale-105 active:scale-95 transition-all touch-action-none touch-manipulation select-none touch-none ${selectedChunk?.id === chunk.id ? 'ring-4 ring-blue-500 scale-125 z-50' : 'z-20'}`}
-                                                        style={{
-                                                            fontFamily: settings.fontFamily,
-                                                            fontSize: `${Math.max(16, settings.fontSize * 0.75)}px`,
-                                                            whiteSpace: 'nowrap',
-                                                            height: '2.5em',
-                                                            minWidth: '2em' // Ensure not too thin
-                                                        }}
-                                                    >
-                                                        {chunk.text.split('').map((char, cI) => {
-                                                            const isVowel = /[aeiouyäöüAEIOUYÄÖÜ]/.test(char);
-                                                            return <span key={cI} className={`flex items-center justify-center px-2 min-w-[1.1ch] h-full ${showVowels && isVowel ? "bg-yellow-200 text-yellow-900 shadow-sm" : ""}`}>{char}</span>
-                                                        })}
-                                                    </div>
-                                                ))}
+                                            <div className="relative w-full h-full pointer-events-auto flex flex-wrap justify-center items-center content-center gap-3 p-8">
+                                                {activePool.map((chunk, idx) => {
+                                                    // Pseudo-random rotation based on index to be stable but playful
+                                                    const rotate = (idx % 2 === 0 ? 1 : -1) * ((idx * 3) % 4 + 1);
+                                                    return (
+                                                        <div key={chunk.id} draggable
+                                                            onDragStart={(e) => handleDragStart(e, chunk, 'pool')}
+                                                            onDragEnd={handleDragEnd}
+                                                            onClick={(e) => { e.stopPropagation(); handleChunkClick(chunk, 'pool'); }}
+                                                            onContextMenu={(e) => e.preventDefault()}
+                                                            className={`cursor-grab active:cursor-grabbing bg-white border-2 border-blue-400 shadow-md rounded-lg flex items-center justify-center font-bold text-slate-800 hover:scale-110 active:scale-95 transition-all touch-action-none touch-manipulation select-none touch-none ${selectedChunk?.id === chunk.id ? 'ring-4 ring-blue-500 scale-125 z-50' : 'z-20'}`}
+                                                            style={{
+                                                                fontFamily: settings.fontFamily,
+                                                                fontSize: `${Math.max(16, settings.fontSize * 0.75)}px`,
+                                                                transform: `rotate(${rotate}deg)`,
+                                                                padding: '0.3em 0.6em',
+                                                                margin: '2px'
+                                                            }}
+                                                        >
+                                                            {chunk.text.split('').map((char, cI) => {
+                                                                const isVowel = /[aeiouyäöüAEIOUYÄÖÜ]/.test(char);
+                                                                return <span key={cI} className={`flex items-center justify-center ${showVowels && isVowel ? "bg-yellow-200 text-yellow-900 rounded px-1" : ""}`}>{char}</span>
+                                                            })}
+                                                        </div>
+                                                    );
+                                                })}
                                                 {isCorrect && <div className="absolute inset-0 flex items-center justify-center text-green-600 font-bold text-2xl pop-animate z-30 pointer-events-none rounded-full"><Icons.CheckCircle size={settings.fontSize * 1.5} className="drop-shadow-lg" /></div>}
                                             </div>
                                         </div>
@@ -192,7 +196,7 @@ export const WordCloudView = ({ words, settings, setSettings, onClose, title }) 
                                         {word.syllables.map((sylObj, sIdx) => {
                                             const isEven = sIdx % 2 === 0;
                                             return (
-                                                <div key={sIdx} className={`flex gap-1 p-2 rounded-xl border transition-colors ${isCorrect ? 'bg-green-100 border-green-200' : (isEven ? 'bg-blue-100 border-blue-200/50' : 'bg-blue-200 border-blue-300/50')}`}>
+                                                <div key={sIdx} className={`flex gap-1 p-2 rounded-xl border transition-colors ${isEven ? 'bg-blue-100 border-blue-200/50' : 'bg-blue-200 border-blue-300/50'}`}>
                                                     {sylObj.chunks.map((chunk) => {
                                                         const placed = placedChunks[chunk.id];
                                                         return (

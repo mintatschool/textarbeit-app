@@ -27,6 +27,7 @@ import { CaseExerciseView } from './components/CaseExerciseView';
 import { FindLettersView } from './components/FindLettersView';
 import { Toolbar } from './components/Toolbar';
 import { getCachedSyllables } from './utils/syllables';
+import { compressIndices, decompressIndices } from './utils/compression';
 import { SpeedReadingView } from './components/SpeedReadingView';
 import { ConnectionOverlay } from './components/ConnectionOverlay';
 
@@ -173,9 +174,22 @@ const App = () => {
                 setSettings(newSettings);
             }
 
+
             // Robust loading with defaults for missing keys
-            setHighlightedIndices(new Set(data.highlights || []));
-            setHiddenIndices(new Set(data.hidden || []));
+            // Support both Array and Compressed String formats
+            const rawHighlights = data.highlights || [];
+            if (typeof rawHighlights === 'string') {
+                setHighlightedIndices(new Set(decompressIndices(rawHighlights)));
+            } else {
+                setHighlightedIndices(new Set(rawHighlights));
+            }
+
+            const rawHidden = data.hidden || [];
+            if (typeof rawHidden === 'string') {
+                setHiddenIndices(new Set(decompressIndices(rawHidden)));
+            } else {
+                setHiddenIndices(new Set(rawHidden));
+            }
 
             if (data.logo) setLogo(data.logo);
             setManualCorrections(data.manualCorrections || {});
@@ -894,8 +908,9 @@ const App = () => {
                     });
                     return hasDiff ? diff : undefined;
                 })(),
-                highlights: highlightedIndices.size > 0 ? Array.from(highlightedIndices) : undefined,
-                hidden: hiddenIndices.size > 0 ? Array.from(hiddenIndices) : undefined,
+
+                highlights: highlightedIndices.size > 0 ? compressIndices(highlightedIndices) : undefined,
+                hidden: hiddenIndices.size > 0 ? compressIndices(hiddenIndices) : undefined,
                 manualCorrections: Object.keys(manualCorrections).length > 0 ? manualCorrections : undefined,
                 columnsState: Object.keys(columnsState.cols).length > 0 ? columnsState : undefined,
                 wordColors: Object.keys(wordColors).length > 0 ? wordColors : undefined,
