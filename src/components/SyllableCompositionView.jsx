@@ -37,7 +37,7 @@ const ArrowModeIcon = ({ mode, active }) => {
     );
 };
 
-export const SyllableCompositionView = ({ onClose, settings = {}, words = [], title }) => {
+export const SyllableCompositionView = ({ onClose, settings = {}, words = [], title, activeColor }) => {
     // Syllable Logic - filter valid syllables from marked words
     const allowedClusters = useMemo(() => new Set(settings.clusters || []), [settings.clusters]);
 
@@ -140,6 +140,7 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [], ti
             overlap={30}
             icon={Icons.PuzzleZigzag}
             renderModeIcon={ArrowModeIcon}
+            activeColor={activeColor}
             onSpeak={handleSpeak}
             emptyMessage="Keine passenden Silben gefunden."
             emptyHint="Bitte markiere Wörter, deren Silben sich in (Buchstabe/Cluster) + (Buchstabe/Cluster) zerlegen lassen."

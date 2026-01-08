@@ -222,6 +222,7 @@ export const SpeedReadingView = ({ words, settings, setSettings, onClose, title 
                                         activeTool={null}
                                         highlightedIndices={new Set()}
                                         wordColors={{}}
+                                        hidePunctuation={true}
                                         extraClassName="font-black"
                                     />
                                 </div>
@@ -283,16 +284,15 @@ export const SpeedReadingView = ({ words, settings, setSettings, onClose, title 
                                     <div key={i} className="flex items-center justify-between p-4 pl-6 bg-slate-50 rounded-2xl group hover:bg-blue-50 transition-colors border border-slate-100 hover:border-blue-200">
 
                                         {/* Use Word Component for consistent rendering (Arcs etc) */}
-                                        <div className="pointer-events-none"> {/* Disable interaction in result list */}
-                                            <Word
-                                                {...res}
-                                                settings={viewSettings}
-                                                isReadingMode={true} // Disable interactions
-                                                activeTool={null}
-                                                highlightedIndices={new Set()}
-                                                wordColors={{}}
-                                            />
-                                        </div>
+                                        <Word
+                                            {...res}
+                                            settings={viewSettings}
+                                            isReadingMode={true} // Disable interactions
+                                            activeTool={null}
+                                            highlightedIndices={new Set()}
+                                            wordColors={{}}
+                                            hidePunctuation={true}
+                                        />
 
                                         <div className="flex items-center gap-4">
                                             <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-sm border-2 ${res.success ? 'bg-emerald-100 border-emerald-200 text-emerald-600' : 'bg-rose-100 border-red-200 text-rose-500'}`}>

@@ -197,16 +197,8 @@ export const Toolbar = ({
                             // But it is also a *tool selector*.
 
                             // Let's call onBatchHide ALWAYS.
+                            onBatchHide();
                             // And toggle tool state?
-                            // If we want to stay in "hiding mode" (allows individual clicking), we should ensure tool is active.
-                            // But maybe user just wants the batch effect.
-                            // If tool is NOT active -> Activate it + Batch Hide.
-                            // If tool IS active -> Batch Unhide? But also Deactivate tool? 
-                            // Standard behavior for toolbar buttons is: Active -> Click -> Inactive.
-
-                            // Let's do:
-                            // Click -> Call Batch Toggle (Hide/Unhide)
-                            // Toggle Tool State (Active/Inactive)
                             onToolChange(activeTool === 'blur' ? null : 'blur');
                         }}
                         className={`p-1 rounded-xl transition flex-shrink-0 ${activeTool === 'blur' ? 'bg-gray-600 text-white shadow-lg' : 'text-slate-600 hover:text-blue-600 hover:bg-slate-100'} ${isReadingMode ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -240,7 +232,7 @@ export const Toolbar = ({
                 {/* 3. COLOR PALETTE (Edge-to-Edge Staggered) */}
                 <div className="flex justify-center w-full mb-2">
                     {/* Left Column (Even indices: Blue, Red, Green...) */}
-                    <div className="flex flex-col gap-3 z-10">
+                    <div className="flex flex-col gap-3 z-10 translate-x-[-2px]">
                         {colorPalette.filter((_, i) => i % 2 === 0).map((color, i) => {
                             const originalIndex = i * 2;
                             // Resolve the active palette index if activeColor is 'palette-X'
@@ -262,7 +254,7 @@ export const Toolbar = ({
                                             onSetActiveColor(`palette-${originalIndex}`);
                                         }
                                     }}
-                                    className={`w-8 h-8 rounded-full border-2 transition-all min-touch-target ${isActive ? 'scale-110 border-slate-500 shadow-[0_0_12px_rgba(59,130,246,0.6)] ring-2 ring-blue-400/50' : 'border-transparent hover:scale-105 shadow-sm'}`}
+                                    className={`w-[38px] h-[38px] rounded-full border-2 transition-all ${isActive ? 'scale-110 border-slate-500 shadow-[0_0_12px_rgba(59,130,246,0.6)] ring-2 ring-blue-400/50' : 'border-transparent hover:scale-105 shadow-sm'}`}
                                     style={{ backgroundColor: color }}
                                     title="Klicken zum Auswählen, erneut klicken zum Ändern"
                                 />
@@ -271,7 +263,7 @@ export const Toolbar = ({
                     </div>
 
                     {/* Right Column (Odd indices: Red, Purple...) - Offset & Edge-to-Edge */}
-                    <div className="flex flex-col gap-3 mt-7 -ml-1.5 z-0">
+                    <div className="flex flex-col gap-3 mt-7 -ml-1.5 z-0 translate-x-[2px]">
                         {colorPalette.filter((_, i) => i % 2 !== 0).map((color, i) => {
                             const originalIndex = i * 2 + 1;
                             // Resolve the active palette index if activeColor is 'palette-X'
@@ -293,7 +285,7 @@ export const Toolbar = ({
                                             onSetActiveColor(`palette-${originalIndex}`);
                                         }
                                     }}
-                                    className={`w-8 h-8 rounded-full border-2 transition-all min-touch-target ${isActive ? 'scale-110 border-slate-500 shadow-[0_0_12px_rgba(59,130,246,0.6)] ring-2 ring-blue-400/50' : 'border-transparent hover:scale-105 shadow-sm'}`}
+                                    className={`w-[38px] h-[38px] rounded-full border-2 transition-all ${isActive ? 'scale-110 border-slate-500 shadow-[0_0_12px_rgba(59,130,246,0.6)] ring-2 ring-blue-400/50' : 'border-transparent hover:scale-105 shadow-sm'}`}
                                     style={{ backgroundColor: color }}
                                     title="Klicken zum Auswählen, erneut klicken zum Ändern"
                                 />
@@ -385,7 +377,7 @@ export const Toolbar = ({
                     Silbenpuzzle 2
                 </MenuItem>
                 <MenuItem onClick={() => setShowInitialSound(true)} icon={<Icons.InitialSound size={20} className="text-blue-600" />}>
-                    Anlaute finden
+                    Anfangsbuchstaben finden
                 </MenuItem>
                 <MenuItem onClick={() => setShowGapWords(true)} icon={<Icons.GapWords size={20} className="text-blue-600" />}>
                     Lückenwörter

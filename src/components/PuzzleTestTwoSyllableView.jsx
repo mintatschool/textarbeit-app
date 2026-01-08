@@ -35,7 +35,7 @@ const PuzzleModeIcon = ({ mode, active }) => {
     );
 };
 
-export const PuzzleTestTwoSyllableView = ({ words, settings, onClose, title }) => {
+export const PuzzleTestTwoSyllableView = ({ words, settings, onClose, title, activeColor }) => {
     // Filter words with exactly 2 syllables and convert to unified format
     const validItems = useMemo(() => {
         if (!words || words.length === 0) return [];
@@ -81,6 +81,7 @@ export const PuzzleTestTwoSyllableView = ({ words, settings, onClose, title }) =
             overlap={25}
             icon={Icons.SyllableTestTwo}
             renderModeIcon={PuzzleModeIcon}
+            activeColor={activeColor}
             onSpeak={handleSpeak}
             emptyMessage="Keine passenden Wörter gefunden."
             emptyHint="Bitte markiere Wörter mit genau 2 Silben."

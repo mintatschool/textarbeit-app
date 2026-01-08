@@ -110,7 +110,7 @@ export const QRCodeModal = ({ text, onClose }) => {
                 new QRious({
                     element: qrRef.current,
                     value: qrValue,
-                    size: 280,
+                    size: 1000, // High resolution for dense data
                     level: 'L' // Low error correction = mehr Platz für Daten
                 });
             } catch (e) {
@@ -125,10 +125,11 @@ export const QRCodeModal = ({ text, onClose }) => {
         if (fullQrRef.current && qrValue && isMaximized && !tooLongError) {
             try {
                 const size = Math.min(window.innerWidth, window.innerHeight) * 0.85;
+                // Render at higher resolution internally, scale via CSS
                 new QRious({
                     element: fullQrRef.current,
                     value: mode === 'link' ? linkInput : qrValue,
-                    size: size,
+                    size: Math.max(size * 2, 1200), // Force high res (at least 1200 or 2x screen)
                     level: 'L'
                 });
             } catch (e) {
@@ -164,8 +165,8 @@ export const QRCodeModal = ({ text, onClose }) => {
             {/* Maximierte Vollbild-Ansicht */}
             {isMaximized && !tooLongError && (
                 <div className="fixed inset-0 z-[200] bg-white flex flex-col items-center justify-center p-4 animate-fadeIn">
-                    <div className="bg-white p-4 border-8 border-slate-100 rounded-2xl shadow-2xl">
-                        <canvas ref={fullQrRef}></canvas>
+                    <div className="bg-white p-4 border-8 border-slate-100 rounded-2xl shadow-2xl max-w-[95vw] max-h-[85vh] flex justify-center items-center">
+                        <canvas ref={fullQrRef} style={{ maxWidth: '100%', maxHeight: '80vh', objectFit: 'contain' }}></canvas>
                     </div>
                     <p className="mt-4 text-slate-500 font-medium">
                         {mode === 'link' ? 'Link-QR-Code' : `Text-QR-Code (${text?.length || 0} Zeichen)`}
@@ -253,7 +254,7 @@ export const QRCodeModal = ({ text, onClose }) => {
                     ) : (
                         <>
                             <div className="bg-white p-4 rounded-xl border-4 border-slate-100 mb-4 flex justify-center min-h-[280px] flex-col items-center">
-                                <canvas ref={qrRef}></canvas>
+                                <canvas ref={qrRef} style={{ width: '100%', maxWidth: '280px', height: 'auto' }}></canvas>
                                 {mode === 'text' && (
                                     <p className="text-xs text-slate-400 mt-2">
                                         {text?.length || 0} Zeichen

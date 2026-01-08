@@ -160,47 +160,35 @@ export const StaircaseView = ({ words, settings, setSettings, onClose, title }) 
             </div>
 
             {/* Main Content */}
-            <div className="flex-1 flex flex-col items-center justify-center p-4 bg-white/50 overflow-y-auto custom-scroll">
-                <div className="mb-8">
-                    <button
-                        onClick={() => speak(currentWord.word)}
-                        className="w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all ring-4 ring-white/50 shrink-0"
-                        title="Wort anhören"
-                    >
-                        <Icons.Volume2 size={24} />
-                    </button>
-                </div>
-                <div className="bg-white rounded-2xl shadow-xl p-8 max-w-2xl w-full">
-                    <div className="flex flex-col items-start gap-1">
-                        {staircaseLines.map((line, idx) => (
-                            <div
-                                key={idx}
-                                className="text-slate-800 font-bold transition-all duration-300 animate-[fadeInUp_0.3s_ease-out]"
-                                style={{
-                                    fontFamily: settings.fontFamily,
-                                    fontSize: `${settings.fontSize}px`,
-                                    letterSpacing: '0.3em',
-                                    animationDelay: `${idx * 0.05}s`,
-                                    animationFillMode: 'backwards'
-                                }}
-                            >
-                                {line}
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* Full word display */}
-                    <div className="mt-8 pt-6 border-t border-slate-200 text-center">
-                        <span
-                            className="text-blue-600 font-bold"
-                            style={{
-                                fontFamily: settings.fontFamily,
-                                fontSize: `${settings.fontSize * 1.2}px`,
-                                letterSpacing: '0.15em'
-                            }}
+            <div className="flex-1 overflow-y-auto custom-scroll bg-white/50">
+                <div className="min-h-full flex flex-col items-center justify-center p-8">
+                    <div className="mb-8">
+                        <button
+                            onClick={() => speak(currentWord.word)}
+                            className="w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all ring-4 ring-white/50 shrink-0"
+                            title="Wort anhören"
                         >
-                            {currentWord.word}
-                        </span>
+                            <Icons.Volume2 size={24} />
+                        </button>
+                    </div>
+                    <div className="bg-white rounded-2xl shadow-xl p-8 max-w-2xl w-full">
+                        <div className="flex flex-col items-start gap-1">
+                            {staircaseLines.map((line, idx) => (
+                                <div
+                                    key={idx}
+                                    className="text-slate-800 font-bold transition-all duration-300 animate-[fadeInUp_0.3s_ease-out]"
+                                    style={{
+                                        fontFamily: settings.fontFamily,
+                                        fontSize: `${settings.fontSize}px`,
+                                        letterSpacing: '0.3em',
+                                        animationDelay: `${idx * 0.05}s`,
+                                        animationFillMode: 'backwards'
+                                    }}
+                                >
+                                    {line}
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
             </div>

@@ -54,7 +54,7 @@ const App = () => {
     const [isViewMode, setIsViewMode] = useState(false);
     const [settings, setSettings] = useState({
         fontSize: 48,
-        lineHeight: 2.8,
+        lineHeight: 3.0,
         wordSpacing: 0.4,
         visualType: 'block',
         displayTrigger: 'click',
@@ -768,10 +768,10 @@ const App = () => {
 
 
 
-                    {activeView === 'puzzletest_two' && <PuzzleTestTwoSyllableView words={hasMarkings ? exerciseWords : []} settings={settings} onClose={() => setActiveView('text')} title="Silbenpuzzle 1" />}
-                    {activeView === 'syllable_composition' && <SyllableCompositionView words={hasMarkings ? exerciseWords : []} settings={settings} onClose={() => setActiveView('text')} title="Silbenbau 1" />}
-                    {activeView === 'syllable_composition_extension' && <SyllableCompositionExtensionView words={hasMarkings ? exerciseWords : []} settings={settings} onClose={() => setActiveView('text')} title="Silbenbau 2" />}
-                    {activeView === 'puzzletest_multi' && <PuzzleTestMultiSyllableView words={hasMarkings ? exerciseWords : []} settings={settings} onClose={() => setActiveView('text')} title="Silbenpuzzle 2" />}
+                    {activeView === 'puzzletest_two' && <PuzzleTestTwoSyllableView words={hasMarkings ? exerciseWords : []} settings={settings} onClose={() => setActiveView('text')} title="Silbenpuzzle 1" activeColor={activeColor} />}
+                    {activeView === 'syllable_composition' && <SyllableCompositionView words={hasMarkings ? exerciseWords : []} settings={settings} onClose={() => setActiveView('text')} title="Silbenbau 1" activeColor={activeColor} />}
+                    {activeView === 'syllable_composition_extension' && <SyllableCompositionExtensionView words={hasMarkings ? exerciseWords : []} settings={settings} onClose={() => setActiveView('text')} title="Silbenbau 2" activeColor={activeColor} />}
+                    {activeView === 'puzzletest_multi' && <PuzzleTestMultiSyllableView words={hasMarkings ? exerciseWords : []} settings={settings} onClose={() => setActiveView('text')} title="Silbenpuzzle 2" activeColor={activeColor} />}
                     {activeView === 'cloud' && <WordCloudView words={hasMarkings ? exerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Wortwolke" />}
                     {activeView === 'carpet' && <SyllableCarpetView words={hasMarkings ? exerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Silbenteppich" />}
                     {activeView === 'speed_reading' && <SpeedReadingView words={hasMarkings ? exerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Blitzlesen" />}
@@ -853,7 +853,7 @@ const App = () => {
                     {activeView === 'staircase' && <StaircaseView words={hasMarkings ? exerciseWords.map(w => ({ ...w, isHighlighted: highlightedIndices.has(w.index) })) : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Treppenwörter" />}
                     {activeView === 'split' && <SplitExerciseView words={hasMarkings ? exerciseWords : []} onClose={() => setActiveView('text')} settings={settings} setSettings={setSettings} title="Wörter trennen" />}
                     {activeView === 'gapWords' && <GapWordsView words={hasMarkings ? exerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Lückenwörter" />}
-                    {activeView === 'initialSound' && <GapWordsView words={hasMarkings ? exerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} isInitialSound={true} title="Anlaute finden" />}
+                    {activeView === 'initialSound' && <GapWordsView words={hasMarkings ? exerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} isInitialSound={true} title="Anfangsbuchstaben finden" />}
                     {activeView === 'gapSentences' && <GapSentencesView text={text} highlightedIndices={highlightedIndices} wordColors={wordColors} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Lückensätze" />}
                     {activeView === 'gapText' && <GapTextView text={text} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Lückentext" />}
                     {activeView === 'caseExercise' && <CaseExerciseView text={text} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Groß-/Kleinschreibung" />}
@@ -878,28 +878,39 @@ const App = () => {
                         .catch(err => alert("Fehler beim Laden vom Link: " + err.message));
 
                     // FALL B: Es ist ein JSON-Objekt
-                } else if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+                    // FALL B: Versuch als JSON zu parsen (Objekt oder Full State)
+                } else {
                     try {
+                        // Versuch Parsing
                         const data = JSON.parse(trimmed);
-                        if (data.text && !data.settings) {
-                            // Einfaches Text-Objekt
-                            setText(data.text);
-                            setIsViewMode(true);
+
+                        // Check ob es ein gültiges State-Objekt oder Text-Objekt ist
+                        // Wir akzeptieren alles was wie unsere Struktur aussieht
+                        if (data && typeof data === 'object') {
+                            if (data.text && !data.settings && Object.keys(data).length <= 2) {
+                                // Einfaches { text: "..." } Objekt
+                                if (confirm("Gescannter Text wird eingefügt. Überschreiben?")) {
+                                    setText(data.text);
+                                    setIsViewMode(true);
+                                }
+                            } else if (data.text || data.settings) {
+                                // Vollständiger State (mit Settings etc.)
+                                loadState(trimmed);
+                            } else {
+                                // Unbekanntes JSON - Behandle als Text?
+                                throw new Error("Unbekanntes JSON Format");
+                            }
                         } else {
-                            // Vollständiger State
-                            loadState(trimmed);
+                            throw new Error("Kein Objekt");
                         }
                     } catch (e) {
-                        // JSON Parse fehlgeschlagen = normaler Text
-                        setText(trimmed);
-                        setIsViewMode(true);
-                    }
-
-                    // FALL C: Reiner Text (Full Text QR Code)
-                } else {
-                    if (confirm("Gescannter Text wird eingefügt. Überschreiben?")) {
-                        setText(trimmed);
-                        setIsViewMode(true);
+                        // FALL C: Reiner Text (kein JSON)
+                        if (trimmed.length > 0) {
+                            if (confirm("Gescannter Text wird eingefügt. Überschreiben?")) {
+                                setText(trimmed);
+                                setIsViewMode(true);
+                            }
+                        }
                     }
                 }
             }} />}

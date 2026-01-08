@@ -81,13 +81,43 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
         const text = word.toLowerCase();
 
         if (isInitialSound) {
-            // In initial sound mode, only the very first character is a target
-            for (let j = 0; j < word.length; j++) {
+            // In initial sound mode, handle clusters at the very beginning
+            let clusterLen = 0;
+            const text = word.toLowerCase();
+
+            // Check for clusters (3 chars then 2 chars) at index 0
+            for (let len = 3; len >= 2; len--) {
+                const sub = text.substring(0, len);
+                if (clusters.includes(sub)) {
+                    clusterLen = len;
+                    break;
+                }
+            }
+
+            if (clusterLen > 0) {
+                // First gap is the cluster
                 chunks.push({
-                    text: word[j],
-                    isTarget: isWordStart && j === 0,
-                    id: `chunk_${j}`
+                    text: word.substring(0, clusterLen),
+                    isTarget: isWordStart,
+                    id: `chunk_0`
                 });
+                // Rest of the word
+                for (let j = clusterLen; j < word.length; j++) {
+                    chunks.push({
+                        text: word[j],
+                        isTarget: false,
+                        id: `chunk_${j}`
+                    });
+                }
+            } else {
+                // No cluster, standard single char first gap
+                for (let j = 0; j < word.length; j++) {
+                    chunks.push({
+                        text: word[j],
+                        isTarget: isWordStart && j === 0,
+                        id: `chunk_${j}`
+                    });
+                }
             }
             return chunks;
         }
@@ -438,7 +468,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                 <div className="flex items-center gap-4">
                     <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
                         {isInitialSound ? <Icons.InitialSound className="text-blue-600" /> : <Icons.GapWords className="text-blue-600" />}
-                        {title || (isInitialSound ? 'Anlaute finden' : 'Lückenwörter')}
+                        {title || (isInitialSound ? 'Anfangsbuchstaben finden' : 'Lückenwörter')}
                     </h2>
                     <span className="bg-slate-100 px-3 py-1 rounded-full text-slate-600 font-bold text-sm">
                         {currentGroupIdx + 1} / {groups.length}
@@ -499,8 +529,9 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                 </div>
             </div>
 
-            <div className={`flex-1 flex overflow-hidden ${isInitialSound ? 'flex-row-reverse' : ''}`}>
-                <div className="flex-1 p-8 overflow-y-auto custom-scroll flex flex-col items-center justify-center gap-12 bg-white/50">
+            <div className={`flex-1 overflow-y-auto custom-scroll bg-white/50 ${isInitialSound ? 'flex flex-row-reverse' : ''}`}>
+                {/* Fixed Layout: Centering wrapper that allows proper scrolling without top-clipping */}
+                <div className="min-h-full w-full p-8 flex flex-col items-center justify-center gap-12">
                     <div className="w-full max-w-4xl space-y-8">
                         {currentWords.map((word) => {
                             const isSolved = solvedWordIds.has(word.id);

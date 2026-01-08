@@ -20,7 +20,7 @@ const HorizontalLines = ({ count }) => (
     </div>
 );
 
-export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title }) => {
+export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, activeColor }) => {
     // Game State
     const [gameState, setGameState] = useState({
         stages: [],
@@ -319,6 +319,12 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title })
         }, 800);
     };
 
+    const getPieceColor = (pieceColor) => {
+        if (activeColor === 'neutral') return 'bg-blue-500'; // Default to blue
+        if (activeColor && activeColor !== 'neutral') return activeColor;
+        return pieceColor || 'bg-blue-500';
+    };
+
     const getVisiblePieces = (zone) => {
         const inSlots = Object.values(slots).map(p => p.id);
         return pieces[zone].filter(p => !inSlots.includes(p.id));
@@ -483,7 +489,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title })
                                     <PuzzleTestPiece
                                         label={p.text}
                                         type="left"
-                                        colorClass={p.color}
+                                        colorClass={getPieceColor(p.color)}
                                         dynamicWidth={p.width}
                                         scale={gameState.pieceScale * 0.8}
                                         fontFamily={settings.fontFamily}
@@ -520,7 +526,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title })
                                         <PuzzleTestPiece
                                             label={p.text}
                                             type="middle"
-                                            colorClass={p.color}
+                                            colorClass={getPieceColor(p.color)}
                                             dynamicWidth={p.width}
                                             scale={gameState.pieceScale * 0.8}
                                             fontFamily={settings.fontFamily}
@@ -536,8 +542,8 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title })
                         {currentStageItems.map(word => {
                             const isComplete = completedWords.has(word.id);
                             return (
-                                <div key={word.id} className={`flex items-center gap-6 transition-all duration-500 ${isComplete ? 'opacity-80 scale-95' : ''}`}>
-                                    <div className="relative flex items-center" style={{ height: 110 * gameState.pieceScale }}>
+                                <div key={word.id} className={`flex items-center gap-20 transition-all duration-500 ${isComplete ? 'opacity-80 scale-95' : ''}`}>
+                                    <div className="relative flex items-center pr-12" style={{ height: 110 * gameState.pieceScale }}>
                                         <div className="flex items-center gap-0" style={{ transform: `scale(${gameState.pieceScale})`, transformOrigin: 'left center', height: 110 }}>
                                             {word.syllables.map((syl, idx) => {
                                                 const slotKey = `${word.id}-${idx}`;
@@ -584,7 +590,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title })
                                                                 <PuzzleTestPiece
                                                                     label={piece.text}
                                                                     type={type}
-                                                                    colorClass={piece.color}
+                                                                    colorClass={getPieceColor(piece.color)}
                                                                     scale={1}
                                                                     dynamicWidth={piece.width}
                                                                     showSeamLine={true}
@@ -596,25 +602,26 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title })
                                                 );
                                             })}
                                         </div>
-
-                                        {/* Success Checkmark */}
-                                        <div className={`
-                                            absolute left-full transition-all duration-500 ease-out z-30 pointer-events-none flex items-center
-                                            ${isComplete ? 'scale-125 opacity-100' : 'scale-0 opacity-0'}
-                                        `} style={{ top: '50%', transform: 'translateY(-50%)', paddingLeft: '160px' }}>
-                                            <CheckCircle2 className="text-green-500 drop-shadow-2xl" style={{ width: `${60 * gameState.pieceScale}px`, height: `${60 * gameState.pieceScale}px` }} />
-                                        </div>
                                     </div>
 
-                                    {/* Audio Button per word */}
-                                    {/* Audio Button per word - consistent gap with Silbenbau 1 */}
-                                    <button
-                                        onClick={() => speak(word.word)}
-                                        className="w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg transition-all shrink-0 ring-4 ring-white/50 translate-y-[-4px] hover:scale-105 active:scale-95 ml-6"
-                                        title="Anhören"
-                                    >
-                                        <Icons.Volume2 size={24} />
-                                    </button>
+                                    {/* Audio Button & Checkmark - Standardized Group */}
+                                    <div className="relative flex items-center shrink-0">
+                                        <button
+                                            onClick={() => speak(word.word)}
+                                            className="w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg transition-all shrink-0 ring-4 ring-white/50 translate-y-[-4px] hover:scale-105 active:scale-95 z-10"
+                                            title="Anhören"
+                                        >
+                                            <Icons.Volume2 size={24} />
+                                        </button>
+
+                                        {/* Floating Checkmark - positioned exactly 20px to the right of the speaker */}
+                                        <div className={`
+                                            absolute left-full transition-all duration-500 ease-out z-30 pointer-events-none flex items-center
+                                            ${isComplete ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}
+                                        `} style={{ paddingLeft: '20px' }}>
+                                            <CheckCircle2 className="text-green-500 drop-shadow-2xl" style={{ width: '56px', height: '56px' }} />
+                                        </div>
+                                    </div>
                                 </div>
                             );
                         })}
@@ -646,7 +653,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title })
                                     <PuzzleTestPiece
                                         label={p.text}
                                         type="right"
-                                        colorClass={p.color}
+                                        colorClass={getPieceColor(p.color)}
                                         dynamicWidth={p.width}
                                         scale={gameState.pieceScale * 0.8}
                                         fontFamily={settings.fontFamily}

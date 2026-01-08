@@ -94,11 +94,33 @@ export const TwoPartPuzzleLayout = ({
     emptyMessage = "Keine passenden Wörter gefunden.",
     emptyHint = "Bitte markiere passende Wörter.",
     allCompleteMessage = "Alle geschafft!",
-    stageCompleteMessage = "Level geschafft!"
+    stageCompleteMessage = "Level geschafft!",
+    activeColor // Added activeColor prop
 }) => {
+    const getTextPadding = (type) => {
+        // Start pieces (Knob/Arrow on Right) -> Need Padding Right to shift text Left
+        // Increased from pr-12 to pr-20 to shift text further left
+        if (type === 'left' || type === 'zigzag-left') return 'pr-20';
+
+        // End pieces (Hole/Arrow-In on Left) -> Need Padding Left to shift text Right
+        // Using pr instead of pl to shift text further left
+        if (type === 'right' || type === 'zigzag-right') return 'pr-10';
+
+        // Middle pieces (Hole Left, Knob Right) -> Shift left
+        if (type === 'middle' || type === 'zigzag-middle') return 'pr-14';
+
+        return 'pr-4 pl-1';
+    };
+    const { gameStatus } = gameState;
+
+    const getPieceColor = (pieceColor) => {
+        if (activeColor === 'neutral') return 'bg-blue-500'; // Default to blue
+        if (activeColor && activeColor !== 'neutral') return activeColor;
+        return pieceColor || 'bg-blue-500';
+    };
 
     // Loading state
-    if (gameState.gameStatus === 'loading') {
+    if (gameStatus === 'loading' || !scrambledPieces) {
         return (
             <div className="h-screen w-screen flex flex-col items-center justify-center bg-blue-50">
                 <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
@@ -108,7 +130,7 @@ export const TwoPartPuzzleLayout = ({
     }
 
     // Empty state - no valid items
-    if (gameState.gameStatus === 'playing' && (!currentStageInfo || gameState.stages.length === 0)) {
+    if (gameStatus === 'playing' && (!currentStageInfo || gameState.stages.length === 0)) {
         return (
             <div className="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center p-6 text-center">
                 <AlertCircle className="w-16 h-16 text-blue-500 mb-4" />
@@ -133,8 +155,8 @@ export const TwoPartPuzzleLayout = ({
     }
 
     // Stage/All complete overlay
-    if (gameState.gameStatus === 'stage-complete' || gameState.gameStatus === 'all-complete') {
-        const isAllDone = gameState.gameStatus === 'all-complete';
+    if (gameStatus === 'stage-complete' || gameStatus === 'all-complete') {
+        const isAllDone = gameStatus === 'all-complete';
         return (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-md">
                 <div className="bg-white rounded-[3rem] shadow-2xl p-10 max-w-sm w-full flex flex-col items-center text-center animate-in zoom-in duration-300 relative overflow-hidden">
@@ -296,7 +318,7 @@ export const TwoPartPuzzleLayout = ({
                             <PuzzleTestPiece
                                 label={s.text}
                                 type={leftType}
-                                colorClass={s.color}
+                                colorClass={getPieceColor(s.color)}
                                 scale={scale}
                                 onDragStart={() => setIsDragging(s.id)}
                                 onDragEnd={() => setIsDragging(null)}
@@ -319,11 +341,12 @@ export const TwoPartPuzzleLayout = ({
                             relative flex items-center justify-center transition-all duration-500 py-8
                             ${showSuccess ? 'scale-105' : ''}
                         `}>
-                            <div className="flex items-center gap-6">
-                                <div className="flex items-center">
+                            <div className="flex items-center gap-20">
+                                <div className="flex items-center pr-12 relative">
                                     {['left', 'right'].map((role, idx) => {
                                         const pieceText = placedPieces[role];
                                         const typeName = role === 'left' ? leftType : rightType;
+                                        const slotKey = role; // Assuming placedPieces uses 'left' and 'right' as keys
 
                                         return (
                                             <div
@@ -369,7 +392,7 @@ export const TwoPartPuzzleLayout = ({
                                                         <PuzzleTestPiece
                                                             label={pieceText}
                                                             type={typeName}
-                                                            colorClass="bg-blue-500"
+                                                            colorClass={getPieceColor()} // Use activeColor or default
                                                             scale={scale}
                                                             showSeamLine={true}
                                                             fontFamily={settings.fontFamily}
@@ -381,25 +404,27 @@ export const TwoPartPuzzleLayout = ({
                                     })}
                                 </div>
 
-                                {/* Speaker Button to the right */}
-                                <button
-                                    onClick={() => onSpeak && currentTargetItem && onSpeak(currentTargetItem)}
-                                    className="w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all ring-4 ring-white/50 shrink-0"
-                                    title="Anhören"
-                                >
-                                    <Volume2 className="w-7 h-7" />
-                                </button>
-                            </div>
+                                {/* Audio Button & Checkmark - Standardized Group */}
+                                <div className="relative flex items-center shrink-0">
+                                    <button
+                                        onClick={() => onSpeak && currentTargetItem && onSpeak(currentTargetItem)}
+                                        className="w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all ring-4 ring-white/50 shrink-0 z-10"
+                                        title="Anhören"
+                                    >
+                                        <Volume2 className="w-7 h-7" />
+                                    </button>
 
-                            {/* Success Checkmark */}
-                            <div className={`
-                                absolute transition-all duration-500 ease-out z-30 pointer-events-none
-                                ${showSuccess ? 'scale-125 opacity-100 translate-x-24' : 'scale-0 opacity-0 translate-x-0'}
-                            `} style={{ left: '100%', top: '50%', transform: 'translateY(-50%)' }}>
-                                <CheckCircle2
-                                    className="text-green-500 drop-shadow-2xl"
-                                    style={{ width: `${80 * scale}px`, height: `${80 * scale}px` }}
-                                />
+                                    {/* Success Checkmark - Postioned exactly 20px to the right of the speaker */}
+                                    <div className={`
+                                        absolute left-full transition-all duration-500 ease-out z-30 pointer-events-none flex items-center
+                                        ${showSuccess ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}
+                                    `} style={{ paddingLeft: '20px' }}>
+                                        <CheckCircle2
+                                            className="text-green-500 drop-shadow-2xl"
+                                            style={{ width: '56px', height: '56px' }}
+                                        />
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -423,7 +448,7 @@ export const TwoPartPuzzleLayout = ({
                             <PuzzleTestPiece
                                 label={s.text}
                                 type={rightType}
-                                colorClass={s.color}
+                                colorClass={getPieceColor(s.color)}
                                 scale={scale}
                                 onDragStart={() => setIsDragging(s.id)}
                                 onDragEnd={() => setIsDragging(null)}

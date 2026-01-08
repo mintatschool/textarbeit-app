@@ -22,7 +22,7 @@ const HorizontalLines = ({ count }) => (
     </div>
 );
 
-export const SyllableCompositionExtensionView = ({ words, settings, onClose, title }) => {
+export const SyllableCompositionExtensionView = ({ words, settings, onClose, title, activeColor }) => {
     // Game Configuration
     const [gameState, setGameState] = useState({
         stages: [],
@@ -428,6 +428,12 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
 
 
 
+    const getPieceColor = (pieceColor) => {
+        if (activeColor === 'neutral') return 'bg-blue-500'; // Default to blue
+        if (activeColor && activeColor !== 'neutral') return activeColor;
+        return pieceColor || 'bg-blue-500';
+    };
+
     const currentStage = gameState.stages[gameState.currentStageIndex];
 
     // Filter out placed pieces from pools
@@ -521,7 +527,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                         {leftVisible.map(p => (
                             <div key={p.id} className="cursor-grab active:cursor-grabbing hover:scale-105 transition-transform"
                                 draggable onDragStart={(e) => { e.dataTransfer.setData("pieceId", p.id); setIsDragging(p.id); }} onDragEnd={() => setIsDragging(null)}>
-                                <PuzzleTestPiece label={p.text} type="zigzag-left" colorClass={p.color} scale={gameState.pieceScale * 0.8} fontFamily={settings.fontFamily} onDragStart={() => { }} />
+                                <PuzzleTestPiece label={p.text} type="zigzag-left" colorClass={getPieceColor(p.color)} scale={gameState.pieceScale * 0.8} fontFamily={settings.fontFamily} onDragStart={() => { }} />
                             </div>
                         ))}
                     </div>
@@ -546,7 +552,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                                     style={{ left: `${p.x}%`, top: `${p.y}%`, transform: `rotate(${p.rotation}deg)` }}
                                     draggable onDragStart={(e) => { e.dataTransfer.setData("pieceId", p.id); setIsDragging(p.id); }} onDragEnd={() => setIsDragging(null)}
                                 >
-                                    <PuzzleTestPiece label={p.text} type="zigzag-middle" colorClass={p.color} scale={gameState.pieceScale * 0.8} fontFamily={settings.fontFamily} onDragStart={() => { }} />
+                                    <PuzzleTestPiece label={p.text} type="zigzag-middle" colorClass={getPieceColor(p.color)} scale={gameState.pieceScale * 0.8} fontFamily={settings.fontFamily} onDragStart={() => { }} />
                                 </div>
                             ))}
                         </div>
@@ -557,9 +563,9 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                         {currentStage.items.map(target => {
                             const isComplete = completedTargets.has(target.id);
                             return (
-                                <div key={target.id} className={`flex items-center gap-6 transition-all duration-500 ${isComplete ? 'opacity-80 scale-95' : ''}`}>
+                                <div key={target.id} className={`flex items-center gap-20 transition-all duration-500 ${isComplete ? 'opacity-80 scale-95' : ''}`}>
                                     {/* Slot Row */}
-                                    <div className="relative flex items-center" style={{ height: 110 * gameState.pieceScale }}>
+                                    <div className="relative flex items-center pr-12" style={{ height: 110 * gameState.pieceScale }}>
                                         <div className="flex items-center gap-0" style={{ transform: `scale(${gameState.pieceScale})`, transformOrigin: 'left center', height: 110 }}>
                                             {Array.from({ length: target.parts.length }).map((_, idx) => {
                                                 const slotKey = `${target.id}-${idx}`;
@@ -606,31 +612,33 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                                                                     // But that's destructive.
                                                                 }}
                                                             >
-                                                                <PuzzleTestPiece label={piece.text} type={targetType} colorClass={piece.color} scale={1} id={piece.id} showSeamLine fontFamily={settings.fontFamily} />
+                                                                <PuzzleTestPiece label={piece.text} type={targetType} colorClass={getPieceColor(piece.color)} scale={1} id={piece.id} showSeamLine fontFamily={settings.fontFamily} />
                                                             </div>
                                                         )}
                                                     </div>
                                                 );
                                             })}
                                         </div>
-
-                                        {/* Floating Checkmark - matching Silbenbau 1 style and spacing */}
-                                        <div className={`
-                                            absolute left-full transition-all duration-500 ease-out z-30 pointer-events-none flex items-center
-                                            ${isComplete ? 'scale-125 opacity-100' : 'scale-0 opacity-0'}
-                                        `} style={{ top: '50%', transform: 'translateY(-50%)', paddingLeft: '160px' }}>
-                                            <CheckCircle2 className="text-green-500 drop-shadow-2xl" style={{ width: `${80 * gameState.pieceScale}px`, height: `${80 * gameState.pieceScale}px` }} />
-                                        </div>
                                     </div>
 
-                                    {/* Audio Button - Moved to Right */}
-                                    <button
-                                        onClick={() => speak(target.full)}
-                                        className="w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg transition-all shrink-0 ring-4 ring-white/50 hover:scale-105 active:scale-95 ml-6"
-                                        title="Anhören"
-                                    >
-                                        <Volume2 size={24} />
-                                    </button>
+                                    {/* Audio Button & Checkmark - Standardized Group */}
+                                    <div className="relative flex items-center shrink-0 ml-4">
+                                        <button
+                                            onClick={() => speak(target.full)}
+                                            className="w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg transition-all ring-4 ring-white/50 hover:scale-105 active:scale-95 z-10"
+                                            title="Anhören"
+                                        >
+                                            <Volume2 size={24} />
+                                        </button>
+
+                                        {/* Floating Checkmark - positioned exactly 20px to the right of the speaker */}
+                                        <div className={`
+                                            absolute left-full transition-all duration-500 ease-out z-30 pointer-events-none flex items-center
+                                            ${isComplete ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}
+                                        `} style={{ paddingLeft: '20px' }}>
+                                            <CheckCircle2 className="text-green-500 drop-shadow-2xl" style={{ width: '56px', height: '56px' }} />
+                                        </div>
+                                    </div>
                                 </div>
                             );
                         })}
@@ -653,12 +661,12 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                         {rightVisible.map(p => (
                             <div key={p.id} className="cursor-grab active:cursor-grabbing hover:scale-105 transition-transform"
                                 draggable onDragStart={(e) => { e.dataTransfer.setData("pieceId", p.id); setIsDragging(p.id); }} onDragEnd={() => setIsDragging(null)}>
-                                <PuzzleTestPiece label={p.text} type="zigzag-right" colorClass={p.color} scale={gameState.pieceScale * 0.8} fontFamily={settings.fontFamily} onDragStart={() => { }} />
+                                <PuzzleTestPiece label={p.text} type="zigzag-right" colorClass={getPieceColor(p.color)} scale={gameState.pieceScale * 0.8} fontFamily={settings.fontFamily} onDragStart={() => { }} />
                             </div>
                         ))}
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };

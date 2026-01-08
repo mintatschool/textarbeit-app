@@ -67,6 +67,9 @@ const PuzzleTestPiece = ({
 
     const getHexColor = (twClass) => {
         if (isGhost) return '#F1F5F9'; // Very light slate for background
+        if (twClass === 'neutral') return '#3b82f6'; // Blue background for neutral (User request)
+        if (twClass && twClass.startsWith('#')) return twClass; // Direct hex support
+
         const colorMap = {
             'bg-blue-500': '#3b82f6',
             'bg-pink-500': '#ec4899',
@@ -79,17 +82,21 @@ const PuzzleTestPiece = ({
         return colorMap[twClass] || '#3b82f6';
     };
 
+    const isNeutral = colorClass === 'neutral';
+
+    // Determine padding to center text visually in the "body" excluding knobs
     // Determine padding to center text visually in the "body" excluding knobs
     const getTextPadding = () => {
         // Start pieces (Knob/Arrow on Right) -> Need Padding Right to shift text Left
-        if (type === 'left' || type === 'zigzag-left') return 'pr-12';
+        // Increased from pr-12 to pr-20 to shift text further left
+        if (type === 'left' || type === 'zigzag-left') return 'pr-20';
 
         // End pieces (Hole/Arrow-In on Left) -> Need Padding Left to shift text Right
-        // Reduced from pl-8 to pl-2 to shift text further left
-        if (type === 'right' || type === 'zigzag-right') return 'pl-2';
+        // Using pr instead of pl to shift text further left
+        if (type === 'right' || type === 'zigzag-right') return 'pr-10';
 
         // Middle pieces (Hole Left, Knob Right) -> Shift left
-        if (type === 'middle' || type === 'zigzag-middle') return 'pl-2 pr-10';
+        if (type === 'middle' || type === 'zigzag-middle') return 'pr-14';
 
         return 'pr-4 pl-1';
     };
@@ -137,8 +144,8 @@ const PuzzleTestPiece = ({
                         <path
                             d={path}
                             fill={getHexColor(colorClass)}
-                            stroke={isGhost ? '#64748b' : 'rgba(255,255,255,0.7)'}
-                            strokeWidth={isGhost ? "4" : (3 / stretchX)}
+                            stroke={isGhost ? '#64748b' : (isNeutral ? '#cbd5e1' : 'rgba(255,255,255,0.7)')}
+                            strokeWidth={isGhost ? "4" : (isNeutral ? (4 / stretchX) : (3 / stretchX))}
                             strokeOpacity="1"
                             strokeDasharray="0"
                             strokeLinejoin="round"
@@ -149,7 +156,7 @@ const PuzzleTestPiece = ({
                             <path
                                 d={path}
                                 fill="none"
-                                stroke="rgba(0,0,0,0.15)"
+                                stroke={isNeutral ? "rgba(0,0,0,0.05)" : "rgba(0,0,0,0.15)"}
                                 strokeWidth="2"
                                 className="pointer-events-none"
                                 vectorEffect="non-scaling-stroke"
@@ -160,11 +167,11 @@ const PuzzleTestPiece = ({
 
                 {!isGhost && (
                     <div className={`absolute inset-0 flex items-center justify-center pointer-events-none z-10 ${getTextPadding()}`}>
-                        <span className="select-none font-black text-white text-center block w-full"
+                        <span className={`select-none font-black text-center block w-full ${isNeutral ? 'text-slate-800' : 'text-white'}`}
                             style={{
                                 fontSize: calculateFontSize(),
                                 fontFamily: fontFamily,
-                                textShadow: '0 2px 5px rgba(0,0,0,0.4)',
+                                textShadow: isNeutral ? 'none' : '0 2px 5px rgba(0,0,0,0.4)',
                                 maxWidth: '100%',
                                 whiteSpace: 'nowrap',
                             }}>
