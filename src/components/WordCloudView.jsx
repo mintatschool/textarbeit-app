@@ -23,83 +23,7 @@ export const WordCloudView = ({ words, settings, setSettings, onClose, title }) 
         return () => { document.body.style.overflow = ''; document.removeEventListener('touchmove', preventDefault); };
     }, [isDragging]);
 
-    const generateSpiralPositions = (chunks, fontSize) => {
-        const positions = [];
-        const centerX = 50;
-        const centerY = 50;
-        const sortedChunks = [...chunks].sort((a, b) => b.text.length - a.text.length);
 
-        // Approximate char width in percentage.
-        // Assuming container width is roughly 400px minimum for cloud area (max-w-md is 28rem = 448px)
-        // A char at 48px is roughly 30px wide? So 30/448 * 100 approx 7%.
-        // Let's use a scale factor.
-        const charWFactor = (fontSize / 450) * 100;
-        const charHFactor = (fontSize / 250) * 100;
-
-        return sortedChunks.map(chunk => {
-            const chunkW = 4 + (chunk.text.length * charWFactor);
-            const chunkH = charHFactor + 2;
-
-            let angle = 0;
-            let radius = 0;
-            let x, y;
-            let found = false;
-            const maxRadius = 100;
-
-            while (radius < maxRadius) {
-                // Spiral path
-                x = centerX + radius * Math.cos(angle);
-                y = centerY + radius * 0.7 * Math.sin(angle); // Ellipse
-
-                // Keep within bounds (leaving some padding)
-                const margin = 5;
-                const boundedX = Math.max(margin + chunkW / 2, Math.min(100 - margin - chunkW / 2, x));
-                const boundedY = Math.max(margin + chunkH / 2, Math.min(100 - margin - chunkH / 2, y));
-
-                const candidate = {
-                    left: boundedX - chunkW / 2,
-                    right: boundedX + chunkW / 2,
-                    top: boundedY - chunkH / 2,
-                    bottom: boundedY + chunkH / 2
-                };
-
-                let collision = false;
-                for (const p of positions) {
-                    const buffer = 1.5; // Small buffer between pieces
-                    const existing = {
-                        left: p.x - p.w / 2 - buffer,
-                        right: p.x + p.w / 2 + buffer,
-                        top: p.y - p.h / 2 - buffer,
-                        bottom: p.y + p.h / 2 + buffer
-                    };
-                    if (candidate.left < existing.right && candidate.right > existing.left &&
-                        candidate.top < existing.bottom && candidate.bottom > existing.top) {
-                        collision = true;
-                        break;
-                    }
-                }
-
-                if (!collision) {
-                    x = boundedX;
-                    y = boundedY;
-                    found = true;
-                    break;
-                }
-
-                angle += 0.4;
-                radius += 0.25;
-            }
-
-            if (!found) {
-                x = centerX + (Math.random() - 0.5) * 60;
-                y = centerY + (Math.random() - 0.5) * 60;
-            }
-
-            const pos = { x, y, w: chunkW, h: chunkH };
-            positions.push(pos);
-            return { ...chunk, x, y };
-        });
-    };
 
     useEffect(() => {
         const cWords = words.map(w => {
@@ -113,9 +37,11 @@ export const WordCloudView = ({ words, settings, setSettings, onClose, title }) 
                     return chunkObj;
                 });
                 return { text: syl, chunks };
+                return { text: syl, chunks };
             });
-            const positionedChunks = generateSpiralPositions(wordChunks, settings.fontSize);
-            return { id: w.id, fullWord: w.word, syllables: syllables, allChunks: positionedChunks };
+            // We just shuffle the chunks to prevent direct order hints
+            const shuffledChunks = [...wordChunks].sort(() => Math.random() - 0.5);
+            return { id: w.id, fullWord: w.word, syllables: syllables, allChunks: shuffledChunks };
         });
         setCloudWords(cWords);
         setPoolChunks(cWords.flatMap(w => w.allChunks));
@@ -233,22 +159,21 @@ export const WordCloudView = ({ words, settings, setSettings, onClose, title }) 
                                         <svg viewBox="0 0 24 24" className="w-full h-full overflow-visible pointer-events-none" preserveAspectRatio="none">
                                             <path d={cloudSVGPath} fill="currentColor" stroke="#93c5fd" strokeWidth="1" vectorEffect="non-scaling-stroke" />
                                         </svg>
-                                        <div className="absolute inset-0 z-10 overflow-hidden rounded-full opacity-100 pointer-events-none">
-                                            <div className="relative w-full h-full pointer-events-auto">
+                                        <div className="absolute inset-0 z-10 overflow-hidden rounded-3xl opacity-100 pointer-events-none">
+                                            <div className="relative w-full h-full pointer-events-auto flex flex-wrap justify-center items-center content-center gap-4 p-8">
                                                 {activePool.map((chunk) => (
                                                     <div key={chunk.id} draggable
                                                         onDragStart={(e) => handleDragStart(e, chunk, 'pool')}
                                                         onDragEnd={handleDragEnd}
                                                         onClick={(e) => { e.stopPropagation(); handleChunkClick(chunk, 'pool'); }}
-                                                        className={`absolute cursor-grab active:cursor-grabbing bg-white border-2 border-blue-400 shadow-lg rounded-xl flex items-stretch overflow-hidden font-bold text-slate-800 hover:scale-105 active:scale-95 transition-all touch-action-none touch-manipulation select-none touch-none ${selectedChunk?.id === chunk.id ? 'ring-4 ring-blue-500 scale-125 z-50' : 'z-20'}`}
+                                                        onContextMenu={(e) => e.preventDefault()}
+                                                        className={`cursor-grab active:cursor-grabbing bg-white border-2 border-blue-400 shadow-lg rounded-xl flex items-stretch overflow-hidden font-bold text-slate-800 hover:scale-105 active:scale-95 transition-all touch-action-none touch-manipulation select-none touch-none ${selectedChunk?.id === chunk.id ? 'ring-4 ring-blue-500 scale-125 z-50' : 'z-20'}`}
                                                         style={{
                                                             fontFamily: settings.fontFamily,
                                                             fontSize: `${Math.max(16, settings.fontSize * 0.75)}px`,
-                                                            left: `${chunk.x}%`,
-                                                            top: `${chunk.y}%`,
-                                                            transform: 'translate(-50%, -50%)',
                                                             whiteSpace: 'nowrap',
-                                                            height: '2.5em'
+                                                            height: '2.5em',
+                                                            minWidth: '2em' // Ensure not too thin
                                                         }}
                                                     >
                                                         {chunk.text.split('').map((char, cI) => {

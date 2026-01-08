@@ -277,23 +277,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
         );
 
         // Grid-based positioning
-        const shuffled = [...targets].sort(() => Math.random() - 0.5);
-        const columns = 2;
-        const rows = Math.ceil(shuffled.length / columns);
-        const cellW = 100 / columns;
-        const cellH = 100 / Math.max(4, rows);
-
-        const positioned = shuffled.map((l, i) => {
-            const col = i % columns;
-            const row = Math.floor(i / columns);
-            const jitterX = (Math.random() - 0.5) * (cellW * 0.4);
-            const jitterY = (Math.random() - 0.5) * (cellH * 0.4);
-            const x = (col * cellW) + (cellW / 2) + jitterX;
-            const y = (row * cellH) + (cellH / 2) + jitterY;
-            return { ...l, x, y };
-        });
-
-        setPoolLetters(positioned);
+        setPoolLetters(shuffled);
         setPlacedLetters({});
         setGroupSolved(false);
         setSolvedWordIds(new Set());
@@ -636,7 +620,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                         </div>
 
                     </div>
-                    <div className="flex-1 relative overflow-hidden">
+                    <div className="flex-1 relative overflow-y-auto custom-scroll p-4 flex flex-wrap content-start justify-center gap-3">
                         {poolLetters.map((l) => {
                             const isVowelTile = mode === 'vowels' && [...l.text.toLowerCase()].some(isVowel);
                             return (
@@ -646,14 +630,15 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                                     onDragStart={(e) => handleDragStart(e, l, 'pool')}
                                     onDragEnd={handleDragEnd}
                                     onClick={() => handlePoolLetterClick(l)}
-                                    className={`absolute border-2 text-slate-800 font-bold rounded-2xl transition-all flex items-center justify-center p-3 cursor-grab active:cursor-grabbing hover:scale-110 bg-white border-slate-300 shadow-[0_4px_0_0_#cbd5e1] hover:shadow-[0_2px_0_0_#cbd5e1] hover:translate-y-[2px] draggable-piece ${isVowelTile ? 'bg-yellow-100 border-yellow-400' : ''} ${selectedLetter?.poolId === l.poolId ? 'selected-piece ring-4 ring-blue-500 !scale-110 z-50' : ''}`}
-                                    style={{ left: `${l.x}%`, top: `${l.y}%`, transform: 'translate(-50%, -50%)', fontSize: `${Math.max(20, settings.fontSize * 0.8)}px`, fontFamily: settings.fontFamily, minWidth: '3.5rem' }}
+                                    onContextMenu={(e) => e.preventDefault()}
+                                    className={`border-2 text-slate-800 font-bold rounded-2xl transition-all flex items-center justify-center p-3 cursor-grab active:cursor-grabbing hover:scale-110 bg-white border-slate-300 shadow-[0_4px_0_0_#cbd5e1] hover:shadow-[0_2px_0_0_#cbd5e1] hover:translate-y-[2px] draggable-piece ${isVowelTile ? 'bg-yellow-100 border-yellow-400' : ''} ${selectedLetter?.poolId === l.poolId ? 'selected-piece ring-4 ring-blue-500 !scale-110 z-50' : ''}`}
+                                    style={{ fontSize: `${Math.max(20, settings.fontSize * 0.8)}px`, fontFamily: settings.fontFamily, minWidth: '3.5rem' }}
                                 >
                                     {l.text}
                                 </div>
                             );
                         })}
-                        {poolLetters.length === 0 && !groupSolved && <div className="absolute inset-0 flex items-center justify-center p-8 text-center text-slate-400 italic text-sm">Prüfe deine Antworten...</div>}
+                        {poolLetters.length === 0 && !groupSolved && <div className="absolute inset-0 flex items-center justify-center p-8 text-center text-slate-400 italic text-sm pointer-events-none">Prüfe deine Antworten...</div>}
                     </div>
                 </div>
             </div>

@@ -49,26 +49,28 @@ const useHypherLoader = () => {
     return { instance: hyphenatorInstance, loading: false };
 };
 
+const DEFAULT_SETTINGS = {
+    fontSize: 48,
+    lineHeight: 3.0,
+    wordSpacing: 0.4,
+    visualType: 'block',
+    displayTrigger: 'click',
+    fontFamily: "'Patrick Hand', cursive",
+    enableCamera: false,
+    clickAction: 'yellow_border',
+    zoomActive: false,
+    zoomScale: 1.2,
+    lockScroll: false,
+    centerText: false,
+    smartSelection: true,
+    textWidth: 80,
+    clusters: ['sch', 'chs', 'ch', 'ck', 'ph', 'pf', 'th', 'qu', 'ei', 'ie', 'eu', 'au', 'äu', 'ai', 'sp', 'st']
+};
+
 const App = () => {
     const [text, setText] = useState("");
     const [isViewMode, setIsViewMode] = useState(false);
-    const [settings, setSettings] = useState({
-        fontSize: 48,
-        lineHeight: 3.0,
-        wordSpacing: 0.4,
-        visualType: 'block',
-        displayTrigger: 'click',
-        fontFamily: "'Patrick Hand', cursive",
-        enableCamera: false,
-        clickAction: 'yellow_border',
-        zoomActive: false,
-        zoomScale: 1.2,
-        lockScroll: false,
-        centerText: false,
-        smartSelection: true,
-        textWidth: 80,
-        clusters: ['sch', 'chs', 'ch', 'ck', 'ph', 'pf', 'th', 'qu', 'ei', 'ie', 'eu', 'au', 'äu', 'ai', 'sp', 'st']
-    });
+    const [settings, setSettings] = useState(DEFAULT_SETTINGS);
 
 
     const [highlightedIndices, setHighlightedIndices] = useState(new Set());
@@ -160,7 +162,16 @@ const App = () => {
         try {
             const data = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
             if (data.text) setText(data.text);
-            if (data.settings) setSettings(prev => ({ ...prev, ...data.settings }));
+            if (data.settings) {
+                // Merge Data Settings with Default Settings to ensure cleaner state
+                // This resets any unspecified settings to their defaults
+                const newSettings = { ...DEFAULT_SETTINGS };
+                // Only apply provided keys
+                Object.keys(data.settings).forEach(key => {
+                    newSettings[key] = data.settings[key];
+                });
+                setSettings(newSettings);
+            }
 
             // Robust loading with defaults for missing keys
             setHighlightedIndices(new Set(data.highlights || []));
@@ -870,7 +881,19 @@ const App = () => {
             {showCorrectionModal && correctionData && <CorrectionModal word={correctionData.word} currentSyllables={correctionData.syllables} font={settings.fontFamily} onSave={handleCorrectionSave} onClose={() => setShowCorrectionModal(false)} />}
             {showQR && <QRCodeModal text={JSON.stringify({
                 text,
-                settings,
+                settings: (() => {
+                    const diff = {};
+                    let hasDiff = false;
+                    Object.keys(settings).forEach(key => {
+                        const val = settings[key];
+                        // Compare with default
+                        if (JSON.stringify(val) !== JSON.stringify(DEFAULT_SETTINGS[key])) {
+                            diff[key] = val;
+                            hasDiff = true;
+                        }
+                    });
+                    return hasDiff ? diff : undefined;
+                })(),
                 highlights: highlightedIndices.size > 0 ? Array.from(highlightedIndices) : undefined,
                 hidden: hiddenIndices.size > 0 ? Array.from(hiddenIndices) : undefined,
                 manualCorrections: Object.keys(manualCorrections).length > 0 ? manualCorrections : undefined,

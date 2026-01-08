@@ -314,6 +314,7 @@ export const TwoPartPuzzleLayout = ({
                             key={s.id}
                             className="transition-transform hover:scale-105 active:scale-95 cursor-grab active:cursor-grabbing"
                             style={{ zIndex: isDragging === s.id ? 100 : 10 }}
+                            onContextMenu={(e) => e.preventDefault()}
                         >
                             <PuzzleTestPiece
                                 label={s.text}
@@ -388,6 +389,7 @@ export const TwoPartPuzzleLayout = ({
                                                             e.dataTransfer.setData("source-role", role);
                                                         }}
                                                         onClick={() => removePieceFromSlot(role)}
+                                                        onContextMenu={(e) => e.preventDefault()}
                                                     >
                                                         <PuzzleTestPiece
                                                             label={pieceText}
@@ -444,6 +446,7 @@ export const TwoPartPuzzleLayout = ({
                             key={s.id}
                             className="transition-transform hover:scale-105 active:scale-95 cursor-grab active:cursor-grabbing"
                             style={{ zIndex: isDragging === s.id ? 100 : 10 }}
+                            onContextMenu={(e) => e.preventDefault()}
                         >
                             <PuzzleTestPiece
                                 label={s.text}
