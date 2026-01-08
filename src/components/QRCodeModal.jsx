@@ -8,7 +8,7 @@ export const QRCodeModal = ({ text, onClose }) => {
     const [linkInput, setLinkInput] = useState("");
     const [isMaximized, setIsMaximized] = useState(false);
     const [tooLongError, setTooLongError] = useState(false);
-    const [mode, setMode] = useState('text'); // 'text' or 'link'
+    const [mode, setMode] = useState('text'); // 'text' (full state), 'raw' (just plain text), or 'link'
 
     // UTF-8 Encoding Fix für Umlaute
     const toUtf8Bytes = (str) => {
@@ -34,7 +34,19 @@ export const QRCodeModal = ({ text, onClose }) => {
     const qrValue = useMemo(() => {
         if (!parsedData || !parsedData.text) return "";
 
-        let contentToEncode = text; // Default: The input JSON string (Full State)
+        let contentToEncode = text; // Default: The input string
+
+        if (mode === 'raw') {
+            // Extract ONLY the text content from the JSON
+            if (parsedData && parsedData.text) {
+                contentToEncode = parsedData.text;
+            } else {
+                // If it's already just text or doesn't have structure
+                contentToEncode = text;
+            }
+        } else {
+            // Standard Full Mode (Text logic below)
+        }
 
         // Feature: Markierungen als # exportieren
         if (showHashes && parsedData.highlights && Array.isArray(parsedData.highlights) && parsedData.highlights.length > 0) {
@@ -97,6 +109,11 @@ export const QRCodeModal = ({ text, onClose }) => {
         if (showHashes) return toUtf8Bytes(contentToEncode);
 
         // Standard behavior
+        // Standard behavior
+        if (mode === 'raw') {
+            return toUtf8Bytes(contentToEncode);
+        }
+
         const rawString = contentToEncode.length > 300 ? contentToEncode : (contentToEncode.startsWith('{') ? contentToEncode : JSON.stringify({ text: contentToEncode }));
         return toUtf8Bytes(rawString);
 
@@ -104,7 +121,7 @@ export const QRCodeModal = ({ text, onClose }) => {
 
     // QR-Code für Text rendern
     useEffect(() => {
-        if (mode !== 'text') return;
+        if (mode === 'link') return;
         if (qrRef.current && qrValue && !isMaximized && !tooLongError) {
             try {
                 new QRious({
@@ -169,7 +186,7 @@ export const QRCodeModal = ({ text, onClose }) => {
                         <canvas ref={fullQrRef} style={{ maxWidth: '100%', maxHeight: '80vh', objectFit: 'contain' }}></canvas>
                     </div>
                     <p className="mt-4 text-slate-500 font-medium">
-                        {mode === 'link' ? 'Link-QR-Code' : `Text-QR-Code (${text?.length || 0} Zeichen)`}
+                        {mode === 'link' ? 'Link-QR-Code' : (mode === 'raw' ? 'Nur Text (Kompakt)' : 'Kompletter Status')}
                     </p>
                     <button
                         onClick={() => setIsMaximized(false)}
@@ -194,22 +211,31 @@ export const QRCodeModal = ({ text, onClose }) => {
                 {/* Tab-Umschalter */}
                 <div className="flex w-full gap-2 mb-4">
                     <button
-                        onClick={resetToText}
-                        className={`flex-1 py-2 rounded-lg font-bold text-sm transition ${mode === 'text'
+                        onClick={() => { setMode('text'); setLinkInput(""); }}
+                        className={`flex-1 py-2 rounded-lg font-bold text-xs transition ${mode === 'text'
                             ? 'bg-blue-600 text-white'
                             : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                             }`}
                     >
-                        📝 Voller Text
+                        📝 Alles
+                    </button>
+                    <button
+                        onClick={() => { setMode('raw'); setLinkInput(""); }}
+                        className={`flex-1 py-2 rounded-lg font-bold text-xs transition ${mode === 'raw'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                            }`}
+                    >
+                        📄 Nur Text
                     </button>
                     <button
                         onClick={() => setMode('link')}
-                        className={`flex-1 py-2 rounded-lg font-bold text-sm transition ${mode === 'link'
+                        className={`flex-1 py-2 rounded-lg font-bold text-xs transition ${mode === 'link'
                             ? 'bg-blue-600 text-white'
                             : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                             }`}
                     >
-                        🔗 Cloud-Link
+                        🔗 Link
                     </button>
                 </div>
 
@@ -255,9 +281,9 @@ export const QRCodeModal = ({ text, onClose }) => {
                         <>
                             <div className="bg-white p-4 rounded-xl border-4 border-slate-100 mb-4 flex justify-center min-h-[280px] flex-col items-center">
                                 <canvas ref={qrRef} style={{ width: '100%', maxWidth: '280px', height: 'auto' }}></canvas>
-                                {mode === 'text' && (
+                                {mode !== 'link' && (
                                     <p className="text-xs text-slate-400 mt-2">
-                                        {text?.length || 0} Zeichen
+                                        {mode === 'text' ? 'Status + Text' : 'Nur Text'} ({parsedData?.text?.length || text?.length || 0} Zeichen)
                                     </p>
                                 )}
                             </div>
