@@ -6,15 +6,10 @@ import { EmptyStateMessage } from './EmptyStateMessage';
 // --- UTILS ---
 const splitText = (text, mode) => {
     if (mode === 'sentence') {
-        // Mode Sentence: Split by . ! ? followed by whitespace
-        // Keep the punctuation with the sentence? 
-        // User regex: /(?<=[.!?])\s+/
-        return text.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 0);
+        // Mode Sentence: Split by . ! ? followed by whitespace or by newlines
+        return text.split(/(?<=[.!?])\s+|\n+/).filter(s => s.trim().length > 0);
     } else {
         // Mode Text: Split by Paragraphs (\n\s*\n)
-        // User regex: /\n\s*\n/
-        // Also handle single newlines if they are meant to be blocks? 
-        // User specific regex: /\n\s*\n/ implies blank lines.
         return text.split(/\n\s*\n/).filter(s => s.trim().length > 0);
     }
 };
@@ -69,12 +64,16 @@ export const SentencePuzzleView = ({ text, mode = 'sentence', onClose, settings,
             return;
         }
 
-        const initialPieces = rawSegments.map((seg, idx) => ({
-            id: `part-${idx}`,
-            text: seg.trim(),
-            originalIndex: idx,
-            color: PASTEL_COLORS[idx % PASTEL_COLORS.length]
-        }));
+        const initialPieces = rawSegments.map((seg, idx) => {
+            const trimmed = seg.trim();
+            const capitalized = trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+            return {
+                id: `part-${idx}`,
+                text: capitalized,
+                originalIndex: idx,
+                color: PASTEL_COLORS[idx % PASTEL_COLORS.length]
+            };
+        });
 
         // Shuffle
         const shuffled = [...initialPieces];

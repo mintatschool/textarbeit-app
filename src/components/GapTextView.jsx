@@ -46,17 +46,24 @@ export const GapTextView = ({ text, settings, setSettings, onClose, title }) => 
 
     // Sentence Splitting Logic
     const splitSentences = (txt) => {
-        return txt.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 5);
+        return txt.split(/(?<=[.!?])\s+|\n+/).filter(s => s.trim().length > 1);
     };
 
     // Word Logic: find 3 longest words, pick one
     const processSentence = (sentence, sIdx) => {
         const wordsInSentence = sentence.split(/\s+/).filter(w => w.length > 0);
+
+        // Capitalize the first word of the sentence
+        if (wordsInSentence.length > 0) {
+            const firstWord = wordsInSentence[0];
+            firstWord.text = firstWord.text.charAt(0).toUpperCase() + firstWord.text.slice(1);
+        }
+
         const cleanWords = wordsInSentence.map((w, i) => ({
             text: w,
             clean: w.replace(/[^\w\u00C0-\u017F]/g, ''),
             index: i
-        })).filter(w => w.clean.length > 3); // Must be longer than 3 chars
+        })).filter(w => w.clean.length > 2); // Relaxed length
 
         if (cleanWords.length === 0) return { id: `s_${sIdx}`, parts: wordsInSentence.map(w => ({ type: 'text', text: w })) };
 

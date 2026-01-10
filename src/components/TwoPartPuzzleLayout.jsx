@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import {
     Volume2,
+    VolumeX,
     CheckCircle2,
     ChevronRight,
     Minus,
@@ -8,6 +9,7 @@ import {
     AlertCircle
 } from 'lucide-react';
 import { Icons } from './Icons';
+import { EmptyStateMessage } from './EmptyStateMessage';
 import { ProgressBar } from './ProgressBar';
 import PuzzleTestPiece from './PuzzleTestPiece';
 
@@ -113,6 +115,8 @@ export const TwoPartPuzzleLayout = ({
     };
     const { gameStatus } = gameState;
 
+    const [audioEnabled, setAudioEnabled] = React.useState(true);
+
     const getPieceColor = (pieceColor) => {
         if (activeColor === 'neutral') return 'bg-blue-500'; // Default to blue
         if (activeColor && activeColor !== 'neutral') return activeColor;
@@ -132,24 +136,8 @@ export const TwoPartPuzzleLayout = ({
     // Empty state - no valid items
     if (gameStatus === 'playing' && (!currentStageInfo || gameState.stages.length === 0)) {
         return (
-            <div className="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center p-6 text-center">
-                <AlertCircle className="w-16 h-16 text-blue-500 mb-4" />
-                <h2 className="text-xl font-bold text-slate-800 mb-2">{emptyMessage}</h2>
-                <p className="text-slate-600 mb-6 font-medium max-w-md">{emptyHint}</p>
-                <div className="flex gap-4">
-                    <button
-                        onClick={() => startNewGame()}
-                        className="bg-blue-600 text-white px-8 py-2 rounded-xl font-bold shadow-lg flex items-center gap-2 hover:scale-105 transition-transform"
-                    >
-                        <Icons.RotateCcw size={18} /> Aktualisieren
-                    </button>
-                    <button
-                        onClick={onClose}
-                        className="bg-slate-100 text-slate-700 px-8 py-2 rounded-xl font-bold shadow-md hover:bg-slate-200 transition-colors border border-slate-200"
-                    >
-                        Zurück
-                    </button>
-                </div>
+            <div className="fixed inset-0 bg-slate-100 z-[100] flex flex-col items-center justify-center p-6">
+                <EmptyStateMessage onClose={onClose} secondStepText={emptyHint} />
             </div>
         );
     }
@@ -224,6 +212,15 @@ export const TwoPartPuzzleLayout = ({
                 </div>
 
                 <div className="flex items-center gap-4">
+                    {/* Audio Toggle */}
+                    <button
+                        onClick={() => setAudioEnabled(!audioEnabled)}
+                        className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${audioEnabled ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-400'}`}
+                        title={audioEnabled ? 'Audio an' : 'Audio aus'}
+                    >
+                        {audioEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
+                    </button>
+
                     {/* Mode Selector */}
                     <div className="flex items-center gap-2 bg-slate-100/80 p-1.5 rounded-[1.25rem] border border-slate-200 hidden md:flex">
                         {['both-empty', 'left-filled', 'right-filled'].map((m) => (
@@ -408,13 +405,15 @@ export const TwoPartPuzzleLayout = ({
 
                                 {/* Audio Button & Checkmark - Standardized Group */}
                                 <div className="relative flex items-center shrink-0">
-                                    <button
-                                        onClick={() => onSpeak && currentTargetItem && onSpeak(currentTargetItem)}
-                                        className="w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all ring-4 ring-white/50 shrink-0 z-10"
-                                        title="Anhören"
-                                    >
-                                        <Volume2 className="w-7 h-7" />
-                                    </button>
+                                    {audioEnabled && (
+                                        <button
+                                            onClick={() => onSpeak && currentTargetItem && onSpeak(currentTargetItem)}
+                                            className="w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all ring-4 ring-white/50 shrink-0 z-10"
+                                            title="Anhören"
+                                        >
+                                            <Volume2 className="w-7 h-7" />
+                                        </button>
+                                    )}
 
                                     {/* Success Checkmark - Postioned exactly 20px to the right of the speaker */}
                                     <div className={`

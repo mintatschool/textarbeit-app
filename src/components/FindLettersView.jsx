@@ -454,7 +454,7 @@ export const FindLettersView = ({ text, settings, setSettings, onClose, title })
                                         className={`w-full px-4 py-3 text-left font-bold rounded-xl transition-all border-2 flex items-center justify-between group ${selectedTarget?.label === target.label ? 'border-blue-600 bg-blue-50 text-blue-800' : isEmpty ? 'border-transparent text-slate-400' : 'border-transparent hover:bg-slate-100 text-slate-700'}`}
                                     >
                                         <div className="flex items-baseline gap-2">
-                                            <span style={{ fontFamily: settings.fontFamily, fontSize: `${labelSize}rem`, lineHeight: 1.2 }}>{target.label}</span>
+                                            <span style={{ fontFamily: settings.fontFamily, fontSize: `${labelSize}rem`, lineHeight: 1 }}>{target.label}</span>
                                             <div className={`font-medium ${isEmpty ? 'text-slate-400' : 'text-slate-400'}`} style={{ fontFamily: settings.fontFamily, fontSize: `${countSize}rem` }}>
                                                 ({target.counts.upper}/{target.counts.lower})
                                             </div>
@@ -473,9 +473,9 @@ export const FindLettersView = ({ text, settings, setSettings, onClose, title })
 
                 <div className="flex-1 flex flex-col relative z-10 w-full bg-slate-50/50">
                     <div className="flex-1 overflow-y-auto custom-scroll p-0 flex justify-start w-full relative">
-                        <div className="w-full pt-8 pb-24 relative flex items-start transition-all">
+                        <div className="w-full pt-24 pb-24 relative flex items-start transition-all">
                             {/* Selected Indicator - Sticky Left Column */}
-                            <div className="sticky top-0 shrink-0 z-0 select-none">
+                            <div className="sticky top-0 shrink-0 z-0 select-none pl-10">
                                 <div
                                     className={`text-[7rem] md:text-[10rem] font-black transition-all duration-300 leading-none flex items-baseline ${flashMode === 'wrong' ? 'animate-shake' : ''
                                         }`}

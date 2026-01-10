@@ -3,6 +3,8 @@ import {
     CheckCircle2,
     AlertCircle,
     RotateCcw,
+    Volume2,
+    VolumeX,
     Minus,
     Plus
 } from 'lucide-react';
@@ -10,6 +12,7 @@ import { Icons } from './Icons';
 import { ProgressBar } from './ProgressBar';
 import PuzzleTestPiece from './PuzzleTestPiece';
 import { speak } from '../utils/speech';
+import { EmptyStateMessage } from './EmptyStateMessage';
 
 // Helper component for horizontal lines in the stepper control
 const HorizontalLines = ({ count }) => (
@@ -35,7 +38,8 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
     // Pieces & Slots State
     const [pieces, setPieces] = useState({ left: [], middle: [], right: [] });
     const [slots, setSlots] = useState({}); // Key: "wordId-slotIdx" -> piece
-    const [completedWords, setCompletedWords] = useState(new Set());
+    const [completedRows, setCompletedRows] = useState({}); // Map<RowWordID, SolvedWordID>
+    const [audioEnabled, setAudioEnabled] = useState(true);
     const [highlightedWordId, setHighlightedWordId] = useState(null); // For audio hint
     const [lastSpokenWord, setLastSpokenWord] = useState(null); // Prevent repetitive speech
 
@@ -104,7 +108,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
             wordsPerStage: wps
         }));
 
-        setCompletedWords(new Set());
+        setCompletedRows({});
         setSlots({});
         setHighlightedWordId(null);
         setLastSpokenWord(null);
@@ -179,7 +183,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
 
         setPieces(newPieces);
         setSlots({}); // Clear slots when stage changes
-        setCompletedWords(new Set()); // Clear completed for this stage context
+        setCompletedRows({}); // Clear completed for this stage context
 
     }, [gameState.currentStageIndex, gameState.stages, gameState.gameStatus]);
 
@@ -211,14 +215,22 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
         // Place piece
         const slotKey = `${wordId}-${slotIndex}`;
 
-        setSlots(prev => ({
-            ...prev,
-            [slotKey]: foundPiece
-        }));
+        setSlots(prev => {
+            const next = { ...prev };
+
+            // Check if this piece is already in another slot and remove it
+            const existingKey = Object.keys(next).find(k => next[k].id === foundPiece.id);
+            if (existingKey) {
+                delete next[existingKey];
+            }
+
+            next[slotKey] = foundPiece;
+            return next;
+        });
     };
 
     const removePieceFromSlot = (slotKey, wordId) => {
-        if (completedWords.has(wordId)) return;
+        // if (completedRows[wordId]) return; // Unlock
         setSlots(prev => {
             const next = { ...prev };
             delete next[slotKey];
@@ -247,38 +259,72 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
         if (!gameState.stages[gameState.currentStageIndex]) return;
         const currentStageWords = gameState.stages[gameState.currentStageIndex].items;
 
-        currentStageWords.forEach(word => {
-            if (completedWords.has(word.id)) return;
-
+        currentStageWords.forEach(rowWord => {
+            // Check if all slots in this row are filled
             let isFull = true;
             const rowPieces = [];
-            const len = word.syllables.length;
+            const len = rowWord.syllables.length;
 
             for (let i = 0; i < len; i++) {
-                const p = slots[`${word.id}-${i}`];
+                const p = slots[`${rowWord.id}-${i}`];
                 if (!p) { isFull = false; break; }
                 rowPieces.push(p);
             }
 
             if (isFull) {
                 const formedWord = rowPieces.map(p => p.text).join('').toLowerCase();
-                const targetWord = word.syllables.join('').toLowerCase();
 
-                if (formedWord === targetWord) {
-                    // Success!
-                    setCompletedWords(prev => new Set(prev).add(word.id));
+                // Get currently solved entries to check for collisions
+                const solvedEntries = Object.entries(completedRows);
+
+                // Find matching target
+                const matchedWord = currentStageWords.find(w => {
+                    if (w.syllables.join('').toLowerCase() !== formedWord) return false;
+                    // Check if used by any OTHER row (ignoring self)
+                    const usedByOther = solvedEntries.find(([rId, sId]) => sId === w.id && rId !== rowWord.id);
+                    return !usedByOther;
+                });
+
+                if (matchedWord) {
+                    // Only update if not already set to this ID
+                    if (completedRows[rowWord.id] !== matchedWord.id) {
+                        // if (audioEnabled) speak(matchedWord.word); // Removed per user request
+                        setCompletedRows(prev => ({
+                            ...prev,
+                            [rowWord.id]: matchedWord.id
+                        }));
+                    }
+                } else {
+                    // Invalid or duplicate
+                    if (completedRows[rowWord.id]) {
+                        setCompletedRows(prev => {
+                            const next = { ...prev };
+                            delete next[rowWord.id];
+                            return next;
+                        });
+                    }
+                }
+            } else {
+                // Not full - unmark
+                if (completedRows[rowWord.id]) {
+                    setCompletedRows(prev => {
+                        const next = { ...prev };
+                        delete next[rowWord.id];
+                        return next;
+                    });
                 }
             }
         });
 
-    }, [slots, completedWords, gameState.stages, gameState.currentStageIndex]);
+    }, [slots, completedRows, gameState.stages, gameState.currentStageIndex]);
 
     // Check Stage Completion
     useEffect(() => {
         if (!gameState.stages[gameState.currentStageIndex]) return;
         const currentStageWords = gameState.stages[gameState.currentStageIndex].items;
 
-        const allComplete = currentStageWords.every(w => completedWords.has(w.id));
+        // All rows matched
+        const allComplete = currentStageWords.every(w => completedRows[w.id]);
 
         if (allComplete && currentStageWords.length > 0) {
             // Delay move to next stage
@@ -294,7 +340,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
             }, 1000);
             return () => clearTimeout(timer);
         }
-    }, [completedWords, gameState.stages, gameState.currentStageIndex]);
+    }, [completedRows, gameState.stages, gameState.currentStageIndex]);
 
 
     // --------------------------------------------------------------------------------
@@ -305,9 +351,9 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
     const progress = useMemo(() => {
         if (totalWords === 0) return 0;
         const previousStagesWords = gameState.stages.slice(0, gameState.currentStageIndex).reduce((acc, stage) => acc + stage.items.length, 0);
-        const currentStageCompletedCount = completedWords.size;
+        const currentStageCompletedCount = Object.keys(completedRows).length;
         return Math.min(100, ((previousStagesWords + currentStageCompletedCount + 1) / totalWords) * 100);
-    }, [gameState.stages, gameState.currentStageIndex, completedWords, totalWords]);
+    }, [gameState.stages, gameState.currentStageIndex, completedRows, totalWords]);
 
     const handleWordsCountChange = (delta) => {
         const next = Math.max(1, Math.min(6, gameState.wordsPerStage + delta));
@@ -350,16 +396,11 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
 
     if ((gameState.gameStatus === 'playing' && (!gameState.stages[gameState.currentStageIndex] || gameState.stages.length === 0)) || gameState.gameStatus === 'no_words') {
         return (
-            <div className="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center p-6 text-center animate-in fade-in">
-                <AlertCircle className="w-16 h-16 text-blue-500 mb-4" />
-                <h2 className="text-xl font-bold text-slate-800 mb-2">Keine geeigneten Wörter gefunden.</h2>
-                <p className="text-slate-600 mb-6 font-medium max-w-md">Bitte markiere Wörter mit mindestens 2 Silben.</p>
-                <div className="flex gap-4">
-                    <button onClick={() => startNewGame()} className="bg-blue-600 text-white px-8 py-2 rounded-xl font-bold shadow-lg flex items-center gap-2 hover:scale-105 transition-transform">
-                        <Icons.RotateCcw size={18} /> Aktualisieren
-                    </button>
-                    <button onClick={onClose} className="bg-slate-100 text-slate-700 px-8 py-2 rounded-xl font-bold shadow-md hover:bg-slate-200 transition-colors border border-slate-200">Zurück</button>
-                </div>
+            <div className="fixed inset-0 bg-slate-100 z-[100] flex flex-col items-center justify-center p-6">
+                <EmptyStateMessage
+                    onClose={onClose}
+                    secondStepText="Wörter mit mindestens 2 Silben markieren."
+                />
             </div>
         );
     }
@@ -400,7 +441,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
             {/* Header */}
             <header className="bg-white border-b border-slate-200 px-6 py-3 flex justify-between items-center z-20 shadow-sm shrink-0">
                 <div className="flex items-center gap-3">
-                    <Icons.PuzzleZigzag className="text-blue-600 w-8 h-8" />
+                    <img src={`${import.meta.env.BASE_URL}silbenpuzzle2_logo.png`} className="w-auto h-8 object-contain rounded-lg" alt="Silbenpuzzle 2" />
                     <span className="text-xl font-bold text-slate-800 hidden md:inline">{title || "Silbenpuzzle 2"}</span>
 
                     {/* Numeric Progress Indicator (Standardized) */}
@@ -425,6 +466,15 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                 </div>
 
                 <div className="flex items-center gap-4">
+                    {/* Audio Toggle */}
+                    <button
+                        onClick={() => setAudioEnabled(!audioEnabled)}
+                        className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${audioEnabled ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-400'}`}
+                        title={audioEnabled ? 'Audio an' : 'Audio aus'}
+                    >
+                        {audioEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
+                    </button>
+
                     {/* Words Count Control */}
                     <div className="flex items-center gap-2 bg-slate-50 px-2 py-1 rounded-2xl border border-slate-200 hidden lg:flex">
                         <HorizontalLines count={2} />
@@ -540,7 +590,14 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                     {/* Word Rows Area */}
                     <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center gap-8 bg-slate-50/30">
                         {currentStageItems.map(word => {
-                            const isComplete = completedWords.has(word.id);
+                            const solvedId = completedRows[word.id];
+                            const isComplete = !!solvedId;
+
+                            // Audio Text: Solved word or target word
+                            const audioText = isComplete && solvedId
+                                ? (currentStageItems.find(w => w.id === solvedId)?.word || word.word)
+                                : word.word;
+
                             return (
                                 <div key={word.id} className={`flex items-center gap-20 transition-all duration-500 ${isComplete ? 'opacity-80 scale-95' : ''}`}>
                                     <div className="relative flex items-center pr-12" style={{ height: 110 * gameState.pieceScale }}>
@@ -606,13 +663,15 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
 
                                     {/* Audio Button & Checkmark - Standardized Group */}
                                     <div className="relative flex items-center shrink-0">
-                                        <button
-                                            onClick={() => speak(word.word)}
-                                            className="w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg transition-all shrink-0 ring-4 ring-white/50 translate-y-[-4px] hover:scale-105 active:scale-95 z-10"
-                                            title="Anhören"
-                                        >
-                                            <Icons.Volume2 size={24} />
-                                        </button>
+                                        {audioEnabled && (
+                                            <button
+                                                onClick={() => speak(audioText)}
+                                                className="w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg transition-all shrink-0 ring-4 ring-white/50 translate-y-[-4px] hover:scale-105 active:scale-95 z-10"
+                                                title="Anhören"
+                                            >
+                                                <Icons.Volume2 size={24} />
+                                            </button>
+                                        )}
 
                                         {/* Floating Checkmark - positioned exactly 20px to the right of the speaker */}
                                         <div className={`

@@ -35,6 +35,17 @@ const PuzzleModeIcon = ({ mode, active }) => {
     );
 };
 
+// Custom Icon Component for the PNG
+const CustomIcon = (props) => (
+    <div className={`${props.className} rounded-lg overflow-hidden flex items-center justify-center`}>
+        <img
+            src={`${import.meta.env.BASE_URL}silbenpuzzle1_logo.png`}
+            alt="Silbenpuzzle 1"
+            className="w-full h-full object-contain"
+        />
+    </div>
+);
+
 export const PuzzleTestTwoSyllableView = ({ words, settings, onClose, title, activeColor }) => {
     // Filter words with exactly 2 syllables and convert to unified format
     const validItems = useMemo(() => {
@@ -60,7 +71,7 @@ export const PuzzleTestTwoSyllableView = ({ words, settings, onClose, title, act
         leftType: 'left',
         rightType: 'right',
         initialScale: settings.pieceScale || 1.0,
-        successDelay: 2500
+        successDelay: 1000
     });
 
     const handleSpeak = (item) => {
@@ -79,12 +90,12 @@ export const PuzzleTestTwoSyllableView = ({ words, settings, onClose, title, act
             leftType="left"
             rightType="right"
             overlap={25}
-            icon={Icons.SyllableTestTwo}
+            icon={CustomIcon}
             renderModeIcon={PuzzleModeIcon}
             activeColor={activeColor}
             onSpeak={handleSpeak}
             emptyMessage="Keine passenden Wörter gefunden."
-            emptyHint="Bitte markiere Wörter mit genau 2 Silben."
+            emptyHint="Wörter mit zwei Silben markieren."
             allCompleteMessage="Alle Wörter geschafft!"
             stageCompleteMessage="Level geschafft!"
         />

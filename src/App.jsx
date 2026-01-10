@@ -26,6 +26,7 @@ import { GapTextView } from './components/GapTextView';
 import { CaseExerciseView } from './components/CaseExerciseView';
 import { FindLettersView } from './components/FindLettersView';
 import { Toolbar } from './components/Toolbar';
+import { Space } from './components/Space';
 import { getCachedSyllables } from './utils/syllables';
 import { compressIndices, decompressIndices } from './utils/compression';
 import { SpeedReadingView } from './components/SpeedReadingView';
@@ -52,8 +53,8 @@ const useHypherLoader = () => {
 
 const DEFAULT_SETTINGS = {
     fontSize: 48,
-    lineHeight: 3.0,
-    wordSpacing: 0.4,
+    lineHeight: 1.1,
+    wordSpacing: 0.3,
     visualType: 'block',
     displayTrigger: 'click',
     fontFamily: "'Patrick Hand', cursive",
@@ -64,7 +65,9 @@ const DEFAULT_SETTINGS = {
     lockScroll: false,
     centerText: false,
     smartSelection: true,
-    textWidth: 80,
+    textWidth: 83,
+    letterSpacing: 0.05,
+    reduceMenu: false,
     clusters: ['sch', 'chs', 'ch', 'ck', 'ph', 'pf', 'th', 'qu', 'ei', 'ie', 'eu', 'au', 'äu', 'ai', 'sp', 'st']
 };
 
@@ -83,6 +86,7 @@ const App = () => {
     const [showCorrectionModal, setShowCorrectionModal] = useState(false);
     const [correctionData, setCorrectionData] = useState(null);
     const [manualCorrections, setManualCorrections] = useState({}); // { "Wort_Index": ["Syl","ben"] }
+    const [textCorrections, setTextCorrections] = useState({}); // { "Wort_Index": "korrigierterText" }
     const [showQR, setShowQR] = useState(false);
     const [showScanner, setShowScanner] = useState(false);
     const [columnsState, setColumnsState] = useState({ cols: {}, order: [] });
@@ -94,7 +98,9 @@ const App = () => {
     const [wordColors, setWordColors] = useState({}); // { index: hexColor }
     const [colorPalette, setColorPalette] = useState(['#3b82f6', '#a855f7', '#ef4444', '#f97316', '#22c55e']); // Reordered for Toolbar Column Layout
     const [activeColor, setActiveColor] = useState('neutral'); // Default to neutral (grey frame)
+    const [isTextMarkerMode, setIsTextMarkerMode] = useState(false);
     const [colorHeaders, setColorHeaders] = useState({}); // { "#hex": "My Title" }
+    const [wordDrawings, setWordDrawings] = useState({}); // { wordIndex: [ { points: [{x,y}...], color, strokeWidth } ] }
 
     // WordList View Specific Persistence
     const [wordListSortByColor, setWordListSortByColor] = useState(false);
@@ -158,6 +164,99 @@ const App = () => {
         setText(newText);
     };
 
+    const processedWords = useMemo(() => {
+        if (!text) return [];
+        const segments = text.split(/(\s+)/);
+        let currentIndex = 0;
+        return segments.map((segment, idx) => {
+            const startIndex = currentIndex;
+            currentIndex += segment.length;
+
+            // Check for newlines
+            if (segment.match(/^\s+$/)) {
+                if (segment.includes('\n')) {
+                    const newlines = segment.match(/\n/g).length;
+                    return { id: `nl-${startIndex}`, type: 'newline', count: newlines, content: segment, index: startIndex };
+                }
+                return { id: `space-${startIndex}`, type: 'space', content: segment, index: startIndex };
+            }
+
+            // Simple logic to separate punctuation
+            const match = segment.match(/^([^\w\u00C0-\u017F]*)([\w\u00C0-\u017F]+(?:\-[\w\u00C0-\u017F]+)*)([^\w\u00C0-\u017F]*)$/);
+            if (match) {
+                const prefix = match[1];
+                const cleanWord = match[2];
+                const suffix = match[3];
+                // Word starts after prefix
+                const wordStartIndex = startIndex + prefix.length;
+                const key = `word_${wordStartIndex}`;
+                const lookupKey = `${cleanWord}_${wordStartIndex}`;
+                const syllables = manualCorrections[lookupKey] || getCachedSyllables(cleanWord, hyphenator);
+                return { type: 'word', word: cleanWord, prefix, suffix, index: wordStartIndex, id: key, syllables };
+            }
+            return { type: 'text', content: segment, index: startIndex, id: `text_${startIndex}` };
+        });
+    }, [text, manualCorrections, hyphenator]);
+
+    const wordsOnly = useMemo(() => processedWords.filter(w => w.type === 'word'), [processedWords]);
+    // If words are highlighted, only use those for exercises. Otherwise use all.
+    const exerciseWords = useMemo(() => {
+
+        const hasHighlights = highlightedIndices.size > 0;
+        const coloredIndices = Object.keys(wordColors);
+        const hasColors = coloredIndices.length > 0;
+
+        let result = wordsOnly;
+
+        if (hasHighlights || hasColors) {
+            result = result.filter(w => {
+                // Check yellow highlights
+                for (let i = 0; i < w.word.length; i++) {
+                    if (highlightedIndices.has(w.index + i)) return true;
+                }
+                // Check color markings
+                // FIX: Only include word if it is ALSO highlighted (Hand/Neutral)
+                // If it is ONLY colored (Textmarker), it should be purely visual.
+                // Reverted per user request? No, user requested: "Wörter, die mit Textmarker markiert sind, sollen nicht als markiert in dem Sinne gelten, dass sie Grundlage für die Übungen sind"
+                // So if ONLY colored -> return false. 
+                // Checks above: `result = result.filter...`
+                // logic: Keep if (Yellow Highlight) OR (Color Marking AND Highlight??)
+
+                // Correction: The Requirement is: Textmarker marks do NOT trigger inclusion.
+                // So we only look at `highlightedIndices`.
+                // But wait, what if I colored it AND clicked it? Then it is in `highlightedIndices`.
+                // So we just REMOVE the check for `wordColors` here?
+
+                // "Wörter, die mit Textmarker markiert sind, sollen nicht als markiert in dem Sinne gelten"
+                // This implies that solely coloring them is not enough.
+                // BUT current logic said: if (hasHighlights || hasColors) ...
+                // So if I remov the `if (wordColors[w.index]) return true;` check, 
+                // then words that are NOT in `highlightedIndices` will be dropped.
+                // This is exactly what is requested.
+
+                // if (wordColors[w.index]) return true; // REMOVED THIS LINE
+                return false;
+            });
+        }
+
+        return result.map(w => {
+            // Apply text corrections if available
+            const lookupKey = `${w.word}_${w.index}`;
+            if (textCorrections[lookupKey]) {
+                const newText = textCorrections[lookupKey];
+                return {
+                    ...w,
+                    word: newText,
+                    text: newText,
+                    syllables: getCachedSyllables(newText, hyphenator)
+                };
+            }
+            return w;
+        });
+    }, [wordsOnly, highlightedIndices, wordColors, textCorrections, hyphenator]);
+
+    const hasMarkings = highlightedIndices.size > 0 || Object.keys(wordColors).length > 0;
+
     // Data Management
     const loadState = (jsonData) => {
         try {
@@ -193,8 +292,10 @@ const App = () => {
 
             if (data.logo) setLogo(data.logo);
             setManualCorrections(data.manualCorrections || {});
+            setTextCorrections(data.textCorrections || {});
             setColumnsState(data.columnsState || { cols: {}, order: [] });
             setWordColors(data.wordColors || {});
+            setWordDrawings(data.wordDrawings || {});
 
             if (data.colorPalette) setColorPalette(data.colorPalette);
 
@@ -202,7 +303,7 @@ const App = () => {
         } catch (e) { alert("Fehler beim Laden der Datei."); }
     };
     const exportState = () => {
-        const data = { text, settings, highlights: Array.from(highlightedIndices), hidden: Array.from(hiddenIndices), logo, manualCorrections, columnsState, wordColors, colorPalette };
+        const data = { text, settings, highlights: Array.from(highlightedIndices), hidden: Array.from(hiddenIndices), logo, manualCorrections, textCorrections, columnsState, wordColors, colorPalette, wordDrawings };
         const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a'); a.href = url; a.download = 'textarbeit-export.json'; a.click();
@@ -213,6 +314,128 @@ const App = () => {
 
     useEffect(() => { wordColorsRef.current = wordColors; }, [wordColors]);
     useEffect(() => { highlightedIndicesRef.current = highlightedIndices; }, [highlightedIndices]);
+
+    // INTEGRETY CHECK: Enforce valid color state
+    useEffect(() => {
+        if (isTextMarkerMode && (activeColor === 'neutral' || activeColor === 'yellow')) {
+            // Fix invalid state: Marker is ON but color is Neutral or Yellow (Letter mode). Force default Orange.
+            setActiveColor('rgba(249, 115, 22, 0.15)');
+        }
+    }, [isTextMarkerMode, activeColor]);
+
+    // Painting Logic (Textmarker)
+    const isPaintActive = useRef(false);
+    const lastPaintedIndex = useRef(null);
+    const dragStartIndex = useRef(null); // Track where the drag started
+
+    const handlePaint = useCallback((index) => {
+        // Fix: In Pen Mode, handlePaint should ONLY run if we are Erasing (transparent).
+        // If we are drawing (activeColor is set), we do not want to paint the background.
+        if (!isTextMarkerMode) {
+            if (activeTool !== 'pen') return;
+            if (activeColor !== 'transparent') return;
+        }
+
+        // Safety Fallback: Use default orange if activeColor is somehow invalid/neutral/yellow
+        const paintColor = (!activeColor || activeColor === 'neutral' || activeColor === 'yellow') ? 'rgba(249, 115, 22, 0.15)' : activeColor;
+        setWordColors(prev => {
+            const next = { ...prev };
+            let indicesToFill = [];
+
+            // Always fill from drag start to current position to ensure no gaps
+            const startIdx = dragStartIndex.current !== null ? dragStartIndex.current : index;
+            const start = Math.min(startIdx, index);
+            const end = Math.max(startIdx, index);
+
+            // Fill entire range from start to end
+            for (let i = start; i <= end; i++) {
+                indicesToFill.push(i);
+            }
+
+            // EXPAND indices to include full words if any part of a word is touched
+            // This ensures erasing/coloring a word works completely even if we only graze it.
+            const expandedIndices = new Set();
+            indicesToFill.forEach(idx => {
+                // Check if this index belongs to a word
+                const wordItem = processedWords.find(w => {
+                    if (w.type === 'word') {
+                        return idx >= w.index && idx < w.index + w.word.length;
+                    }
+                    return w.index === idx;
+                });
+
+                if (wordItem && wordItem.type === 'word') {
+                    // Add ALL indices of this word
+                    for (let k = 0; k < wordItem.word.length; k++) {
+                        expandedIndices.add(wordItem.index + k);
+                    }
+                } else {
+                    expandedIndices.add(idx);
+                }
+            });
+
+            // Convert back to array
+            indicesToFill = Array.from(expandedIndices);
+
+            let changed = false;
+            indicesToFill.forEach(idx => {
+                // Toggle logic: if dragging from an empty space into a filled one, we paint.
+                // If dragging from a filled space into a filled one with same color, we stay.
+                // To "Remove", maybe we need a dedicated "Transparent" state?
+                // For now, let's keep it simple: overwrite or stay.
+
+                if (next[idx] !== paintColor) {
+                    if (paintColor === 'transparent') {
+                        delete next[idx];
+                    } else {
+                        next[idx] = paintColor;
+                    }
+                    changed = true;
+                }
+            });
+
+            if (changed) {
+                lastPaintedIndex.current = index;
+                return next;
+            }
+            return prev;
+        });
+
+    }, [isTextMarkerMode, activeColor, processedWords, activeTool]);
+
+    useEffect(() => {
+        const handleUp = () => {
+            isPaintActive.current = false;
+            lastPaintedIndex.current = null;
+            dragStartIndex.current = null; // Reset drag start on mouse up
+        };
+
+        // Global mousemove listener for reliable paint/erase detection
+        const handleMove = (e) => {
+            if (!isPaintActive.current) return;
+            if (!isTextMarkerMode && activeTool !== 'pen') return;
+
+            // Find element under cursor using elementsFromPoint
+            const elements = document.elementsFromPoint(e.clientX, e.clientY);
+            for (const el of elements) {
+                const paintIndex = el.getAttribute('data-paint-index');
+                if (paintIndex !== null) {
+                    const idx = parseInt(paintIndex, 10);
+                    if (!isNaN(idx)) {
+                        handlePaint(idx);
+                    }
+                    break; // Only paint the topmost element with an index
+                }
+            }
+        };
+
+        window.addEventListener('mouseup', handleUp);
+        window.addEventListener('mousemove', handleMove);
+        return () => {
+            window.removeEventListener('mouseup', handleUp);
+            window.removeEventListener('mousemove', handleMove);
+        };
+    }, [isTextMarkerMode, activeTool, handlePaint]);
 
     // Interactions
     const handleGrouping = useCallback((indicesStrOrArr) => {
@@ -246,6 +469,8 @@ const App = () => {
             }
             return;
         }
+
+        if (activeTool === 'read') return;
 
         const currentActiveColor = activeColorRef.current; // 'neutral', 'yellow', 'palette-0', or Hex Code
 
@@ -283,7 +508,10 @@ const App = () => {
             if (shouldUnmark) {
                 indices.forEach(i => next.delete(i));
             } else {
-                indices.forEach(i => next.add(i));
+                // FIX: If erasing (transparent), DO NOT ADD to highlights (prevent Gray Box)
+                if (currentActiveColor !== 'transparent') {
+                    indices.forEach(i => next.add(i));
+                }
             }
             return next;
         });
@@ -334,9 +562,16 @@ const App = () => {
             }
             return next;
         });
-    }, [isGrouping, handleGrouping]);
+    }, [isGrouping, handleGrouping, activeTool]);
     const toggleHidden = useCallback((key) => {
         setHiddenIndices(prev => { const next = new Set(prev); if (next.has(key)) next.delete(key); else next.add(key); return next; });
+    }, []);
+
+    const handleUpdateDrawings = useCallback((wordIndex, newDrawings) => {
+        setWordDrawings(prev => ({
+            ...prev,
+            [wordIndex]: newDrawings
+        }));
     }, []);
 
     const handleCorrectionSave = (newSyllables) => {
@@ -362,42 +597,6 @@ const App = () => {
 
     // Let's fix the App return structure to include the Input Area AND the Main View
 
-    const processedWords = useMemo(() => {
-        if (!text) return [];
-        const segments = text.split(/(\s+)/);
-        let currentIndex = 0;
-        return segments.map((segment, idx) => {
-            const startIndex = currentIndex;
-            currentIndex += segment.length;
-
-            // Check for newlines
-            if (segment.match(/^\s+$/)) {
-                if (segment.includes('\n')) {
-                    // Count newlines to determine spacing height? 
-                    // For now, just a semantic break. 
-                    // We can map each \n to a break
-                    const newlines = segment.match(/\n/g).length;
-                    return { id: `nl-${startIndex}`, type: 'newline', count: newlines, content: segment };
-                }
-                return { id: `space-${startIndex}`, type: 'space', content: segment };
-            }
-
-            // Simple logic to separate punctuation
-            const match = segment.match(/^([^\w\u00C0-\u017F]*)([\w\u00C0-\u017F]+(?:\-[\w\u00C0-\u017F]+)*)([^\w\u00C0-\u017F]*)$/);
-            if (match) {
-                const prefix = match[1];
-                const cleanWord = match[2];
-                const suffix = match[3];
-                // Word starts after prefix
-                const wordStartIndex = startIndex + prefix.length;
-                const key = `word_${wordStartIndex}`;
-                const lookupKey = `${cleanWord}_${wordStartIndex}`;
-                const syllables = manualCorrections[lookupKey] || getCachedSyllables(cleanWord, hyphenator);
-                return { type: 'word', word: cleanWord, prefix, suffix, index: wordStartIndex, id: key, syllables };
-            }
-            return { type: 'text', content: segment, index: startIndex, id: `text_${startIndex}` };
-        });
-    }, [text, manualCorrections, hyphenator]);
 
     const handleBatchHide = useCallback(() => {
         const markedWordIds = processedWords
@@ -463,28 +662,6 @@ const App = () => {
 
 
 
-    const wordsOnly = useMemo(() => processedWords.filter(w => w.type === 'word'), [processedWords]);
-    // If words are highlighted, only use those for exercises. Otherwise use all.
-    const exerciseWords = useMemo(() => {
-
-        const hasHighlights = highlightedIndices.size > 0;
-        const coloredIndices = Object.keys(wordColors);
-        const hasColors = coloredIndices.length > 0;
-
-        if (!hasHighlights && !hasColors) return wordsOnly;
-
-        return wordsOnly.filter(w => {
-            // Check yellow highlights
-            for (let i = 0; i < w.word.length; i++) {
-                if (highlightedIndices.has(w.index + i)) return true;
-            }
-            // Check color markings
-            if (wordColors[w.index]) return true;
-            return false;
-        });
-    }, [wordsOnly, highlightedIndices, wordColors]);
-
-    const hasMarkings = highlightedIndices.size > 0 || Object.keys(wordColors).length > 0;
 
 
     return (
@@ -505,6 +682,24 @@ const App = () => {
                     activeColor={activeColor}
                     onSetActiveColor={(newColor) => {
                         setActiveColor(newColor);
+                    }}
+                    isTextMarkerMode={isTextMarkerMode}
+                    setIsTextMarkerMode={(val) => {
+                        // Direct setter if needed, but we use onToggle generally
+                        setIsTextMarkerMode(val);
+                    }}
+                    onToggleTextMarkerMode={() => {
+                        const next = !isTextMarkerMode;
+                        setIsTextMarkerMode(next);
+                        if (next) {
+                            // Activating Textmarker: Deactivate Hand tool, set initial light orange color
+                            setActiveTool(null);
+                            setActiveColor('rgba(249, 115, 22, 0.15)'); // Light Orange Default
+                        } else {
+                            // Deactivating Textmarker: Return to Hand tool and Neutral marking mode
+                            setActiveTool(null);
+                            setActiveColor('neutral');
+                        }
                     }}
                     isGrouping={isGrouping}
                     onToggleGrouping={() => {
@@ -566,9 +761,23 @@ const App = () => {
                             setIsViewMode(true);
                         }
                     }}
-                    onResetHighlights={() => { setHighlightedIndices(new Set()); setWordColors({}); }}
+                    onResetHighlights={() => {
+                        setHighlightedIndices(new Set());
+                        setWordColors({});
+                        setWordDrawings({}); // FIX: Clear Drawings too
+                        setIsTextMarkerMode(false);
+                        setActiveTool(null); // FIX: Do not switch to 'read' mode, go to Hand mode
+                        setActiveColor('neutral');
+                    }}
                     onMarkAllNeutral={handleMarkAllNeutral}
-                    onToggleReadingMode={() => setActiveTool(activeTool === 'read' ? null : 'read')}
+                    onToggleReadingMode={() => {
+                        const nextTool = activeTool === 'read' ? null : 'read';
+                        setActiveTool(nextTool);
+                        if (nextTool === 'read') {
+                            setIsTextMarkerMode(false);
+                            setActiveColor('neutral');
+                        }
+                    }}
                     onToggleFullscreen={toggleFullscreen}
                     onToolChange={setActiveTool}
                     onBatchHide={handleBatchHide}
@@ -605,9 +814,10 @@ const App = () => {
                     <div className="bg-white pt-3 px-8 pb-8 rounded-3xl shadow-xl w-full max-w-4xl border border-slate-100 flex flex-col h-[70vh]">
                         <div className="flex justify-between items-center mb-0">
                             <div className="flex items-center">
-                                <img src={`${import.meta.env.BASE_URL}logo.png`} alt="KONTEXT Logo" className="h-52 w-auto object-contain -ml-9" />
+                                <img src={`${import.meta.env.BASE_URL}logo.png`} alt="KONTEXT Logo" className="h-11 w-auto object-contain -ml-4 -mt-[10px]" />
                             </div>
                             <div className="flex gap-2">
+
                                 {settings.enableCamera && (
                                     <button onClick={() => setShowScanner(true)} className="p-3 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all min-touch-target" title="Foto/QR scannen">
                                         <Icons.Camera size={24} />
@@ -618,7 +828,7 @@ const App = () => {
                                 </button>
                             </div>
                         </div>
-                        <textarea ref={textAreaRef} className="flex-1 w-full p-6 text-xl border-2 border-slate-200 rounded-2xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all resize-none shadow-inner bg-slate-50 leading-relaxed font-medium text-slate-700 placeholder:text-slate-400 -mt-10" placeholder="Füge hier deinen Text ein..." value={text} onChange={(e) => handleTextChange(e.target.value)} spellCheck={false} inputMode="text"></textarea>
+                        <textarea ref={textAreaRef} className="flex-1 w-full p-6 text-xl border-2 border-slate-200 rounded-2xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all resize-none shadow-inner bg-slate-50 leading-relaxed font-medium text-slate-700 placeholder:text-slate-400" placeholder="Füge hier deinen Text ein..." value={text} onChange={(e) => handleTextChange(e.target.value)} spellCheck={false} inputMode="text"></textarea>
 
                         <div className="mt-6 flex flex-wrap gap-4 justify-between items-center">
                             <div className="flex gap-2">
@@ -743,7 +953,7 @@ const App = () => {
                                 <span className="text-xl font-bold text-slate-500">A</span>
                             </div>
 
-                            <div ref={textContainerRef} className="max-w-7xl mx-auto w-full transition-all duration-300 relative" style={{ maxWidth: `${settings.textWidth}%` }}>
+                            <div ref={textContainerRef} className={`mx-auto w-full transition-all duration-300 relative ${isTextMarkerMode ? 'cursor-text' : ''}`} style={{ maxWidth: `${settings.textWidth}%` }}>
                                 {/* Connection Overlay */}
                                 <ConnectionOverlay
                                     groups={wordGroups}
@@ -751,20 +961,32 @@ const App = () => {
                                     containerRef={textContainerRef}
                                     currentSelection={[...currentGroupSelection].sort((a, b) => a - b)}
                                 />
-                                <div className={`flex flex-wrap items-baseline content-start ${settings.centerText ? 'justify-center' : 'justify-start'}`} style={{ lineHeight: settings.lineHeight, fontFamily: settings.fontFamily }}>
+                                <div className={`flex flex-wrap items-baseline content-start ${settings.centerText ? 'justify-center' : 'justify-start'}`} style={{ fontFamily: settings.fontFamily, fontSize: `${settings.fontSize}px`, rowGap: `${(settings.lineHeight - 1)}em` }}>
                                     {processedWords.map((item, idx) => {
                                         if (item.type === 'newline') {
-                                            // Render a full-width break. If multiple newlines, add height.
-                                            // h-4 is roughly one line height for separation
-                                            return <div key={item.id} className="w-full basis-full" style={{ height: item.count > 1 ? '1.5em' : '0' }}></div>;
+                                            // Scale height with number of newlines. count 1 = just a jump, count 2 = one empty line, etc.
+                                            // We use lineHeight as a multiplier to stay consistent with text spacing.
+                                            // Adjusted factor to 1.0 (down from 1.2) to balance visibility.
+                                            const newlineHeight = item.count > 1 ? (item.count - 1) * settings.lineHeight * 1.0 : 0;
+                                            return <div key={item.id} className="w-full basis-full" style={{ height: `${newlineHeight}em` }}></div>;
                                         }
-                                        if (item.type === 'space') return <span key={item.id} className="select-none inline-block whitespace-pre">{item.content}</span>;
+                                        if (item.type === 'space') {
+                                            return <Space key={item.id} {...item} isTextMarkerMode={isTextMarkerMode || activeTool === 'pen'} isReadingMode={activeTool === 'read'} color={wordColors[item.index]} colorPalette={colorPalette} wordSpacing={settings.wordSpacing} letterSpacing={settings.letterSpacing} fontSize={settings.fontSize} onMouseDown={(idx) => { isPaintActive.current = true; dragStartIndex.current = idx; lastPaintedIndex.current = idx; }} onMouseEnter={(idx, e) => { if (isPaintActive.current || (e && e.buttons === 1)) handlePaint(idx); }} />;
+                                        }
                                         if (item.type === 'text') return <span key={item.id} className="text-slate-800 break-words" style={{ fontSize: `${settings.fontSize}px` }}>{item.content}</span>;
                                         const isWordHighlighted = Array.from({ length: item.word.length }, (_, i) => item.index + i).some(idx => highlightedIndices.has(idx));
+
+                                        // Highlight Gap Fix: Check if next item is a colored space
+                                        const nextItem = processedWords[idx + 1];
+                                        const nextSpaceColor = (nextItem && nextItem.type === 'space') ? wordColors[nextItem.index] : null;
+                                        // Resolve color to ensure it's not transparent/invalid
+                                        const isNextSpaceColored = nextSpaceColor && nextSpaceColor !== 'transparent';
 
                                         return (
                                             <Word key={item.id} {...item}
                                                 isHighlighted={isWordHighlighted}
+                                                isTextMarkerMode={isTextMarkerMode || activeTool === 'pen'}
+                                                forceNoMargin={isNextSpaceColored}
                                                 // Grouping Styling
                                                 isGrouped={wordGroups.some(g => g.ids.includes(item.index))}
                                                 isSelection={currentGroupSelection.includes(item.index)}
@@ -779,8 +1001,11 @@ const App = () => {
                                                 settings={settings}
                                                 manualSyllables={item.syllables}
                                                 hyphenator={hyphenator}
+                                                onMouseDown={(idx) => { isPaintActive.current = true; dragStartIndex.current = idx; lastPaintedIndex.current = idx; }}
+                                                onMouseEnter={(idx, e) => { if (isPaintActive.current || (e && e.buttons === 1)) handlePaint(idx); }}
                                                 onEditMode={(word, key, syls) => { setCorrectionData({ word, key, syllables: syls }); setShowCorrectionModal(true); }}
                                                 startIndex={item.index}
+                                                isReadingMode={activeTool === 'read'}
                                                 interactionDisabled={activeTool === 'read'}
                                                 wordColors={wordColors}
                                                 colorPalette={colorPalette}
@@ -788,6 +1013,8 @@ const App = () => {
                                                     if (node) wordRefs.current[idx] = node;
                                                     else delete wordRefs.current[idx];
                                                 }}
+                                                drawings={wordDrawings[item.index] || []}
+                                                onUpdateDrawings={handleUpdateDrawings}
                                             />
                                         );
                                     })}
@@ -812,6 +1039,7 @@ const App = () => {
                         onClose={() => setActiveView('text')}
                         settings={settings}
                         setSettings={setSettings}
+                        updateTimestamp={Object.keys(textCorrections).length + Object.values(textCorrections).join('').length} // Hash-like dependency
                         wordColors={wordColors}
                         colorPalette={colorPalette}
                         colorHeaders={colorHeaders}
@@ -869,13 +1097,15 @@ const App = () => {
                         columnCount={wordListColumnCount}
                         setColumnCount={setWordListColumnCount}
                         onWordUpdate={(wordId, newText) => {
+                            console.log("onWordUpdate triggered:", wordId, newText);
                             const index = parseInt(wordId.replace('word_', ''), 10);
-                            if (isNaN(index)) return;
+                            if (isNaN(index)) { console.error("Invalid word index"); return; }
                             const target = processedWords.find(w => w.index === index);
-                            if (!target) return;
-                            const before = text.substring(0, index);
-                            const after = text.substring(index + target.word.length);
-                            handleTextChange(before + newText + after);
+                            if (!target) { console.error("Target word not found for index:", index); return; }
+
+                            const lookupKey = `${target.word}_${target.index}`;
+                            console.log("Setting correction for key:", lookupKey, "to", newText);
+                            setTextCorrections(prev => ({ ...prev, [lookupKey]: newText }));
                         }} />}
                     {activeView === 'sentence' && <SentencePuzzleView text={text} mode="sentence" settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Satzpuzzle" />}
                     {activeView === 'textpuzzle' && <SentencePuzzleView text={text} mode="text" settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Textpuzzle" />}
@@ -912,9 +1142,12 @@ const App = () => {
                 highlights: highlightedIndices.size > 0 ? compressIndices(highlightedIndices) : undefined,
                 hidden: hiddenIndices.size > 0 ? compressIndices(hiddenIndices) : undefined,
                 manualCorrections: Object.keys(manualCorrections).length > 0 ? manualCorrections : undefined,
+                textCorrections: Object.keys(textCorrections).length > 0 ? textCorrections : undefined,
                 columnsState: Object.keys(columnsState.cols).length > 0 ? columnsState : undefined,
                 wordColors: Object.keys(wordColors).length > 0 ? wordColors : undefined,
-                colorPalette: JSON.stringify(colorPalette) !== JSON.stringify(['#3b82f6', '#a855f7', '#ef4444', '#f97316', '#22c55e']) ? colorPalette : undefined
+                wordColors: Object.keys(wordColors).length > 0 ? wordColors : undefined,
+                colorPalette: JSON.stringify(colorPalette) !== JSON.stringify(['#3b82f6', '#a855f7', '#ef4444', '#f97316', '#22c55e']) ? colorPalette : undefined,
+                wordDrawings: Object.keys(wordDrawings).length > 0 ? wordDrawings : undefined
             })} onClose={() => setShowQR(false)} />}
             {showScanner && <QRScannerModal onClose={() => setShowScanner(false)} onScanSuccess={(decodedText) => {
                 setShowScanner(false);

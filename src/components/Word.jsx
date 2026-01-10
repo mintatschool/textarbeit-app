@@ -1,8 +1,8 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useState, useRef, useEffect } from 'react';
 import { Icons } from './Icons';
 import { getCachedSyllables, CLUSTERS } from '../utils/syllables';
 
-const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, highlightedIndices, isHidden, toggleHighlights, toggleHidden, hideYellowLetters, activeTool, activeColor, onEditMode, manualSyllables, hyphenator, settings, isReadingMode, wordColors, colorPalette, domRef, isGrouped, isSelection, hidePunctuation }) => {
+const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, highlightedIndices, isHidden, toggleHighlights, toggleHidden, hideYellowLetters, activeTool, activeColor, onEditMode, manualSyllables, hyphenator, settings, isReadingMode, wordColors, colorPalette, domRef, isGrouped, isSelection, hidePunctuation, onMouseEnter, onMouseDown, isTextMarkerMode, drawings, onUpdateDrawings, forceNoMargin }) => {
     const wordKey = `${word}_${startIndex}`;
     const syllables = useMemo(() => manualSyllables || getCachedSyllables(word, hyphenator), [word, manualSyllables, hyphenator]);
 
@@ -77,7 +77,8 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
 
     const handleInteraction = useCallback((e, globalIndex) => {
         e.stopPropagation();
-        if (isReadingMode) return;
+        e.stopPropagation();
+        if (isReadingMode || activeTool === 'pen') return;
         if (activeTool === 'split') {
             onEditMode(word, wordKey, syllables);
             return;
@@ -119,7 +120,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
     if (activeColor === 'yellow' && cursorClass === 'cursor-pointer') {
         // Logic refined in wrapperCursorClass
     }
-    const wrapperCursorClass = (activeColor === 'yellow' && !activeTool && !isReadingMode) ? 'cursor-default' : cursorClass;
+    const wrapperCursorClass = isTextMarkerMode ? 'cursor-text' : ((activeColor === 'yellow' && !activeTool && !isReadingMode) ? 'cursor-default' : cursorClass);
 
     const isZoomed = !activeTool && !isReadingMode && settings.zoomActive && isHighlighted;
 
@@ -142,23 +143,152 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
     const currentFontSize = isZoomed ? settings.fontSize * zoomScale : settings.fontSize;
 
     const wordSpacingStyle = {
-        marginRight: `${(settings.wordSpacing ?? 0)}em`,
+        marginRight: (isTextMarkerMode || forceNoMargin) ? '0px' : `${(settings.wordSpacing ?? 0)}em`,
         zIndex: isZoomed ? 20 : 'auto',
         fontSize: `${currentFontSize}px`,
         lineHeight: 1,
+        letterSpacing: `${(settings.letterSpacing ?? 0)}em`,
         transition: 'font-size 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.3s ease'
     };
     const renderPrefix = () => !hidePunctuation && prefix ? <span className="text-slate-900 pointer-events-none">{prefix}</span> : null;
     const renderSuffix = () => !hidePunctuation && suffix ? <span className="text-slate-900 pointer-events-none">{suffix}</span> : null;
 
+    // --- Drawing Logic ---
+    const [currentPath, setCurrentPath] = useState([]);
+    const svgRef = useRef(null);
+    const isPenMode = activeTool === 'pen';
+    const isEraser = activeColor === 'transparent';
+    const isPenEraser = isPenMode && isEraser;
+    const isPenDraw = isPenMode && !isEraser;
+
+    const handleStartDraw = (e) => {
+        if (!isPenDraw) return;
+        e.stopPropagation();
+        e.preventDefault(); // Prevent touch scrolling / mouse emulation
+        e.target.setPointerCapture(e.pointerId);
+        const rect = svgRef.current.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) * 100;
+        const y = ((e.clientY - rect.top) / rect.height) * 100;
+        setCurrentPath([{ x, y }]);
+    };
+
+    const handleDrawMove = (e) => {
+        if (!isPenDraw || currentPath.length === 0) return;
+        const rect = svgRef.current.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) * 100;
+        const y = ((e.clientY - rect.top) / rect.height) * 100;
+        setCurrentPath(prev => [...prev, { x, y }]);
+    };
+
+    const handleEndDraw = (e) => {
+        if (!isPenDraw || currentPath.length === 0) return;
+        e.target.releasePointerCapture(e.pointerId);
+
+        // Save Path
+        const newDrawing = {
+            points: currentPath,
+            color: activeColor === 'yellow' ? '#fde047' : resolveColor(activeColor), // Use resolved hex
+            relativeWidth: 0.5, // Save relative width for potential future variable widths
+            strokeWidth: isZoomed ? (settings.fontSize * (settings.zoomScale || 1.2)) / 2 : (settings.fontSize / 2) // Fallback absolute
+        };
+
+        const nextDrawings = drawings ? [...drawings, newDrawing] : [newDrawing];
+        onUpdateDrawings(startIndex, nextDrawings);
+        setCurrentPath([]);
+    };
+
+    const handleDeleteDrawing = (index) => {
+        if (!drawings) return;
+        const next = [...drawings];
+        next.splice(index, 1);
+        onUpdateDrawings(startIndex, next);
+    };
+
+    const convertPointsToPath = (points) => {
+        if (!points || points.length === 0) return "";
+        const d = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+        return d;
+    };
+
+    const drawingLayer = (
+
+        <svg
+            ref={svgRef}
+            className={`absolute inset-0 w-full h-full z-30 ${isPenDraw ? 'pointer-events-auto touch-none cursor-crosshair' : 'pointer-events-none'}`}
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+            style={{ overflow: 'visible' }}
+            onPointerDown={(e) => {
+                if (isPenDraw) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    handleStartDraw(e);
+                }
+            }}
+            onPointerMove={handleDrawMove}
+            onPointerUp={handleEndDraw}
+            onPointerLeave={handleEndDraw}
+        >
+            {drawings && drawings.map((d, idx) => (
+                <path
+                    key={idx}
+                    d={convertPointsToPath(d.points)}
+                    stroke={d.color || 'orange'}
+                    strokeWidth={currentFontSize ? currentFontSize * (d.relativeWidth || 0.5) : 12}
+                    vectorEffect="non-scaling-stroke"
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className={isPenEraser ? "pointer-events-auto cursor-crosshair hover:opacity-50" : "pointer-events-none"}
+                    onPointerDown={(e) => {
+                        if (isPenEraser) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleDeleteDrawing(idx);
+                        }
+                    }}
+                    onPointerEnter={(e) => {
+                        if (isPenEraser && (e.buttons === 1)) {
+                            handleDeleteDrawing(idx);
+                        }
+                    }}
+                />
+            ))}
+            {currentPath.length > 0 && (
+                <path
+                    d={convertPointsToPath(currentPath)}
+                    stroke={resolveColor(activeColor)}
+                    strokeWidth={currentFontSize ? currentFontSize / 2 : 24}
+                    vectorEffect="non-scaling-stroke"
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                />
+            )}
+        </svg>
+    );
+    // ---------------------
+
     if (isHidden) return <span onClick={() => !isReadingMode && (activeTool === 'blur' || !activeTool) && toggleHidden(wordKey)} className={`blur-container transition-all ${cursorClass}`} style={wordSpacingStyle}><span className="blur-content" style={{ lineHeight: 1 }}>{prefix}{word}{suffix}</span></span>;
 
-    const isNeutralMarked = (isHighlighted && firstCharColor === 'transparent') || (isGrouped && activeColor === 'neutral');
-    const isColorMarked = isHighlighted && firstCharColor !== 'transparent';
+    const isColorMarked = firstCharColor !== 'transparent';
+    const isNeutralMarked = (isHighlighted && !isColorMarked) || (isGrouped && activeColor === 'neutral');
 
-    const markerBase = (isHighlighted || isGrouped) && (isNeutralMarked || isColorMarked || (isGrouped && activeColor === 'neutral')) ? 'border-2 rounded-lg pt-0.5 pb-1 px-1' : '';
-    const markerBorder = isNeutralMarked ? 'border-slate-300/80' : 'border-transparent';
+    const showFrame = isHighlighted || isGrouped;
+
+    // Use different style for Textmarker (isColorMarked) to create a continuous line
+    // Use linear scaling units (em) instead of fixed px to ensure drawing overlay matches
+    // PERSISTENCE: Apply marker styling if colored, even if not in Marker Mode
+    const markerBase = (showFrame || isColorMarked)
+        ? (showFrame ? 'border-2 rounded-lg' : 'rounded-none')
+        : '';
+    const markerBorder = showFrame ? 'border-slate-300/80' : (isColorMarked ? 'border-0' : 'border-transparent');
     const markerClass = `${markerBase} ${markerBorder}`;
+    const markerStyle = (showFrame || isColorMarked)
+        ? ((!showFrame && isColorMarked)
+            ? { paddingTop: '0', paddingBottom: '0.05em', paddingLeft: '0', paddingRight: '0', marginBottom: '-0.05em', marginTop: '0' }
+            : { paddingTop: '0.02em', paddingBottom: '0.05em', paddingLeft: '0.15em', paddingRight: '0.15em' }
+        ) : {};
     const backgroundColor = isColorMarked ? firstCharColor : 'transparent';
 
     // Unified Rendering - use when syllables shouldn't be shown OR when color marked (but NOT when neutral marked)
@@ -166,22 +296,44 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
         return (
             <span
                 ref={refForWord}
-                className={`inline-block select-none transition-all origin-center ${wrapperCursorClass}`}
+                data-paint-index={startIndex}
+                className={`inline-block relative select-none transition-all origin-center ${wrapperCursorClass}`}
                 style={{
                     ...wordSpacingStyle,
                     backgroundColor: 'transparent',
                 }}
-                // DISABLE WRAPPER CLICK IN YELLOW MODE
-                onClick={(e) => !isReadingMode && (activeTool === 'split' || activeTool === 'blur' || activeColor !== 'yellow') && handleInteraction(e)}
+                // FIX: Simplified event handlers for reliable paint/erase detection
+                onMouseEnter={(e) => {
+                    // Always trigger in Textmarker or Pen modes if we have a callback
+                    if ((isTextMarkerMode || activeTool === 'pen') && onMouseEnter) {
+                        onMouseEnter(startIndex, e);
+                    }
+                }}
+                onPointerEnter={(e) => {
+                    // Backup for pointer events (more reliable on some devices)
+                    if ((isTextMarkerMode || activeTool === 'pen') && onMouseEnter && e.buttons === 1) {
+                        onMouseEnter(startIndex, e);
+                    }
+                }}
+                onMouseDown={(e) => {
+                    if (isTextMarkerMode || activeTool === 'pen') {
+                        e.preventDefault();
+                        if (onMouseDown) onMouseDown(startIndex, e);
+                    }
+                }}
+                onClick={(e) => !isReadingMode && !isTextMarkerMode && activeTool !== 'pen' && (activeTool === 'split' || activeTool === 'blur' || activeColor !== 'yellow') && handleInteraction(e)}
             >
-                {renderPrefix()}
                 <span
-                    className={`inline-block ${markerClass} ${isNeutralMarked || isColorMarked ? 'mx-0.5' : ''} ${isSelection && !isNeutralMarked ? 'animate-pulse bg-slate-100 rounded-lg' : ''}`}
+                    className={`inline-block ${markerClass} ${isNeutralMarked ? '' : ''} ${isSelection && !isNeutralMarked ? 'animate-pulse bg-slate-100 rounded-lg' : ''}`}
                     style={{
+                        marginRight: showFrame ? '0.05em' : '0',
+                        marginLeft: showFrame ? '0.05em' : '0',
                         backgroundColor: isNeutralMarked ? 'transparent' : (isSelection ? '#e2e8f0' : backgroundColor),
-                        color: isColorMarked ? 'black' : undefined
+                        color: isColorMarked ? 'black' : undefined,
+                        ...markerStyle
                     }}
                 >
+                    {renderPrefix()}
                     {word.split('').map((char, i) => {
                         const globalIndex = startIndex + i;
                         const isYellow = wordColors && wordColors[globalIndex] === 'yellow';
@@ -190,9 +342,11 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                         const glueRight = highlightedIndices.has(globalIndex + 1) && clusterConnections.has(globalIndex);
 
                         let rounded = 'rounded';
-                        let charClassName = `inline-block px-px transition-transform ${isColorMarked ? '' : 'hover:bg-slate-100'} cursor-pointer`;
 
-                        let charStyle = {};
+                        let charClassName = `inline-block leading-none transition-transform ${isColorMarked ? '' : 'hover:bg-slate-100'} cursor-pointer`;
+
+                        // Default char padding in em - Adjusted for better coverage (descenders)
+                        let charStyle = { paddingLeft: '0.02em', paddingRight: '0.02em', paddingTop: '0.02em', paddingBottom: '0.18em', marginTop: '-0.02em', marginBottom: '-0.16em' };
 
                         if (isYellow) {
                             charClassName += ' bg-yellow-100';
@@ -224,10 +378,31 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                         return (
                             <span
                                 key={i}
-                                onMouseDown={(e) => e.stopPropagation()}
-                                onClick={(e) => !activeTool && !isReadingMode && handleInteraction(e, globalIndex)} // Char Click
-                                className={`${charClassName} ${rounded} ${shouldHideLetter ? 'blur-letter' : ''} ${shouldHideLetter && rounded === 'rounded-none' ? '!rounded-none' : ''} ${shouldHideLetter && rounded.includes('rounded-l-none') ? '!rounded-l-none' : ''} ${shouldHideLetter && rounded.includes('rounded-r-none') ? '!rounded-r-none' : ''}`}
+                                data-paint-index={globalIndex}
+                                onMouseDown={(e) => {
+                                    // FIX: Allow propagation in Paint/Eraser modes (Textmarker or Pen)
+                                    // This ensures the App's global handlePaint (via Wrapper onMouseDown) receives the event to start the drag state.
+                                    if (!isTextMarkerMode && activeTool !== 'pen') {
+                                        e.stopPropagation();
+                                    }
+                                }}
+                                onClick={(e) => {
+                                    // Prevent highlighting in Marker/Pen modes
+                                    if (isTextMarkerMode || activeTool === 'pen') return;
+                                    if (activeTool || !isReadingMode) handleInteraction(e, globalIndex);
+                                }} // Char Click
+                                className={`${charClassName} ${rounded} ${shouldHideLetter ? 'blur-letter' : ''}`}
                                 style={charStyle}
+                                onMouseEnter={(e) => {
+                                    if ((activeTool === 'pen' || isTextMarkerMode) && onMouseEnter) {
+                                        onMouseEnter(globalIndex, e);
+                                    }
+                                }}
+                                onPointerEnter={(e) => {
+                                    if ((activeTool === 'pen' || isTextMarkerMode) && onMouseEnter && e.buttons === 1) {
+                                        onMouseEnter(globalIndex, e);
+                                    }
+                                }}
                             >
                                 <span className={shouldHideLetter ? 'blur-letter-content' : ''}>
                                     {char}
@@ -235,8 +410,11 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                             </span>
                         );
                     })}
+
+                    {renderSuffix()}
+                    {/* Drawing Layer */}
+                    {drawingLayer}
                 </span>
-                {renderSuffix()}
             </span>
         );
     }
@@ -246,13 +424,32 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
     return (
         <span
             ref={refForWord}
+            data-paint-index={startIndex}
             className={`inline-flex items-baseline whitespace-nowrap transition-all origin-center relative group leading-none ${wrapperCursorClass}`}
             style={wordSpacingStyle}
-            // DISABLE WRAPPER CLICK IN YELLOW MODE
+            // FIX: Simplified event handlers for reliable paint/erase detection
+            onMouseEnter={(e) => {
+                // Always trigger in Textmarker or Pen modes if we have a callback
+                if ((isTextMarkerMode || activeTool === 'pen') && onMouseEnter) {
+                    onMouseEnter(startIndex, e);
+                }
+            }}
+            onPointerEnter={(e) => {
+                // Backup for pointer events (more reliable on some devices)
+                if ((isTextMarkerMode || activeTool === 'pen') && onMouseEnter && e.buttons === 1) {
+                    onMouseEnter(startIndex, e);
+                }
+            }}
+            onMouseDown={(e) => {
+                if (isTextMarkerMode || activeTool === 'pen') {
+                    e.preventDefault();
+                    if (onMouseDown) onMouseDown(startIndex, e);
+                }
+            }}
             onClick={(e) => !isReadingMode && (activeTool === 'split' || activeTool === 'blur' || activeColor !== 'yellow' || ['light_blue', 'silben', 'none'].includes(settings.clickAction)) && handleInteraction(e)}
         >
             {renderPrefix()}
-            <span className={`inline-flex items-baseline ${markerClass} ${isNeutralMarked || isColorMarked ? 'mx-0.5' : ''} ${isSelection && !isNeutralMarked ? 'animate-pulse bg-slate-100 rounded-lg' : ''}`} style={{ backgroundColor: 'transparent' }}>
+            <span className={`inline-flex items-baseline ${markerClass} ${isSelection && !isNeutralMarked ? 'animate-pulse bg-slate-100 rounded-lg' : ''}`} style={{ backgroundColor: 'transparent', marginLeft: isNeutralMarked ? '0.05em' : '0', marginRight: isNeutralMarked ? '0.05em' : '0', ...markerStyle }}>
                 {syllables.map((syl, sIdx) => {
                     const currentStart = charCounter;
                     charCounter += syl.length;
@@ -261,7 +458,8 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                     let bgClass = isEven ? 'bg-blue-100' : 'bg-blue-200';
 
                     return (
-                        <span key={sIdx} className={`inline-block relative leading-none ${settings.visualType === 'block' ? ('mx-[1px] px-[2px] rounded ' + bgClass + ' border border-blue-200/50 shadow-sm') : 'mx-0'}`} style={settings.visualType === 'block' ? { minHeight: '1em', display: 'inline-flex', alignItems: 'flex-end', paddingBottom: '0.1em' } : { height: '1em' }}>
+
+                        <span key={sIdx} className={`inline-block relative leading-none ${settings.visualType === 'block' ? ('rounded ' + bgClass + ' border border-blue-200/50 shadow-sm') : ''}`} style={settings.visualType === 'block' ? { marginLeft: '0.02em', marginRight: '0.02em', paddingLeft: '0.05em', paddingRight: '0.05em', minHeight: '1.2em', display: 'inline-flex', alignItems: 'flex-end', paddingBottom: '0.15em' } : { height: '1.1em', marginLeft: '0', marginRight: '0' }}>
                             <span className={`inline-block relative z-10 ${settings.visualType === 'black_gray' ? (isEven ? 'text-black' : 'text-gray-400') : ''}`}>
                                 {syl.split('').map((char, cIdx) => {
                                     const globalIndex = startIndex + currentStart + cIdx;
@@ -274,11 +472,11 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                                     if (settings.visualType === 'black_gray') charStyleClass = isEven ? 'text-black' : 'text-gray-400';
 
                                     let rounded = 'rounded-sm';
-                                    let customClasses = 'px-px cursor-pointer';
-                                    let style = {};
+                                    let customClasses = 'cursor-pointer';
+                                    let style = { paddingLeft: '0.02em', paddingRight: '0.02em' };
 
                                     if (isYellow) {
-                                        style = { backgroundColor: '#feffc7' };
+                                        style = { backgroundColor: '#feffc7', paddingTop: '0.02em', paddingBottom: '0.18em', marginTop: '-0.02em', marginBottom: '-0.16em' };
                                         customClasses += ' bg-yellow-100';
 
                                         const simpleLeft = wordColors && wordColors[globalIndex - 1] === 'yellow';
@@ -304,10 +502,30 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                                     return (
                                         <span
                                             key={cIdx}
-                                            onMouseDown={(e) => e.stopPropagation()}
-                                            onClick={(e) => (activeTool || !isReadingMode) && handleInteraction(e, globalIndex)}
-                                            className={`inline-block select-none transition-all duration-200 leading-none pb-0.5 pt-0 ${charStyleClass} ${rounded} ${customClasses} ${shouldHideLetter ? 'blur-letter' : ''} ${shouldHideLetter && rounded === 'rounded-none' ? '!rounded-none' : ''} ${shouldHideLetter && rounded.includes('rounded-l-none') ? '!rounded-l-none' : ''} ${shouldHideLetter && rounded.includes('rounded-r-none') ? '!rounded-r-none' : ''}`}
+                                            data-paint-index={globalIndex}
+                                            onMouseDown={(e) => {
+                                                // Allow propagation in paint modes for drag detection
+                                                if (!isTextMarkerMode && activeTool !== 'pen') {
+                                                    e.stopPropagation();
+                                                }
+                                            }}
+                                            onClick={(e) => {
+                                                // Prevent highlighting in Marker/Pen modes
+                                                if (isTextMarkerMode || activeTool === 'pen') return;
+                                                if (activeTool || !isReadingMode) handleInteraction(e, globalIndex);
+                                            }}
+                                            className={`${customClasses} ${rounded} inline-block leading-none ${shouldHideLetter ? 'blur-letter' : ''}`}
                                             style={style}
+                                            onMouseEnter={(e) => {
+                                                if ((activeTool === 'pen' || isTextMarkerMode) && onMouseEnter) {
+                                                    onMouseEnter(globalIndex, e);
+                                                }
+                                            }}
+                                            onPointerEnter={(e) => {
+                                                if ((activeTool === 'pen' || isTextMarkerMode) && onMouseEnter && e.buttons === 1) {
+                                                    onMouseEnter(globalIndex, e);
+                                                }
+                                            }}
                                         >
                                             <span className={shouldHideLetter ? 'blur-letter-content' : ''}>
                                                 {char}
@@ -322,6 +540,8 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                 })}
             </span>
             {renderSuffix()}
+            {/* Drawing Layer */}
+            {drawingLayer}
         </span>
     );
 
@@ -335,7 +555,9 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
         prev.hideYellowLetters === next.hideYellowLetters &&
         prev.activeTool === next.activeTool &&
         prev.settings === next.settings &&
-        prev.activeColor === next.activeColor && // ADDED VITAL COMPARISON
+        prev.activeColor === next.activeColor &&
+        prev.isTextMarkerMode === next.isTextMarkerMode && // Fix: Propagate marker mode changes
+        prev.forceNoMargin === next.forceNoMargin &&
         prev.isGrouped === next.isGrouped &&
         prev.isSelection === next.isSelection &&
         prev.toggleHighlights === next.toggleHighlights && // Fix for stale closure
@@ -343,6 +565,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
         prev.hyphenator === next.hyphenator &&
         prev.colorPalette === next.colorPalette &&
         prev.hidePunctuation === next.hidePunctuation &&
+        prev.drawings === next.drawings && // Update on drawings change
         true // refs are stable
     );
 });

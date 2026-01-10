@@ -6,6 +6,7 @@ import {
     AlertCircle,
     RotateCcw,
     Volume2,
+    VolumeX,
     Minus,
     Plus
 } from 'lucide-react';
@@ -13,6 +14,7 @@ import { Icons } from './Icons';
 import { ProgressBar } from './ProgressBar';
 import PuzzleTestPiece from './PuzzleTestPiece';
 import { speak } from '../utils/speech';
+import { EmptyStateMessage } from './EmptyStateMessage';
 
 const HorizontalLines = ({ count }) => (
     <div className="flex flex-col gap-[2px] w-4 items-center justify-center">
@@ -55,7 +57,8 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
     // placedPieces: Object { "targetId-slotIdx": pieceId }
     const [scrambledPieces, setScrambledPieces] = useState({ left: [], middle: [], right: [] });
     const [placedPieces, setPlacedPieces] = useState({});
-    const [completedTargets, setCompletedTargets] = useState(new Set()); // Set of Target IDs
+    const [completedRows, setCompletedRows] = useState({}); // Map<RowTargetID, SolvedTargetID>
+    const [audioEnabled, setAudioEnabled] = useState(true);
 
     const moveTimerRef = useRef(null);
 
@@ -65,9 +68,9 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
     const progress = useMemo(() => {
         if (totalWords === 0) return 0;
         const previousStagesWords = gameState.stages.slice(0, gameState.currentStageIndex).reduce((acc, stage) => acc + stage.items.length, 0);
-        const currentStageCompletedCount = completedTargets.size;
+        const currentStageCompletedCount = Object.keys(completedRows).length;
         return Math.min(100, ((previousStagesWords + currentStageCompletedCount + 1) / totalWords) * 100);
-    }, [gameState.stages, gameState.currentStageIndex, completedTargets, totalWords]);
+    }, [gameState.stages, gameState.currentStageIndex, completedRows, totalWords]);
 
     // --------------------------------------------------------------------------------
     // 1. GENERATE PUZZLE DATA
@@ -160,7 +163,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
             wordsPerStage: wps
         }));
 
-        setCompletedTargets(new Set());
+        setCompletedRows({});
         setPlacedPieces({});
 
     }, [validTargets, pendingWordsCount]);
@@ -235,7 +238,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
 
         setScrambledPieces(newPools);
         setPlacedPieces({});
-        setCompletedTargets(new Set());
+        setCompletedRows({});
 
     }, [gameState.currentStageIndex, gameState.stages, gameState.gameStatus]);
 
@@ -273,23 +276,26 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
 
         // Place it
         const slotKey = `${targetId}-${slotIndex}`;
-        setPlacedPieces(prev => ({ ...prev, [slotKey]: foundPiece }));
 
-        // Remove from pool (locally tracked by filtering out placed keys in render, but state update safer)
-        // No, keep in scrambled as 'source of truth' but filter in UI?
-        // Or remove? Removing is cleaner.
-        // setScrambledPieces(prev => ({
-        //     ...prev,
-        //     [sourcePool]: prev[sourcePool].filter(x => x.id !== pieceId)
-        // }));
-        // BUT: If we remove, we can't easily return it. 
-        // Better: Keep distinct list of 'placed pieces' (by ID) vs 'pool pieces'.
-        // Let's use `placedPieces` map. Render function will exclude placed IDs from pools.
+        setPlacedPieces(prev => {
+            const next = { ...prev };
+
+            // Check if this piece is already in another slot and remove it
+            const existingKey = Object.keys(next).find(k => next[k].id === foundPiece.id);
+            if (existingKey) {
+                delete next[existingKey];
+            }
+
+            // Assign to new slot
+            next[slotKey] = foundPiece;
+            return next;
+        });
+
     };
 
     const handleRemove = (targetId, slotIndex) => {
         const slotKey = `${targetId}-${slotIndex}`;
-        if (completedTargets.has(targetId)) return; // Locked
+        // if (completedRows[targetId]) return; // Locked
         setPlacedPieces(prev => {
             const next = { ...prev };
             delete next[slotKey];
@@ -319,42 +325,78 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
         if (!gameState.stages[gameState.currentStageIndex]) return;
         const currentStage = gameState.stages[gameState.currentStageIndex];
 
-        // check each target
-        currentStage.items.forEach(target => {
-            if (completedTargets.has(target.id)) return;
+        // check each row (defined by a target item)
+        currentStage.items.forEach(rowTarget => {
+            // Lock removed for flexible validation
 
-            // Check if all slots filled
+            // Check if all slots in this row are filled
             let isFull = true;
             let currentParts = [];
-            for (let i = 0; i < target.parts.length; i++) {
-                const p = placedPieces[`${target.id}-${i}`];
+            for (let i = 0; i < rowTarget.parts.length; i++) {
+                const p = placedPieces[`${rowTarget.id}-${i}`];
                 if (!p) { isFull = false; break; }
                 currentParts.push(p.text);
             }
 
             if (isFull) {
-                // Validate Content
-                // Strict: Must match intended parts exactly? 
-                // Or loose: Concatenation matches full word? (And form valid structure?)
-                // Since user sees specific "Target Rows", usually the intention is to rebuild THAT specific word.
-                // But if parts are identical ("en" vs "en"), swapping is fine.
-                // Check joined string.
+                // Determine what word was formed
                 const formed = currentParts.join('');
-                if (formed === target.full) {
-                    // Success!
-                    // speak(formed); // Removed auto-audio
-                    setCompletedTargets(prev => new Set(prev).add(target.id));
+
+                // Get currently solved entries to check for collisions
+                const solvedEntries = Object.entries(completedRows);
+
+                // Check if this formed word matches ANY valid target in the stage
+                // that is NOT already used by ANOTHER row.
+                const matchedTarget = currentStage.items.find(t => {
+                    if (t.full !== formed) return false;
+                    // Check if used by any OTHER row (ignoring self)
+                    const usedByOther = solvedEntries.find(([rId, sId]) => sId === t.id && rId !== rowTarget.id);
+                    return !usedByOther;
+                });
+
+                if (matchedTarget) {
+                    // Success! 
+                    if (completedRows[rowTarget.id] !== matchedTarget.id) {
+                        // if (audioEnabled) speak(matchedTarget.full); // Removed per user request
+                        setCompletedRows(prev => ({
+                            ...prev,
+                            [rowTarget.id]: matchedTarget.id
+                        }));
+                    }
+                } else {
+                    // Full but invalid or duplicate used by other
+                    if (completedRows[rowTarget.id]) {
+                        setCompletedRows(prev => {
+                            const next = { ...prev };
+                            delete next[rowTarget.id];
+                            return next;
+                        });
+                    }
+                }
+            } else {
+                // Not full - if it was marked as complete, unmark it
+                if (completedRows[rowTarget.id]) {
+                    setCompletedRows(prev => {
+                        const next = { ...prev };
+                        delete next[rowTarget.id];
+                        return next;
+                    });
                 }
             }
         });
-    }, [placedPieces, completedTargets, gameState.stages, gameState.currentStageIndex]);
+    }, [placedPieces, completedRows, gameState.stages, gameState.currentStageIndex]);
 
     // Check Stage Complete
     useEffect(() => {
         if (!gameState.stages[gameState.currentStageIndex]) return;
         const currentStage = gameState.stages[gameState.currentStageIndex];
 
-        if (currentStage.items.length > 0 && currentStage.items.every(t => completedTargets.has(t.id))) {
+        // All rows must have a solution
+        // Or all targets must be found?
+        // Since number of rows == number of targets, checking if all rows have an entry in completedRows acts as "All done".
+        const allDone = currentStage.items.every(t => completedRows[t.id]);
+
+        if (currentStage.items.length > 0 && allDone) {
             // Stage Complete
             const timer = setTimeout(() => {
                 setGameState(prev => {
@@ -364,15 +406,16 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                     } else {
                         return {
                             ...prev,
+                            ...prev,
                             currentStageIndex: prev.currentStageIndex + 1,
                             gameStatus: 'playing' // Ensure it's playing
                         };
                     }
                 });
-            }, 1500);
+            }, 1000);
             return () => clearTimeout(timer);
         }
-    }, [completedTargets, gameState.stages, gameState.currentStageIndex]);
+    }, [completedRows, gameState.stages, gameState.currentStageIndex]);
 
 
     // --------------------------------------------------------------------------------
@@ -412,16 +455,11 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
     // Safe guard: If playing but no stages or invalid index
     if (gameState.gameStatus === 'playing' && (!gameState.stages[gameState.currentStageIndex] || gameState.stages.length === 0)) {
         return (
-            <div className="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center p-6 text-center animate-in fade-in">
-                <AlertCircle className="w-16 h-16 text-blue-500 mb-4" />
-                <h2 className="text-xl font-bold text-slate-800 mb-2">Keine passenden Silben gefunden.</h2>
-                <p className="text-slate-600 mb-6 font-medium max-w-md">Bitte markiere Wörter, deren Silben sich für den Silbenbau eignen.</p>
-                <div className="flex gap-4">
-                    <button onClick={() => startNewGame()} className="bg-blue-600 text-white px-8 py-2 rounded-xl font-bold shadow-lg flex items-center gap-2 hover:scale-105 transition-transform">
-                        <Icons.RotateCcw size={18} /> Aktualisieren
-                    </button>
-                    <button onClick={onClose} className="bg-slate-100 text-slate-700 px-8 py-2 rounded-xl font-bold shadow-md hover:bg-slate-200 transition-colors border border-slate-200">Zurück</button>
-                </div>
+            <div className="fixed inset-0 bg-slate-100 z-[100] flex flex-col items-center justify-center p-6">
+                <EmptyStateMessage
+                    onClose={onClose}
+                    secondStepText="Wörter markieren, deren Silben sich für den Silbenbau eignen."
+                />
             </div>
         );
     }
@@ -448,7 +486,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
             {/* HEADER */}
             <header className="bg-white border-b border-slate-200 px-6 py-3 flex justify-between items-center z-20 shadow-sm shrink-0">
                 <div className="flex items-center gap-3">
-                    <Icons.PuzzleZigzag className="text-blue-600 w-8 h-8" />
+                    <img src={`${import.meta.env.BASE_URL}silbenbau2_logo.png`} className="w-auto h-10 object-contain" alt="Silbenbau 2" />
                     <span className="text-xl font-bold text-slate-800 hidden md:inline">{title || "Silbenbau 2"}</span>
 
                     {/* Numeric Progress Indicator (Standardized) */}
@@ -473,6 +511,15 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                 </div>
 
                 <div className="flex items-center gap-4">
+                    {/* Audio Toggle */}
+                    <button
+                        onClick={() => setAudioEnabled(!audioEnabled)}
+                        className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${audioEnabled ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-400'}`}
+                        title={audioEnabled ? 'Audio an' : 'Audio aus'}
+                    >
+                        {audioEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
+                    </button>
+
                     {/* Words Count Control */}
                     <div className="flex items-center gap-2 bg-slate-50 px-2 py-1 rounded-2xl border border-slate-200 hidden lg:flex">
                         <HorizontalLines count={2} />
@@ -561,7 +608,14 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                     {/* TARGETS LIST */}
                     <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center gap-8 bg-slate-50/30">
                         {currentStage.items.map(target => {
-                            const isComplete = completedTargets.has(target.id);
+                            const solvedId = completedRows[target.id];
+                            const isComplete = !!solvedId;
+
+                            // Audio should play the solved word if complete, otherwise the target hint
+                            const audioText = isComplete
+                                ? (currentStage.items.find(t => t.id === solvedId)?.full || target.full)
+                                : target.full;
+
                             return (
                                 <div key={target.id} className={`flex items-center gap-20 transition-all duration-500 ${isComplete ? 'opacity-80 scale-95' : ''}`}>
                                     {/* Slot Row */}
@@ -606,10 +660,6 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                                                                     // Allow "pulling out" via drag
                                                                     e.dataTransfer.setData("pieceId", piece.id);
                                                                     setIsDragging(piece.id);
-                                                                    // We don't remove immediately to allow cancel, 
-                                                                    // but we need a way to detect it was dropped OUTSIDE.
-                                                                    // Simplest: just remove on dragStart if the user expects "herausziehen" to mean "take it away".
-                                                                    // But that's destructive.
                                                                 }}
                                                             >
                                                                 <PuzzleTestPiece label={piece.text} type={targetType} colorClass={getPieceColor(piece.color)} scale={1} id={piece.id} showSeamLine fontFamily={settings.fontFamily} />
@@ -623,13 +673,15 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
 
                                     {/* Audio Button & Checkmark - Standardized Group */}
                                     <div className="relative flex items-center shrink-0 ml-4">
-                                        <button
-                                            onClick={() => speak(target.full)}
-                                            className="w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg transition-all ring-4 ring-white/50 hover:scale-105 active:scale-95 z-10"
-                                            title="Anhören"
-                                        >
-                                            <Volume2 size={24} />
-                                        </button>
+                                        {audioEnabled && (
+                                            <button
+                                                onClick={() => speak(audioText)}
+                                                className="w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg transition-all ring-4 ring-white/50 hover:scale-105 active:scale-95 z-10"
+                                                title="Anhören"
+                                            >
+                                                <Volume2 size={24} />
+                                            </button>
+                                        )}
 
                                         {/* Floating Checkmark - positioned exactly 20px to the right of the speaker */}
                                         <div className={`

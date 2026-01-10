@@ -77,21 +77,7 @@ export const StaircaseView = ({ words, settings, setSettings, onClose, title }) 
     if (highlightedWords.length === 0) {
         return (
             <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans">
-                <div className="flex-1 flex items-center justify-center">
-                    <div className="bg-white p-8 rounded-2xl shadow-xl text-center max-w-md mx-4">
-                        <Icons.Stairs size={64} className="mx-auto text-indigo-300 mb-4" />
-                        <h2 className="text-2xl font-bold text-slate-800 mb-2">Keine Wörter markiert</h2>
-                        <p className="text-slate-600 mb-6">
-                            Bitte markiere zuerst Wörter im Text, um sie als Treppenwörter anzuzeigen.
-                        </p>
-                        <button
-                            onClick={onClose}
-                            className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition min-touch-target"
-                        >
-                            Zurück
-                        </button>
-                    </div>
-                </div>
+                <EmptyStateMessage onClose={onClose} />
             </div>
         );
     }

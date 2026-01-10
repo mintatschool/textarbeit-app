@@ -3,16 +3,15 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Icons } from './Icons';
 import { Word } from './Word'; // Import Word for consistent rendering (arcs etc)
 import { ProgressBar } from './ProgressBar';
+import { EmptyStateMessage } from './EmptyStateMessage';
 
 export const SpeedReadingView = ({ words, settings, setSettings, onClose, title }) => {
-    // Level calculation Round 4:
-    // Left = Stufe 1 = Slow (Walker) = 1500ms
-    // Right = Stufe 12 = Fast (RaceCar) = 30ms
+    // Level calculation Round 5 (Exponential gaps):
+    const SPEED_LEVELS = [
+        2000, 1600, 1250, 950, 720, 540, 400, 290, 200, 130, 75, 30
+    ];
     const [level, setLevel] = useState(6);
-
-    // Logic: Stufe 1 = 1500ms. Stufe 12 = 30ms.
-    // Range = 1470ms across 11 intervals (12 levels)
-    const speed = Math.round(1500 - (level - 1) * (1470 / 11));
+    const speed = SPEED_LEVELS[level - 1];
 
     const [gameState, setGameState] = useState('intro'); // intro, showing, hidden, feedback, results
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -40,7 +39,7 @@ export const SpeedReadingView = ({ words, settings, setSettings, onClose, title 
         if (gameState === 'countdown') {
             // Initial flash
             setIsFlashing(true);
-            const initialFlash = setTimeout(() => setIsFlashing(false), 400);
+            const initialFlash = setTimeout(() => setIsFlashing(false), 320);
 
             const countdownTimer = setInterval(() => {
                 setCountdownValue(prev => {
@@ -51,7 +50,7 @@ export const SpeedReadingView = ({ words, settings, setSettings, onClose, title 
                     }
                     // Sync flash with each number decrement
                     setIsFlashing(true);
-                    setTimeout(() => setIsFlashing(false), 400);
+                    setTimeout(() => setIsFlashing(false), 320);
                     return prev - 1;
                 });
             }, 1000);
@@ -97,10 +96,7 @@ export const SpeedReadingView = ({ words, settings, setSettings, onClose, title 
     if (exerciseWords.length === 0) {
         return (
             <div className="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center p-6 text-center">
-                <Icons.AlertTriangle className="w-16 h-16 text-blue-500 mb-4" />
-                <h2 className="text-xl font-bold text-slate-800 mb-2">Keine Wörter zum Anzeigen.</h2>
-                <p className="text-slate-600 mb-6 font-medium">Bitte markiere zuerst einige Wörter im Text.</p>
-                <button onClick={onClose} className="bg-blue-600 text-white px-8 py-2 rounded-xl font-bold">Zurück</button>
+                <EmptyStateMessage onClose={onClose} />
             </div>
         );
     }
@@ -118,40 +114,36 @@ export const SpeedReadingView = ({ words, settings, setSettings, onClose, title 
                 </div>
 
                 {gameState !== 'results' && (
-                    <div className="flex flex-col items-center gap-1 min-w-[400px]">
-                        <div className="flex justify-between w-full px-1 text-xs font-bold text-slate-400 uppercase tracking-wider items-center mb-1">
-                            <div className="flex flex-col items-center">
-                                <Icons.Snail size={24} className="text-green-500" />
+                    <div className="flex items-center gap-6 min-w-[550px]">
+                        <Icons.Snail size={42} className="text-green-500 shrink-0" />
+                        <div className="flex-1 flex flex-col items-center">
+                            <div className="w-full relative mt-2 mb-2">
+                                <input
+                                    type="range"
+                                    min="1"
+                                    max="12"
+                                    step="1"
+                                    value={level}
+                                    onChange={(e) => setLevel(Number(e.target.value))}
+                                    className="w-full h-4 rounded-lg appearance-none cursor-pointer transition-all accent-current z-10 relative speed-range"
+                                    style={{
+                                        backgroundColor: '#e2e8f0',
+                                        color: getSliderColor(level)
+                                    }}
+                                />
+                                {/* Ticks */}
+                                <div className="absolute top-1/2 -translate-y-1/2 w-[calc(100%-12px)] left-[6px] flex justify-between pointer-events-none opacity-30">
+                                    {Array.from({ length: 12 }).map((_, i) => (
+                                        <div key={i} className="w-[1px] h-2 bg-slate-600 rounded-full" />
+                                    ))}
+                                </div>
                             </div>
-                            <div className="flex flex-col items-center">
-                                <Icons.Rabbit size={24} className="text-orange-500" />
-                            </div>
-                        </div>
-                        <div className="w-full relative mt-2 mb-2">
-                            <input
-                                type="range"
-                                min="1"
-                                max="12"
-                                step="1"
-                                value={level}
-                                onChange={(e) => setLevel(Number(e.target.value))}
-                                className="w-full h-4 rounded-lg appearance-none cursor-pointer transition-all accent-current z-10 relative speed-range"
-                                style={{
-                                    backgroundColor: '#e2e8f0',
-                                    color: getSliderColor(level)
-                                }}
-                            />
-                            {/* Ticks */}
-                            <div className="absolute top-1/2 -translate-y-1/2 w-[calc(100%-12px)] left-[6px] flex justify-between pointer-events-none opacity-30">
-                                {Array.from({ length: 12 }).map((_, i) => (
-                                    <div key={i} className="w-[1px] h-2 bg-slate-600 rounded-full" />
-                                ))}
-                            </div>
-                        </div>
 
-                        <div className="text-xl font-black mt-1" style={{ color: getSliderColor(level) }}>
-                            Stufe {level}
+                            <div className="text-xl font-black mt-1" style={{ color: getSliderColor(level) }}>
+                                Stufe {level}
+                            </div>
                         </div>
+                        <Icons.Rabbit size={42} className="text-orange-500 shrink-0" />
                     </div>
                 )}
 
@@ -246,25 +238,26 @@ export const SpeedReadingView = ({ words, settings, setSettings, onClose, title 
                             )}
                         </div>
 
-                        {/* Feedback Buttons - Absolute Screen Edge Right - Shadowless */}
-                        <div className={`absolute bottom-8 right-0 flex gap-10 transition-all duration-300 ${gameState === 'feedback' ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12 pointer-events-none'}`}>
-                            <button
-                                onClick={() => handleFeedback(true)}
-                                className="w-24 h-24 bg-emerald-500 text-white rounded-full transition-all flex items-center justify-center hover:bg-emerald-600 hover:scale-105 active:scale-95 border-b-8 border-emerald-700 active:border-b-0 active:translate-y-2"
-                                title="Gelesen"
-                            >
-                                <Icons.Check size={48} strokeWidth={4} />
-                            </button>
-                            <button
-                                onClick={() => handleFeedback(false)}
-                                className="bg-red-500 text-white w-24 h-24 rounded-full transition-all flex items-center justify-center hover:bg-red-600 hover:scale-105 active:scale-95 border-b-8 border-red-700 active:border-b-0 active:translate-y-2"
-                                title="Nicht erfasst"
-                            >
-                                <Icons.X size={48} strokeWidth={4} />
-                            </button>
-                        </div>
                     </div>
                 )}
+
+                {/* Feedback Buttons - Absolute Screen Edge Right - Shadowless */}
+                <div className={`absolute bottom-8 right-8 flex gap-10 transition-all duration-300 ${gameState === 'feedback' ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12 pointer-events-none'}`}>
+                    <button
+                        onClick={() => handleFeedback(false)}
+                        className="bg-red-500 text-white w-28 h-28 rounded-full transition-all flex items-center justify-center hover:bg-red-600 hover:scale-105 active:scale-95"
+                        title="Nicht erfasst"
+                    >
+                        <Icons.X size={56} strokeWidth={4} />
+                    </button>
+                    <button
+                        onClick={() => handleFeedback(true)}
+                        className="w-28 h-28 bg-emerald-500 text-white rounded-full transition-all flex items-center justify-center hover:bg-emerald-600 hover:scale-105 active:scale-95"
+                        title="Gelesen"
+                    >
+                        <Icons.Check size={56} strokeWidth={4} />
+                    </button>
+                </div>
 
                 {gameState === 'results' && (
                     <div className="w-full max-w-3xl bg-white rounded-[3rem] p-10 flex flex-col md:max-h-[85vh] animate-fadeIn border border-slate-100 relative overflow-hidden">
@@ -306,7 +299,7 @@ export const SpeedReadingView = ({ words, settings, setSettings, onClose, title 
 
                         <div className="flex gap-4 relative z-10 pt-4 border-t border-slate-100">
                             <button
-                                onClick={handleStart}
+                                onClick={() => setGameState('intro')}
                                 className="flex-1 bg-blue-600 text-white py-4 rounded-2xl font-black text-xl hover:bg-blue-700 transition-all flex items-center justify-center gap-3 shadow-lg shadow-blue-200 hover:scale-[1.02] active:scale-[0.98]"
                             >
                                 <Icons.RotateCcw size={24} /> Noch einmal
@@ -337,13 +330,13 @@ export const SpeedReadingView = ({ words, settings, setSettings, onClose, title 
                 
                 input[type=range].speed-range::-webkit-slider-thumb {
                     -webkit-appearance: none;
-                    height: 28px;
-                    width: 28px;
+                    height: 38px;
+                    width: 38px;
                     border-radius: 50%;
                     background: white;
                     border: 3px solid currentColor;
                     cursor: pointer;
-                    margin-top: -6px;
+                    margin-top: -8px;
                     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
                     transition: all 0.2s;
                     position: relative;
@@ -354,6 +347,6 @@ export const SpeedReadingView = ({ words, settings, setSettings, onClose, title 
                     box-shadow: 0 0 0 5px rgba(0,0,0,0.05);
                 }
             `}} />
-        </div>
+        </div >
     );
 };

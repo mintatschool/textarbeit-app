@@ -26,7 +26,7 @@ const WORD_COLORS = [
 
 // Split text into sentences
 const splitIntoSentences = (text) => {
-    return text.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 0);
+    return text.split(/(?<=[.!?])\s+|\n+/).filter(s => s.trim().length > 0);
 };
 
 // Split sentence into words
@@ -92,12 +92,18 @@ export const SentenceShuffleView = ({ text, settings, setSettings, onClose, titl
 
         const sentence = sentences[currentIndex];
         const wordList = splitIntoWords(sentence);
-        const wordObjects = wordList.map((word, idx) => ({
-            id: `word-${idx}`,
-            text: word,
-            originalIndex: idx,
-            color: WORD_COLORS[idx % WORD_COLORS.length]
-        }));
+        const wordObjects = wordList.map((word, idx) => {
+            let displayText = word;
+            if (idx === 0 && word.length > 0) {
+                displayText = word.charAt(0).toUpperCase() + word.slice(1);
+            }
+            return {
+                id: `word-${idx}`,
+                text: displayText,
+                originalIndex: idx,
+                color: WORD_COLORS[idx % WORD_COLORS.length]
+            };
+        });
 
         // Shuffle words
         const shuffled = shuffle(wordObjects);

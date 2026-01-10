@@ -15,7 +15,7 @@ export const useTwoPartPuzzle = ({
     leftType = 'left',
     rightType = 'right',
     initialScale = 1.0,
-    successDelay = 2000
+    successDelay = 1000
 }) => {
     const [gameState, setGameState] = useState({
         stages: [],
@@ -151,14 +151,26 @@ export const useTwoPartPuzzle = ({
         setupCurrentWord();
     }, [gameState.currentStageIndex, gameState.gameStatus, gameState.gameMode, setupCurrentWord]);
 
+    // Timer ref to cancel auto-advance if user interrupts
+    const successTimerRef = useRef(null);
+
     const handleDrop = useCallback((targetRole) => {
-        if (isDragging === null || showSuccess) return;
+        if (isDragging === null) return; // Allow interaction during success (interrupt)
         const draggingPiece = scrambledPieces.find(s => s.id === isDragging);
         if (!draggingPiece) return;
 
         // Check if piece type matches target
         const expectedType = targetRole === 'left' ? leftType : rightType;
         if (draggingPiece.type !== expectedType) return;
+
+        // Interrupt success state if active
+        if (showSuccess) {
+            setShowSuccess(false);
+            if (successTimerRef.current) {
+                clearTimeout(successTimerRef.current);
+                successTimerRef.current = null;
+            }
+        }
 
         setPlacedPieces(prev => ({
             ...prev,
@@ -170,9 +182,18 @@ export const useTwoPartPuzzle = ({
     }, [isDragging, showSuccess, scrambledPieces, leftType, rightType]);
 
     const removePieceFromSlot = useCallback((role) => {
-        if (showSuccess) return;
+        // Unlock interaction
         const text = placedPieces[role];
         if (!text) return;
+
+        // Interrupt success state if active
+        if (showSuccess) {
+            setShowSuccess(false);
+            if (successTimerRef.current) {
+                clearTimeout(successTimerRef.current);
+                successTimerRef.current = null;
+            }
+        }
 
         setPlacedPieces(prev => ({
             ...prev,
@@ -208,9 +229,10 @@ export const useTwoPartPuzzle = ({
         if (targetItem.fullText === formedText) {
             setShowSuccess(true);
 
-            setTimeout(() => {
+            successTimerRef.current = setTimeout(() => {
                 setShowSuccess(false);
                 setPlacedPieces({ left: null, right: null });
+                successTimerRef.current = null;
 
                 const nextIdx = targetIdx + 1;
                 setGameState(prev => {

@@ -276,6 +276,13 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
             w.syllables.flatMap(s => s.chunks.filter(c => c.isTarget).map(c => ({ ...c, poolId: `pool_${c.id}` })))
         );
 
+        // Shuffle targets
+        const shuffled = [...targets];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+
         // Grid-based positioning
         setPoolLetters(shuffled);
         setPlacedLetters({});
@@ -415,7 +422,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
     }, [groupSolved, currentGroupIdx, groups.length, showReward]);
 
     if (!words || words.length === 0) return (
-        <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans"><EmptyStateMessage onClose={onClose} title="Markiere Wörter" message="Bitte markiere zuerst Wörter im Text, um diese Übung zu starten." /></div>
+        <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans"><EmptyStateMessage onClose={onClose} title="Keine Wörter markiert" /></div>
     );
 
     return (
@@ -454,9 +461,25 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                         {isInitialSound ? <Icons.InitialSound className="text-blue-600" /> : <Icons.GapWords className="text-blue-600" />}
                         {title || (isInitialSound ? 'Anfangsbuchstaben finden' : 'Lückenwörter')}
                     </h2>
-                    <span className="bg-slate-100 px-3 py-1 rounded-full text-slate-600 font-bold text-sm">
-                        {currentGroupIdx + 1} / {groups.length}
-                    </span>
+                    {/* Numeric Progress Indicator */}
+                    <div className="flex items-center gap-1 ml-4 overflow-x-auto max-w-[400px] no-scrollbar">
+                        {groups.map((_, i) => (
+                            <div
+                                key={i}
+                                className={`
+                                    w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-all shrink-0
+                                    ${i === currentGroupIdx
+                                        ? 'bg-blue-600 text-white scale-110 shadow-md'
+                                        : i < currentGroupIdx
+                                            ? 'bg-emerald-500 text-white'
+                                            : 'bg-gray-100 text-gray-300'
+                                    }
+                                `}
+                            >
+                                {i + 1}
+                            </div>
+                        ))}
+                    </div>
                 </div>
 
                 <div className="flex items-center gap-4">
@@ -513,9 +536,10 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                 </div>
             </div>
 
-            <div className={`flex-1 overflow-y-auto custom-scroll bg-white/50 ${isInitialSound ? 'flex flex-row-reverse' : ''}`}>
-                {/* Fixed Layout: Centering wrapper that allows proper scrolling without top-clipping */}
-                <div className="min-h-full w-full p-8 flex flex-col items-center justify-center gap-12">
+            <div className={`flex-1 flex overflow-hidden bg-white/50 ${isInitialSound ? 'flex flex-row-reverse' : ''}`}>
+                {/* Fixed Layout: Centering wrapper that allows proper scrolling without top-clipping - CHANGED: justify-start and more padding */}
+                {/* Content Column - Scrolls independently */}
+                <div className="flex-1 overflow-y-auto custom-scroll min-h-full pt-24 pb-24 px-8 flex flex-col items-center justify-start gap-12">
                     <div className="w-full max-w-4xl space-y-8">
                         {currentWords.map((word) => {
                             const isSolved = solvedWordIds.has(word.id);
@@ -551,9 +575,9 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                                                         );
                                                         const placed = placedLetters[chunk.id];
                                                         // showYellowStyle logic:
-                                                        // 1. In vowels mode: only when placed
+                                                        // 1. In vowels mode: only when placed (BUT NOT in isInitialSound mode)
                                                         // 2. In consonants mode: always for vowels as hints
-                                                        const showYellowStyle = (mode === 'vowels' && placed) || (mode === 'consonants' && isVowelChunk);
+                                                        const showYellowStyle = (!isInitialSound && mode === 'vowels' && placed) || (mode === 'consonants' && isVowelChunk);
 
                                                         return (
                                                             <div
@@ -564,7 +588,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                                                                 onDrop={(e) => { e.currentTarget.classList.remove('active-target'); handleDrop(e, chunk.id, chunk.text); }}
                                                                 onClick={() => handleGapClick(chunk.id, chunk.text)}
                                                                 className={`relative flex items-center justify-center transition-all border-b-4 mx-2 rounded-t-xl gap-zone cursor-pointer ${placed ? 'border-transparent' : 'border-slate-400 bg-slate-50/50 hover:bg-slate-100 hover:border-slate-500'} ${selectedLetter ? 'ring-2 ring-blue-300 ring-offset-2 animate-pulse' : ''}`}
-                                                                style={{ minWidth: `${Math.max(1.5, chunk.text.length * 1.2)}em`, height: '2.2em' }}
+                                                                style={{ minWidth: `${Math.max(1.2, chunk.text.length * 0.9)}em`, height: '2.2em' }}
                                                             >
                                                                 {placed ? (
                                                                     <div
@@ -612,7 +636,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                     )}
                 </div>
 
-                <div className={`${isInitialSound ? 'w-[200px]' : 'w-[30%]'} bg-slate-200/50 border-l border-r border-slate-300 flex flex-col shadow-inner`} onDragOver={(e) => e.preventDefault()} onDrop={handlePoolDrop}>
+                <div className={`${isInitialSound ? 'w-[200px]' : 'w-[30%]'} h-full flex flex-col bg-slate-200/50 border-l border-r border-slate-300 shadow-inner z-20`} onDragOver={(e) => e.preventDefault()} onDrop={handlePoolDrop}>
                     <div className="p-4 bg-white/80 border-b border-slate-200 shadow-sm space-y-3">
                         <div className="flex items-center justify-between">
                             <span className="font-bold text-slate-600 flex items-center gap-2 uppercase tracking-wider text-[10px]">Pool</span>

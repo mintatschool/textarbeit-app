@@ -12,10 +12,26 @@ export const CaseExerciseView = ({ text, settings, setSettings, onClose, title }
         if (!text) return [];
         // This splits by non-word characters but keeps them in the array
         const parts = text.split(/([^\w\u00C0-\u017F]+)/);
+        let isAtSentenceStart = true;
+
         return parts.filter(p => p !== '').map((part, idx) => {
             const isWord = /[\w\u00C0-\u017F]+/.test(part);
+            let content = part;
+
+            if (isWord) {
+                if (isAtSentenceStart && content.length > 0) {
+                    content = content.charAt(0).toUpperCase() + content.slice(1);
+                }
+                isAtSentenceStart = false; // Next word is not at start until we see punctuation
+            } else {
+                // If it contains sentence-ending punctuation OR a newline, next word is at start
+                if (/[.!?\n]/.test(part)) {
+                    isAtSentenceStart = true;
+                }
+            }
+
             return {
-                content: part,
+                content,
                 isWord,
                 idx
             };

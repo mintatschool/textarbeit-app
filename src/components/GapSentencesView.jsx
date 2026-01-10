@@ -59,7 +59,7 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
 
     // Sentence Splitting Logic
     const splitSentences = (txt) => {
-        const sentences = txt.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 5);
+        const sentences = txt.split(/(?<=[.!?])\s+|\n+/).filter(s => s.trim().length > 1);
         let lastIndex = 0;
         return sentences.map(s => {
             const index = txt.indexOf(s, lastIndex);
@@ -87,13 +87,22 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
             }
         });
 
+        // Capitalize the first word of the sentence
+        if (wordsInSentence.length > 0) {
+            const firstWord = wordsInSentence[0];
+            firstWord.text = firstWord.text.charAt(0).toUpperCase() + firstWord.text.slice(1);
+        }
+
         const cleanWords = wordsInSentence.map((w, i) => {
             const clean = w.text.replace(/[^\w\u00C0-\u017F]/g, '');
+            // Grey Box Logic: Index is in highlightedIndices AND NOT in wordColors
+            const isGreyBoxed = Array.from({ length: w.text.length }, (_, k) => w.globalIndex + k).some(idx => highlightedIndices.has(idx) && !wordColors[idx]);
+
             return {
                 ...w,
                 clean,
                 index: i,
-                isMarked: Array.from({ length: w.text.length }, (_, k) => w.globalIndex + k).some(idx => highlightedIndices.has(idx)) || !!wordColors[w.globalIndex]
+                isGreyBoxed
             };
         }).filter(w => w.clean.length > 2);
 
@@ -101,7 +110,7 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
 
         let targets = [];
         if (mode === 'marked') {
-            targets = cleanWords.filter(w => w.isMarked);
+            targets = cleanWords.filter(w => w.isGreyBoxed);
             if (targets.length === 0) return null;
         } else {
             // Scoring System
@@ -159,7 +168,11 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
         const rawSentences = splitSentences(text);
         const processed = rawSentences.map((s, i) => processSentence(s, i)).filter(Boolean);
 
-        if (processed.length === 0) return;
+        // If in marked mode and no sentences processing, it means no marked words found
+        if (processed.length === 0) {
+            setGroups([]);
+            return;
+        }
 
         const partition = (n) => {
             if (n <= itemsPerStage) return [n];
@@ -183,7 +196,6 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
             cur += s;
         });
 
-        setGroups(newGroups);
         setGroups(newGroups);
         setCurrentGroupIdx(0);
     }, [text, mode, highlightedIndices, wordColors, itemsPerStage]);
@@ -304,8 +316,23 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
         }
     }, [placedWords, currentGroup, currentGroupIdx, groups.length]);
 
-    if (!text || groups.length === 0) {
+    if (!text) {
         return <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans"><EmptyStateMessage onClose={onClose} title="Keine Sätze gefunden" message="Der Text ist zu kurz oder enthält keine klaren Sätze für diese Übung." /></div>;
+    }
+
+    if (groups.length === 0) {
+        if (mode === 'marked' && Object.keys(wordColors).length === 0) {
+            return (
+                <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col items-center justify-center p-6">
+                    <EmptyStateMessage onClose={onClose} />
+                </div>
+            );
+        }
+        return (
+            <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col items-center justify-center p-6">
+                <EmptyStateMessage onClose={onClose} secondStepText="Sätze oder Wörter markieren." />
+            </div>
+        );
     }
 
     return (
@@ -344,16 +371,32 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
                     <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
                         <Icons.GapSentences className="text-indigo-500" /> {title || "Lückensätze"}
                     </h2>
-                    <span className="bg-slate-100 px-3 py-1 rounded-full text-slate-600 font-bold text-sm">
-                        {currentGroupIdx + 1} / {groups.length}
-                    </span>
+                    {/* Numeric Progress Indicator */}
+                    <div className="flex items-center gap-1 ml-4 overflow-x-auto max-w-[400px] no-scrollbar">
+                        {groups.map((_, i) => (
+                            <div
+                                key={i}
+                                className={`
+                                    w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-all shrink-0
+                                    ${i === currentGroupIdx
+                                        ? 'bg-blue-600 text-white scale-110 shadow-md'
+                                        : i < currentGroupIdx
+                                            ? 'bg-emerald-500 text-white'
+                                            : 'bg-gray-100 text-gray-300'
+                                    }
+                                `}
+                            >
+                                {i + 1}
+                            </div>
+                        ))}
+                    </div>
 
                     <div className="flex bg-slate-100 p-1 rounded-xl ml-4">
                         <button
                             onClick={() => setMode('marked')}
                             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all font-bold text-xs ${mode === 'marked' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
                         >
-                            <Icons.Square size={16} className={mode === 'marked' ? 'text-blue-500' : 'text-slate-400'} />
+                            <div className={`w-5 h-4 rounded border-2 transition-all mr-1 ${mode === 'marked' ? 'border-blue-500 bg-blue-50' : 'border-slate-400 bg-transparent'}`} />
                             markierte Wörter
                         </button>
                         <button
@@ -412,7 +455,7 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
 
             <div className="flex-1 flex overflow-hidden">
                 <div className="flex-1 p-8 overflow-y-auto custom-scroll flex flex-col gap-8 bg-white/50">
-                    <div className="max-w-7xl mx-auto space-y-12 py-12">
+                    <div className="max-w-7xl mx-auto space-y-12 py-24">
                         {currentGroup.map(sentence => (
                             <div key={sentence.id} className="flex flex-wrap items-center gap-x-3 gap-y-6 text-slate-800 leading-relaxed" style={{ fontSize: `${settings.fontSize}px`, fontFamily: settings.fontFamily }}>
                                 {sentence.parts.map((p, i) => {
@@ -426,7 +469,7 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
                                             onDragLeave={(e) => { e.currentTarget.classList.remove('bg-blue-50', 'border-blue-400'); }}
                                             onDrop={(e) => { e.currentTarget.classList.remove('bg-blue-50', 'border-blue-400'); handleDrop(e, p.id, p.correctText); }}
                                             onClick={() => handleGapClick(p.id, p.correctText)}
-                                            className={`relative inline-flex items-center justify-center min-w-[6em] h-[2.2em] border-b-4 transition-all rounded-t-xl cursor-pointer ${placed ? 'border-transparent' : 'border-slate-300 bg-slate-100/50 hover:bg-white hover:border-blue-400'} ${selectedWord ? 'ring-2 ring-blue-300 ring-offset-2 animate-pulse' : ''}`}
+                                            className={`relative inline-flex items-center justify-center min-w-[4em] h-[2.2em] border-b-4 transition-all rounded-t-xl cursor-pointer ${placed ? 'border-transparent' : 'border-slate-300 bg-slate-100/50 hover:bg-white hover:border-blue-400'} ${selectedWord ? 'ring-2 ring-blue-300 ring-offset-2 animate-pulse' : ''}`}
                                         >
                                             {placed ? (
                                                 <div

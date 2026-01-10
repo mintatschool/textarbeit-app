@@ -95,8 +95,12 @@ export const PuzzleTestView = ({ words, onClose }) => {
 
 
     // Handle Drop
+    // Timer ref to cancel auto-advance
+    const successTimerRef = React.useRef(null);
+
+    // Handle Drop
     const handleDrop = (pieceId, targetLength, targetIndex) => {
-        if (isSuccess) return; // Block interaction during success animation
+        // if (isSuccess) return; // Unlocked
 
         // Find piece info
         let foundPiece = null;
@@ -111,8 +115,16 @@ export const PuzzleTestView = ({ words, onClose }) => {
         const requiredType = targetIndex === 0 ? 'left' : (targetIndex === targetLength - 1 ? 'right' : 'middle');
 
         if (foundPiece.type !== requiredType) {
-            // Invalid drop type
             return;
+        }
+
+        // Interrupt success
+        if (isSuccess) {
+            setIsSuccess(null);
+            if (successTimerRef.current) {
+                clearTimeout(successTimerRef.current);
+                successTimerRef.current = null;
+            }
         }
 
         const slotKey = `${targetLength}-${targetIndex}`;
@@ -130,7 +142,17 @@ export const PuzzleTestView = ({ words, onClose }) => {
 
     // Remove Piece from Slot (return to pool)
     const removePieceFromSlot = (slotKey) => {
-        if (isSuccess) return;
+        // if (isSuccess) return; // Unlocked
+
+        // Interrupt success
+        if (isSuccess) {
+            setIsSuccess(null);
+            if (successTimerRef.current) {
+                clearTimeout(successTimerRef.current);
+                successTimerRef.current = null;
+            }
+        }
+
         setSlots(prev => {
             const next = { ...prev };
             delete next[slotKey];
@@ -162,10 +184,10 @@ export const PuzzleTestView = ({ words, onClose }) => {
 
                 if (match) {
                     // Success!
-                    speak(match.word);
+                    // speak(match.word); // Removed per user request
                     setIsSuccess(len);
 
-                    setTimeout(() => {
+                    successTimerRef.current = setTimeout(() => {
                         // Cleanup
                         setPieces(prev => {
                             const next = { ...prev };
@@ -183,7 +205,8 @@ export const PuzzleTestView = ({ words, onClose }) => {
 
                         setIsSuccess(null);
                         setCompletedWords(prev => [...prev, match.word]);
-                    }, 1500);
+                        successTimerRef.current = null;
+                    }, 1000);
                 }
             }
         });

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Icons } from './Icons';
 import { EmptyStateMessage } from './EmptyStateMessage';
 
-export const WordListView = ({ words, columnsState, setColumnsState, onClose, settings, setSettings, onRemoveWord, onWordUpdate, wordColors = {}, colorHeaders = {}, setColorHeaders, colorPalette = [], title, groups = [], sortByColor, setSortByColor, columnCount, setColumnCount }) => {
+export const WordListView = ({ words, columnsState, setColumnsState, onClose, settings, setSettings, onRemoveWord, onWordUpdate, wordColors = {}, colorHeaders = {}, setColorHeaders, colorPalette = [], title, groups = [], sortByColor, setSortByColor, columnCount, setColumnCount, updateTimestamp }) => {
     if (!words || words.length === 0) return (<div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans"><EmptyStateMessage onClose={onClose} /></div>);
     const [isDragging, setIsDragging] = useState(false);
     const dragItemRef = useRef(null);
@@ -144,9 +144,17 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
 
     // 3. Word Content Sync (If text changes while list is open)
     // 3. Word Content Sync (If text changes while list is open)
+    const prevTimestamp = useRef(updateTimestamp);
     useEffect(() => {
-        if (prevWordsProp.current === words) return;
+        const wordsChanged = prevWordsProp.current !== words;
+        const timestampChanged = prevTimestamp.current !== updateTimestamp;
+
+        if (!wordsChanged && !timestampChanged) return;
+
+        console.log("WordListView: Sync triggered. Words changed:", wordsChanged, "Timestamp changed:", timestampChanged);
+
         prevWordsProp.current = words;
+        prevTimestamp.current = updateTimestamp;
 
         setColumnsState(prevState => {
             const newCols = { ...prevState.cols };
@@ -167,6 +175,7 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                         existingIdsInCols.add(item.id);
                         // Check if content actually changed to avoid unnecessary state updates
                         if (JSON.stringify(freshData) !== JSON.stringify(item)) {
+                            console.log("WordListView: Detected change for", item.id, item.word, "->", freshData.word);
                             colHasChanges = true;
                             return freshData;
                         }
@@ -213,7 +222,7 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
             return hasChanges ? { ...prevState, cols: newCols } : prevState;
         });
 
-    }, [words, displayWords, sortByColor, wordColors]);
+    }, [words, displayWords, sortByColor, wordColors, updateTimestamp]);
 
     // 4. Column Count Change
     useEffect(() => {
@@ -376,7 +385,7 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                                             type="text"
                                             placeholder="Titel..."
                                             className="w-full bg-transparent font-bold placeholder:text-white/50 focus:outline-none text-center"
-                                            style={{ color: 'white', fontFamily: settings.fontFamily, fontSize: `${settings.fontSize}px` }}
+                                            style={{ color: 'white', fontFamily: settings.fontFamily, fontSize: `${settings.fontSize}px`, letterSpacing: '0.04em' }}
                                             value={col.title || ''}
                                             onChange={(e) => {
                                                 const val = e.target.value;
@@ -395,7 +404,7 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                                             type="text"
                                             placeholder="Titel eingeben..."
                                             className="w-full bg-transparent font-bold text-slate-700 placeholder:text-slate-400 focus:outline-none text-center"
-                                            style={{ fontFamily: settings.fontFamily, fontSize: `${settings.fontSize}px` }}
+                                            style={{ fontFamily: settings.fontFamily, fontSize: `${settings.fontSize}px`, letterSpacing: '0.04em' }}
                                             value={col.title}
                                             onChange={(e) => { const newCols = { ...columnsState.cols, [colId]: { ...col, title: e.target.value } }; setColumnsState({ ...columnsState, cols: newCols }); }}
                                             onMouseDown={(e) => e.stopPropagation()}

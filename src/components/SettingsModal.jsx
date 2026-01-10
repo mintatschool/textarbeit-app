@@ -116,7 +116,7 @@ export const SettingsModal = ({ settings, setSettings, onExport, onImport, logo,
                                         <span className="text-xs font-black text-blue-600 bg-blue-50 px-2 py-1 rounded-lg">{settings.lineHeight.toFixed(1)}</span>
                                     </label>
                                     <div className="flex items-center gap-3 px-1">
-                                        <input type="range" min="1.1" max="4.0" step="0.1" value={settings.lineHeight} onChange={(e) => setSettings({ ...settings, lineHeight: parseFloat(e.target.value) })} className="flex-1 accent-blue-600 h-1.5 bg-slate-100 rounded-full cursor-pointer" />
+                                        <input type="range" min="-0.5" max="2.5" step="0.1" value={settings.lineHeight} onChange={(e) => setSettings({ ...settings, lineHeight: parseFloat(e.target.value) })} className="flex-1 accent-blue-600 h-1.5 bg-slate-100 rounded-full cursor-pointer" />
                                     </div>
                                 </div>
                                 <div className="space-y-4">
@@ -125,7 +125,16 @@ export const SettingsModal = ({ settings, setSettings, onExport, onImport, logo,
                                         <span className="text-xs font-black text-blue-600 bg-blue-50 px-2 py-1 rounded-lg">{settings.wordSpacing.toFixed(1)}</span>
                                     </label>
                                     <div className="flex items-center gap-3 px-1">
-                                        <input type="range" min="0" max="2.5" step="0.1" value={settings.wordSpacing} onChange={(e) => setSettings({ ...settings, wordSpacing: parseFloat(e.target.value) })} className="flex-1 accent-blue-600 h-1.5 bg-slate-100 rounded-full cursor-pointer" />
+                                        <input type="range" min="-0.3" max="1.5" step="0.1" value={settings.wordSpacing} onChange={(e) => setSettings({ ...settings, wordSpacing: parseFloat(e.target.value) })} className="flex-1 accent-blue-600 h-1.5 bg-slate-100 rounded-full cursor-pointer" />
+                                    </div>
+                                </div>
+                                <div className="space-y-4">
+                                    <label className="flex justify-between items-center">
+                                        <span className="text-sm font-bold text-slate-700">Buchstabenabstand</span>
+                                        <span className="text-xs font-black text-blue-600 bg-blue-50 px-2 py-1 rounded-lg">{(settings.letterSpacing || 0).toFixed(2)}</span>
+                                    </label>
+                                    <div className="flex items-center gap-3 px-1">
+                                        <input type="range" min="-0.1" max="0.5" step="0.01" value={settings.letterSpacing || 0} onChange={(e) => setSettings({ ...settings, letterSpacing: parseFloat(e.target.value) })} className="flex-1 accent-blue-600 h-1.5 bg-slate-100 rounded-full cursor-pointer" />
                                     </div>
                                 </div>
                                 <div className="space-y-4">
@@ -195,8 +204,8 @@ export const SettingsModal = ({ settings, setSettings, onExport, onImport, logo,
                                     </div>
                                     <div className="text-sm font-bold text-slate-700">Buchstabenverbindungen statt Einzelbuchstaben markieren <span className="text-[10px] font-normal block text-slate-400">(z. B. ei, sp, ...)</span></div>
                                 </div>
-                                <button onClick={() => setSettings({ ...settings, smartSelection: !settings.smartSelection })} className={`w-14 h-7 rounded-lg p-1 transition-all min-touch-target ${settings.smartSelection ? 'bg-green-500' : 'bg-slate-200'}`}>
-                                    <div className={`w-5 h-5 bg-white rounded-md shadow-lg transform transition-transform ${settings.smartSelection ? 'translate-x-7' : 'translate-x-0'}`}></div>
+                                <button onClick={() => setSettings({ ...settings, smartSelection: !settings.smartSelection })} className={`w-14 h-7 rounded-full p-1 transition-all min-touch-target ${settings.smartSelection ? 'bg-green-500' : 'bg-slate-200'}`}>
+                                    <div className={`w-5 h-5 bg-white rounded-full shadow-lg transform transition-transform ${settings.smartSelection ? 'translate-x-7' : 'translate-x-0'}`}></div>
                                 </button>
                             </label>
 
@@ -231,8 +240,8 @@ export const SettingsModal = ({ settings, setSettings, onExport, onImport, logo,
                                             <span className="text-[10px] font-black text-blue-600 min-w-[2.5em] text-center bg-blue-50 px-1.5 py-0.5 rounded-md">x{settings.zoomScale?.toFixed(1) || '1.2'}</span>
                                         </div>
                                     )}
-                                    <button onClick={() => setSettings({ ...settings, zoomActive: !settings.zoomActive })} className={`w-14 h-7 rounded-lg p-1 transition-all min-touch-target ${settings.zoomActive ? 'bg-green-500' : 'bg-slate-200'}`}>
-                                        <div className={`w-5 h-5 bg-white rounded-md shadow-lg transform transition-transform ${settings.zoomActive ? 'translate-x-7' : 'translate-x-0'}`}></div>
+                                    <button onClick={() => setSettings({ ...settings, zoomActive: !settings.zoomActive })} className={`w-14 h-7 rounded-full p-1 transition-all min-touch-target ${settings.zoomActive ? 'bg-green-500' : 'bg-slate-200'}`}>
+                                        <div className={`w-5 h-5 bg-white rounded-full shadow-lg transform transition-transform ${settings.zoomActive ? 'translate-x-7' : 'translate-x-0'}`}></div>
                                     </button>
                                 </div>
                             </label>
@@ -244,8 +253,20 @@ export const SettingsModal = ({ settings, setSettings, onExport, onImport, logo,
                                     </div>
                                     <div className="text-sm font-bold text-slate-700">Scroll-Sperre <span className="text-[10px] font-normal block text-slate-400">(Lesemodus / Smartboard)</span></div>
                                 </div>
-                                <button onClick={() => setSettings({ ...settings, lockScroll: !settings.lockScroll })} className={`w-14 h-7 rounded-lg p-1 transition-all min-touch-target ${settings.lockScroll ? 'bg-green-500' : 'bg-slate-200'}`}>
-                                    <div className={`w-5 h-5 bg-white rounded-md shadow-lg transform transition-transform ${settings.lockScroll ? 'translate-x-7' : 'translate-x-0'}`}></div>
+                                <button onClick={() => setSettings({ ...settings, lockScroll: !settings.lockScroll })} className={`w-14 h-7 rounded-full p-1 transition-all min-touch-target ${settings.lockScroll ? 'bg-green-500' : 'bg-slate-200'}`}>
+                                    <div className={`w-5 h-5 bg-white rounded-full shadow-lg transform transition-transform ${settings.lockScroll ? 'translate-x-7' : 'translate-x-0'}`}></div>
+                                </button>
+                            </label>
+
+                            <label className="flex items-center justify-between cursor-pointer group">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-slate-50 rounded-xl group-hover:bg-blue-50 transition-colors">
+                                        <Icons.Layout size={18} className="text-slate-400 group-hover:text-blue-500" />
+                                    </div>
+                                    <div className="text-sm font-bold text-slate-700">Menüleiste reduzieren</div>
+                                </div>
+                                <button onClick={() => setSettings({ ...settings, reduceMenu: !settings.reduceMenu })} className={`w-14 h-7 rounded-full p-1 transition-all min-touch-target ${settings.reduceMenu ? 'bg-green-500' : 'bg-slate-200'}`}>
+                                    <div className={`w-5 h-5 bg-white rounded-full shadow-lg transform transition-transform ${settings.reduceMenu ? 'translate-x-7' : 'translate-x-0'}`}></div>
                                 </button>
                             </label>
                         </div>
@@ -301,8 +322,8 @@ export const SettingsModal = ({ settings, setSettings, onExport, onImport, logo,
                                         </div>
                                         <div className="text-sm font-bold text-slate-700">Kamera-Import-Button</div>
                                     </div>
-                                    <button onClick={() => setSettings({ ...settings, enableCamera: !settings.enableCamera })} className={`w-14 h-7 rounded-lg p-1 transition-all min-touch-target ${settings.enableCamera ? 'bg-green-500' : 'bg-slate-200'}`}>
-                                        <div className={`w-5 h-5 bg-white rounded-md shadow-lg transform transition-transform ${settings.enableCamera ? 'translate-x-7' : 'translate-x-0'}`}></div>
+                                    <button onClick={() => setSettings({ ...settings, enableCamera: !settings.enableCamera })} className={`w-14 h-7 rounded-full p-1 transition-all min-touch-target ${settings.enableCamera ? 'bg-green-500' : 'bg-slate-200'}`}>
+                                        <div className={`w-5 h-5 bg-white rounded-full shadow-lg transform transition-transform ${settings.enableCamera ? 'translate-x-7' : 'translate-x-0'}`}></div>
                                     </button>
                                 </label>
                             </div>

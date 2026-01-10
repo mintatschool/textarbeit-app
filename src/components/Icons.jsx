@@ -37,6 +37,7 @@ export const Icons = {
     Settings: (p) => <Icon {...p} path={<><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></>} />,
     QrCode: (p) => <Icon {...p} path={<><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></>} />,
     Edit3: (p) => <Icon {...p} path={<path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />} />,
+    Pen: (p) => <Icon {...p} path={<path d="M18 13.29V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h5.71M12 2.766a2.001 2.001 0 0 1 2.828 0l2.406 2.406a2.001 2.001 0 0 1 0 2.828L9 16.242 4.758 17.656a.5.5 0 0 1-.614-.614L5.516 12 13.793 3.723z" />} />,
 
     // View/Edit Mode
     Eye: (p) => <Icon {...p} path={<><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></>} />,
@@ -154,6 +155,54 @@ export const Icons = {
     ),
     Dice5: (p) => <Icon {...p} path={<><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><path d="M16 8h.01" strokeWidth="3" /><path d="M8 8h.01" strokeWidth="3" /><path d="M8 16h.01" strokeWidth="3" /><path d="M16 16h.01" strokeWidth="3" /><path d="M12 12h.01" strokeWidth="3" /></>} />,
     Zap: (p) => <Icon {...p} path={<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />} />,
-    Rabbit: (p) => <Icon {...p} viewBox="0 0 1000 1000" path={<path d="M490,300h70v10h-70zM480,310h10v10h-10zM540,310h60v10h-60zM470,320h20v10h-20zM580,320h40v10h-40zM480,330h20v10h-20zM610,330h40v10h-40zM490,340h30v10h-30zM630,340h30v10h-30zM500,350h30v10h-30zM650,350h30v10h-30zM410,360h90v10h-90zM520,360h40v10h-40zM670,360h30v10h-30zM400,370h20v10h-20zM470,370h110v10h-110zM680,370h30v10h-30zM390,380h10v10h-10zM530,380h70v10h-70zM700,380h30v10h-30zM390,390h20v10h-20zM570,390h30v10h-30zM710,390h30v10h-30zM400,400h20v10h-20zM730,400h80v10h-80zM410,410h20v10h-20zM790,410h50v10h-50zM420,420h30v10h-30zM820,420h30v10h-30zM440,430h40v10h-40zM840,430h30v10h-30zM460,440h60v10h-60zM850,440h30v10h-30zM490,450h80v10h-80zM860,450h30v10h-30zM250,460h30v10h-30zM540,140v10h-140zM870,460h30v10h-30zM240,470h20v10h-20zM270,470h30h10v10h-30zM670,470h10v10h-10zM880,470h30v10h-30zM230,480h10v10h-10zM280,480h20v10h-20zM360,480h90v10h-90zM660,480h10v10h-10zM890,480h20v10h-20zM220,490h10v10h-10zM290,490h20v10h-20zM320,490h10v10h-10zM330,490h11v10h-11z" fill="currentColor" stroke="none" />} />,
-    Snail: (p) => <Icon {...p} viewBox="0 0 1000 1000" path={<path d="M340,360h160v10h-160zM310,370h40v10h-40zM480,370h50v10h-50zM290,380h30v10h-30zM520,380h40v10h-40zM270,390h30v10h-30zM550,390h40v10h-40zM250,400h30v10h-30zM580,400h30v10h-30zM240,410h20v10h-20zM600,410h30v10h-30zM220,420h30v10h-30zM620,420h30v10h-30zM210,430h20v10h-20zM640,430h30v10h-30zM200,440h20v10h-20zM660,440h30v10h-30zM190,450h20v10h-20zM680,450h30v10h-30zM180,460h30v10h-30zM700,460h100v10h-100zM170,470h20v10h-20zM790,470h20v10h-20zM160,480h30v10h-30zM790,480h20v10h-20zM150,490h30v10h-30zM790,490h20v10h-20zM140,500h30v10h-30zM790,500h20v10h-20zM130,510h40v10h-40zM790,510h20v10h-20zM120,520h40v10h-40zM790,520h20v10h-20zM110,530h40v10h-40zM790,530h20v10h-20z" fill="currentColor" stroke="none" />} />,
+    // Updated to match high-quality silhouettes (Leaping Rabbit, Snail with Shell)
+    // Snail: Standard icon with distinct shell and antennae
+    Snail: (p) => <Icon {...p} viewBox="0 0 512 512" fill="currentColor" stroke="none" path={
+        <path d="M439.4 346.8c-2.3-13.7-6.2-26.2-11.4-37.4 3.7-8.2 6.5-16.7 8.3-25.5 13.5-66.2-12.2-124.9-63.5-155.8-23.7-14.3-51-22-79.6-22-29.2 0-57 8-81 22.8-17.5 10.8-32.5 25.1-44.1 42.1-42.6-11.5-84.5-9.1-120.3 3.4-17.6 6.1-24.8 28.3-14.2 43.1 9.3 13.1 23.3 14.8 38.8 8.4 22-9.1 52.8-13 86.8-6.1-9.9 22.1-14.7 46.2-12.8 70.8.2 2.8.5 5.5.9 8.3-40.4 28.3-33.1 63.3 14.7 63.3h224.2c27.1 0 53.6-6.1 76-17.6 13.7-7 24.3-18.7 27.2-24.9 2.5-5.3-25.5 7.1-50 27.1zM293.2 148.1c43.2 0 78.4 35.2 78.4 78.4 0 43.1-35.1 78.3-78.3 78.4-43.2 0-78.4-35.2-78.4-78.4-.1-43.2 35.1-78.4 78.3-78.4z" />
+    } />,
+
+    // Rabbit: Running/Leaping silhouette with clear ears
+    Rabbit: (p) => <Icon {...p} viewBox="0 0 512 512" fill="currentColor" stroke="none" path={
+        <path d="M142.9 226c11.7-8.8 19.3-22.3 20.8-37.5l.3-3.6 16.5-23c21-29.4 44.8-56.9 70.8-82.9 8.1-8.1 27.9-10.8 36.3-2.4 7.6 7.6 5.8 25.6-2.4 33.7-19.9 19.9-38.3 41.2-54.8 63.8l-1.9 2.7 3.3.6c5.5 1 11.2 1.5 16.8 1.5 45.4 0 88.5-47.5 125.7-84.7 9.8-9.8 25.7-9.8 35.5 0 9.8 9.8 9.8 25.7 0 35.5-31.5 31.5-66.2 68.6-96.8 94.4 20.5 5 40.5 11.3 59.8 18.9 44.4 17.5 44.4 70.3 35.1 116.8-9.3 46.5-51 86-98.3 86H120c-13.3 0-24-10.7-24-24v-48c0-13.3 10.7-24 24-24h96c13.3 0 24-10.7 24-24 0-13.3-10.7-24-24-24H44.1c-16.1 0-28.5-12.5-31.7-28.3C8.8 254.4 20 231.7 39.8 221.4c29.1-15.1 66.5-17.7 103.1-4.6z" />
+    } />,
+    Highlighter: (p) => <Icon {...p} path={<><path d="M9 11l-6 6v3h9l3-3" /><path d="M22 12l-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4" /><line x1="12" y1="2" x2="16" y2="6" /></>} />,
+    Eraser: (p) => <Icon {...p} path={<><path d="M20 20H7L3 16C2 15 2 13 3 12L13 2C14 1 16 1 17 2L21 6C22 7 22 9 21 10L11 20" /><path d="M17 2L21 6" /><path d="M7 20l10-10" /></>} />,
+    HandInstruction: ({ size = 64, className = "" }) => (
+        <svg width={size} height={size} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+            <defs>
+                <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feGaussianBlur stdDeviation="1" result="blur" />
+                    <feOffset dx="0" dy="1" result="offsetBlur" />
+                    <feComponentTransfer>
+                        <feFuncA type="linear" slope="0.2" />
+                    </feComponentTransfer>
+                    <feMerge>
+                        <feMergeNode />
+                        <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                </filter>
+            </defs>
+
+            {/* The Box - matching the look of the uploaded image */}
+            <rect
+                x="4"
+                y="4"
+                width="40"
+                height="32"
+                rx="8"
+                fill="#f1f5f9"
+                stroke="#1e293b"
+                strokeWidth="2.5"
+                filter="url(#shadow)"
+            />
+
+            {/* The Hand Icon - pointing to the box */}
+            <g transform="translate(18, 14) scale(0.9)" stroke="black" strokeWidth="2.5" fill="white" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0" />
+                <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2" />
+                <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8" />
+                <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" />
+            </g>
+        </svg>
+    )
 };

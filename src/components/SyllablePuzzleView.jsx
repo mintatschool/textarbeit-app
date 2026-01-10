@@ -3,7 +3,7 @@ import { Icons } from './Icons';
 import { EmptyStateMessage } from './EmptyStateMessage';
 
 export const SyllablePuzzleView = ({ words, settings, setSettings, onClose, title }) => {
-    if (!words || words.length === 0) return (<div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans"><EmptyStateMessage onClose={onClose} /></div>);
+    if (!words || words.length === 0) return (<div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col items-center justify-center p-6"><EmptyStateMessage onClose={onClose} secondStepText="Wörter zum Puzzeln markieren." /></div>);
     const [puzzleWords, setPuzzleWords] = useState([]);
     const [placedPieces, setPlacedPieces] = useState({});
     const [poolPieces, setPoolPieces] = useState([]);

@@ -119,7 +119,7 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [], ti
         leftType: 'zigzag-left',
         rightType: 'zigzag-right',
         initialScale: 1.0,
-        successDelay: 2000
+        successDelay: 1000
     });
 
     const handleSpeak = (item) => {
@@ -138,12 +138,12 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [], ti
             leftType="zigzag-left"
             rightType="zigzag-right"
             overlap={30}
-            icon={Icons.PuzzleZigzag}
+            icon={() => <img src={`${import.meta.env.BASE_URL}silbenbau1_logo.png`} className="w-auto h-6 object-contain" alt="Silbenbau 1" />}
             renderModeIcon={ArrowModeIcon}
             activeColor={activeColor}
             onSpeak={handleSpeak}
             emptyMessage="Keine passenden Silben gefunden."
-            emptyHint="Bitte markiere Wörter, deren Silben sich in (Buchstabe/Cluster) + (Buchstabe/Cluster) zerlegen lassen."
+            emptyHint="Passende Wörter markieren."
             allCompleteMessage="Alle Silben gebaut!"
             stageCompleteMessage="Level geschafft!"
         />
