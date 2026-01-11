@@ -74,7 +74,27 @@ const DEFAULT_SETTINGS = {
 const App = () => {
     const [text, setText] = useState("");
     const [isViewMode, setIsViewMode] = useState(false);
-    const [settings, setSettings] = useState(DEFAULT_SETTINGS);
+    const [settings, setSettings] = useState(() => {
+        try {
+            const saved = localStorage.getItem('textarbeit_settings');
+            if (saved) {
+                // Merge saved settings with defaults to ensure new keys are present
+                return { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };
+            }
+        } catch (e) {
+            console.error('Failed to load settings from localStorage', e);
+        }
+        return DEFAULT_SETTINGS;
+    });
+
+    // Save settings to localStorage whenever they change
+    useEffect(() => {
+        try {
+            localStorage.setItem('textarbeit_settings', JSON.stringify(settings));
+        } catch (e) {
+            console.error('Failed to save settings to localStorage', e);
+        }
+    }, [settings]);
 
 
     const [highlightedIndices, setHighlightedIndices] = useState(new Set());
@@ -645,6 +665,13 @@ const App = () => {
         setHighlightedIndices(allIndices);
         setWordColors({});
     }, [processedWords]);
+
+    const handleResetSettings = () => {
+        if (window.confirm('Möchten Sie alle Einstellungen wirklich auf den Standard zurücksetzen?')) {
+            setSettings(DEFAULT_SETTINGS);
+            localStorage.removeItem('textarbeit_settings');
+        }
+    };
 
     // Handle Printing
     const handlePrint = (type, options = {}) => {

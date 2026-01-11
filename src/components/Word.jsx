@@ -271,7 +271,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
     if (isHidden) return <span onClick={() => !isReadingMode && (activeTool === 'blur' || !activeTool) && toggleHidden(wordKey)} className={`blur-container transition-all ${cursorClass}`} style={wordSpacingStyle}><span className="blur-content" style={{ lineHeight: 1 }}>{prefix}{word}{suffix}</span></span>;
 
     const isColorMarked = firstCharColor !== 'transparent';
-    const isNeutralMarked = (isHighlighted && !isColorMarked) || (isGrouped && activeColor === 'neutral');
+    const isNeutralMarked = (isHighlighted && !isColorMarked) || (isGrouped && !isColorMarked);
 
     const showFrame = isHighlighted || isGrouped;
 
