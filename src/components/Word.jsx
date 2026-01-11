@@ -533,7 +533,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                                     );
                                 })}
                             </span>
-                            {settings.visualType === 'arc' && <svg className="arc-svg pointer-events-none" viewBox="0 0 100 20" preserveAspectRatio="none"><path d="M 2 2 Q 50 20 98 2" fill="none" stroke={arcColor} strokeWidth="8" strokeLinecap="round" /></svg>}
+                            {settings.visualType === 'arc' && <svg className="arc-svg pointer-events-none" viewBox="0 0 100 20" preserveAspectRatio="none"><path d="M 2 2 Q 50 20 98 2" fill="none" stroke={arcColor} strokeWidth="3" strokeLinecap="round" /></svg>}
                         </span>
                     );
                 })}

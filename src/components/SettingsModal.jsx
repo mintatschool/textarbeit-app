@@ -4,6 +4,7 @@ import { Icons } from './Icons';
 export const SettingsModal = ({ settings, setSettings, onExport, onImport, logo, setLogo, onClose, onClearHighlights, onPrint, onShowQR }) => {
     const fileInputRef = useRef(null);
     const [printType, setPrintType] = useState('text');
+    const [tableOrientation, setTableOrientation] = useState('landscape');
     const [showClusterManager, setShowClusterManager] = useState(false);
     const [newCluster, setNewCluster] = useState('');
 
@@ -295,21 +296,44 @@ export const SettingsModal = ({ settings, setSettings, onExport, onImport, logo,
                             </div>
 
                             {/* Printing */}
-                            <div className="space-y-3">
+                            <div className="space-y-4">
                                 <label className="block text-sm font-bold text-slate-700">Drucken</label>
-                                <div className="flex gap-2">
-                                    <select
-                                        value={printType}
-                                        onChange={(e) => setPrintType(e.target.value)}
-                                        className="flex-1 bg-white border-2 border-slate-200 text-slate-800 text-sm font-black rounded-xl p-3 outline-none focus:border-blue-500 cursor-pointer min-touch-target"
-                                    >
-                                        <option value="text">Text (Standard)</option>
-                                        <option value="list">Liste / Tabelle</option>
-                                        <option value="carpet">Silbenteppich</option>
-                                    </select>
-                                    <button onClick={() => onPrint(printType)} className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-4 flex items-center justify-center transition shadow-sm min-touch-target" title="Drucken">
-                                        <Icons.Printer size={22} />
-                                    </button>
+                                <div className="flex flex-col gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                    <div className="flex gap-2">
+                                        <select
+                                            value={printType}
+                                            onChange={(e) => setPrintType(e.target.value)}
+                                            className="flex-1 bg-white border-2 border-slate-200 text-slate-800 text-sm font-black rounded-xl p-3 outline-none focus:border-blue-500 cursor-pointer min-touch-target"
+                                        >
+                                            <option value="text">Text (Standard)</option>
+                                            <option value="list">Liste / Tabelle</option>
+                                            <option value="carpet">Silbenteppich</option>
+                                        </select>
+                                        <button
+                                            onClick={() => onPrint(printType, (printType === 'list' || printType === 'carpet') ? { orientation: tableOrientation } : { orientation: 'auto' })}
+                                            className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-4 flex items-center justify-center transition shadow-sm min-touch-target"
+                                            title="Drucken"
+                                        >
+                                            <Icons.Printer size={22} />
+                                        </button>
+                                    </div>
+
+                                    {(printType === 'list' || printType === 'carpet') && (
+                                        <div className="flex items-center justify-between p-1 bg-slate-200 rounded-xl animate-in slide-in-from-top-2 duration-200">
+                                            <button
+                                                onClick={() => setTableOrientation('portrait')}
+                                                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-bold transition-all ${tableOrientation === 'portrait' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                                            >
+                                                <Icons.File className="rotate-0" size={16} /> Hochformat
+                                            </button>
+                                            <button
+                                                onClick={() => setTableOrientation('landscape')}
+                                                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-bold transition-all ${tableOrientation === 'landscape' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                                            >
+                                                <Icons.FileText className="rotate-0" size={16} /> Querformat
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 

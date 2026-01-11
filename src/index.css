@@ -405,6 +405,10 @@
     .print-text .no-print {
         display: none !important;
     }
+
+    .print-content {
+        display: block !important;
+    }
 }
 
 @media (hover: hover) {

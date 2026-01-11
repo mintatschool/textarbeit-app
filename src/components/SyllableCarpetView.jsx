@@ -30,7 +30,7 @@ export const SyllableCarpetView = ({ words, settings, setSettings, onClose, titl
     const minColWidth = Math.max(60, settings.fontSize * 2.5);
 
     return (
-        <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans pt-0 md:pt-0">
+        <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans pt-0 md:pt-0 print-content">
             {showReward && (
                 <div className="fixed inset-0 z-[150] pointer-events-none flex items-center justify-center">
                     <div className="fixed inset-0 bg-white/60 backdrop-blur-[2px]"></div>
@@ -62,7 +62,7 @@ export const SyllableCarpetView = ({ words, settings, setSettings, onClose, titl
             <div className="bg-white px-6 py-4 shadow-sm flex flex-wrap gap-4 justify-between items-center z-10 shrink-0">
                 <div className="flex items-center gap-4 md:gap-6">
                     <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2"><Icons.Grid2x2 className="text-blue-600" /> {title || "Silbenteppich"}</h2>
-                    <div className="flex items-center gap-2 md:gap-4">
+                    <div className="flex items-center gap-2 md:gap-4 no-print">
                         {isGameMode && (
                             <div className="flex items-center gap-2 bg-slate-100 px-3 py-1 rounded-lg border border-slate-200 font-mono text-lg font-bold text-blue-600">
                                 <Icons.Clock size={20} /> {timer}s
@@ -77,7 +77,7 @@ export const SyllableCarpetView = ({ words, settings, setSettings, onClose, titl
                     </div>
                 </div>
 
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4 no-print">
                     {isGameMode && (
                         <button
                             onClick={() => targetSyllable && speak(targetSyllable)}
@@ -94,7 +94,7 @@ export const SyllableCarpetView = ({ words, settings, setSettings, onClose, titl
                     >
                         <Icons.Hand size={28} />
                     </button>
-                    <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg">
+                    <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg no-print">
                         <span className="text-xs font-bold text-slate-500">A</span>
                         <input type="range" min="16" max="120" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-48 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer" />
                         <span className="text-xl font-bold text-slate-500">A</span>

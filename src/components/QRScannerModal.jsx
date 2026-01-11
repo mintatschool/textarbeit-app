@@ -5,7 +5,60 @@ import { Icons } from './Icons';
 export const QRScannerModal = ({ onClose, onScanSuccess }) => {
     const [errorMsg, setErrorMsg] = useState(null);
     const [isScanning, setIsScanning] = useState(false);
+    const [multiPartState, setMultiPartState] = useState(null); // { total: N, parts: { 1: "...", 2: "..." } }
     const scannerRef = useRef(null);
+
+    // Parse Multi-Part QR Code
+    const parseMultiPart = (text) => {
+        try {
+            const data = JSON.parse(text);
+            // Check if it's a multi-part format: { p: partNumber, t: total, d: data }
+            if (data && typeof data.p === 'number' && typeof data.t === 'number' && typeof data.d === 'string') {
+                return { part: data.p, total: data.t, data: data.d };
+            }
+        } catch (e) {
+            // Not JSON or not multi-part
+        }
+        return null;
+    };
+
+    const handleScanResult = (decodedText, html5QrCode) => {
+        const multiPart = parseMultiPart(decodedText);
+
+        if (multiPart) {
+            // It's a multi-part QR code
+            setMultiPartState(prev => {
+                const newState = prev || { total: multiPart.total, parts: {} };
+                newState.parts[multiPart.part] = multiPart.data;
+
+                // Check if we have all parts
+                const collectedParts = Object.keys(newState.parts).length;
+                if (collectedParts >= newState.total) {
+                    // Combine all parts in order
+                    let combined = '';
+                    for (let i = 1; i <= newState.total; i++) {
+                        combined += newState.parts[i] || '';
+                    }
+                    // Stop scanner and return combined result
+                    setIsScanning(false);
+                    html5QrCode.stop().then(() => {
+                        onScanSuccess(combined);
+                    }).catch(() => {
+                        onScanSuccess(combined);
+                    });
+                }
+                return { ...newState };
+            });
+        } else {
+            // Single QR code - direct success
+            setIsScanning(false);
+            html5QrCode.stop().then(() => {
+                onScanSuccess(decodedText);
+            }).catch(() => {
+                onScanSuccess(decodedText);
+            });
+        }
+    };
 
     useEffect(() => {
         let html5QrCode = null;
@@ -20,23 +73,19 @@ export const QRScannerModal = ({ onClose, onScanSuccess }) => {
                 scannerRef.current = html5QrCode;
 
                 const config = {
-                    fps: 10,
-                    qrbox: { width: 250, height: 250 },
-                    aspectRatio: 1.0
+                    fps: 15, // Erhöht von 10 auf 15 für schnellere Erkennung
+                    qrbox: { width: 300, height: 300 }, // Vergrößert von 250 auf 300
+                    aspectRatio: 1.0,
+                    experimentalFeatures: {
+                        useBarCodeDetectorIfSupported: true // Native API wenn verfügbar
+                    }
                 };
 
                 await html5QrCode.start(
                     { facingMode: "environment" }, // Rückkamera bevorzugen
                     config,
                     (decodedText, decodedResult) => {
-                        // SUCCESS: Scanner stoppen und Daten übergeben
-                        setIsScanning(false);
-                        html5QrCode.stop().then(() => {
-                            onScanSuccess(decodedText);
-                        }).catch(err => {
-                            // Falls Stop fehlschlägt, trotzdem Daten übergeben
-                            onScanSuccess(decodedText);
-                        });
+                        handleScanResult(decodedText, html5QrCode);
                     },
                     (errorMessage) => {
                         // Error Callback wird oft gefeuert (bei jedem Frame ohne QR)
@@ -66,6 +115,9 @@ export const QRScannerModal = ({ onClose, onScanSuccess }) => {
         };
     }, [onScanSuccess]);
 
+    const partsCollected = multiPartState ? Object.keys(multiPartState.parts).length : 0;
+    const totalParts = multiPartState?.total || 0;
+
     return (
         <div className="fixed inset-0 z-[160] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 font-sans">
             <div className="bg-white rounded-2xl shadow-2xl p-6 modal-animate flex flex-col items-center max-w-md w-full">
@@ -82,13 +134,26 @@ export const QRScannerModal = ({ onClose, onScanSuccess }) => {
                 </div>
 
                 {/* Scanner Container */}
-                <div className="w-full bg-black rounded-xl overflow-hidden mb-4 relative h-[300px] flex items-center justify-center">
+                <div className="w-full bg-black rounded-xl overflow-hidden mb-4 relative h-[320px] flex items-center justify-center">
                     <div id="qr-reader" style={{ width: '100%', height: '100%' }}></div>
 
                     {/* Scanning Indicator */}
                     {isScanning && !errorMsg && (
                         <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                            <div className="w-64 h-64 border-4 border-blue-500/50 rounded-xl animate-pulse"></div>
+                            <div className="w-72 h-72 border-4 border-blue-500/50 rounded-xl animate-pulse"></div>
+                        </div>
+                    )}
+
+                    {/* Multi-Part Progress */}
+                    {multiPartState && partsCollected < totalParts && (
+                        <div className="absolute bottom-4 left-4 right-4 bg-blue-600 text-white p-3 rounded-xl text-center font-bold shadow-lg">
+                            <div className="flex items-center justify-center gap-2">
+                                <Icons.Check size={20} />
+                                Teil {partsCollected} von {totalParts} gescannt
+                            </div>
+                            <p className="text-sm font-normal mt-1 opacity-90">
+                                Bitte scanne jetzt den nächsten QR-Code
+                            </p>
                         </div>
                     )}
 
@@ -104,7 +169,10 @@ export const QRScannerModal = ({ onClose, onScanSuccess }) => {
                 </div>
 
                 <p className="text-center text-slate-500 text-sm mb-4">
-                    Halte den QR-Code eines anderen Geräts oder einen Dateilink in die Kamera.
+                    {multiPartState
+                        ? `Scanne alle ${totalParts} QR-Codes nacheinander.`
+                        : 'Halte den QR-Code eines anderen Geräts oder einen Dateilink in die Kamera.'
+                    }
                 </p>
 
                 <button

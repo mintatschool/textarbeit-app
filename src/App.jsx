@@ -296,6 +296,7 @@ const App = () => {
             setColumnsState(data.columnsState || { cols: {}, order: [] });
             setWordColors(data.wordColors || {});
             setWordDrawings(data.wordDrawings || {});
+            setWordGroups(data.wordGroups || []);
 
             if (data.colorPalette) setColorPalette(data.colorPalette);
 
@@ -303,7 +304,7 @@ const App = () => {
         } catch (e) { alert("Fehler beim Laden der Datei."); }
     };
     const exportState = () => {
-        const data = { text, settings, highlights: Array.from(highlightedIndices), hidden: Array.from(hiddenIndices), logo, manualCorrections, textCorrections, columnsState, wordColors, colorPalette, wordDrawings };
+        const data = { text, settings, highlights: Array.from(highlightedIndices), hidden: Array.from(hiddenIndices), logo, manualCorrections, textCorrections, columnsState, wordColors, colorPalette, wordDrawings, wordGroups };
         const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a'); a.href = url; a.download = 'textarbeit-export.json'; a.click();
@@ -646,14 +647,31 @@ const App = () => {
     }, [processedWords]);
 
     // Handle Printing
-    const handlePrint = (type) => {
+    const handlePrint = (type, options = {}) => {
         const style = document.createElement('style');
-        style.innerHTML = `@media print { nav, button, .no-print { display: none !important; } body { padding: 0 !important; margin: 0 !important; } .print-content { display: block !important; } }`;
+        const orientation = options.orientation || 'auto';
+        const landscapeRule = `@page { size: ${orientation}; margin: 0.5cm; }`;
+        style.innerHTML = `
+            ${landscapeRule}
+            @media print {
+                nav, button:not(.print-visible), .no-print { display: none !important; }
+                body { padding: 0 !important; margin: 0 !important; background: white !important; }
+                .print-content { display: block !important; position: relative !important; inset: 0 !important; }
+                .bg-slate-100, .bg-slate-50, .bg-gradient-to-br, .bg-indigo-50, .bg-purple-50 { background: white !important; }
+            }
+        `;
         document.head.appendChild(style);
-        if (type === 'text') { window.print(); }
-        else {
+
+        if (type === 'text') {
+            window.print();
+            document.head.removeChild(style);
+        } else {
             setActiveView(type);
-            setTimeout(() => { window.print(); setActiveView('text'); document.head.removeChild(style); }, 500);
+            setTimeout(() => {
+                window.print();
+                setActiveView('text');
+                document.head.removeChild(style);
+            }, 500);
         }
     };
 
@@ -690,13 +708,18 @@ const App = () => {
                     }}
                     onToggleTextMarkerMode={() => {
                         const next = !isTextMarkerMode;
-                        setIsTextMarkerMode(next);
                         if (next) {
                             // Activating Textmarker: Deactivate Hand tool, set initial light orange color
+                            // FIX: Enforce mutual exclusivity with Grouping
+                            setIsGrouping(false);
+                            setCurrentGroupSelection([]);
+
                             setActiveTool(null);
+                            setIsTextMarkerMode(true);
                             setActiveColor('rgba(249, 115, 22, 0.15)'); // Light Orange Default
                         } else {
                             // Deactivating Textmarker: Return to Hand tool and Neutral marking mode
+                            setIsTextMarkerMode(false);
                             setActiveTool(null);
                             setActiveColor('neutral');
                         }
@@ -742,6 +765,9 @@ const App = () => {
                             setIsGrouping(false);
                         } else {
                             if (!activeColor) return;
+                            // FIX: Enforce mutual exclusivity with Marker and Pen
+                            setIsTextMarkerMode(false);
+                            setActiveTool(null);
                             setIsGrouping(true);
                         }
                     }}
@@ -780,7 +806,15 @@ const App = () => {
                         }
                     }}
                     onToggleFullscreen={toggleFullscreen}
-                    onToolChange={setActiveTool}
+                    onToolChange={(tool) => {
+                        // FIX: Enforce mutual exclusivity when activating Pen
+                        if (tool === 'pen') {
+                            setIsTextMarkerMode(false);
+                            setIsGrouping(false);
+                            setCurrentGroupSelection([]);
+                        }
+                        setActiveTool(tool);
+                    }}
                     onBatchHide={handleBatchHide}
                     hideYellowLetters={hideYellowLetters}
                     onToggleHideLetters={handleToggleHideLetters}
@@ -1147,7 +1181,7 @@ const App = () => {
                 columnsState: Object.keys(columnsState.cols).length > 0 ? columnsState : undefined,
                 wordColors: Object.keys(wordColors).length > 0 ? wordColors : undefined,
                 colorPalette: JSON.stringify(colorPalette) !== JSON.stringify(['#3b82f6', '#a855f7', '#ef4444', '#f97316', '#22c55e']) ? colorPalette : undefined,
-                wordDrawings: Object.keys(wordDrawings).length > 0 ? wordDrawings : undefined
+                wordGroups: wordGroups.length > 0 ? wordGroups : undefined
             })} onClose={() => setShowQR(false)} />}
             {showScanner && <QRScannerModal onClose={() => setShowScanner(false)} onScanSuccess={(decodedText) => {
                 setShowScanner(false);

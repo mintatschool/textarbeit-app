@@ -430,8 +430,8 @@ export const Toolbar = ({
                     </div>
                 </div>
 
-                {/* 2b. GROUPING BUTTON (Only visible if a color is active) */}
-                {(activeColor && activeColor !== 'yellow' && !settings?.reduceMenu) && (
+                {/* 2b. GROUPING BUTTON (Only visible if a color is active AND NOT in Marker/Pen mode) */}
+                {(activeColor && activeColor !== 'yellow' && !settings?.reduceMenu && !isTextMarkerMode && activeTool !== 'pen') && (
                     <button
                         onClick={onToggleGrouping}
                         className={`w-14 h-10 flex items-center justify-center rounded-xl transition-all min-touch-target mt-1 ${isGrouping ? 'bg-slate-800 text-white shadow-lg scale-105' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}

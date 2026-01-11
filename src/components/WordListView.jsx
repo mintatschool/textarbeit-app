@@ -334,8 +334,8 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
     };
 
     return (
-        <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans">
-            <div className="bg-white px-6 py-4 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center z-10 shrink-0">
+        <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans print-content">
+            <div className="bg-white px-6 py-4 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center z-10 shrink-0 no-print">
                 <div className="flex items-center gap-6 w-full md:w-auto justify-between md:justify-start">
                     <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
                         <Icons.Table className="text-blue-600" size={32} />
@@ -362,7 +362,7 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
 
                 </div>
                 <div className="flex items-center gap-4 ml-auto">
-                    <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg">
+                    <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg no-print">
                         <span className="text-xs font-bold text-slate-500">A</span>
                         <input type="range" min="16" max="64" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-48 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer" />
                         <span className="text-xl font-bold text-slate-500">A</span>
@@ -469,7 +469,7 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                                                                         </span>
                                                                     ))}
                                                                     {settings.visualType === 'arc' && !sylObj.isSpace && (
-                                                                        <svg className="arc-svg pointer-events-none" viewBox="0 0 100 20" preserveAspectRatio="none" style={{ display: 'block', height: '0.2em', width: '100%', marginTop: '-0.1em' }}><path d="M 2 2 Q 50 20 98 2" fill="none" stroke={isEven ? '#2563eb' : '#dc2626'} strokeWidth="8" strokeLinecap="round" /></svg>
+                                                                        <svg className="arc-svg pointer-events-none" viewBox="0 0 100 20" preserveAspectRatio="none" style={{ display: 'block', height: '0.2em', width: '100%', marginTop: '-0.1em' }}><path d="M 2 2 Q 50 20 98 2" fill="none" stroke={isEven ? '#2563eb' : '#dc2626'} strokeWidth="3" strokeLinecap="round" /></svg>
                                                                     )}
                                                                 </span>
                                                             );
@@ -480,7 +480,7 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                                             <button onClick={(e) => { e.stopPropagation(); onRemoveWord(word.id); }} className="absolute -top-2 -right-2 bg-red-100 text-red-500 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500 hover:text-white min-touch-target cursor-pointer z-20"><Icons.X size={14} /></button>
                                         </div>
                                     ))}
-                                    <div className="h-12 border-2 border-dashed border-slate-100 rounded-lg flex items-center justify-center text-slate-300 text-sm italic hover:border-blue-200 transition-colors">
+                                    <div className="h-12 border-2 border-dashed border-slate-100 rounded-lg flex items-center justify-center text-slate-300 text-sm italic hover:border-blue-200 transition-colors no-print">
                                         Hierhin ziehen
                                     </div>
                                 </div>
