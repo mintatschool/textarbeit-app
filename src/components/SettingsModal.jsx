@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Icons } from './Icons';
 
-export const SettingsModal = ({ settings, setSettings, onExport, onImport, logo, setLogo, onClose, onClearHighlights, onPrint, onShowQR }) => {
+export const SettingsModal = ({ settings, setSettings, onExport, onImport, logo, setLogo, onClose, onClearHighlights, onPrint, onShowQR, onReset }) => {
     const fileInputRef = useRef(null);
     const [printType, setPrintType] = useState('text');
     const [tableOrientation, setTableOrientation] = useState('landscape');
@@ -350,6 +350,16 @@ export const SettingsModal = ({ settings, setSettings, onExport, onImport, logo,
                                         <div className={`w-5 h-5 bg-white rounded-full shadow-lg transform transition-transform ${settings.enableCamera ? 'translate-x-7' : 'translate-x-0'}`}></div>
                                     </button>
                                 </label>
+                            </div>
+
+                            {/* Reset Button */}
+                            <div className="pt-4 border-t border-slate-50 flex justify-center">
+                                <button
+                                    onClick={onReset}
+                                    className="text-red-500 hover:text-red-600 hover:bg-red-50 px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2"
+                                >
+                                    <Icons.Trash2 size={16} /> Alle Einstellungen zurücksetzen
+                                </button>
                             </div>
                         </div>
                     </section>
