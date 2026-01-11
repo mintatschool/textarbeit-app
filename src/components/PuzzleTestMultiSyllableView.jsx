@@ -315,31 +315,26 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                 }
             }
         });
-
     }, [slots, completedRows, gameState.stages, gameState.currentStageIndex]);
+
+    const handleManualAdvance = useCallback(() => {
+        setGameState(prev => {
+            const isLastStage = prev.currentStageIndex >= prev.stages.length - 1;
+            if (isLastStage) {
+                return { ...prev, gameStatus: 'finished' };
+            } else {
+                return {
+                    ...prev,
+                    currentStageIndex: prev.currentStageIndex + 1,
+                    gameStatus: 'playing'
+                };
+            }
+        });
+    }, []);
 
     // Check Stage Completion
     useEffect(() => {
-        if (!gameState.stages[gameState.currentStageIndex]) return;
-        const currentStageWords = gameState.stages[gameState.currentStageIndex].items;
-
-        // All rows matched
-        const allComplete = currentStageWords.every(w => completedRows[w.id]);
-
-        if (allComplete && currentStageWords.length > 0) {
-            // Delay move to next stage
-            const timer = setTimeout(() => {
-                if (gameState.currentStageIndex < gameState.stages.length - 1) {
-                    setGameState(prev => ({
-                        ...prev,
-                        currentStageIndex: prev.currentStageIndex + 1
-                    }));
-                } else {
-                    setGameState(prev => ({ ...prev, gameStatus: 'finished' }));
-                }
-            }, 1000);
-            return () => clearTimeout(timer);
-        }
+        // No Auto Advance
     }, [completedRows, gameState.stages, gameState.currentStageIndex]);
 
 
@@ -356,7 +351,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
     }, [gameState.stages, gameState.currentStageIndex, completedRows, totalWords]);
 
     const handleWordsCountChange = (delta) => {
-        const next = Math.max(1, Math.min(6, gameState.wordsPerStage + delta));
+        const next = Math.max(2, Math.min(6, gameState.wordsPerStage + delta));
         setGameState(prev => ({ ...prev, wordsPerStage: next }));
 
         if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
@@ -445,7 +440,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                     <span className="text-xl font-bold text-slate-800 hidden md:inline">{title || "Silbenpuzzle 2"}</span>
 
                     {/* Numeric Progress Indicator (Standardized) */}
-                    <div className="flex items-center gap-1 ml-4 overflow-x-auto max-w-[400px] no-scrollbar">
+                    <div className="flex items-center gap-1 ml-4 overflow-x-auto max-w-[400px] no-scrollbar py-2 px-1">
                         {gameState.stages.map((_, i) => (
                             <div
                                 key={i}
@@ -478,7 +473,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                     {/* Words Count Control */}
                     <div className="flex items-center gap-2 bg-slate-50 px-2 py-1 rounded-2xl border border-slate-200 hidden lg:flex">
                         <HorizontalLines count={2} />
-                        <button onClick={() => handleWordsCountChange(-1)} disabled={gameState.wordsPerStage <= 1} className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 active:scale-90 transition-all shadow-sm disabled:opacity-20 ml-1">
+                        <button onClick={() => handleWordsCountChange(-1)} disabled={gameState.wordsPerStage <= 2} className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 active:scale-90 transition-all shadow-sm disabled:opacity-20 ml-1">
                             <Minus className="w-4 h-4" />
                         </button>
                         <div className="flex flex-col items-center min-w-[24px]">
@@ -588,10 +583,12 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                     </div>
 
                     {/* Word Rows Area */}
-                    <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center gap-8 bg-slate-50/30">
-                        {currentStageItems.map(word => {
+                    <div className="flex-1 overflow-y-auto p-6 pt-12 flex flex-col items-center gap-8 bg-slate-50/30">
+                        {currentStageItems.map((word, idx) => {
                             const solvedId = completedRows[word.id];
                             const isComplete = !!solvedId;
+                            const isLastItem = idx === currentStageItems.length - 1;
+                            const allSolved = currentStageItems.every(w => completedRows[w.id]);
 
                             // Audio Text: Solved word or target word
                             const audioText = isComplete && solvedId
@@ -661,25 +658,39 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                                         </div>
                                     </div>
 
-                                    {/* Audio Button & Checkmark - Standardized Group */}
-                                    <div className="relative flex items-center shrink-0">
-                                        {audioEnabled && (
-                                            <button
-                                                onClick={() => speak(audioText)}
-                                                className="w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg transition-all shrink-0 ring-4 ring-white/50 translate-y-[-4px] hover:scale-105 active:scale-95 z-10"
-                                                title="Anhören"
-                                            >
-                                                <Icons.Volume2 size={24} />
-                                            </button>
-                                        )}
+                                    {/* Audio, Checkmark & Manual Advance Group */}
+                                    <div className="flex flex-col items-center gap-4">
+                                        <div className="flex items-center gap-4 min-h-[56px]">
+                                            {/* Speaker */}
+                                            {audioEnabled && (
+                                                <button
+                                                    onClick={() => speak(audioText)}
+                                                    className="w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg transition-all shrink-0 ring-4 ring-white/50 hover:scale-105 active:scale-95 z-10"
+                                                    title="Anhören"
+                                                >
+                                                    <Icons.Volume2 size={24} />
+                                                </button>
+                                            )}
 
-                                        {/* Floating Checkmark - positioned exactly 20px to the right of the speaker */}
-                                        <div className={`
-                                            absolute left-full transition-all duration-500 ease-out z-30 pointer-events-none flex items-center
-                                            ${isComplete ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}
-                                        `} style={{ paddingLeft: '20px' }}>
-                                            <CheckCircle2 className="text-green-500 drop-shadow-2xl" style={{ width: '56px', height: '56px' }} />
+                                            {/* Checkmark - Flex for reliable alignment */}
+                                            <div className={`transition-all duration-500 ease-out flex items-center
+                                                ${isComplete ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}
+                                            `}>
+                                                <CheckCircle2 className="text-green-500 drop-shadow-2xl" style={{ width: '56px', height: '56px' }} />
+                                            </div>
                                         </div>
+
+                                        {/* Manual Advance Button - Below Speaker Layout */}
+                                        {(isLastItem && allSolved) && (
+                                            <div className="animate-in slide-in-from-top-4 duration-300 mt-6">
+                                                <button
+                                                    onClick={handleManualAdvance}
+                                                    className="bg-blue-600 hover:bg-blue-700 text-white pl-6 pr-4 py-3 rounded-2xl font-bold shadow-xl text-lg hover:scale-105 transition-all flex items-center gap-2 ring-4 ring-white/50 whitespace-nowrap"
+                                                >
+                                                    Weiter <CheckCircle2 size={24} />
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             );
@@ -724,6 +735,8 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                 </div>
 
             </div>
-        </div>
+            {/* Manual Advance Button */}
+            {/* Manual Advance Button Removed (Moved to inside list) */}
+        </div >
     );
 };

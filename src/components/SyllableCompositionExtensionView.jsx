@@ -93,7 +93,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
         // Filter & Split
         candidateSyllables.forEach(syl => {
             if (!syl || typeof syl !== 'string') return;
-            const cleanSyl = syl.toLowerCase().trim();
+            const cleanSyl = syl.trim();
             if (cleanSyl.length < 2) return;
             if (seen.has(cleanSyl)) return;
 
@@ -106,8 +106,8 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
             while (remaining.length > 0) {
                 let foundCluster = false;
                 for (let cluster of clusterList) {
-                    if (remaining.startsWith(cluster)) {
-                        parts.push(cluster);
+                    if (remaining.toLowerCase().startsWith(cluster.toLowerCase())) {
+                        parts.push(remaining.substring(0, cluster.length));
                         remaining = remaining.substring(cluster.length);
                         foundCluster = true;
                         break;
@@ -386,35 +386,24 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
         });
     }, [placedPieces, completedRows, gameState.stages, gameState.currentStageIndex]);
 
-    // Check Stage Complete
+    const handleManualAdvance = useCallback(() => {
+        setGameState(prev => {
+            const isLastStage = prev.currentStageIndex >= prev.stages.length - 1;
+            if (isLastStage) {
+                return { ...prev, gameStatus: 'finished' };
+            } else {
+                return {
+                    ...prev,
+                    currentStageIndex: prev.currentStageIndex + 1,
+                    gameStatus: 'playing'
+                };
+            }
+        });
+    }, []);
+
+    // Check Stage Completion
     useEffect(() => {
-        if (!gameState.stages[gameState.currentStageIndex]) return;
-        const currentStage = gameState.stages[gameState.currentStageIndex];
-
-        // All rows must have a solution
-        // Or all targets must be found?
-        // Since number of rows == number of targets, checking if all rows have an entry in completedRows acts as "All done".
-        const allDone = currentStage.items.every(t => completedRows[t.id]);
-
-        if (currentStage.items.length > 0 && allDone) {
-            // Stage Complete
-            const timer = setTimeout(() => {
-                setGameState(prev => {
-                    const isLastStage = prev.currentStageIndex >= prev.stages.length - 1;
-                    if (isLastStage) {
-                        return { ...prev, gameStatus: 'finished' };
-                    } else {
-                        return {
-                            ...prev,
-                            ...prev,
-                            currentStageIndex: prev.currentStageIndex + 1,
-                            gameStatus: 'playing' // Ensure it's playing
-                        };
-                    }
-                });
-            }, 1000);
-            return () => clearTimeout(timer);
-        }
+        // No Auto Advance
     }, [completedRows, gameState.stages, gameState.currentStageIndex]);
 
 
@@ -422,7 +411,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
     // 6. RENDER HELPERS
     // --------------------------------------------------------------------------------
     const handleWordsCountChange = (delta) => {
-        const next = Math.max(1, Math.min(6, pendingWordsCount + delta));
+        const next = Math.max(2, Math.min(6, pendingWordsCount + delta));
         setPendingWordsCount(next);
 
         if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
@@ -458,7 +447,11 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
             <div className="fixed inset-0 bg-slate-100 z-[100] flex flex-col items-center justify-center p-6">
                 <EmptyStateMessage
                     onClose={onClose}
-                    secondStepText="Wörter markieren, deren Silben sich für den Silbenbau eignen."
+                    secondStepText={<>
+                        Passende Wörter markieren!
+                        <br />
+                        <span className="block mt-1 text-sm font-normal text-slate-400">Für diese Übung werden sehr häufige und einfache Silben benötigt.</span>
+                    </>}
                 />
             </div>
         );
@@ -490,7 +483,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                     <span className="text-xl font-bold text-slate-800 hidden md:inline">{title || "Silbenbau 2"}</span>
 
                     {/* Numeric Progress Indicator (Standardized) */}
-                    <div className="flex items-center gap-1 ml-4 overflow-x-auto max-w-[400px] no-scrollbar">
+                    <div className="flex items-center gap-1 ml-4 overflow-x-auto max-w-[400px] no-scrollbar py-2 px-1">
                         {gameState.stages.map((_, i) => (
                             <div
                                 key={i}
@@ -512,18 +505,13 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
 
                 <div className="flex items-center gap-4">
                     {/* Audio Toggle */}
-                    <button
-                        onClick={() => setAudioEnabled(!audioEnabled)}
-                        className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${audioEnabled ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-400'}`}
-                        title={audioEnabled ? 'Audio an' : 'Audio aus'}
-                    >
-                        {audioEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
-                    </button>
+                    {/* Audio Toggle Removed per User Request */}
+                    {/* <button ... /> */}
 
                     {/* Words Count Control */}
                     <div className="flex items-center gap-2 bg-slate-50 px-2 py-1 rounded-2xl border border-slate-200 hidden lg:flex">
                         <HorizontalLines count={2} />
-                        <button onClick={() => handleWordsCountChange(-1)} disabled={pendingWordsCount <= 1} className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 active:scale-90 transition-all shadow-sm disabled:opacity-20 ml-1">
+                        <button onClick={() => handleWordsCountChange(-1)} disabled={pendingWordsCount <= 2} className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 active:scale-90 transition-all shadow-sm disabled:opacity-20 ml-1">
                             <Minus className="w-4 h-4" />
                         </button>
                         <div className="flex flex-col items-center min-w-[24px]">
@@ -606,10 +594,12 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                     </div>
 
                     {/* TARGETS LIST */}
-                    <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center gap-8 bg-slate-50/30">
-                        {currentStage.items.map(target => {
+                    <div className="flex-1 overflow-y-auto p-6 pt-12 flex flex-col items-center gap-8 bg-slate-50/30">
+                        {currentStage.items.map((target, idx) => {
                             const solvedId = completedRows[target.id];
                             const isComplete = !!solvedId;
+                            const isLastItem = idx === currentStage.items.length - 1;
+                            const allSolved = currentStage.items.every(t => completedRows[t.id]);
 
                             // Audio should play the solved word if complete, otherwise the target hint
                             const audioText = isComplete
@@ -671,25 +661,39 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                                         </div>
                                     </div>
 
-                                    {/* Audio Button & Checkmark - Standardized Group */}
-                                    <div className="relative flex items-center shrink-0 ml-4">
-                                        {audioEnabled && (
-                                            <button
-                                                onClick={() => speak(audioText)}
-                                                className="w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg transition-all ring-4 ring-white/50 hover:scale-105 active:scale-95 z-10"
-                                                title="Anhören"
-                                            >
-                                                <Volume2 size={24} />
-                                            </button>
-                                        )}
+                                    {/* Audio, Checkmark & Manual Advance Group */}
+                                    <div className="flex flex-col items-center ml-4 gap-4">
+                                        <div className="flex items-center gap-4 min-h-[56px]">
+                                            {/* Speaker */}
+                                            {audioEnabled && (
+                                                <button
+                                                    onClick={() => speak(audioText)}
+                                                    className="w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg transition-all ring-4 ring-white/50 hover:scale-105 active:scale-95 z-10 shrink-0"
+                                                    title="Anhören"
+                                                >
+                                                    <Volume2 size={24} />
+                                                </button>
+                                            )}
 
-                                        {/* Floating Checkmark - positioned exactly 20px to the right of the speaker */}
-                                        <div className={`
-                                            absolute left-full transition-all duration-500 ease-out z-30 pointer-events-none flex items-center
-                                            ${isComplete ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}
-                                        `} style={{ paddingLeft: '20px' }}>
-                                            <CheckCircle2 className="text-green-500 drop-shadow-2xl" style={{ width: '56px', height: '56px' }} />
+                                            {/* Checkmark - Flex for reliable alignment */}
+                                            <div className={`transition-all duration-500 ease-out flex items-center
+                                                ${isComplete ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}
+                                            `}>
+                                                <CheckCircle2 className="text-green-500 drop-shadow-2xl" style={{ width: '56px', height: '56px' }} />
+                                            </div>
                                         </div>
+
+                                        {/* Manual Advance Button - Below Speaker Layout */}
+                                        {isLastItem && allSolved && (
+                                            <div className="animate-in slide-in-from-top-4 duration-300 mt-6">
+                                                <button
+                                                    onClick={handleManualAdvance}
+                                                    className="bg-blue-600 hover:bg-blue-700 text-white pl-6 pr-4 py-3 rounded-2xl font-bold shadow-xl text-lg hover:scale-105 transition-all flex items-center gap-2 ring-4 ring-white/50 whitespace-nowrap"
+                                                >
+                                                    Weiter <CheckCircle2 size={24} />
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             );
@@ -719,6 +723,8 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                     </div>
                 </div>
             </div>
+            {/* Manual Advance Button Removed (Moved to Last Item) */}
         </div >
     );
 };
+

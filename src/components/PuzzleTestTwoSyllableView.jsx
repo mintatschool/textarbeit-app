@@ -98,6 +98,8 @@ export const PuzzleTestTwoSyllableView = ({ words, settings, onClose, title, act
             emptyHint="Wörter mit zwei Silben markieren."
             allCompleteMessage="Alle Wörter geschafft!"
             stageCompleteMessage="Level geschafft!"
+            hideSpeakerToggle={true}
+            manualAdvance={true}
         />
     );
 };

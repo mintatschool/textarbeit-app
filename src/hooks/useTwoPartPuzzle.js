@@ -15,7 +15,8 @@ export const useTwoPartPuzzle = ({
     leftType = 'left',
     rightType = 'right',
     initialScale = 1.0,
-    successDelay = 1000
+    successDelay = 1000,
+    manualAdvance = false
 }) => {
     const [gameState, setGameState] = useState({
         stages: [],
@@ -212,6 +213,49 @@ export const useTwoPartPuzzle = ({
         setScrambledPieces(prev => [...prev, newPiece]);
     }, [showSuccess, placedPieces, leftType, rightType]);
 
+    const handleNextItem = useCallback(() => {
+        setShowSuccess(false);
+        setPlacedPieces({ left: null, right: null });
+        if (successTimerRef.current) {
+            clearTimeout(successTimerRef.current);
+            successTimerRef.current = null;
+        }
+
+        const currentStage = gameState.stages[gameState.currentStageIndex];
+        if (!currentStage || !currentStage.items) return;
+
+        const targetIdx = currentStage.targetIndex ?? 0;
+        const nextIdx = targetIdx + 1;
+        const itemsCount = currentStage.items.length;
+
+        setGameState(prev => {
+            const stage = prev.stages[prev.currentStageIndex];
+            if (!stage || !stage.items) return prev;
+
+            const newStages = prev.stages.map((s, idx) => {
+                if (idx === prev.currentStageIndex) {
+                    return {
+                        ...s,
+                        completedIndices: [...s.completedIndices, targetIdx],
+                        targetIndex: nextIdx < itemsCount ? nextIdx : s.targetIndex
+                    };
+                }
+                return s;
+            });
+
+            const isStageFinished = nextIdx >= itemsCount;
+            const isFinalStage = prev.currentStageIndex >= prev.stages.length - 1;
+
+            return {
+                ...prev,
+                stages: newStages,
+                gameStatus: isStageFinished
+                    ? (isFinalStage ? 'all-complete' : 'stage-complete')
+                    : 'playing'
+            };
+        });
+    }, [gameState.stages, gameState.currentStageIndex]);
+
     // Check for correct answer
     useEffect(() => {
         if (showSuccess) return;
@@ -229,42 +273,11 @@ export const useTwoPartPuzzle = ({
         if (targetItem.fullText === formedText) {
             setShowSuccess(true);
 
-            successTimerRef.current = setTimeout(() => {
-                setShowSuccess(false);
-                setPlacedPieces({ left: null, right: null });
-                successTimerRef.current = null;
-
-                const nextIdx = targetIdx + 1;
-                setGameState(prev => {
-                    const stage = prev.stages[prev.currentStageIndex];
-                    if (!stage || !stage.items) return prev;
-
-                    const itemsCount = stage.items.length;
-                    const newStages = prev.stages.map((s, idx) => {
-                        if (idx === prev.currentStageIndex) {
-                            return {
-                                ...s,
-                                completedIndices: [...s.completedIndices, targetIdx],
-                                targetIndex: nextIdx < itemsCount ? nextIdx : s.targetIndex
-                            };
-                        }
-                        return s;
-                    });
-
-                    const isStageFinished = nextIdx >= itemsCount;
-                    const isFinalStage = prev.currentStageIndex >= prev.stages.length - 1;
-
-                    return {
-                        ...prev,
-                        stages: newStages,
-                        gameStatus: isStageFinished
-                            ? (isFinalStage ? 'all-complete' : 'stage-complete')
-                            : 'playing'
-                    };
-                });
-            }, successDelay);
+            if (!manualAdvance) {
+                successTimerRef.current = setTimeout(handleNextItem, successDelay);
+            }
         }
-    }, [placedPieces, gameState.currentStageIndex, gameState.stages, showSuccess, successDelay]);
+    }, [placedPieces, gameState.currentStageIndex, gameState.stages, showSuccess, successDelay, manualAdvance, handleNextItem]);
 
     const handleUpdateWordsCount = useCallback((delta) => {
         const nextValue = Math.max(2, Math.min(8, pendingWordsCount + delta));
@@ -335,7 +348,9 @@ export const useTwoPartPuzzle = ({
         handleModeChange,
         setScale,
         setIsDragging,
-        advanceToNextStage
+        setIsDragging,
+        advanceToNextStage,
+        handleNextItem
     };
 };
 

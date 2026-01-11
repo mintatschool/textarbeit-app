@@ -144,6 +144,27 @@ export const Icons = {
         <path d="M9 17L12 7L15 17" />
         <line x1="10" y1="14" x2="14" y2="14" />
     </g>} />,
+    LetterMarkerInstruction: (p) => <Icon {...p} size={p.size || 24} path={<g>
+        {/* Yellow Box with Black Border */}
+        <rect x="3" y="3" width="18" height="18" rx="4" fill="#fde047" stroke="black" strokeWidth="2" />
+        {/* 'A' - drawn first so hand covers it */}
+        <path d="M9 17L12 7L15 17" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <line x1="10" y1="14" x2="14" y2="14" stroke="black" strokeWidth="2.5" strokeLinecap="round" />
+
+        {/* Hand - Solid White Foreground using Closed Path Hull */}
+        <g transform="translate(10, 8.5) scale(0.6)" fill="white" stroke="black" strokeWidth="2.5" strokeLinejoin="round">
+            {/* Main Hull: Fingers (Extended) + Palm + Thumb (Extended) */}
+            {/* Fingers: lowered top Y values (5, 3, 5, 7) to make them longer */}
+            {/* Thumb: extended diagonal l -3.6 -> -4.5 */}
+            <path
+                d="M 6 11 V 5 a 2 2 0 0 1 4 0 V 3 a 2 2 0 0 1 4 0 V 5 a 2 2 0 0 1 4 0 V 7 a 2 2 0 1 1 4 0 v 6 a 8 8 0 0 1 -8 8 h -2 c -2.8 0 -4.5 -0.86 -5.99 -2.34 l -4.5 -4.5 a 2 2 0 0 1 2.83 -2.82 L 6 11 Z"
+            />
+            {/* Finger Separators - extended to match new finger lengths */}
+            <path d="M 10 5 V 10.5" strokeLinecap="round" />
+            <path d="M 14 5 V 10" strokeLinecap="round" />
+            <path d="M 18 7 V 10" strokeLinecap="round" />
+        </g>
+    </g>} />,
     Group: ({ size = 24, className = "" }) => (
         <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             {/* Two boxes - pushed further apart */}

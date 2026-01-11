@@ -4,8 +4,8 @@ import { Minus, Plus } from 'lucide-react';
 import { EmptyStateMessage } from './EmptyStateMessage';
 import { speak } from '../utils/speech';
 
-export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialSound = false, title }) => {
-    const [mode, setMode] = useState('vowels'); // 'vowels' or 'consonants'
+export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialSound = false, title, highlightedIndices = new Set(), wordColors = {} }) => {
+    const [mode, setMode] = useState('vowels'); // 'vowels', 'consonants', or 'marked'
     const [currentGroupIdx, setCurrentGroupIdx] = useState(0);
     const [groups, setGroups] = useState([]);
     const [placedLetters, setPlacedLetters] = useState({}); // { gapId: letterObj }
@@ -47,44 +47,24 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
     // Letter Cluster Definition (German common clusters)
     const clusters = ['sch', 'chs', 'ch', 'qu', 'st', 'sp', 'ei', 'ie', 'au', 'eu', 'äu', 'ck', 'ng', 'nk', 'pf', 'th'];
 
-    // Grouping Logic
-    useEffect(() => {
-        if (!words || words.length === 0) return;
-
-        const partition = (n) => {
-            const size = wordsPerStage;
-            const result = [];
-            for (let i = 0; i < n; i += size) {
-                result.push(Math.min(size, n - i));
-            }
-            return result;
-        };
-
-        const groupSizes = partition(words.length);
-        const newGroups = [];
-        let currentIdx = 0;
-        groupSizes.forEach(size => {
-            newGroups.push(words.slice(currentIdx, currentIdx + size));
-            currentIdx += size;
-        });
-        setGroups(newGroups);
-        setCurrentGroupIdx(0);
-    }, [words, wordsPerStage]);
-
     // Helper to check for clusters and vowels
     const isVowel = (char) => /[aeiouyäöüAEIOUYÄÖÜ]/.test(char);
 
     // Improved Char Logic: Handle clusters
-    const getWordChunks = (word, mode, isFirstSyllable = false, isWordStart = false) => {
+    const getWordChunks = (word, mode, isFirstSyllable = false, isWordStart = false, globalOffset = 0) => {
         const chunks = [];
         let i = 0;
+        // Check for "initial sound mode" override or similar if needed, but getWordChunks handles basic char logic.
+        // It relies on 'isInitialSound' from outer scope? No, passing 'isWordStart'.
+        // But internally it uses 'isInitialSound'? No, let's check definition. 
+        // It uses 'isVowel' helper.
+
+        // Helper component for horizontal lines in the stepper control
         const text = word.toLowerCase();
 
         if (isInitialSound) {
             // In initial sound mode, handle clusters at the very beginning
             let clusterLen = 0;
-            const text = word.toLowerCase();
-
             // Check for clusters (3 chars then 2 chars) at index 0
             for (let len = 3; len >= 2; len--) {
                 const sub = text.substring(0, len);
@@ -132,18 +112,26 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                 const sub = text.substring(i, i + len);
                 if (clusters.includes(sub)) {
                     const originalSub = word.substring(i, i + len);
-                    // A cluster is a target if it contains at least one character of the target type
-                    // Or if any part of it is the target type. Usually clusters are treated as units.
-                    // If mode is vowels, "ei" is a target. If mode is consonants, "sch" is a target.
                     let isTarget = false;
                     if (mode === 'vowels') {
                         isTarget = [...sub].some(isVowel);
+                    } else if (mode === 'marked') {
+                        // Marked Mode in getWordChunks
+                        const idx = globalOffset + i;
+                        isTarget = false; // Clusters in marked mode? 
+                        // Logic: check if any char in cluster is highlighted AND colored
+                        for (let k = 0; k < len; k++) {
+                            if (highlightedIndices.has(idx + k) && wordColors[idx + k]) {
+                                isTarget = true;
+                                break;
+                            }
+                        }
                     } else {
-                        // Consonant Mode: Apply Anchor & Syllable Rules
+                        // Consonant Mode
                         if (isFirstSyllable && i === 0) {
                             isTarget = false; // Anchor protection
                         } else if (consonantCount <= 1) {
-                            isTarget = false; // Syllable protection
+                            isTarget = false;
                         } else {
                             isTarget = [...sub].some(c => /[a-zäöü]/.test(c) && !isVowel(c));
                         }
@@ -158,12 +146,17 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
 
             if (!foundCluster) {
                 const char = word[i];
-                let isTarget = /[a-zA-ZäöüÄÖÜ]/.test(char) && (mode === 'vowels' ? isVowel(char) : !isVowel(char));
+                let isTarget = false;
 
-                // Consonant Mode: Apply Anchor & Syllable Rules
-                if (mode === 'consonants' && isTarget) {
-                    if (isFirstSyllable && i === 0) isTarget = false;
-                    else if (consonantCount <= 1) isTarget = false;
+                if (mode === 'marked') {
+                    const idx = globalOffset + i;
+                    isTarget = highlightedIndices.has(idx) && !!wordColors[idx];
+                } else {
+                    isTarget = /[a-zA-ZäöüÄÖÜ]/.test(char) && (mode === 'vowels' ? isVowel(char) : !isVowel(char));
+                    if (mode === 'consonants' && isTarget) {
+                        if (isFirstSyllable && i === 0) isTarget = false;
+                        else if (consonantCount <= 1) isTarget = false;
+                    }
                 }
 
                 chunks.push({ text: char, isTarget, id: `chunk_${i}` });
@@ -173,16 +166,64 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
         return chunks;
     };
 
+    // Grouping Logic
+    useEffect(() => {
+        if (!words || words.length === 0) return;
+
+        let wordsToGroup = words;
+
+        if (mode === 'marked') {
+            // Filter words that have marked letters
+            wordsToGroup = words.filter(w => {
+                let currentSyllableOffset = w.index || 0;
+                return w.syllables.some((syl, sIdx) => {
+                    const chunks = getWordChunks(syl, mode, sIdx === 0, sIdx === 0, currentSyllableOffset);
+                    currentSyllableOffset += syl.length;
+                    return chunks.some(c => c.isTarget);
+                });
+            });
+        }
+
+        if (mode === 'marked' && wordsToGroup.length === 0) {
+            setGroups([]);
+            setCurrentGroupIdx(0);
+            return;
+        }
+
+        const partition = (n) => {
+            const size = wordsPerStage;
+            const result = [];
+            for (let i = 0; i < n; i += size) {
+                result.push(Math.min(size, n - i));
+            }
+            return result;
+        };
+
+        const groupSizes = partition(wordsToGroup.length);
+        const newGroups = [];
+        let currentIdx = 0;
+        groupSizes.forEach(size => {
+            newGroups.push(wordsToGroup.slice(currentIdx, currentIdx + size));
+            currentIdx += size;
+        });
+        setGroups(newGroups);
+        setCurrentGroupIdx(0);
+    }, [words, wordsPerStage, mode, highlightedIndices, wordColors]);
+
+
+
     const currentWords = useMemo(() => {
         if (groups.length === 0) return [];
         const group = groups[currentGroupIdx];
         return group.map((w, wIdx) => {
+            let currentSyllableOffset = w.index || 0;
             const syllables = w.syllables.map((syl, sIdx) => {
-                const chunks = getWordChunks(syl, mode, sIdx === 0, sIdx === 0).map((chunk, cIdx) => ({
+                const chunks = getWordChunks(syl, mode, sIdx === 0, sIdx === 0, currentSyllableOffset).map((chunk, cIdx) => ({
                     ...chunk,
                     id: `${w.id}_s${sIdx}_c${cIdx}`,
                     syllableIdx: sIdx
                 }));
+                currentSyllableOffset += syl.length;
                 return { text: syl, chunks };
             });
 
@@ -246,7 +287,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
 
             // Fallback: Ensure at least one gap per word
             const hasAnyGap = syllables.some(s => s.chunks.some(c => c.isTarget));
-            if (!hasAnyGap) {
+            if (!hasAnyGap && mode !== 'marked') {
                 // Try to find any consonant (even if protected)
                 const allChunks = syllables.flatMap(s => s.chunks);
                 const anyConsonant = allChunks.find(c => [...c.text.toLowerCase()].some(ch => /[a-zäöü]/.test(ch) && !isVowel(ch)));
@@ -260,8 +301,11 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
             }
 
             return { ...w, syllables };
-        });
-    }, [groups, currentGroupIdx, mode, isInitialSound]);
+        }).filter(Boolean); // CURRENT WORDS IS FILTERED HERE
+    }, [groups, currentGroupIdx, mode, isInitialSound, highlightedIndices, wordColors]);
+
+    // BUT `groups` generation logic is separate!
+    // I need to update the useEffect that SETS groups.
 
     // Letter Pool Logic & Reset
     useEffect(() => {
@@ -387,7 +431,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
     };
 
     const handleWordsCountChange = (delta) => {
-        const next = Math.max(1, Math.min(6, wordsPerStage + delta));
+        const next = Math.max(2, Math.min(6, wordsPerStage + delta));
         setWordsPerStage(next);
     };
 
@@ -422,11 +466,25 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
     }, [groupSolved, currentGroupIdx, groups.length, showReward]);
 
     if (!words || words.length === 0) return (
-        <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans"><EmptyStateMessage onClose={onClose} title="Keine Wörter markiert" /></div>
+        <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col items-center justify-center modal-animate font-sans"><EmptyStateMessage onClose={onClose} title="Keine Wörter markiert" /></div>
     );
 
     return (
         <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans select-none">
+
+            {/* Empty State for Marked Mode */}
+            {mode === 'marked' && groups.every(g => g.length === 0) && (
+                <div className="absolute inset-0 z-[110] bg-slate-100 flex flex-col items-center justify-center p-6 bg-opacity-95">
+                    <EmptyStateMessage
+                        onClose={() => setMode('vowels')}
+                        IconComponent={Icons.LetterMarkerInstruction}
+                        title="Bitte markiere zuerst Buchstaben im Text!"
+                        firstStepText="Buchstaben-Symbol anklicken!"
+                        secondStepText="Buchstaben markieren."
+                    />
+                </div>
+            )}
+
             {showReward && (
                 <div className="fixed inset-0 z-[150] pointer-events-none flex items-center justify-center">
                     <div className="fixed inset-0 bg-white/60 backdrop-blur-[2px]"></div>
@@ -486,6 +544,14 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                     {!isInitialSound && (
                         <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
                             <button
+                                onClick={() => setMode('marked')}
+                                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all font-bold text-sm mr-1 ${mode === 'marked' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
+                            >
+                                <Icons.LetterMarker size={20} />
+                                <span className="hidden sm:inline">markierte Buchstaben</span>
+                            </button>
+                            <div className="w-px bg-slate-300 my-2 mx-1"></div>
+                            <button
                                 onClick={() => setMode('vowels')}
                                 className={`px-4 py-2 rounded-lg font-bold text-lg transition-all ${mode === 'vowels' ? 'bg-yellow-400 text-yellow-900 border-yellow-500 shadow-[0_2px_0_0_#eab308]' : 'text-slate-500 hover:bg-slate-50'}`}
                             >
@@ -503,7 +569,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                     {/* Words Count Control */}
                     <div className="flex items-center gap-2 bg-slate-50 px-2 py-1 rounded-2xl border border-slate-200 hidden lg:flex">
                         <HorizontalLines count={2} />
-                        <button onClick={() => handleWordsCountChange(-1)} disabled={wordsPerStage <= 1} className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 active:scale-90 transition-all shadow-sm disabled:opacity-20 ml-1">
+                        <button onClick={() => handleWordsCountChange(-1)} disabled={wordsPerStage <= 2} className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 active:scale-90 transition-all shadow-sm disabled:opacity-20 ml-1">
                             <Minus className="w-4 h-4" />
                         </button>
                         <div className="flex flex-col items-center min-w-[24px]">
@@ -646,7 +712,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                     </div>
                     <div className="flex-1 relative overflow-y-auto custom-scroll p-4 flex flex-wrap content-start justify-center gap-3">
                         {poolLetters.map((l) => {
-                            const isVowelTile = mode === 'vowels' && [...l.text.toLowerCase()].some(isVowel);
+                            const isVowelTile = [...l.text.toLowerCase()].some(isVowel);
                             return (
                                 <div
                                     key={l.poolId}

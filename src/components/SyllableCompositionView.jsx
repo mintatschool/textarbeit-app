@@ -119,7 +119,8 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [], ti
         leftType: 'zigzag-left',
         rightType: 'zigzag-right',
         initialScale: 1.0,
-        successDelay: 1000
+        successDelay: 1000,
+        manualAdvance: true
     });
 
     const handleSpeak = (item) => {
@@ -143,9 +144,15 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [], ti
             activeColor={activeColor}
             onSpeak={handleSpeak}
             emptyMessage="Keine passenden Silben gefunden."
-            emptyHint="Passende Wörter markieren."
+            emptyHint={<>
+                Passende Wörter markieren!
+                <br />
+                <span className="block mt-1 text-sm font-normal text-slate-400">Für diese Übung werden sehr häufige und einfache Silben benötigt.</span>
+            </>}
             allCompleteMessage="Alle Silben gebaut!"
             stageCompleteMessage="Level geschafft!"
+            hideSpeakerToggle={true}
+            manualAdvance={true}
         />
     );
 };

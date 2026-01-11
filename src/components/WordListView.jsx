@@ -97,11 +97,13 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                 newCols[id] = { id, title: colorHeaders[key] || '', color: key, items: colorGroups[key] };
                 newOrder.push(id);
             });
+            /* 
             if (noColorItems.length > 0) {
                 const id = 'col-no-color';
                 newCols[id] = { id, title: 'Keine Farbe', items: noColorItems };
                 newOrder.push(id);
-            }
+            } 
+            */
             setColumnsState({ cols: newCols, order: newOrder });
             setColumnCount(newOrder.length);
             return;
@@ -129,11 +131,13 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                     newCols[id] = { id, title: colorHeaders[key] || '', color: key, items: colorGroups[key] };
                     newOrder.push(id);
                 });
+                /*
                 if (noColorItems.length > 0) {
                     const id = 'col-no-color';
                     newCols[id] = { id, title: 'Keine Farbe', items: noColorItems };
                     newOrder.push(id);
                 }
+                */
                 setColumnsState({ cols: newCols, order: newOrder });
                 setColumnCount(newOrder.length);
             } else {
@@ -198,12 +202,11 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                     let targetColId;
                     if (sortByColor) {
                         const color = wordColors[newItem.index];
-                        const colEntry = Object.entries(newCols).find(([_, c]) => c.color === color);
-                        if (colEntry) {
-                            targetColId = colEntry[0];
-                        } else {
-                            const noColorEntry = Object.entries(newCols).find(([_, c]) => !c.color);
-                            targetColId = noColorEntry ? noColorEntry[0] : prevState.order[0];
+                        if (color && color !== 'yellow') {
+                            const colEntry = Object.entries(newCols).find(([_, c]) => c.color === color);
+                            if (colEntry) {
+                                targetColId = colEntry[0];
+                            }
                         }
                     } else {
                         targetColId = prevState.order[0];

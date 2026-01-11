@@ -77,8 +77,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
 
     const handleInteraction = useCallback((e, globalIndex) => {
         e.stopPropagation();
-        e.stopPropagation();
-        if (isReadingMode || activeTool === 'pen') return;
+        if (isReadingMode || activeTool === 'pen' || isTextMarkerMode) return;
         if (activeTool === 'split') {
             onEditMode(word, wordKey, syllables);
             return;
@@ -111,7 +110,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                 toggleHighlights(wordIndices);
             }
         }
-    }, [isReadingMode, activeTool, activeColor, settings.smartSelection, word, wordKey, syllables, startIndex, onEditMode, toggleHidden, toggleHighlights]);
+    }, [isReadingMode, activeTool, activeColor, isTextMarkerMode, settings.smartSelection, word, wordKey, syllables, startIndex, onEditMode, toggleHidden, toggleHighlights]);
 
     const showSyllables = (settings.displayTrigger === 'always' || (isHighlighted && settings.displayTrigger === 'click') || isGrouped) && settings.visualType !== 'none';
     let cursorClass = isReadingMode ? 'cursor-default' : (activeTool === 'split' ? 'cursor-alias' : (activeTool === 'blur' ? 'cursor-not-allowed' : 'cursor-pointer'));
@@ -286,8 +285,8 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
     const markerClass = `${markerBase} ${markerBorder}`;
     const markerStyle = (showFrame || isColorMarked)
         ? ((!showFrame && isColorMarked)
-            ? { paddingTop: '0', paddingBottom: '0.05em', paddingLeft: '0', paddingRight: '0', marginBottom: '-0.05em', marginTop: '0' }
-            : { paddingTop: '0.02em', paddingBottom: '0.05em', paddingLeft: '0.15em', paddingRight: '0.15em' }
+            ? { paddingTop: '0.05em', paddingBottom: '0.15em', paddingLeft: '0', paddingRight: '0', marginBottom: '-0.15em', marginTop: '-0.05em' }
+            : { paddingTop: '0.05em', paddingBottom: '0.05em', paddingLeft: '0.15em', paddingRight: '0.15em' }
         ) : {};
     const backgroundColor = isColorMarked ? firstCharColor : 'transparent';
 
@@ -321,7 +320,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                         if (onMouseDown) onMouseDown(startIndex, e);
                     }
                 }}
-                onClick={(e) => !isReadingMode && !isTextMarkerMode && activeTool !== 'pen' && (activeTool === 'split' || activeTool === 'blur' || activeColor !== 'yellow') && handleInteraction(e)}
+                onClick={(e) => !isReadingMode && !isTextMarkerMode && activeTool !== 'pen' && (activeTool === 'split' || activeTool === 'blur' || activeColor !== 'yellow') ? handleInteraction(e) : null}
             >
                 <span
                     className={`inline-block ${markerClass} ${isNeutralMarked ? '' : ''} ${isSelection && !isNeutralMarked ? 'animate-pulse bg-slate-100 rounded-lg' : ''}`}
@@ -387,10 +386,10 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                                     }
                                 }}
                                 onClick={(e) => {
-                                    // Prevent highlighting in Marker/Pen modes
-                                    if (isTextMarkerMode || activeTool === 'pen') return;
-                                    if (activeTool || !isReadingMode) handleInteraction(e, globalIndex);
-                                }} // Char Click
+                                    // Prevent highlighting in Marker/Pen/Reading modes
+                                    if (isTextMarkerMode || activeTool === 'pen' || isReadingMode) return;
+                                    handleInteraction(e, globalIndex);
+                                }}
                                 className={`${charClassName} ${rounded} ${shouldHideLetter ? 'blur-letter' : ''}`}
                                 style={charStyle}
                                 onMouseEnter={(e) => {
@@ -446,7 +445,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                     if (onMouseDown) onMouseDown(startIndex, e);
                 }
             }}
-            onClick={(e) => !isReadingMode && (activeTool === 'split' || activeTool === 'blur' || activeColor !== 'yellow' || ['light_blue', 'silben', 'none'].includes(settings.clickAction)) && handleInteraction(e)}
+            onClick={(e) => !isReadingMode && !isTextMarkerMode && activeTool !== 'pen' && (activeTool === 'split' || activeTool === 'blur' || activeColor !== 'yellow') ? handleInteraction(e) : null}
         >
             {renderPrefix()}
             <span className={`inline-flex items-baseline ${markerClass} ${isSelection && !isNeutralMarked ? 'animate-pulse bg-slate-100 rounded-lg' : ''}`} style={{ backgroundColor: 'transparent', marginLeft: isNeutralMarked ? '0.05em' : '0', marginRight: isNeutralMarked ? '0.05em' : '0', ...markerStyle }}>
@@ -510,9 +509,9 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                                                 }
                                             }}
                                             onClick={(e) => {
-                                                // Prevent highlighting in Marker/Pen modes
-                                                if (isTextMarkerMode || activeTool === 'pen') return;
-                                                if (activeTool || !isReadingMode) handleInteraction(e, globalIndex);
+                                                // Prevent highlighting in Marker/Pen/Reading modes
+                                                if (isTextMarkerMode || activeTool === 'pen' || isReadingMode) return;
+                                                handleInteraction(e, globalIndex);
                                             }}
                                             className={`${customClasses} ${rounded} inline-block leading-none ${shouldHideLetter ? 'blur-letter' : ''}`}
                                             style={style}

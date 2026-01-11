@@ -562,7 +562,7 @@ const App = () => {
             }
             return next;
         });
-    }, [isGrouping, handleGrouping, activeTool]);
+    }, [isGrouping, handleGrouping, activeTool, wordGroups]);
     const toggleHidden = useCallback((key) => {
         setHiddenIndices(prev => { const next = new Set(prev); if (next.has(key)) next.delete(key); else next.add(key); return next; });
     }, []);
@@ -765,6 +765,7 @@ const App = () => {
                         setHighlightedIndices(new Set());
                         setWordColors({});
                         setWordDrawings({}); // FIX: Clear Drawings too
+                        setWordGroups([]); // FIX: Clear Groups too
                         setIsTextMarkerMode(false);
                         setActiveTool(null); // FIX: Do not switch to 'read' mode, go to Hand mode
                         setActiveColor('neutral');
@@ -1112,8 +1113,8 @@ const App = () => {
                     {activeView === 'sentenceshuffle' && <SentenceShuffleView text={text} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Schüttelsätze" />}
                     {activeView === 'staircase' && <StaircaseView words={hasMarkings ? exerciseWords.map(w => ({ ...w, isHighlighted: highlightedIndices.has(w.index) })) : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Treppenwörter" />}
                     {activeView === 'split' && <SplitExerciseView words={hasMarkings ? exerciseWords : []} onClose={() => setActiveView('text')} settings={settings} setSettings={setSettings} title="Wörter trennen" />}
-                    {activeView === 'gapWords' && <GapWordsView words={hasMarkings ? exerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Lückenwörter" />}
-                    {activeView === 'initialSound' && <GapWordsView words={hasMarkings ? exerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} isInitialSound={true} title="Anfangsbuchstaben finden" />}
+                    {activeView === 'gapWords' && <GapWordsView words={hasMarkings ? exerciseWords : []} highlightedIndices={highlightedIndices} wordColors={wordColors} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Lückenwörter" />}
+                    {activeView === 'initialSound' && <GapWordsView words={hasMarkings ? exerciseWords : []} highlightedIndices={highlightedIndices} wordColors={wordColors} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} isInitialSound={true} title="Anfangsbuchstaben finden" />}
                     {activeView === 'gapSentences' && <GapSentencesView text={text} highlightedIndices={highlightedIndices} wordColors={wordColors} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Lückensätze" />}
                     {activeView === 'gapText' && <GapTextView text={text} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Lückentext" />}
                     {activeView === 'caseExercise' && <CaseExerciseView text={text} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Groß-/Kleinschreibung" />}
@@ -1144,7 +1145,6 @@ const App = () => {
                 manualCorrections: Object.keys(manualCorrections).length > 0 ? manualCorrections : undefined,
                 textCorrections: Object.keys(textCorrections).length > 0 ? textCorrections : undefined,
                 columnsState: Object.keys(columnsState.cols).length > 0 ? columnsState : undefined,
-                wordColors: Object.keys(wordColors).length > 0 ? wordColors : undefined,
                 wordColors: Object.keys(wordColors).length > 0 ? wordColors : undefined,
                 colorPalette: JSON.stringify(colorPalette) !== JSON.stringify(['#3b82f6', '#a855f7', '#ef4444', '#f97316', '#22c55e']) ? colorPalette : undefined,
                 wordDrawings: Object.keys(wordDrawings).length > 0 ? wordDrawings : undefined

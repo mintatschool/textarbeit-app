@@ -330,7 +330,7 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
         }
         return (
             <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col items-center justify-center p-6">
-                <EmptyStateMessage onClose={onClose} secondStepText="Sätze oder Wörter markieren." />
+                <EmptyStateMessage onClose={onClose} firstStepText="Grauen Kasten anklicken!" />
             </div>
         );
     }

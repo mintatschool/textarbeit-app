@@ -79,6 +79,7 @@ export const TwoPartPuzzleLayout = ({
     setScale,
     setIsDragging,
     advanceToNextStage,
+    handleNextItem,
 
     // Props
     onClose,
@@ -97,7 +98,9 @@ export const TwoPartPuzzleLayout = ({
     emptyHint = "Bitte markiere passende Wörter.",
     allCompleteMessage = "Alle geschafft!",
     stageCompleteMessage = "Level geschafft!",
-    activeColor // Added activeColor prop
+    activeColor, // Added activeColor prop
+    hideSpeakerToggle = false,
+    manualAdvance = false
 }) => {
     const getTextPadding = (type) => {
         // Start pieces (Knob/Arrow on Right) -> Need Padding Right to shift text Left
@@ -143,8 +146,8 @@ export const TwoPartPuzzleLayout = ({
     }
 
     // Stage/All complete overlay
-    if (gameStatus === 'stage-complete' || gameStatus === 'all-complete') {
-        const isAllDone = gameStatus === 'all-complete';
+    if (gameStatus === 'all-complete') {
+        const isAllDone = true;
         return (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-md">
                 <div className="bg-white rounded-[3rem] shadow-2xl p-10 max-w-sm w-full flex flex-col items-center text-center animate-in zoom-in duration-300 relative overflow-hidden">
@@ -194,11 +197,11 @@ export const TwoPartPuzzleLayout = ({
                         <span className="text-xl font-bold text-slate-800 hidden md:inline">{title}</span>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 overflow-x-auto max-w-[200px] md:max-w-md no-scrollbar py-2 px-1">
                         {gameState.stages.map((_, idx) => (
                             <div
                                 key={idx}
-                                className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-all ${gameState.currentStageIndex === idx
+                                className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-all shrink-0 ${gameState.currentStageIndex === idx
                                     ? 'bg-blue-600 text-white scale-110 shadow-md'
                                     : idx < gameState.currentStageIndex
                                         ? 'bg-emerald-500 text-white'
@@ -213,13 +216,15 @@ export const TwoPartPuzzleLayout = ({
 
                 <div className="flex items-center gap-4">
                     {/* Audio Toggle */}
-                    <button
-                        onClick={() => setAudioEnabled(!audioEnabled)}
-                        className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${audioEnabled ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-400'}`}
-                        title={audioEnabled ? 'Audio an' : 'Audio aus'}
-                    >
-                        {audioEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
-                    </button>
+                    {!hideSpeakerToggle && (
+                        <button
+                            onClick={() => setAudioEnabled(!audioEnabled)}
+                            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${audioEnabled ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-400'}`}
+                            title={audioEnabled ? 'Audio an' : 'Audio aus'}
+                        >
+                            {audioEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
+                        </button>
+                    )}
 
                     {/* Mode Selector */}
                     <div className="flex items-center gap-2 bg-slate-100/80 p-1.5 rounded-[1.25rem] border border-slate-200 hidden md:flex">
@@ -403,28 +408,42 @@ export const TwoPartPuzzleLayout = ({
                                     })}
                                 </div>
 
-                                {/* Audio Button & Checkmark - Standardized Group */}
-                                <div className="relative flex items-center shrink-0">
-                                    {audioEnabled && (
-                                        <button
-                                            onClick={() => onSpeak && currentTargetItem && onSpeak(currentTargetItem)}
-                                            className="w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all ring-4 ring-white/50 shrink-0 z-10"
-                                            title="Anhören"
-                                        >
-                                            <Volume2 className="w-7 h-7" />
-                                        </button>
-                                    )}
+                                {/* Success Checkmark & Audio Group */}
+                                <div className="flex flex-col items-center gap-4 ml-6">
+                                    <div className="flex items-center gap-5">
+                                        {/* Speaker */}
+                                        {audioEnabled && (
+                                            <button
+                                                onClick={() => onSpeak && currentTargetItem && onSpeak(currentTargetItem)}
+                                                className="w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all ring-4 ring-white/50 shrink-0 z-10"
+                                                title="Anhören"
+                                            >
+                                                <Volume2 className="w-7 h-7" />
+                                            </button>
+                                        )}
 
-                                    {/* Success Checkmark - Postioned exactly 20px to the right of the speaker */}
-                                    <div className={`
-                                        absolute left-full transition-all duration-500 ease-out z-30 pointer-events-none flex items-center
-                                        ${showSuccess ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}
-                                    `} style={{ paddingLeft: '20px' }}>
-                                        <CheckCircle2
-                                            className="text-green-500 drop-shadow-2xl"
-                                            style={{ width: '56px', height: '56px' }}
-                                        />
+                                        {/* Checkmark - Flex Item for reliable alignment */}
+                                        <div className={`transition-all duration-500 ease-out flex items-center
+                                                ${showSuccess ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}
+                                            `}>
+                                            <CheckCircle2
+                                                className="text-green-500 drop-shadow-2xl"
+                                                style={{ width: '56px', height: '56px' }}
+                                            />
+                                        </div>
                                     </div>
+
+                                    {/* Manual Advance Button - Below Speaker/Checkmark */}
+                                    {manualAdvance && showSuccess && (
+                                        <div className="animate-in slide-in-from-top-4 duration-300 mt-6">
+                                            <button
+                                                onClick={handleNextItem}
+                                                className="bg-blue-600 hover:bg-blue-700 text-white pl-6 pr-4 py-3 rounded-2xl font-bold shadow-xl text-lg hover:scale-105 transition-all flex items-center gap-2 ring-4 ring-white/50 whitespace-nowrap"
+                                            >
+                                                Weiter <ChevronRight size={24} />
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
