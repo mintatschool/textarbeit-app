@@ -145,6 +145,15 @@ export const useTwoPartPuzzle = ({
             return (sumA % 7) - (sumB % 7) || (a.id || '').localeCompare(b.id || '');
         });
 
+        console.log("useTwoPartPuzzle setupCurrentWord:", {
+            stageIndex: gameState.currentStageIndex,
+            targetIdx,
+            currentItem,
+            leftPiecesCount: leftPieces.length,
+            rightPiecesCount: rightPieces.length,
+            allPiecesCount: allPieces.length
+        });
+
         setScrambledPieces(allPieces);
     }, [gameState.currentStageIndex, gameState.gameStatus, gameState.stages, gameState.gameMode, leftType, rightType]);
 

@@ -471,57 +471,51 @@ export const FindLettersView = ({ text, settings, setSettings, onClose, title })
                     <div className="absolute inset-0 z-20 bg-black/20 backdrop-blur-[1px] transition-opacity" onClick={() => setShowSelection(false)}></div>
                 )}
 
-                <div className="flex-1 flex flex-col relative z-10 w-full bg-slate-50/50">
-                    <div className="flex-1 overflow-y-auto custom-scroll p-0 flex justify-start w-full relative">
-                        <div className="w-full pt-24 pb-24 relative flex items-start transition-all">
-                            {/* Selected Indicator - Sticky Left Column */}
-                            <div className="sticky top-0 shrink-0 z-0 select-none pl-10">
-                                <div
-                                    className={`text-[7rem] md:text-[10rem] font-black transition-all duration-300 leading-none flex items-baseline ${flashMode === 'wrong' ? 'animate-shake' : ''
-                                        }`}
-                                    style={{ fontFamily: settings.fontFamily }}
-                                >
-                                    {(() => {
-                                        if (!selectedTarget) return null;
-                                        const parts = selectedTarget.label.split(' ');
-                                        // Case 1: Single part (e.g. "ie" or just "A" if strict mode)
-                                        // Actually our logic produces "A a" or "Ch ch" or just "ie"
-
-                                        if (parts.length === 1) {
-                                            return (
-                                                <span className={`transition-all duration-300 ${flashMode === 'correct-lower' || flashMode === 'correct-upper' ? 'text-green-500 scale-105' :
-                                                    flashMode === 'wrong' ? 'text-red-500' : 'text-slate-600'
-                                                    }`}>
-                                                    {parts[0]}
-                                                </span>
-                                            );
-                                        }
-
-                                        // Case 2: Two parts (Upper Lower)
+                <div className="flex-1 flex flex-col relative z-10 w-full overflow-hidden bg-slate-50/50">
+                    <div className="flex-1 flex overflow-hidden">
+                        {/* Selected Indicator - Fixed Left Column */}
+                        <div className="shrink-0 bg-white/40 border-r border-slate-100 flex flex-col items-center pt-12 px-12 z-10">
+                            <div
+                                className={`text-[7rem] md:text-[10rem] font-black transition-all duration-300 leading-none flex items-baseline ${flashMode === 'wrong' ? 'animate-shake' : ''
+                                    }`}
+                                style={{ fontFamily: settings.fontFamily }}
+                            >
+                                {(() => {
+                                    if (!selectedTarget) return null;
+                                    const parts = selectedTarget.label.split(' ');
+                                    if (parts.length === 1) {
                                         return (
-                                            <>
-                                                <span className={`transition-all duration-300 ${flashMode === 'correct-upper' ? 'text-green-500 scale-105' :
-                                                    flashMode === 'wrong' ? 'text-red-500' : 'text-slate-600'
-                                                    }`}>
-                                                    {parts[0]}
-                                                </span>
-                                                <span className="whitespace-pre"> </span>
-                                                <span className={`transition-all duration-300 ${flashMode === 'correct-lower' ? 'text-green-500 scale-105' :
-                                                    flashMode === 'wrong' ? 'text-red-500' : 'text-slate-600'
-                                                    }`}>
-                                                    {parts[1]}
-                                                </span>
-                                            </>
+                                            <span className={`inline-block transition-all duration-300 ${flashMode && flashMode.startsWith('correct') ? 'text-green-500 scale-125' :
+                                                flashMode === 'wrong' ? 'text-red-500' : 'text-slate-600'
+                                                }`}>
+                                                {parts[0]}
+                                            </span>
                                         );
-                                    })()}
-                                    &nbsp;&nbsp;&nbsp;
-                                </div>
+                                    }
+                                    return (
+                                        <>
+                                            <span className={`inline-block transition-all duration-300 ${flashMode === 'correct-upper' ? 'text-green-500 scale-125' :
+                                                flashMode === 'wrong' ? 'text-red-500' : 'text-slate-600'
+                                                }`}>
+                                                {parts[0]}
+                                            </span>
+                                            <span className="whitespace-pre"> </span>
+                                            <span className={`inline-block transition-all duration-300 ${flashMode === 'correct-lower' ? 'text-green-500 scale-125' :
+                                                flashMode === 'wrong' ? 'text-red-500' : 'text-slate-600'
+                                                }`}>
+                                                {parts[1]}
+                                            </span>
+                                        </>
+                                    );
+                                })()}
                             </div>
+                        </div>
 
-                            <div className="flex-1 relative">
+                        {/* Words Area - Scrollable */}
+                        <div className="flex-1 overflow-y-auto custom-scroll w-full relative h-full">
+                            <div className="w-full pt-12 pb-24 px-12 transition-all">
                                 <div className={`flex flex-wrap items-baseline content-start ${settings.centerText ? 'justify-center' : 'justify-start'}`} style={{ lineHeight: settings.lineHeight, fontFamily: settings.fontFamily }}>
                                     {(() => {
-                                        // Optimization: Calculate settings once for the loop
                                         const activeClustersRaw = settings.clusters && settings.clusters.length > 0 ? settings.clusters : DEFAULT_CLUSTERS;
                                         const activeClustersLower = activeClustersRaw.map(c => c.toLowerCase());
                                         const wordSettings = {
@@ -552,8 +546,8 @@ export const FindLettersView = ({ text, settings, setSettings, onClose, title })
                                                     toggleHighlights={handleToggleHighlights}
                                                     toggleHidden={() => { }}
                                                     activeTool={null}
-                                                    activeColor="yellow" // Force Yellow Mode Trigger
-                                                    settings={wordSettings} // Use robust settings object
+                                                    activeColor="yellow"
+                                                    settings={wordSettings}
                                                     manualSyllables={item.syllables}
                                                     hyphenator={hyphenator}
                                                     onEditMode={() => { }}

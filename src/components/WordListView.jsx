@@ -1,12 +1,31 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Icons } from './Icons';
 import { EmptyStateMessage } from './EmptyStateMessage';
+import { WordListCell } from './WordListCell';
 
-export const WordListView = ({ words, columnsState, setColumnsState, onClose, settings, setSettings, onRemoveWord, onWordUpdate, wordColors = {}, colorHeaders = {}, setColorHeaders, colorPalette = [], title, groups = [], sortByColor, setSortByColor, columnCount, setColumnCount, updateTimestamp }) => {
-    if (!words || words.length === 0) return (<div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans"><EmptyStateMessage onClose={onClose} /></div>);
+export const WordListView = ({ words, columnsState, setColumnsState, onClose, settings, setSettings, onRemoveWord, onWordUpdate, wordColors = {}, colorHeaders = {}, setColorHeaders, colorPalette = [], title, groups = [], sortByColor, setSortByColor, columnCount, setColumnCount, updateTimestamp, activeColor, isTextMarkerMode, onToggleLetterMarker, toggleHighlights, highlightedIndices }) => {
+    if (!words || words.length === 0) return (<div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col items-center justify-center modal-animate font-sans"><EmptyStateMessage onClose={onClose} /></div>);
     const [isDragging, setIsDragging] = useState(false);
     const dragItemRef = useRef(null);
     const prevWordsProp = useRef(null);
+
+    const [interactionMode, setInteractionMode] = useState('case');
+    const [showSortAlert, setShowSortAlert] = useState(false);
+
+    // Sync interactionMode if activeColor/isTextMarkerMode changes from outside (Toolbar)
+    useEffect(() => {
+        if (!isTextMarkerMode && activeColor === 'yellow') {
+            setInteractionMode('mark');
+        }
+    }, [activeColor, isTextMarkerMode]);
+
+    // Alert auto-hide
+    useEffect(() => {
+        if (showSortAlert) {
+            const timer = setTimeout(() => setShowSortAlert(false), 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [showSortAlert]);
 
     // iPad Fix: Prevent touch scrolling during drag
     useEffect(() => {
@@ -55,19 +74,36 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                         isGroup: true,
                         syllables: groupMembers.flatMap((m, idx) => {
                             const rawSyls = m.syllables || [m.word];
-                            const mapped = rawSyls.map(s => ({ text: s, sourceId: m.id, sourceWord: m.word }));
-                            return idx < groupMembers.length - 1 ? [...mapped, { text: ' ', isSpace: true }] : mapped;
+                            let currentPos = m.index;
+                            const mapped = rawSyls.map(s => {
+                                const item = { text: s, sourceId: m.id, sourceWord: m.word, absStartIndex: currentPos };
+                                currentPos += s.length;
+                                return item;
+                            });
+                            return idx < groupMembers.length - 1 ? [...mapped, { text: ' ', isSpace: true, absStartIndex: currentPos++ }] : mapped;
                         })
                     };
                     group.ids.forEach(id => processedIndices.add(id));
                     result.push(compositeWord);
                 } else {
-                    const simpleW = { ...w, syllables: (w.syllables || [w.word]).map(s => ({ text: s, sourceId: w.id, sourceWord: w.word })) };
+                    const simpleW = {
+                        ...w, syllables: (w.syllables || [w.word]).reduce((acc, s) => {
+                            const start = acc.length > 0 ? acc[acc.length - 1].absStartIndex + acc[acc.length - 1].text.length : w.index;
+                            acc.push({ text: s, sourceId: w.id, sourceWord: w.word, absStartIndex: start });
+                            return acc;
+                        }, [])
+                    };
                     result.push(simpleW);
                     processedIndices.add(w.index);
                 }
             } else {
-                const simpleW = { ...w, syllables: (w.syllables || [w.word]).map(s => ({ text: s, sourceId: w.id, sourceWord: w.word })) };
+                const simpleW = {
+                    ...w, syllables: (w.syllables || [w.word]).reduce((acc, s) => {
+                        const start = acc.length > 0 ? acc[acc.length - 1].absStartIndex + acc[acc.length - 1].text.length : w.index;
+                        acc.push({ text: s, sourceId: w.id, sourceWord: w.word, absStartIndex: start });
+                        return acc;
+                    }, [])
+                };
                 result.push(simpleW);
                 processedIndices.add(w.index);
             }
@@ -333,8 +369,95 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
         handleDropOnItemLogic(targetColId, targetIndex);
     };
 
+    // Panning Logic (Mouse + Touch)
+    const containerRef = useRef(null);
+    const panningRef = useRef({ isPanning: false, startX: 0, startY: 0, scrollLeft: 0, scrollTop: 0 });
+
+    // Check if touch/click is on interactive element
+    const isInteractiveTarget = (target) => {
+        return target.closest('[draggable="true"]') || target.closest('button') || target.closest('input');
+    };
+
+    // Mouse handlers
+    const handlePanMouseDown = (e) => {
+        if (isInteractiveTarget(e.target)) return;
+
+        panningRef.current = {
+            isPanning: true,
+            startX: e.clientX,
+            startY: e.clientY,
+            scrollLeft: containerRef.current.scrollLeft,
+            scrollTop: containerRef.current.scrollTop
+        };
+        document.body.style.cursor = 'grabbing';
+    };
+
+    const handlePanMouseMove = (e) => {
+        if (!panningRef.current.isPanning) return;
+        e.preventDefault();
+
+        const x = e.clientX;
+        const y = e.clientY;
+        const walkX = (x - panningRef.current.startX) * 1.5;
+        const walkY = (y - panningRef.current.startY) * 1.5;
+
+        if (containerRef.current) {
+            containerRef.current.scrollLeft = panningRef.current.scrollLeft - walkX;
+            containerRef.current.scrollTop = panningRef.current.scrollTop - walkY;
+        }
+    };
+
+    const handlePanMouseUp = () => {
+        panningRef.current.isPanning = false;
+        document.body.style.cursor = '';
+    };
+
+    // Touch handlers for tablet/mobile
+    const handleTouchStart = (e) => {
+        // Only handle single touch for scrolling
+        if (e.touches.length !== 1) return;
+        if (isInteractiveTarget(e.target)) return;
+
+        const touch = e.touches[0];
+        panningRef.current = {
+            isPanning: true,
+            startX: touch.clientX,
+            startY: touch.clientY,
+            scrollLeft: containerRef.current.scrollLeft,
+            scrollTop: containerRef.current.scrollTop
+        };
+    };
+
+    const handleTouchMove = (e) => {
+        if (!panningRef.current.isPanning || e.touches.length !== 1) return;
+
+        const touch = e.touches[0];
+        const walkX = (touch.clientX - panningRef.current.startX) * 1.2;
+        const walkY = (touch.clientY - panningRef.current.startY) * 1.2;
+
+        if (containerRef.current) {
+            containerRef.current.scrollLeft = panningRef.current.scrollLeft - walkX;
+            containerRef.current.scrollTop = panningRef.current.scrollTop - walkY;
+        }
+    };
+
+    const handleTouchEnd = () => {
+        panningRef.current.isPanning = false;
+    };
+
+    useEffect(() => {
+        const mouseUpHandler = () => handlePanMouseUp();
+        const touchEndHandler = () => handleTouchEnd();
+        window.addEventListener('mouseup', mouseUpHandler);
+        window.addEventListener('touchend', touchEndHandler);
+        return () => {
+            window.removeEventListener('mouseup', mouseUpHandler);
+            window.removeEventListener('touchend', touchEndHandler);
+        };
+    }, []);
+
     return (
-        <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans print-content">
+        <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans print-content overflow-hidden">
             <div className="bg-white px-6 py-4 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center z-10 shrink-0 no-print">
                 <div className="flex items-center gap-6 w-full md:w-auto justify-between md:justify-start">
                     <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
@@ -351,14 +474,62 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                         </div>
                     </div>
 
+                    {/* INTERACTION MODE TOGGLE (Case Toggle vs Letter Marker) */}
+                    <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                        <button
+                            onClick={() => {
+                                setInteractionMode('case');
+                                if (activeColor === 'yellow' && !isTextMarkerMode) {
+                                    onToggleLetterMarker(); // Toggle OFF if it was yellow
+                                }
+                            }}
+                            className={`w-12 h-10 flex items-center justify-center rounded-lg transition-all ${interactionMode === 'case' ? 'bg-white shadow-sm ring-1 ring-slate-200' : 'text-slate-500 hover:bg-white/50'}`}
+                            title="ersten Buchstaben ändern"
+                        >
+                            <Icons.LetterCaseToggle size={28} className={interactionMode === 'case' ? 'text-blue-600' : 'text-slate-400'} />
+                        </button>
+
+                        <button
+                            onClick={() => {
+                                setInteractionMode('mark');
+                                if (!(activeColor === 'yellow' && !isTextMarkerMode)) {
+                                    onToggleLetterMarker(); // Toggle ON if it wasn't yellow
+                                }
+                            }}
+                            className={`w-12 h-10 flex items-center justify-center rounded-lg transition-all ${interactionMode === 'mark' ? 'bg-white shadow-sm ring-1 ring-slate-200' : 'text-slate-500 hover:bg-white/50'}`}
+                            title="Buchstaben markieren"
+                        >
+                            <Icons.LetterMarker size={28} className={interactionMode === 'mark' ? 'text-slate-500' : 'text-slate-400'} />
+                        </button>
+                    </div>
+
                     {/* SORT BY COLOR TOGGLE */}
-                    <button
-                        onClick={() => setSortByColor(!sortByColor)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold transition-all ${sortByColor ? 'bg-indigo-100 text-indigo-700 shadow-inner' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-                    >
-                        <Icons.Palette size={20} />
-                        nach Farben sortieren
-                    </button>
+                    <div className="relative">
+                        <button
+                            onClick={() => {
+                                if (!sortByColor) {
+                                    const hasSortableColors = wordColors && Object.values(wordColors).some(v => v && v !== 'yellow');
+                                    if (!hasSortableColors) {
+                                        setShowSortAlert(true);
+                                        return;
+                                    }
+                                }
+                                setSortByColor(!sortByColor);
+                            }}
+                            className={`flex items-center gap-2 px-4 h-12 rounded-xl font-bold transition-all text-sm min-touch-target ${sortByColor ? 'bg-indigo-100 text-indigo-700 shadow-inner' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                            title="für jede Farbe eine Spalte erzeugen"
+                        >
+                            <Icons.Palette size={20} />
+                            nach Farben sortieren
+                        </button>
+
+                        {showSortAlert && (
+                            <div className="absolute top-full left-0 right-0 mt-2 bg-slate-800 text-white text-[10px] px-2 py-1.5 rounded shadow-lg z-50 text-center whitespace-nowrap">
+                                Keine Wörter farbig markiert
+                                <div className="absolute -top-1 left-1/2 -translate-x-1/2 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[6px] border-b-slate-800"></div>
+                            </div>
+                        )}
+                    </div>
 
                 </div>
                 <div className="flex items-center gap-4 ml-auto">
@@ -372,8 +543,18 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                     </button>
                 </div>
             </div>
-            <div className="flex-1 overflow-x-auto overflow-y-hidden p-6 custom-scroll">
-                <div className={`flex gap-6 h-full transition-all duration-300 ${!sortByColor && columnCount === 1 ? 'w-1/2 min-w-[350px] mr-auto' : 'min-w-full'}`} style={{ width: (!sortByColor && columnCount === 1) ? undefined : `${Math.max(100, columnsState.order.length * 300)}px` }}>
+            <div
+                ref={containerRef}
+                className="flex-1 overflow-auto p-6 custom-scroll cursor-grab active:cursor-grabbing"
+                style={{ height: '100%', minHeight: 0 }}
+                onMouseDown={handlePanMouseDown}
+                onMouseMove={handlePanMouseMove}
+                onMouseLeave={handlePanMouseUp}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+            >
+                <div className={`flex gap-6 min-h-full transition-all duration-300 ${!sortByColor && columnCount === 1 ? 'w-1/2 min-w-[350px] mr-auto' : 'min-w-full'}`} style={{ width: (!sortByColor && columnCount === 1) ? undefined : `${Math.max(100, columnsState.order.length * 300)}px` }}>
                     {columnsState.order.map(colId => {
                         const col = columnsState.cols[colId];
                         const resolvedBg = resolveColor(col.color);
@@ -381,13 +562,13 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                         const headerClass = sortByColor && col.color ? "p-3 rounded-t-xl shadow-sm text-center font-bold" : "p-3 border-b border-slate-100 bg-slate-50 rounded-t-xl cursor-grab active:cursor-grabbing hover:bg-slate-100 transition-colors";
 
                         return (
-                            <div key={colId} draggable={true} onDragStart={(e) => handleDragStart(e, 'column', colId)} onDragOver={handleDragOver} onDragLeave={handleDragLeaveCol} onDragEnter={handleDragEnterCol} onDrop={(e) => handleDropOnColumn(e, colId)} className="flex-1 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col min-w-[280px] h-full transition-colors group/col">
+                            <div key={colId} onDragOver={handleDragOver} onDragLeave={handleDragLeaveCol} onDragEnter={handleDragEnterCol} onDrop={(e) => handleDropOnColumn(e, colId)} className="flex-1 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col min-w-[280px] transition-colors group/col">
                                 {sortByColor ? (
-                                    <div className={headerClass} style={headerStyle}>
+                                    <div className={headerClass} style={headerStyle} draggable={true} onDragStart={(e) => handleDragStart(e, 'column', colId)}>
                                         <input
                                             type="text"
                                             placeholder="Titel..."
-                                            className="w-full bg-transparent font-bold placeholder:text-white/50 focus:outline-none text-center"
+                                            className="w-full bg-transparent font-bold placeholder:text-white/50 focus:outline-none text-center cursor-grab active:cursor-grabbing"
                                             style={{ color: 'white', fontFamily: settings.fontFamily, fontSize: `${settings.fontSize}px`, letterSpacing: '0.04em' }}
                                             value={col.title || ''}
                                             onChange={(e) => {
@@ -402,11 +583,11 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                                         />
                                     </div>
                                 ) : (
-                                    <div className={headerClass} title="Spalte verschieben">
+                                    <div className={headerClass} title="Spalte verschieben" draggable={true} onDragStart={(e) => handleDragStart(e, 'column', colId)}>
                                         <input
                                             type="text"
                                             placeholder="Titel eingeben..."
-                                            className="w-full bg-transparent font-bold text-slate-700 placeholder:text-slate-400 focus:outline-none text-center"
+                                            className="w-full bg-transparent font-bold text-slate-700 placeholder:text-slate-400 focus:outline-none text-center cursor-grab active:cursor-grabbing"
                                             style={{ fontFamily: settings.fontFamily, fontSize: `${settings.fontSize}px`, letterSpacing: '0.04em' }}
                                             value={col.title}
                                             onChange={(e) => { const newCols = { ...columnsState.cols, [colId]: { ...col, title: e.target.value } }; setColumnsState({ ...columnsState, cols: newCols }); }}
@@ -415,70 +596,26 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                                     </div>
                                 )}
 
-                                <div className="flex-1 overflow-y-auto p-3 space-y-2 custom-scroll min-h-[100px]">
+                                <div className="p-3 space-y-2">
                                     {col.items.map((word, idx) => (
-                                        <div key={word.id} draggable onDragStart={(e) => { e.stopPropagation(); handleDragStart(e, 'word', word, colId, idx); }} onDragEnd={handleDragEnd} onDrop={(e) => handleDropOnItem(e, colId, idx)} onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }} className="p-3 bg-white border border-slate-200 rounded-lg shadow-sm hover:shadow-md hover:border-blue-300 cursor-grab active:cursor-grabbing group relative select-none touch-action-none" style={{ fontFamily: settings.fontFamily, fontSize: `${settings.fontSize}px` }}>
-                                            <div className="text-center pointer-events-auto">
-                                                {word.syllables ? (
-                                                    <span className="inline-block whitespace-nowrap">
-                                                        {word.syllables.map((s, i) => {
-                                                            const isEven = i % 2 === 0;
-                                                            let styleClass = "";
-                                                            let textClass = "";
-
-                                                            // Handle Object
-                                                            const sylObj = (typeof s === 'object' && s !== null) ? s : { text: String(s || "") };
-                                                            const textContent = sylObj.text;
-
-                                                            if (sylObj.isSpace) {
-                                                                styleClass = "bg-transparent mx-1 border-none inline-block w-5"; // ADJUSTED SPACE
-                                                                textClass = "text-transparent select-none";
-                                                            } else if (settings.visualType === 'block') {
-                                                                styleClass = isEven ? 'bg-blue-100 border-blue-200' : 'bg-blue-200 border-blue-300';
-                                                                styleClass += " border rounded px-1 mx-[1px]";
-                                                            } else if (settings.visualType === 'black_gray') {
-                                                                textClass = isEven ? "text-black" : "text-gray-400";
-                                                            } else {
-                                                                textClass = isEven ? "text-blue-700" : "text-red-600";
-                                                            }
-
-                                                            return (
-                                                                <span key={i} className={`inline-block ${styleClass}`}>
-                                                                    {textContent.split('').map((char, cIdx) => (
-                                                                        <span
-                                                                            key={cIdx}
-                                                                            className={`${textClass} cursor-pointer hover:bg-slate-100 rounded px-px`}
-                                                                            onClick={(e) => {
-                                                                                if (cIdx === 0 && sylObj.sourceId && !sylObj.isSpace) {
-                                                                                    e.stopPropagation();
-                                                                                    const firstChar = sylObj.sourceWord.charAt(0);
-                                                                                    const isUpper = firstChar === firstChar.toUpperCase();
-                                                                                    const newWord = (isUpper ? firstChar.toLowerCase() : firstChar.toUpperCase()) + sylObj.sourceWord.slice(1);
-                                                                                    onWordUpdate(sylObj.sourceId, newWord);
-                                                                                } else if (i === 0 && cIdx === 0 && !sylObj.sourceId) {
-                                                                                    // fallback
-                                                                                    e.stopPropagation();
-                                                                                    const firstChar = word.word.charAt(0);
-                                                                                    const isUpper = firstChar === firstChar.toUpperCase();
-                                                                                    const newWord = (isUpper ? firstChar.toLowerCase() : firstChar.toUpperCase()) + word.word.slice(1);
-                                                                                    onWordUpdate(word.id, newWord);
-                                                                                }
-                                                                            }}
-                                                                        >
-                                                                            {char}
-                                                                        </span>
-                                                                    ))}
-                                                                    {settings.visualType === 'arc' && !sylObj.isSpace && (
-                                                                        <svg className="arc-svg pointer-events-none" viewBox="0 0 100 20" preserveAspectRatio="none" style={{ display: 'block', height: '0.2em', width: '100%', marginTop: '-0.1em' }}><path d="M 2 2 Q 50 20 98 2" fill="none" stroke={isEven ? '#2563eb' : '#dc2626'} strokeWidth="3" strokeLinecap="round" /></svg>
-                                                                    )}
-                                                                </span>
-                                                            );
-                                                        })}
-                                                    </span>
-                                                ) : word.word}
-                                            </div>
-                                            <button onClick={(e) => { e.stopPropagation(); onRemoveWord(word.id); }} className="absolute -top-2 -right-2 bg-red-100 text-red-500 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500 hover:text-white min-touch-target cursor-pointer z-20"><Icons.X size={14} /></button>
-                                        </div>
+                                        <WordListCell
+                                            key={word.id}
+                                            word={word}
+                                            colId={colId}
+                                            idx={idx}
+                                            settings={settings}
+                                            wordColors={wordColors}
+                                            interactionMode={interactionMode}
+                                            toggleHighlights={toggleHighlights}
+                                            onWordUpdate={onWordUpdate}
+                                            onRemoveWord={onRemoveWord}
+                                            draggables={{
+                                                onDragStart: handleDragStart,
+                                                onDragEnd: handleDragEnd,
+                                                onDrop: handleDropOnItem,
+                                                onDragOver: (e) => { e.preventDefault(); e.stopPropagation(); }
+                                            }}
+                                        />
                                     ))}
                                     <div className="h-12 border-2 border-dashed border-slate-100 rounded-lg flex items-center justify-center text-slate-300 text-sm italic hover:border-blue-200 transition-colors no-print">
                                         Hierhin ziehen

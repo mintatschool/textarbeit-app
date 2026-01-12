@@ -268,8 +268,6 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
     );
     // ---------------------
 
-    if (isHidden) return <span onClick={() => !isReadingMode && (activeTool === 'blur' || !activeTool) && toggleHidden(wordKey)} className={`blur-container transition-all ${cursorClass}`} style={wordSpacingStyle}><span className="blur-content" style={{ lineHeight: 1 }}>{prefix}{word}{suffix}</span></span>;
-
     const isColorMarked = firstCharColor !== 'transparent';
     const isNeutralMarked = (isHighlighted && !isColorMarked) || (isGrouped && !isColorMarked);
 
@@ -288,6 +286,30 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
             ? { paddingTop: '0.05em', paddingBottom: '0.15em', paddingLeft: '0', paddingRight: '0', marginBottom: '-0.15em', marginTop: '-0.05em' }
             : { paddingTop: '0.05em', paddingBottom: '0.05em', paddingLeft: '0.15em', paddingRight: '0.15em' }
         ) : {};
+
+    if (isHidden) {
+        return (
+            <span
+                onClick={() => !isReadingMode && (activeTool === 'blur' || !activeTool) && toggleHidden(wordKey)}
+                className={`blur-container transition-all ${cursorClass}`}
+                style={wordSpacingStyle}
+            >
+                <span
+                    className={`inline-block ${markerClass}`}
+                    style={{
+                        marginRight: showFrame ? '0.05em' : '0',
+                        marginLeft: showFrame ? '0.05em' : '0',
+                        ...markerStyle,
+                        borderColor: 'transparent',
+                        backgroundColor: 'transparent'
+                    }}
+                >
+                    <span className="blur-content" style={{ lineHeight: 1 }}>{prefix}{word}{suffix}</span>
+                </span>
+            </span>
+        );
+    }
+
     const backgroundColor = isColorMarked ? firstCharColor : 'transparent';
 
     // Unified Rendering - use when syllables shouldn't be shown OR when color marked (but NOT when neutral marked)
@@ -475,7 +497,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                                     let style = { paddingLeft: '0.02em', paddingRight: '0.02em' };
 
                                     if (isYellow) {
-                                        style = { backgroundColor: '#feffc7', paddingTop: '0.02em', paddingBottom: '0.18em', marginTop: '-0.02em', marginBottom: '-0.16em' };
+                                        style = { backgroundColor: '#feffc7', paddingTop: '0.02em', paddingBottom: '0.04em', marginTop: '-0.02em', marginBottom: '-0.02em' };
                                         customClasses += ' bg-yellow-100';
 
                                         const simpleLeft = wordColors && wordColors[globalIndex - 1] === 'yellow';

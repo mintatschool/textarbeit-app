@@ -53,7 +53,7 @@ const useHypherLoader = () => {
 
 const DEFAULT_SETTINGS = {
     fontSize: 48,
-    lineHeight: 1.1,
+    lineHeight: 1.2,
     wordSpacing: 0.3,
     visualType: 'block',
     displayTrigger: 'click',
@@ -68,7 +68,8 @@ const DEFAULT_SETTINGS = {
     textWidth: 83,
     letterSpacing: 0.05,
     reduceMenu: false,
-    clusters: ['sch', 'chs', 'ch', 'ck', 'ph', 'pf', 'th', 'qu', 'ei', 'ie', 'eu', 'au', 'äu', 'ai', 'sp', 'st']
+    clusters: ['sch', 'chs', 'ch', 'ck', 'ph', 'pf', 'th', 'qu', 'ei', 'ie', 'eu', 'au', 'äu', 'ai', 'sp', 'st'],
+    imageWidth: 15
 };
 
 const App = () => {
@@ -137,6 +138,57 @@ const App = () => {
     const [currentGroupSelection, setCurrentGroupSelection] = useState([]); // Array<number>
     const wordRefs = useRef({});
     const textContainerRef = useRef(null);
+
+    // Main Window Panning Logic
+    const mainScrollRef = useRef(null);
+    const mainPanningRef = useRef({ isPanning: false, startY: 0, scrollTop: 0 });
+
+    const handleMainPanMouseDown = (e) => {
+        // Allow panning only if not interacting with specific tools or elements
+        if (
+            e.target.closest('button') ||
+            e.target.closest('input') ||
+            e.target.closest('.cursor-pointer') ||
+            e.target.closest('.draggable-piece')
+        ) {
+            return;
+        }
+
+        // If TextMarker/Pen is active, we might want to prioritize that instead of panning?
+        // But user can pan by grabbing whitespace.
+        // Check if we hit a Word?
+        const isWord = e.target.closest('[data-component="word"]'); // assuming Word has this, or use class check
+        // Actually Word has 'cursor-pointer' usually?
+        // Let's rely on cursor-pointer check above which covers most clickable things.
+
+        mainPanningRef.current = {
+            isPanning: true,
+            startY: e.clientY,
+            scrollTop: mainScrollRef.current ? mainScrollRef.current.scrollTop : 0
+        };
+        document.body.style.cursor = 'grabbing';
+    };
+
+    const handleMainPanMouseMove = (e) => {
+        if (!mainPanningRef.current.isPanning || !mainScrollRef.current) return;
+        e.preventDefault();
+        const y = e.clientY;
+        const walkY = (y - mainPanningRef.current.startY) * 1.5; // 1.5x speed
+        mainScrollRef.current.scrollTop = mainPanningRef.current.scrollTop - walkY;
+    };
+
+    const handleMainPanMouseUp = () => {
+        if (mainPanningRef.current.isPanning) {
+            mainPanningRef.current.isPanning = false;
+            document.body.style.cursor = '';
+        }
+    };
+
+    // Attach Global MouseUp to catch release outside
+    useEffect(() => {
+        window.addEventListener('mouseup', handleMainPanMouseUp);
+        return () => window.removeEventListener('mouseup', handleMainPanMouseUp);
+    }, []);
 
     // Smart Text Update that shifts highlights
     const handleTextChange = (newText) => {
@@ -782,7 +834,11 @@ const App = () => {
                                     setWordColors(prev => {
                                         const next = { ...prev };
                                         currentGroupSelection.forEach(idx => {
-                                            next[idx] = activeColor;
+                                            if (activeColor === 'neutral') {
+                                                delete next[idx];
+                                            } else {
+                                                next[idx] = activeColor;
+                                            }
                                         });
                                         return next;
                                     });
@@ -890,7 +946,7 @@ const App = () => {
                                 </button>
                             </div>
                         </div>
-                        <textarea ref={textAreaRef} className="flex-1 w-full p-6 text-xl border-2 border-slate-200 rounded-2xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all resize-none shadow-inner bg-slate-50 leading-relaxed font-medium text-slate-700 placeholder:text-slate-400" placeholder="Füge hier deinen Text ein..." value={text} onChange={(e) => handleTextChange(e.target.value)} spellCheck={false} inputMode="text"></textarea>
+                        <textarea ref={textAreaRef} className="flex-1 w-full p-6 text-xl border-2 border-slate-200 rounded-2xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all resize-none shadow-inner bg-slate-50 leading-relaxed font-medium text-slate-700 placeholder:text-slate-400 custom-scroll" placeholder="Füge hier deinen Text ein..." value={text} onChange={(e) => handleTextChange(e.target.value)} spellCheck={false} inputMode="text"></textarea>
 
                         <div className="mt-6 flex flex-wrap gap-4 justify-between items-center">
                             <div className="flex gap-2">
@@ -999,7 +1055,13 @@ const App = () => {
             ) : (
                 <>
                     {activeView === 'text' && (
-                        <main className={`flex-1 pt-20 pb-4 md:pt-24 md:pb-8 px-4 md:px-8 outline-none print-content ${settings.lockScroll ? 'overflow-hidden touch-none' : 'overflow-y-auto custom-scroll'} pr-24 transition-all`} style={{ maxWidth: `100%` }}>
+                        <main
+                            ref={mainScrollRef}
+                            onMouseDown={handleMainPanMouseDown}
+                            onMouseMove={handleMainPanMouseMove}
+                            className={`flex-1 pt-20 pb-4 md:pt-24 md:pb-8 px-4 md:px-8 outline-none print-content ${settings.lockScroll ? 'overflow-hidden touch-none' : 'overflow-y-auto no-scrollbar'} pr-24 transition-all`}
+                            style={{ maxWidth: `100%` }}
+                        >
                             {/* Font Size Slider - Sticky Top Right */}
                             <div className="fixed top-2 right-28 z-40 bg-white/95 backdrop-blur-sm shadow-lg rounded-xl px-4 py-3 border border-slate-200 flex items-center gap-3">
                                 <span className="text-xs font-bold text-slate-500">A</span>
@@ -1016,6 +1078,23 @@ const App = () => {
                             </div>
 
                             <div ref={textContainerRef} className={`mx-auto w-full transition-all duration-300 relative ${isTextMarkerMode ? 'cursor-text' : ''}`} style={{ maxWidth: `${settings.textWidth}%` }}>
+
+                                {logo && (
+                                    <img
+                                        src={logo}
+                                        alt="Eigenes Bild"
+                                        style={{
+                                            width: `${settings.imageWidth || 15}vw`,
+                                            maxHeight: '40vh',
+                                            float: 'left',
+                                            marginRight: '4rem',
+                                            marginBottom: '1rem',
+                                            clear: 'left'
+                                        }}
+                                        className="object-contain rounded-xl shadow-sm"
+                                    />
+                                )}
+
                                 {/* Connection Overlay */}
                                 <ConnectionOverlay
                                     groups={wordGroups}
@@ -1023,14 +1102,13 @@ const App = () => {
                                     containerRef={textContainerRef}
                                     currentSelection={[...currentGroupSelection].sort((a, b) => a - b)}
                                 />
-                                <div className={`flex flex-wrap items-baseline content-start ${settings.centerText ? 'justify-center' : 'justify-start'}`} style={{ fontFamily: settings.fontFamily, fontSize: `${settings.fontSize}px`, rowGap: `${(settings.lineHeight - 1)}em` }}>
+                                <div className={`block ${settings.centerText ? 'text-center' : 'text-left'}`} style={{ fontFamily: settings.fontFamily, fontSize: `${settings.fontSize}px`, lineHeight: settings.lineHeight }}>
                                     {processedWords.map((item, idx) => {
                                         if (item.type === 'newline') {
                                             // Scale height with number of newlines. count 1 = just a jump, count 2 = one empty line, etc.
-                                            // We use lineHeight as a multiplier to stay consistent with text spacing.
-                                            // Adjusted factor to 1.0 (down from 1.2) to balance visibility.
+                                            // In block layout, we remove flex classes and use a simple block.
                                             const newlineHeight = item.count > 1 ? (item.count - 1) * settings.lineHeight * 1.0 : 0;
-                                            return <div key={item.id} className="w-full basis-full" style={{ height: `${newlineHeight}em` }}></div>;
+                                            return <div key={item.id} style={{ height: `${newlineHeight}em`, width: '100%' }}></div>;
                                         }
                                         if (item.type === 'space') {
                                             return <Space key={item.id} {...item} isTextMarkerMode={isTextMarkerMode || activeTool === 'pen'} isReadingMode={activeTool === 'read'} color={wordColors[item.index]} colorPalette={colorPalette} wordSpacing={settings.wordSpacing} letterSpacing={settings.letterSpacing} fontSize={settings.fontSize} onMouseDown={(idx) => { isPaintActive.current = true; dragStartIndex.current = idx; lastPaintedIndex.current = idx; }} onMouseEnter={(idx, e) => { if (isPaintActive.current || (e && e.buttons === 1)) handlePaint(idx); }} />;
@@ -1158,6 +1236,20 @@ const App = () => {
                         setSortByColor={setWordListSortByColor}
                         columnCount={wordListColumnCount}
                         setColumnCount={setWordListColumnCount}
+                        // New Props for UI Enhancements
+                        activeColor={activeColor}
+                        isTextMarkerMode={isTextMarkerMode}
+                        onToggleLetterMarker={() => {
+                            if (activeColor === 'yellow' && !isTextMarkerMode) {
+                                setActiveColor('neutral');
+                            } else {
+                                setActiveColor('yellow');
+                                setIsTextMarkerMode(false);
+                                if (activeTool === 'pen') setActiveTool(null);
+                            }
+                        }}
+                        toggleHighlights={toggleHighlights}
+                        highlightedIndices={highlightedIndices}
                         onWordUpdate={(wordId, newText) => {
                             console.log("onWordUpdate triggered:", wordId, newText);
                             const index = parseInt(wordId.replace('word_', ''), 10);

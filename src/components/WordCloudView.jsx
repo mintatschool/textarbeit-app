@@ -5,7 +5,7 @@ import { getChunks } from '../utils/syllables';
 import { speak } from '../utils/speech';
 
 export const WordCloudView = ({ words, settings, setSettings, onClose, title }) => {
-    if (!words || words.length === 0) return (<div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans"><EmptyStateMessage onClose={onClose} /></div>);
+    if (!words || words.length === 0) return (<div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col items-center justify-center modal-animate font-sans"><EmptyStateMessage onClose={onClose} /></div>);
     const [cloudWords, setCloudWords] = useState([]);
     const [placedChunks, setPlacedChunks] = useState({});
     const [poolChunks, setPoolChunks] = useState([]);

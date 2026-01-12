@@ -35,7 +35,7 @@ const PASTEL_COLORS = [
 ];
 
 export const SentencePuzzleView = ({ text, mode = 'sentence', onClose, settings, setSettings, title }) => {
-    if (!text || text.trim().length === 0) return (<div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans"><EmptyStateMessage onClose={onClose} /></div>);
+    if (!text || text.trim().length === 0) return (<div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col items-center justify-center modal-animate font-sans"><EmptyStateMessage onClose={onClose} /></div>);
 
     const [pieces, setPieces] = useState([]);
     const [status, setStatus] = useState('idle'); // idle, correct, wrong
@@ -229,16 +229,11 @@ export const SentencePuzzleView = ({ text, mode = 'sentence', onClose, settings,
                     onClick={checkOrder}
                     className={`px-12 py-4 rounded-xl font-bold text-xl shadow-lg transition-all hover:scale-105 active:scale-95 flex items-center gap-3 min-touch-target ${status === 'wrong' ? 'bg-red-500 text-white animate-pulse' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
                 >
-                    {status === 'wrong' ? <><Icons.AlertTriangle /> Stimmt nicht ganz</> : 'Prüfen'}
+                    {status === 'wrong' ? <><Icons.AlertTriangle /> Stimmt nicht ganz!</> : 'Prüfen'}
                 </button>
             </div>
 
-            {/* Toast Failure */}
-            {status === 'wrong' && (
-                <div className="fixed top-24 left-1/2 -translate-x-1/2 bg-red-100 border-2 border-red-400 text-red-800 px-6 py-3 rounded-xl shadow-xl font-bold animate-[slideDown_0.3s_ease-out] flex items-center gap-2 z-[200]">
-                    <Icons.AlertTriangle /> Die Reihenfolge stimmt noch nicht.
-                </div>
-            )}
+
         </div>
     );
 };

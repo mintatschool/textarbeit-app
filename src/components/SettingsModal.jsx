@@ -75,18 +75,39 @@ export const SettingsModal = ({ settings, setSettings, onExport, onImport, logo,
                         <div className="space-y-8">
                             {/* Logo */}
                             <div>
-                                <label className="block text-sm font-bold text-slate-700 mb-3">Logo / Schul-Header</label>
-                                <div className="flex items-center gap-4">
-                                    <div className="w-16 h-16 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50 flex items-center justify-center overflow-hidden transition-all hover:border-blue-400">
+                                <label className="block text-sm font-bold text-slate-700 mb-3">Bild</label>
+                                <div className="flex items-start gap-4">
+                                    <div className="w-16 h-16 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50 flex items-center justify-center overflow-hidden transition-all shrink-0 hover:border-blue-400">
                                         {logo ? <img src={logo} alt="Logo" className="w-full h-full object-contain" /> : <Icons.Image className="text-slate-300" />}
                                     </div>
-                                    <div className="flex flex-col gap-1">
-                                        <button onClick={() => fileInputRef.current.click()} className="px-5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-bold hover:bg-slate-50 hover:border-slate-400 transition min-touch-target">Datei wählen...</button>
-                                        <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
-                                        {logo && <button onClick={() => setLogo(null)} className="text-red-500 text-xs font-bold hover:underline py-1 w-fit">Bild löschen</button>}
+                                    <div className="flex flex-col gap-3 flex-1">
+                                        <div className="flex gap-2">
+                                            <button onClick={() => fileInputRef.current.click()} className="px-5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-bold hover:bg-slate-50 hover:border-slate-400 transition min-touch-target">Datei wählen...</button>
+                                            <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
+                                            {logo && <button onClick={() => setLogo(null)} className="text-red-500 text-xs font-bold hover:underline py-1 w-fit">Bild löschen</button>}
+                                        </div>
+
+                                        {logo && (
+                                            <div className="w-full max-w-[200px]">
+                                                <label className="flex justify-between items-center text-xs font-bold text-slate-600 mb-1">
+                                                    <span>Größe (Bildschirm)</span>
+                                                    <span>{settings.imageWidth || 15}%</span>
+                                                </label>
+                                                <input
+                                                    type="range"
+                                                    min="5"
+                                                    max="33"
+                                                    step="1"
+                                                    value={settings.imageWidth || 15}
+                                                    onChange={(e) => setSettings({ ...settings, imageWidth: parseInt(e.target.value) })}
+                                                    className="w-full accent-blue-600 h-1.5 bg-slate-200 rounded-full cursor-pointer"
+                                                />
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
+
 
                             {/* Font Picker */}
                             <div>

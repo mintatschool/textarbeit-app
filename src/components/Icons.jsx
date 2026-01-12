@@ -165,6 +165,18 @@ export const Icons = {
             <path d="M 18 7 V 10" strokeLinecap="round" />
         </g>
     </g>} />,
+    LetterCaseToggle: (p) => <Icon {...p} size={p.size || 24} path={<g>
+        {/* Uppercase A */}
+        <path d="M4 19L7.5 7L11 19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        <line x1="5.5" y1="15" x2="10" y2="15" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+
+        {/* Slash / */}
+        <line x1="14" y1="19" x2="17" y2="7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+
+        {/* Lowercase a */}
+        <circle cx="21" cy="15.5" r="2.5" stroke="currentColor" strokeWidth="2.5" />
+        <line x1="23.5" y1="12" x2="23.5" y2="18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+    </g>} />,
     Group: ({ size = 24, className = "" }) => (
         <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             {/* Two boxes - pushed further apart */}
@@ -185,6 +197,14 @@ export const Icons = {
     // Rabbit: Running/Leaping silhouette with clear ears
     Rabbit: (p) => <Icon {...p} viewBox="0 0 512 512" fill="currentColor" stroke="none" path={
         <path d="M142.9 226c11.7-8.8 19.3-22.3 20.8-37.5l.3-3.6 16.5-23c21-29.4 44.8-56.9 70.8-82.9 8.1-8.1 27.9-10.8 36.3-2.4 7.6 7.6 5.8 25.6-2.4 33.7-19.9 19.9-38.3 41.2-54.8 63.8l-1.9 2.7 3.3.6c5.5 1 11.2 1.5 16.8 1.5 45.4 0 88.5-47.5 125.7-84.7 9.8-9.8 25.7-9.8 35.5 0 9.8 9.8 9.8 25.7 0 35.5-31.5 31.5-66.2 68.6-96.8 94.4 20.5 5 40.5 11.3 59.8 18.9 44.4 17.5 44.4 70.3 35.1 116.8-9.3 46.5-51 86-98.3 86H120c-13.3 0-24-10.7-24-24v-48c0-13.3 10.7-24 24-24h96c13.3 0 24-10.7 24-24 0-13.3-10.7-24-24-24H44.1c-16.1 0-28.5-12.5-31.7-28.3C8.8 254.4 20 231.7 39.8 221.4c29.1-15.1 66.5-17.7 103.1-4.6z" />
+    } />,
+
+    // Human Figures (Material Design style)
+    Walker: (p) => <Icon {...p} viewBox="0 0 24 24" fill="currentColor" stroke="none" path={
+        <path d="M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3C14.8 12 16.8 13 19 13v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1L6 8.3V13h2V9.6l1.8-.7" />
+    } />,
+    Runner: (p) => <Icon {...p} viewBox="0 -960 960 960" fill="currentColor" stroke="none" path={
+        <path d="M520-80v-200l-84-80-31 138q-4 16-17.5 24.5T358-192l-198-40q-17-3-26-17t-6-31q3-17 17-26.5t31-5.5l152 32 64-324-72 28v96q0 17-11.5 28.5T280-440q-17 0-28.5-11.5T240-480v-122q0-12 6.5-21.5T264-638l134-58q35-15 51.5-19.5T480-720q21 0 39 11t29 29l40 64q21 34 54.5 59t77.5 33q17 3 28.5 15t11.5 29q0 17-11.5 28t-27.5 9q-54-8-101-33.5T540-540l-24 120 72 68q6 6 9 13.5t3 15.5v243q0 17-11.5 28.5T560-40q-17 0-28.5-11.5T520-80Zm20-660q-33 0-56.5-23.5T460-820q0-33 23.5-56.5T540-900q33 0 56.5 23.5T620-820q0 33-23.5 56.5T540-740Z" />
     } />,
     Highlighter: (p) => <Icon {...p} path={<><path d="M9 11l-6 6v3h9l3-3" /><path d="M22 12l-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4" /><line x1="12" y1="2" x2="16" y2="6" /></>} />,
     Eraser: (p) => <Icon {...p} path={<><path d="M20 20H7L3 16C2 15 2 13 3 12L13 2C14 1 16 1 17 2L21 6C22 7 22 9 21 10L11 20" /><path d="M17 2L21 6" /><path d="M7 20l10-10" /></>} />,

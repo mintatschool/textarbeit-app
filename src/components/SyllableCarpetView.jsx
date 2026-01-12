@@ -7,7 +7,7 @@ import availableSyllables from '../utils/available_syllables.json';
 const syllableSet = new Set(availableSyllables);
 
 export const SyllableCarpetView = ({ words, settings, setSettings, onClose, title }) => {
-    if (!words || words.length === 0) return (<div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans"><EmptyStateMessage onClose={onClose} /></div>);
+    if (!words || words.length === 0) return (<div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col items-center justify-center modal-animate font-sans"><EmptyStateMessage onClose={onClose} /></div>);
     const [hiddenSyllables, setHiddenSyllables] = useState(new Set());
     const [shuffledSyllables, setShuffledSyllables] = useState([]);
     const [isGameMode, setIsGameMode] = useState(false);

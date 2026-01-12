@@ -5,7 +5,7 @@ import { ProgressBar } from './ProgressBar';
 import { speak } from '../utils/speech';
 
 export const SplitExerciseView = ({ words, onClose, settings, setSettings, title }) => {
-    if (!words || words.length === 0) return (<div className="fixed inset-0 z-[130] bg-slate-100 modal-animate font-sans flex flex-col"><EmptyStateMessage onClose={onClose} /></div>);
+    if (!words || words.length === 0) return (<div className="fixed inset-0 z-[130] bg-slate-100 modal-animate font-sans flex flex-col items-center justify-center"><EmptyStateMessage onClose={onClose} /></div>);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [userSplits, setUserSplits] = useState(new Set());
     const [showVowels, setShowVowels] = useState(false);

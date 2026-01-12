@@ -43,6 +43,8 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
     const [groupSolved, setGroupSolved] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
     const [selectedWord, setSelectedWord] = useState(null); // For Click-to-Place
+    const [pendingItemsCount, setPendingItemsCount] = useState(5);
+    const debounceTimerRef = useRef(null);
     const dragItemRef = useRef(null);
 
     // iPad Fix: Prevent touch scrolling during drag
@@ -198,7 +200,21 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
 
         setGroups(newGroups);
         setCurrentGroupIdx(0);
+        setPendingItemsCount(itemsPerStage);
     }, [text, mode, highlightedIndices, wordColors, itemsPerStage]);
+
+    const handleItemsCountChange = (delta) => {
+        const next = Math.max(2, Math.min(10, pendingItemsCount + delta));
+        if (next === pendingItemsCount) return;
+
+        setPendingItemsCount(next);
+
+        if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = setTimeout(() => {
+            setItemsPerStage(next);
+            debounceTimerRef.current = null;
+        }, 1200);
+    };
 
     const currentGroup = useMemo(() => groups[currentGroupIdx] || [], [groups, currentGroupIdx]);
 
@@ -317,7 +333,7 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
     }, [placedWords, currentGroup, currentGroupIdx, groups.length]);
 
     if (!text) {
-        return <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans"><EmptyStateMessage onClose={onClose} title="Keine Sätze gefunden" message="Der Text ist zu kurz oder enthält keine klaren Sätze für diese Übung." /></div>;
+        return <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col items-center justify-center p-6 modal-animate font-sans"><EmptyStateMessage onClose={onClose} title="Keine Sätze gefunden" message="Der Text ist zu kurz oder enthält keine klaren Sätze für diese Übung." /></div>;
     }
 
     if (groups.length === 0) {
@@ -414,21 +430,21 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
                     <div className="flex items-center gap-2 bg-slate-50 px-2 py-1 rounded-2xl border border-slate-200 hidden lg:flex">
                         <HorizontalLines count={2} />
                         <button
-                            onClick={() => setItemsPerStage(prev => Math.max(2, prev - 1))}
+                            onClick={() => handleItemsCountChange(-1)}
                             className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 active:scale-90 transition-all shadow-sm disabled:opacity-20 ml-1"
-                            disabled={itemsPerStage <= 2}
+                            disabled={pendingItemsCount <= 2}
                         >
                             <Minus className="w-4 h-4" />
                         </button>
                         <div className="flex flex-col items-center min-w-[24px]">
-                            <span className="text-xl font-black text-slate-800 leading-none">
-                                {itemsPerStage}
+                            <span className={`text-xl font-black transition-colors leading-none ${pendingItemsCount !== itemsPerStage ? 'text-orange-500' : 'text-slate-800'}`}>
+                                {pendingItemsCount}
                             </span>
                         </div>
                         <button
-                            onClick={() => setItemsPerStage(prev => Math.min(10, prev + 1))}
+                            onClick={() => handleItemsCountChange(1)}
                             className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 active:scale-90 transition-all shadow-sm disabled:opacity-20 mr-1"
-                            disabled={itemsPerStage >= 10}
+                            disabled={pendingItemsCount >= 10}
                         >
                             <Plus className="w-4 h-4" />
                         </button>

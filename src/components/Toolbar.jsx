@@ -158,7 +158,7 @@ export const Toolbar = ({
     if (!isViewMode) return null;
 
     return (
-        <div className={`bg-white/95 backdrop-blur-md shadow-2xl border-slate-200 z-[90] transition-all font-sans no-scrollbar flex ${containerClasses}`}>
+        <div className={`bg-white/95 backdrop-blur-md shadow-2xl border-slate-200 z-[90] transition-all font-sans flex ${containerClasses}`}>
             {/* --- SECTION 1: SYSTEM & GENERAL TOOLS ("Control Room") --- */}
             <div className="flex flex-col gap-3 items-center p-1 rounded-2xl bg-slate-50 border border-slate-200 shadow-inner w-full">
                 <ToolbarButton

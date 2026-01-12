@@ -170,7 +170,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
 
     useEffect(() => {
         startNewGame();
-    }, [startNewGame]);
+    }, [validTargets]);
 
 
     // --------------------------------------------------------------------------------
@@ -531,7 +531,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                         <input
                             type="range"
                             min="0.7"
-                            max="1.3"
+                            max="1.4"
                             step="0.1"
                             value={gameState.pieceScale}
                             onChange={(e) => setGameState(prev => ({ ...prev, pieceScale: parseFloat(e.target.value) }))}
@@ -549,7 +549,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
 
             <div className="flex-1 relative flex overflow-hidden">
                 {/* LEFT SIDEBAR (Start Pieces) */}
-                <div className="w-[180px] bg-slate-100/50 border-r border-slate-200 flex flex-col shrink-0"
+                <div className="w-[230px] bg-slate-100/50 border-r border-slate-200 flex flex-col shrink-0"
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={(e) => {
                         e.preventDefault();
@@ -558,7 +558,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                     }}
                 >
                     <div className="bg-slate-200/50 py-1 text-center text-[10px] font-bold text-slate-400 uppercase">Anfang</div>
-                    <div className="flex-1 overflow-y-auto p-4 content-center gap-4 flex flex-col items-center">
+                    <div className="flex-1 overflow-y-auto custom-scroll p-4 content-center gap-4 flex flex-col items-center">
                         {leftVisible.map(p => (
                             <div key={p.id} className="cursor-grab active:cursor-grabbing hover:scale-105 transition-transform"
                                 draggable onDragStart={(e) => { e.dataTransfer.setData("pieceId", p.id); setIsDragging(p.id); }} onDragEnd={() => setIsDragging(null)}>
@@ -571,7 +571,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                 {/* MAIN AREA */}
                 <div className="flex-1 flex flex-col relative bg-white">
                     {/* Middle Pieces Pool (Top Strip) */}
-                    <div className="h-[25%] bg-blue-50/30 border-b border-blue-100 relative w-full overflow-hidden shrink-0"
+                    <div className="h-[28%] bg-blue-50/30 border-b border-blue-100 relative w-full overflow-hidden shrink-0"
                         onDragOver={(e) => e.preventDefault()}
                         onDrop={(e) => {
                             e.preventDefault();
@@ -580,11 +580,11 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                         }}
                     >
                         <div className="absolute top-1 left-2 text-[10px] font-bold text-slate-400 uppercase">Mitte</div>
-                        <div className="w-full h-full relative p-4">
+                        <div className="w-full h-full relative pt-6 px-4 pb-4 flex flex-wrap items-center justify-center gap-4 content-center overflow-y-auto custom-scroll">
                             {middleVisible.map(p => (
                                 <div key={p.id}
-                                    className="absolute cursor-grab active:cursor-grabbing hover:z-50 transition-transform"
-                                    style={{ left: `${p.x}%`, top: `${p.y}%`, transform: `rotate(${p.rotation}deg)` }}
+                                    className="cursor-grab active:cursor-grabbing hover:z-50 transition-transform"
+                                    style={{ transform: `rotate(${p.rotation}deg)` }}
                                     draggable onDragStart={(e) => { e.dataTransfer.setData("pieceId", p.id); setIsDragging(p.id); }} onDragEnd={() => setIsDragging(null)}
                                 >
                                     <PuzzleTestPiece label={p.text} type="zigzag-middle" colorClass={getPieceColor(p.color)} scale={gameState.pieceScale * 0.8} fontFamily={settings.fontFamily} onDragStart={() => { }} />
@@ -594,7 +594,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                     </div>
 
                     {/* TARGETS LIST */}
-                    <div className="flex-1 overflow-y-auto p-6 pt-12 flex flex-col items-center gap-8 bg-slate-50/30">
+                    <div className="flex-1 overflow-y-auto custom-scroll p-6 pt-12 flex flex-col items-center gap-8 bg-slate-50/30">
                         {currentStage.items.map((target, idx) => {
                             const solvedId = completedRows[target.id];
                             const isComplete = !!solvedId;
@@ -704,7 +704,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                 </div>
 
                 {/* RIGHT SIDEBAR (End Pieces) */}
-                <div className="w-[180px] bg-slate-100/50 border-l border-slate-200 flex flex-col shrink-0"
+                <div className="w-[230px] bg-slate-100/50 border-l border-slate-200 flex flex-col shrink-0"
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={(e) => {
                         e.preventDefault();
@@ -713,7 +713,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                     }}
                 >
                     <div className="bg-slate-200/50 py-1 text-center text-[10px] font-bold text-slate-400 uppercase">Ende</div>
-                    <div className="flex-1 overflow-y-auto p-4 content-center gap-4 flex flex-col items-center">
+                    <div className="flex-1 overflow-y-auto custom-scroll p-4 content-center gap-4 flex flex-col items-center">
                         {rightVisible.map(p => (
                             <div key={p.id} className="cursor-grab active:cursor-grabbing hover:scale-105 transition-transform"
                                 draggable onDragStart={(e) => { e.dataTransfer.setData("pieceId", p.id); setIsDragging(p.id); }} onDragEnd={() => setIsDragging(null)}>

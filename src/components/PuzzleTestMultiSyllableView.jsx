@@ -34,6 +34,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
     });
 
     const [isDragging, setIsDragging] = useState(null);
+    const [pendingWordsCount, setPendingWordsCount] = useState(3);
 
     // Pieces & Slots State
     const [pieces, setPieces] = useState({ left: [], middle: [], right: [] });
@@ -114,6 +115,11 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
         setLastSpokenWord(null);
 
     }, [words, gameState.wordsPerStage]);
+
+    // Update pending count when wordsPerStage changes (e.g. initial load)
+    useEffect(() => {
+        setPendingWordsCount(gameState.wordsPerStage);
+    }, [gameState.wordsPerStage]);
 
     // Initial Start
     useEffect(() => {
@@ -351,13 +357,16 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
     }, [gameState.stages, gameState.currentStageIndex, completedRows, totalWords]);
 
     const handleWordsCountChange = (delta) => {
-        const next = Math.max(2, Math.min(6, gameState.wordsPerStage + delta));
-        setGameState(prev => ({ ...prev, wordsPerStage: next }));
+        const next = Math.max(2, Math.min(6, pendingWordsCount + delta));
+        if (next === pendingWordsCount) return;
+
+        setPendingWordsCount(next);
 
         if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
         debounceTimerRef.current = setTimeout(() => {
             startNewGame(next);
-        }, 800);
+            debounceTimerRef.current = null;
+        }, 1200);
     };
 
     const getPieceColor = (pieceColor) => {
@@ -477,8 +486,8 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                             <Minus className="w-4 h-4" />
                         </button>
                         <div className="flex flex-col items-center min-w-[24px]">
-                            <span className="text-xl font-black text-slate-800 leading-none">
-                                {gameState.wordsPerStage}
+                            <span className={`text-xl font-black transition-colors leading-none ${pendingWordsCount !== gameState.wordsPerStage ? 'text-orange-500' : 'text-slate-800'}`}>
+                                {pendingWordsCount}
                             </span>
                         </div>
                         <button onClick={() => handleWordsCountChange(1)} disabled={gameState.wordsPerStage >= 6} className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 active:scale-90 transition-all shadow-sm disabled:opacity-20 mr-1">
@@ -492,7 +501,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                         <input
                             type="range"
                             min="0.6"
-                            max="1.2"
+                            max="1.3"
                             step="0.1"
                             value={gameState.pieceScale}
                             onChange={(e) => setGameState(prev => ({ ...prev, pieceScale: parseFloat(e.target.value) }))}
@@ -512,7 +521,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
             <div className="flex-1 relative flex overflow-hidden">
 
                 {/* LEFT ZONE - Anfangsstücke */}
-                <div className="w-[180px] bg-slate-100/50 border-r border-slate-200 flex flex-col shrink-0"
+                <div className="w-[230px] bg-slate-100/50 border-r border-slate-200 flex flex-col shrink-0"
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={(e) => {
                         e.preventDefault();
@@ -521,7 +530,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                     }}
                 >
                     <div className="bg-slate-200/50 py-1 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Anfang</div>
-                    <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center gap-4">
+                    <div className="flex-1 overflow-y-auto custom-scroll p-4 flex flex-col items-center gap-4">
                         {getVisiblePieces('left').map(p => {
                             const isHighlighted = highlightedWordId === p.wordId;
                             return (
@@ -548,7 +557,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                 {/* MIDDLE ZONE + CENTER */}
                 <div className="flex-1 flex flex-col relative bg-white">
                     {/* Top strip for Middle Pieces */}
-                    <div className="h-[25%] bg-blue-50/30 border-b border-blue-100 relative w-full overflow-hidden shrink-0"
+                    <div className="h-[28%] bg-blue-50/30 border-b border-blue-100 relative w-full overflow-hidden shrink-0"
                         onDragOver={(e) => e.preventDefault()}
                         onDrop={(e) => {
                             e.preventDefault();
@@ -557,15 +566,15 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                         }}
                     >
                         <div className="absolute top-1 left-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Mitte</div>
-                        <div className="w-full h-full relative p-4">
+                        <div className="w-full h-full relative pt-6 px-4 pb-4 flex flex-wrap items-center justify-center gap-4 content-center overflow-y-auto custom-scroll">
                             {getVisiblePieces('middle').map(p => {
                                 const isHighlighted = highlightedWordId === p.wordId;
                                 return (
                                     <div key={p.id}
-                                        className={`absolute cursor-grab active:cursor-grabbing transition-transform
+                                        className={`cursor-grab active:cursor-grabbing transition-transform
                                             ${isHighlighted ? 'scale-110 z-[100] drop-shadow-xl' : 'hover:z-50'}
                                         `}
-                                        style={{ left: `${p.x}%`, top: `${p.y}%`, transform: `rotate(${p.rotation}deg)` }}
+                                        style={{ transform: `rotate(${p.rotation}deg)` }}
                                         draggable onDragStart={(e) => { e.dataTransfer.setData("application/puzzle-piece-id", p.id); setIsDragging(p.id); }}
                                         onDragEnd={() => setIsDragging(null)}>
                                         <PuzzleTestPiece
@@ -583,7 +592,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                     </div>
 
                     {/* Word Rows Area */}
-                    <div className="flex-1 overflow-y-auto p-6 pt-12 flex flex-col items-center gap-8 bg-slate-50/30">
+                    <div className="flex-1 overflow-y-auto custom-scroll p-6 pt-12 flex flex-col items-center gap-8 bg-slate-50/30">
                         {currentStageItems.map((word, idx) => {
                             const solvedId = completedRows[word.id];
                             const isComplete = !!solvedId;
@@ -701,7 +710,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                 </div>
 
                 {/* RIGHT ZONE - Endstücke */}
-                <div className="w-[180px] bg-slate-100/50 border-l border-slate-200 flex flex-col shrink-0"
+                <div className="w-[230px] bg-slate-100/50 border-l border-slate-200 flex flex-col shrink-0"
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={(e) => {
                         e.preventDefault();
@@ -710,7 +719,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                     }}
                 >
                     <div className="bg-slate-200/50 py-1 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ende</div>
-                    <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center gap-4">
+                    <div className="flex-1 overflow-y-auto custom-scroll p-4 flex flex-col items-center gap-4">
                         {getVisiblePieces('right').map(p => {
                             const isHighlighted = highlightedWordId === p.wordId;
                             return (

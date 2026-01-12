@@ -115,7 +115,7 @@ export const SpeedReadingView = ({ words, settings, setSettings, onClose, title 
 
                 {gameState !== 'results' && (
                     <div className="flex items-center gap-6 min-w-[550px]">
-                        <Icons.Snail size={42} className="text-green-500 shrink-0" />
+                        <Icons.Walker size={42} className="text-green-500 shrink-0" />
                         <div className="flex-1 flex flex-col items-center">
                             <div className="w-full relative mt-2 mb-2">
                                 <input
@@ -143,7 +143,7 @@ export const SpeedReadingView = ({ words, settings, setSettings, onClose, title 
                                 Stufe {level}
                             </div>
                         </div>
-                        <Icons.Rabbit size={42} className="text-orange-500 shrink-0" />
+                        <Icons.Runner size={42} className="text-orange-500 shrink-0" />
                     </div>
                 )}
 

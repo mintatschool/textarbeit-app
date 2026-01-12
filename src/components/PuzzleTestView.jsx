@@ -306,7 +306,7 @@ export const PuzzleTestView = ({ words, onClose }) => {
                     </div>
 
                     {/* Templates Area */}
-                    <div className="flex-1 overflow-y-auto p-10 flex flex-col items-center gap-16">
+                    <div className="flex-1 overflow-y-auto custom-scroll p-10 flex flex-col items-center gap-16">
                         {activeLengths.map(len => (
                             <div key={len} className="flex flex-col items-center gap-4 w-full animate-fadeIn">
                                 <span className="text-xs font-bold text-slate-300 uppercase tracking-widest">{len} Silben</span>

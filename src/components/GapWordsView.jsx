@@ -16,6 +16,8 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
     const [isDragging, setIsDragging] = useState(false);
     const [selectedLetter, setSelectedLetter] = useState(null); // For Click-to-Place
     const [wordsPerStage, setWordsPerStage] = useState(5);
+    const [pendingWordsCount, setPendingWordsCount] = useState(5);
+    const debounceTimerRef = useRef(null);
     const dragItemRef = useRef(null);
 
     // Helper component for horizontal lines in the stepper control
@@ -208,6 +210,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
         });
         setGroups(newGroups);
         setCurrentGroupIdx(0);
+        setPendingWordsCount(wordsPerStage);
     }, [words, wordsPerStage, mode, highlightedIndices, wordColors]);
 
 
@@ -431,8 +434,16 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
     };
 
     const handleWordsCountChange = (delta) => {
-        const next = Math.max(2, Math.min(6, wordsPerStage + delta));
-        setWordsPerStage(next);
+        const next = Math.max(2, Math.min(6, pendingWordsCount + delta));
+        if (next === pendingWordsCount) return;
+
+        setPendingWordsCount(next);
+
+        if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = setTimeout(() => {
+            setWordsPerStage(next);
+            debounceTimerRef.current = null;
+        }, 1200);
     };
 
     // Progress Tracking
@@ -540,44 +551,44 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                     </div>
                 </div>
 
-                <div className="flex items-center gap-4">
-                    {!isInitialSound && (
-                        <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
-                            <button
-                                onClick={() => setMode('marked')}
-                                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all font-bold text-sm mr-1 ${mode === 'marked' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
-                            >
-                                <Icons.LetterMarker size={20} />
-                                <span className="hidden sm:inline">markierte Buchstaben</span>
-                            </button>
-                            <div className="w-px bg-slate-300 my-2 mx-1"></div>
-                            <button
-                                onClick={() => setMode('vowels')}
-                                className={`px-4 py-2 rounded-lg font-bold text-lg transition-all ${mode === 'vowels' ? 'bg-yellow-400 text-yellow-900 border-yellow-500 shadow-[0_2px_0_0_#eab308]' : 'text-slate-500 hover:bg-slate-50'}`}
-                            >
-                                Vokale
-                            </button>
-                            <button
-                                onClick={() => setMode('consonants')}
-                                className={`px-4 py-2 rounded-lg font-bold text-lg transition-all ${mode === 'consonants' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}
-                            >
-                                Konsonanten
-                            </button>
-                        </div>
-                    )}
+                {!isInitialSound && (
+                    <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+                        <button
+                            onClick={() => setMode('marked')}
+                            className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all font-bold text-sm mr-1 ${mode === 'marked' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                            <Icons.LetterMarker size={20} />
+                            <span className="hidden sm:inline">markierte Buchstaben</span>
+                        </button>
+                        <div className="w-px bg-slate-300 my-2 mx-1"></div>
+                        <button
+                            onClick={() => setMode('vowels')}
+                            className={`px-4 py-2 rounded-lg font-bold text-lg transition-all ${mode === 'vowels' ? 'bg-yellow-400 text-yellow-900 border-yellow-500 shadow-[0_2px_0_0_#eab308]' : 'text-slate-500 hover:bg-slate-50'}`}
+                        >
+                            Vokale
+                        </button>
+                        <button
+                            onClick={() => setMode('consonants')}
+                            className={`px-4 py-2 rounded-lg font-bold text-lg transition-all ${mode === 'consonants' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}
+                        >
+                            Konsonanten
+                        </button>
+                    </div>
+                )}
 
+                <div className="flex items-center gap-4 ml-auto">
                     {/* Words Count Control */}
                     <div className="flex items-center gap-2 bg-slate-50 px-2 py-1 rounded-2xl border border-slate-200 hidden lg:flex">
                         <HorizontalLines count={2} />
-                        <button onClick={() => handleWordsCountChange(-1)} disabled={wordsPerStage <= 2} className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 active:scale-90 transition-all shadow-sm disabled:opacity-20 ml-1">
+                        <button onClick={() => handleWordsCountChange(-1)} disabled={pendingWordsCount <= 2} className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 active:scale-90 transition-all shadow-sm disabled:opacity-20 ml-1">
                             <Minus className="w-4 h-4" />
                         </button>
                         <div className="flex flex-col items-center min-w-[24px]">
-                            <span className="text-xl font-black text-slate-800 leading-none">
-                                {wordsPerStage}
+                            <span className={`text-xl font-black transition-colors leading-none ${pendingWordsCount !== wordsPerStage ? 'text-orange-500' : 'text-slate-800'}`}>
+                                {pendingWordsCount}
                             </span>
                         </div>
-                        <button onClick={() => handleWordsCountChange(1)} disabled={wordsPerStage >= 6} className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 active:scale-90 transition-all shadow-sm disabled:opacity-20 mr-1">
+                        <button onClick={() => handleWordsCountChange(1)} disabled={pendingWordsCount >= 6} className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 active:scale-90 transition-all shadow-sm disabled:opacity-20 mr-1">
                             <Plus className="w-4 h-4" />
                         </button>
                         <HorizontalLines count={5} />
@@ -629,7 +640,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                                                 <div key={sIdx} className={`relative flex items-center ${styleClass}`} style={{ fontSize: `${settings.fontSize}px`, fontFamily: settings.fontFamily }}>
                                                     {syl.chunks.map((chunk) => {
                                                         const isVowelChunk = [...chunk.text.toLowerCase()].some(isVowel);
-                                                        const showYellowStatic = mode === 'consonants' && isVowelChunk;
+                                                        const showYellowStatic = (mode === 'consonants' || isInitialSound) && isVowelChunk;
 
                                                         if (!chunk.isTarget) return (
                                                             <span
@@ -643,7 +654,8 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                                                         // showYellowStyle logic:
                                                         // 1. In vowels mode: only when placed (BUT NOT in isInitialSound mode)
                                                         // 2. In consonants mode: always for vowels as hints
-                                                        const showYellowStyle = (!isInitialSound && mode === 'vowels' && placed) || (mode === 'consonants' && isVowelChunk);
+                                                        // 3. In initial sound mode: if placed and is a vowel
+                                                        const showYellowStyle = (!isInitialSound && mode === 'vowels' && placed) || (mode === 'consonants' && isVowelChunk) || (isInitialSound && placed && isVowelChunk);
 
                                                         return (
                                                             <div
@@ -732,6 +744,6 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };

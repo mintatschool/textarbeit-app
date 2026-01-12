@@ -236,7 +236,7 @@ export const GapTextView = ({ text, settings, setSettings, onClose, title }) => 
     }, [placedWords, sentences]);
 
     if (!text || sentences.length === 0) {
-        return <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans"><EmptyStateMessage onClose={onClose} /></div>;
+        return <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col items-center justify-center modal-animate font-sans"><EmptyStateMessage onClose={onClose} /></div>;
     }
 
     return (
