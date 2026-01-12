@@ -339,17 +339,27 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
     const handleDropOnItemLogic = (targetColId, targetIndex) => {
         const dragData = dragItemRef.current;
         if (!dragData || dragData.type !== 'word') return;
-        const { item: word, sourceColId, index: sourceIdx } = dragData;
-        if (sourceColId === targetColId && sourceIdx === targetIndex) return;
+        const { item: word, sourceColId } = dragData;
 
+        // Use ID check for safety instead of pure index
+        // But we still need sourceIdx reference? No, find it fresh.
         const newCols = { ...columnsState.cols };
         const sourceItems = [...newCols[sourceColId].items];
+
+        // Find current index of the item to remove (Safe against index shifts)
+        const currentSourceIdx = sourceItems.findIndex(i => i.id === word.id);
+        if (currentSourceIdx === -1) return; // Item gone? Abort.
+
+        if (sourceColId === targetColId && currentSourceIdx === targetIndex) return;
+
         const targetItems = sourceColId === targetColId ? sourceItems : [...newCols[targetColId].items];
 
-        sourceItems.splice(sourceIdx, 1);
+        sourceItems.splice(currentSourceIdx, 1);
 
         let insertIndex = targetIndex;
-        if (sourceColId === targetColId && sourceIdx < targetIndex) insertIndex = targetIndex - 1;
+        // If moving within same column and we removed an item BEFORE the target, shift target back
+        if (sourceColId === targetColId && currentSourceIdx < targetIndex) insertIndex = targetIndex - 1;
+
         if (insertIndex < 0) insertIndex = 0;
         if (insertIndex > targetItems.length) insertIndex = targetItems.length;
 

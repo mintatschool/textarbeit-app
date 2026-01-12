@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Word } from './Word';
 import { Icons } from './Icons';
 import { ProgressBar } from './ProgressBar';
 import { EmptyStateMessage } from './EmptyStateMessage';
@@ -44,7 +45,7 @@ const shuffle = (array) => {
     return arr;
 };
 
-export const SentenceShuffleView = ({ text, settings, setSettings, onClose, title }) => {
+export const SentenceShuffleView = ({ text, settings, setSettings, onClose, title, hyphenator }) => {
     if (!text || text.trim().length === 0) {
         return (<div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col items-center justify-center modal-animate font-sans"><EmptyStateMessage onClose={onClose} /></div>);
     }
@@ -270,8 +271,9 @@ export const SentenceShuffleView = ({ text, settings, setSettings, onClose, titl
                 {/* Word Cards Container */}
                 <div
                     id="word-container"
-                    className={`flex flex-wrap gap-3 justify-center items-center max-w-[95vw] p-4 rounded-2xl transition-all duration-300 ${isCorrect ? 'bg-green-50' : 'bg-white'
+                    className={`flex flex-wrap justify-center items-center max-w-[95vw] p-4 rounded-2xl transition-all duration-300 ${isCorrect ? 'bg-green-50' : 'bg-white'
                         }`}
+                    style={{ columnGap: `${(settings.wordSpacing ?? 0.3)}em`, rowGap: '1em' }}
                 >
                     {words.map((word, idx) => (
                         <div
@@ -292,7 +294,15 @@ export const SentenceShuffleView = ({ text, settings, setSettings, onClose, titl
                                 fontSize: `${settings.fontSize}px`
                             }}
                         >
-                            {word.text}
+                            <Word
+                                word={word.text}
+                                startIndex={0}
+                                settings={settings}
+                                hyphenator={hyphenator}
+                                isReadingMode={true}
+                                forceNoMargin={true}
+                                forceShowSyllables={true}
+                            />
                         </div>
                     ))}
                 </div>

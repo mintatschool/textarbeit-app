@@ -161,7 +161,7 @@ export const CaseExerciseView = ({ text, settings, setSettings, onClose, title }
                 </div>
             </div>
 
-            <div className={`flex-1 overflow-y-auto custom-scroll p-4 md:p-8 flex flex-col items-center ${isShaking ? 'shake' : ''}`}>
+            <div className={`flex-1 overflow-y-auto custom-scroll p-4 md:p-8 flex flex-col items-center min-h-0 ${isShaking ? 'shake' : ''}`}>
                 <div className="w-full max-w-5xl bg-white rounded-[2.5rem] shadow-xl border border-slate-100 p-12 md:p-16 mb-24 relative overflow-hidden min-h-[60vh]">
                     {/* Background indicator for success */}
                     {checkResults?.allCorrect && (

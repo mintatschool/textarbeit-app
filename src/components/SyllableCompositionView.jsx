@@ -109,9 +109,8 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [], ti
             }
         });
 
-        console.log("SyllableCompositionView: Filtered syllables count:", valid.length);
         if (valid.length > 0) {
-            console.log("SyllableCompositionView: valid items sample:", valid.slice(0, 3));
+            // console.log("SyllableCompositionView: valid items sample:", valid.slice(0, 3));
         }
         return valid;
     }, [words, allowedClusters]);

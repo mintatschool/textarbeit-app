@@ -110,6 +110,7 @@ const PuzzleTestPiece = ({
                 ...style
             }}
         >
+            {console.log("Piece Render:", { id, label, type, isGhost })}
             <div
                 draggable={!!onDragStart && !isGhost}
                 onDragStart={handleDragStart}

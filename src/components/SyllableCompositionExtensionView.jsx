@@ -170,7 +170,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
 
     useEffect(() => {
         startNewGame();
-    }, [validTargets]);
+    }, []);
 
 
     // --------------------------------------------------------------------------------

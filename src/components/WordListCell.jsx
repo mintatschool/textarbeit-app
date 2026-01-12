@@ -57,6 +57,19 @@ export const WordListCell = React.memo(({
         return [clickedGlobalIndex];
     };
 
+    const hasLetters = /[a-zA-Z\u00C0-\u017F]/.test(word.word);
+
+    // Syllable Show Logic mirroring Word.jsx
+    // In WordList, "isHighlighted" (Selection intent) is different.
+    // We treat "click" display trigger as: Show if interactionMode is 'mark' (which acts like selection)?
+    // OR we assume in list we usually default to show unless "never".
+    // For now: Always show if 'always'. Show if 'click' (user can see it). Never if 'never'.
+    // "Click" in WordListView usually means "Show".
+    const showSyllables = hasLetters
+        && (settings.displayTrigger === 'always' || settings.displayTrigger === 'click')
+        && settings.visualType !== 'none'
+        && word.syllables;
+
     const handleCharClick = (e, absCharIndex, sylObj, cIdx) => {
         e.stopPropagation();
 
@@ -88,7 +101,7 @@ export const WordListCell = React.memo(({
             style={{ fontFamily: settings.fontFamily, fontSize: `${settings.fontSize}px` }}
         >
             <div className="text-center pointer-events-auto">
-                {word.syllables ? (
+                {showSyllables ? (
                     <span className="inline-block whitespace-nowrap">
                         {word.syllables.map((s, i) => {
                             const isEven = i % 2 === 0;
@@ -98,6 +111,7 @@ export const WordListCell = React.memo(({
                             const sylObj = (typeof s === 'object' && s !== null) ? s : { text: String(s || "") };
                             const textContent = sylObj.text;
 
+                            // VISUAL TYPE LOGIC (Aligned with Word.jsx)
                             if (sylObj.isSpace) {
                                 styleClass = "bg-transparent mx-1 border-none inline-block w-5";
                                 textClass = "text-transparent select-none";
@@ -108,59 +122,67 @@ export const WordListCell = React.memo(({
                             } else if (settings.visualType === 'black_gray') {
                                 textClass = isEven ? "text-black" : "text-gray-400";
                             } else if (settings.visualType === 'arc' || settings.visualType === 'colored') {
-                                textClass = isEven ? "text-blue-700" : "text-red-600";
+                                // For Arcs: Text is slate-900 (Black), ONLY Arcs are colored.
+                                // For Colored: Text IS colored.
+                                if (settings.visualType === 'arc') {
+                                    textClass = "text-slate-900";
+                                } else {
+                                    textClass = isEven ? "text-blue-700" : "text-red-600";
+                                }
                             } else {
                                 textClass = "text-slate-900";
                             }
 
                             return (
-                                <span key={i} className={`inline-block ${styleClass}`}>
-                                    {textContent.split('').map((char, cIdx) => {
-                                        const absCharIndex = sylObj.absStartIndex !== undefined ? sylObj.absStartIndex + cIdx : null;
-                                        // Specific Yellow check
-                                        const isCharHighlighted = absCharIndex !== null && wordColors && wordColors[absCharIndex] === 'yellow';
+                                <span key={i} className={`inline-block relative leading-none ${styleClass}`}>
+                                    <span className="relative z-10">
+                                        {textContent.split('').map((char, cIdx) => {
+                                            const absCharIndex = sylObj.absStartIndex !== undefined ? sylObj.absStartIndex + cIdx : null;
+                                            // Specific Yellow check
+                                            const isCharHighlighted = absCharIndex !== null && wordColors && wordColors[absCharIndex] === 'yellow';
 
-                                        let rounded = 'rounded px-[2px]'; // Default for non-highlighted
-                                        let customClasses = 'cursor-pointer hover:bg-slate-200 transition-colors'; // Keep transition for hover, but override for highlight? No, best to match Word.jsx -> NO transition for highlight
-                                        let style = {};
+                                            let rounded = 'rounded px-[2px]'; // Default for non-highlighted
+                                            let customClasses = 'cursor-pointer hover:bg-slate-200 transition-colors';
+                                            let style = {};
 
-                                        if (isCharHighlighted) {
-                                            // Exact styling match from Word.jsx
-                                            style = { backgroundColor: '#feffc7', paddingTop: '0.02em', paddingBottom: '0.04em', marginTop: '-0.02em', marginBottom: '-0.02em' };
-                                            customClasses = 'cursor-pointer bg-yellow-100'; // Remove transition-colors to fix "dimming"
+                                            if (isCharHighlighted) {
+                                                // Exact styling match from Word.jsx
+                                                style = { backgroundColor: '#feffc7', paddingTop: '0.02em', paddingBottom: '0.04em', marginTop: '-0.02em', marginBottom: '-0.02em' };
+                                                customClasses = 'cursor-pointer bg-yellow-100'; // Remove transition-colors to fix "dimming"
 
-                                            // Neighbor Check for Continuous Blocks
-                                            const simpleLeft = wordColors && wordColors[absCharIndex - 1] === 'yellow';
-                                            const simpleRight = wordColors && wordColors[absCharIndex + 1] === 'yellow';
+                                                // Neighbor Check for Continuous Blocks
+                                                const simpleLeft = wordColors && wordColors[absCharIndex - 1] === 'yellow';
+                                                const simpleRight = wordColors && wordColors[absCharIndex + 1] === 'yellow';
 
-                                            if (simpleLeft && simpleRight) {
-                                                rounded = 'rounded-none';
-                                                customClasses += ' shadow-border-yellow-mid';
-                                            } else if (simpleLeft) {
-                                                rounded = 'rounded-r-md rounded-l-none';
-                                                customClasses += ' shadow-border-yellow-right';
-                                            } else if (simpleRight) {
-                                                rounded = 'rounded-l-md rounded-r-none';
-                                                customClasses += ' shadow-border-yellow-left';
-                                            } else {
-                                                rounded = 'rounded-md';
-                                                customClasses += ' shadow-border-yellow';
+                                                if (simpleLeft && simpleRight) {
+                                                    rounded = 'rounded-none';
+                                                    customClasses += ' shadow-border-yellow-mid';
+                                                } else if (simpleLeft) {
+                                                    rounded = 'rounded-r-md rounded-l-none';
+                                                    customClasses += ' shadow-border-yellow-right';
+                                                } else if (simpleRight) {
+                                                    rounded = 'rounded-l-md rounded-r-none';
+                                                    customClasses += ' shadow-border-yellow-left';
+                                                } else {
+                                                    rounded = 'rounded-md';
+                                                    customClasses += ' shadow-border-yellow';
+                                                }
                                             }
-                                        }
 
-                                        return (
-                                            <span
-                                                key={cIdx}
-                                                className={`${textClass} ${customClasses} ${rounded}`}
-                                                style={style}
-                                                onClick={(e) => handleCharClick(e, absCharIndex, sylObj, cIdx)}
-                                            >
-                                                {char}
-                                            </span>
-                                        );
-                                    })}
+                                            return (
+                                                <span
+                                                    key={cIdx}
+                                                    className={`${textClass} ${customClasses} ${rounded} inline-block leading-none`}
+                                                    style={style}
+                                                    onClick={(e) => handleCharClick(e, absCharIndex, sylObj, cIdx)}
+                                                >
+                                                    {char}
+                                                </span>
+                                            );
+                                        })}
+                                    </span>
                                     {settings.visualType === 'arc' && !sylObj.isSpace && (
-                                        <svg className="arc-svg pointer-events-none" viewBox="0 0 100 20" preserveAspectRatio="none" style={{ display: 'block', height: '0.2em', width: '100%', marginTop: '-0.1em' }}><path d="M 2 2 Q 50 20 98 2" fill="none" stroke={isEven ? '#2563eb' : '#dc2626'} strokeWidth="3" strokeLinecap="round" /></svg>
+                                        <svg className="arc-svg pointer-events-none" viewBox="0 0 100 20" preserveAspectRatio="none"><path d="M 2 2 Q 50 20 98 2" fill="none" stroke={isEven ? '#2563eb' : '#dc2626'} strokeWidth="3" strokeLinecap="round" /></svg>
                                     )}
                                 </span>
                             );

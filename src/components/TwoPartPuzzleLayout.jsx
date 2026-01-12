@@ -102,6 +102,18 @@ export const TwoPartPuzzleLayout = ({
     hideSpeakerToggle = false,
     manualAdvance = false
 }) => {
+    const { gameStatus } = gameState;
+
+    console.log("TwoPartPuzzleLayout RENDER START:", {
+        gameStatus,
+        stageIndex: gameState.currentStageIndex,
+        scrambledPiecesCount: scrambledPieces ? scrambledPieces.length : 'null',
+        scrambledPiecesSample: scrambledPieces ? scrambledPieces.slice(0, 3) : [],
+        leftType,
+        rightType,
+        placedPieces
+    });
+
     const getTextPadding = (type) => {
         // Start pieces (Knob/Arrow on Right) -> Need Padding Right to shift text Left
         // Increased from pr-12 to pr-20 to shift text further left
@@ -116,7 +128,6 @@ export const TwoPartPuzzleLayout = ({
 
         return 'pr-4 pl-1';
     };
-    const { gameStatus } = gameState;
 
     const [audioEnabled, setAudioEnabled] = React.useState(true);
 
@@ -146,8 +157,8 @@ export const TwoPartPuzzleLayout = ({
     }
 
     // Stage/All complete overlay
-    if (gameStatus === 'all-complete') {
-        const isAllDone = true;
+    if (gameStatus === 'all-complete' || gameStatus === 'stage-complete') {
+        const isAllDone = gameStatus === 'all-complete';
         return (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-md">
                 <div className="bg-white rounded-[3rem] shadow-2xl p-10 max-w-sm w-full flex flex-col items-center text-center animate-in zoom-in duration-300 relative overflow-hidden">
@@ -347,9 +358,10 @@ export const TwoPartPuzzleLayout = ({
                             <div className="flex items-center gap-20">
                                 <div className="flex items-center pr-12 relative">
                                     {['left', 'right'].map((role, idx) => {
-                                        const pieceText = placedPieces[role];
+                                        // placedPieces now contains piece objects, not just text
+                                        const placedPiece = placedPieces[role];
+                                        const pieceText = placedPiece?.text || placedPiece; // Handle both object and legacy string
                                         const typeName = role === 'left' ? leftType : rightType;
-                                        const slotKey = role; // Assuming placedPieces uses 'left' and 'right' as keys
 
                                         return (
                                             <div

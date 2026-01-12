@@ -2,7 +2,7 @@ import React, { useMemo, useCallback, useState, useRef, useEffect } from 'react'
 import { Icons } from './Icons';
 import { getCachedSyllables, CLUSTERS } from '../utils/syllables';
 
-const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, highlightedIndices, isHidden, toggleHighlights, toggleHidden, hideYellowLetters, activeTool, activeColor, onEditMode, manualSyllables, hyphenator, settings, isReadingMode, wordColors, colorPalette, domRef, isGrouped, isSelection, hidePunctuation, onMouseEnter, onMouseDown, isTextMarkerMode, drawings, onUpdateDrawings, forceNoMargin }) => {
+const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, highlightedIndices = new Set(), isHidden, toggleHighlights, toggleHidden, hideYellowLetters, activeTool, activeColor, onEditMode, manualSyllables, hyphenator, settings, isReadingMode, wordColors = {}, colorPalette, domRef, isGrouped, isSelection, hidePunctuation, onMouseEnter, onMouseDown, isTextMarkerMode, drawings = [], onUpdateDrawings, forceNoMargin, forceShowSyllables }) => {
     const wordKey = `${word}_${startIndex}`;
     const syllables = useMemo(() => manualSyllables || getCachedSyllables(word, hyphenator), [word, manualSyllables, hyphenator]);
 
@@ -112,7 +112,8 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
         }
     }, [isReadingMode, activeTool, activeColor, isTextMarkerMode, settings.smartSelection, word, wordKey, syllables, startIndex, onEditMode, toggleHidden, toggleHighlights]);
 
-    const showSyllables = (settings.displayTrigger === 'always' || (isHighlighted && settings.displayTrigger === 'click') || isGrouped) && settings.visualType !== 'none';
+    const hasLetters = /[a-zA-Z\u00C0-\u017F]/.test(word);
+    const showSyllables = hasLetters && (forceShowSyllables || settings.displayTrigger === 'always' || (isHighlighted && settings.displayTrigger === 'click') || isGrouped) && settings.visualType !== 'none';
     let cursorClass = isReadingMode ? 'cursor-default' : (activeTool === 'split' ? 'cursor-alias' : (activeTool === 'blur' ? 'cursor-not-allowed' : 'cursor-pointer'));
 
     // Safety: If Yellow mode and wrapper hovered, show default cursor to indicate non-interactivity of wrapper

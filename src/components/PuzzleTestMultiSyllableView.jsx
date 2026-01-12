@@ -68,8 +68,6 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
     const startNewGame = useCallback((currWps) => {
         const wps = currWps !== undefined ? currWps : gameState.wordsPerStage;
 
-        console.log("Starting new game with words:", words);
-
         if ((!words || !Array.isArray(words) || words.length === 0) && (!gameState.stages || gameState.stages.length === 0)) {
             setGameState(prev => ({ ...prev, gameStatus: 'no_words' }));
             return;

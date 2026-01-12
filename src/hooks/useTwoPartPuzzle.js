@@ -3,12 +3,18 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 /**
  * Shared hook for two-part puzzle exercises (Silbenbau 1 & Silbenpuzzle 1).
  * 
+ * SLOT-BASED ARCHITECTURE:
+ * - Pieces are NEVER deleted, only moved between pool and slots
+ * - Visibility is computed dynamically (pieces in slots or used are hidden from pool)
+ * - This prevents unsolvable situations
+ * 
  * @param {Object} config
  * @param {Array} config.items - Array of { leftPart, rightPart, fullText } objects
  * @param {string} config.leftType - Piece type for left side (e.g., 'left' or 'zigzag-left')
  * @param {string} config.rightType - Piece type for right side (e.g., 'right' or 'zigzag-right')
  * @param {number} config.initialScale - Initial piece scale (default: 1.0)
- * @param {number} config.successDelay - Delay after success before next item (default: 2000ms)
+ * @param {number} config.successDelay - Delay after success before next item (default: 1000ms)
+ * @param {boolean} config.manualAdvance - If true, user must click "Weiter" to advance
  */
 export const useTwoPartPuzzle = ({
     items = [],
@@ -18,6 +24,10 @@ export const useTwoPartPuzzle = ({
     successDelay = 1000,
     manualAdvance = false
 }) => {
+    // ==========================================================================
+    // STATE
+    // ==========================================================================
+
     const [gameState, setGameState] = useState({
         stages: [],
         currentStageIndex: 0,
@@ -30,12 +40,40 @@ export const useTwoPartPuzzle = ({
     const [pendingWordsCount, setPendingWordsCount] = useState(3);
     const debounceTimerRef = useRef(null);
 
-    const [scrambledPieces, setScrambledPieces] = useState([]);
-    const [placedPieces, setPlacedPieces] = useState({ left: null, right: null });
+    // ALL pieces for the current stage (never modified after generation)
+    const [allPieces, setAllPieces] = useState([]);
+
+    // Current slots: { left: piece | null, right: piece | null }
+    const [slots, setSlots] = useState({ left: null, right: null });
+
+    // IDs of pieces that have been used in completed words
+    const [usedPieceIds, setUsedPieceIds] = useState(new Set());
+
     const [isDragging, setIsDragging] = useState(null);
     const [showSuccess, setShowSuccess] = useState(false);
 
+    const successTimerRef = useRef(null);
+    const lastGeneratedStageRef = useRef(-1); // Track which stage we last generated pieces for
+    const stagesRef = useRef([]); // Ref to access stages without re-triggering effects
+
+    // ==========================================================================
+    // COMPUTED: Visible pieces (not in slots and not used)
+    // ==========================================================================
+
+    const visiblePieces = useMemo(() => {
+        const slotPieceIds = new Set();
+        if (slots.left) slotPieceIds.add(slots.left.id);
+        if (slots.right) slotPieceIds.add(slots.right.id);
+
+        return allPieces.filter(p =>
+            !slotPieceIds.has(p.id) && !usedPieceIds.has(p.id)
+        );
+    }, [allPieces, slots, usedPieceIds]);
+
+    // ==========================================================================
     // iPad Fix: Prevent touch scrolling during drag
+    // ==========================================================================
+
     useEffect(() => {
         if (!isDragging) return;
         const preventDefault = (e) => { e.preventDefault(); };
@@ -47,12 +85,24 @@ export const useTwoPartPuzzle = ({
         };
     }, [isDragging]);
 
+    // ==========================================================================
+    // GAME INITIALIZATION
+    // ==========================================================================
+
     const startNewGame = useCallback((customWordsPerStage) => {
         const wps = customWordsPerStage !== undefined ? customWordsPerStage : pendingWordsCount;
-        setGameState(prev => ({ ...prev, gameStatus: 'loading', stages: [], currentStageIndex: 0, wordsPerStage: wps }));
-        setPlacedPieces({ left: null, right: null });
-        setScrambledPieces([]);
+
+        // Reset all state
+        setSlots({ left: null, right: null });
+        setAllPieces([]);
+        setUsedPieceIds(new Set());
         setShowSuccess(false);
+        lastGeneratedStageRef.current = -1; // Force piece regeneration for new game
+
+        if (successTimerRef.current) {
+            clearTimeout(successTimerRef.current);
+            successTimerRef.current = null;
+        }
 
         if (!items || items.length === 0) {
             setGameState(prev => ({ ...prev, gameStatus: 'playing', stages: [] }));
@@ -74,14 +124,15 @@ export const useTwoPartPuzzle = ({
             }
         }
 
-        setGameState(prev => ({
-            ...prev,
+        setGameState({
             stages: newStages,
-            gameStatus: 'playing',
             currentStageIndex: 0,
-            wordsPerStage: wps
-        }));
-    }, [pendingWordsCount, items]);
+            gameStatus: 'playing',
+            pieceScale: initialScale,
+            wordsPerStage: wps,
+            gameMode: 'both-empty'
+        });
+    }, [pendingWordsCount, items, initialScale]);
 
     // Auto-start game when items change
     useEffect(() => {
@@ -90,88 +141,136 @@ export const useTwoPartPuzzle = ({
         } else {
             setGameState(prev => ({ ...prev, gameStatus: 'playing', stages: [] }));
         }
-    }, [items]); // Only depend on items, not startNewGame to avoid infinite loop
+    }, [items]); // Only depend on items
 
-    const setupCurrentWord = useCallback(() => {
-        if (gameState.gameStatus !== 'playing' || gameState.stages.length === 0) return;
-        const currentStage = gameState.stages[gameState.currentStageIndex];
+    // ==========================================================================
+    // STAGE SETUP: Generate pieces when stage changes
+    // ==========================================================================
+
+    // Keep stagesRef in sync with gameState.stages
+    useEffect(() => {
+        stagesRef.current = gameState.stages;
+    }, [gameState.stages]);
+
+    useEffect(() => {
+        if (gameState.gameStatus !== 'playing') return;
+
+        // Only generate pieces if we're entering a NEW stage
+        if (lastGeneratedStageRef.current === gameState.currentStageIndex) {
+            return; // Already generated for this stage
+        }
+
+        const stages = stagesRef.current;
+        if (!stages || stages.length === 0) return;
+
+        const currentStage = stages[gameState.currentStageIndex];
         if (!currentStage || !currentStage.items) return;
+
+        lastGeneratedStageRef.current = gameState.currentStageIndex;
+
+        const pieces = [];
+
+        // Generate pieces for ALL items in the stage
+        currentStage.items.forEach((item, idx) => {
+            // Left Part
+            pieces.push({
+                id: `left-${gameState.currentStageIndex}-${idx}-${Math.random().toString(36).substr(2, 5)}`,
+                text: item.leftPart,
+                type: leftType,
+                color: 'bg-blue-500',
+                itemIdx: idx
+            });
+
+            // Right Part
+            pieces.push({
+                id: `right-${gameState.currentStageIndex}-${idx}-${Math.random().toString(36).substr(2, 5)}`,
+                text: item.rightPart,
+                type: rightType,
+                color: 'bg-blue-500',
+                itemIdx: idx
+            });
+        });
+
+        // Shuffle pieces
+        pieces.sort(() => Math.random() - 0.5);
+
+        setAllPieces(pieces);
+        setSlots({ left: null, right: null });
+        setUsedPieceIds(new Set());
+        setShowSuccess(false);
+
+    }, [gameState.currentStageIndex, gameState.gameStatus, leftType, rightType]); // Removed gameState.stages!
+
+    // ==========================================================================
+    // GAME MODE: Pre-fill slots based on mode
+    // ==========================================================================
+
+    useEffect(() => {
+        if (gameState.gameStatus !== 'playing') return;
+        if (gameState.gameMode === 'both-empty') return;
+
+        const currentStage = gameState.stages[gameState.currentStageIndex];
+        if (!currentStage) return;
 
         const targetIdx = currentStage.targetIndex ?? 0;
         const currentItem = currentStage.items[targetIdx];
         if (!currentItem) return;
 
-        // Set pre-filled pieces based on game mode
-        setPlacedPieces({
-            left: gameState.gameMode === 'left-filled' ? currentItem.leftPart : null,
-            right: gameState.gameMode === 'right-filled' ? currentItem.rightPart : null
-        });
+        // Find pieces for the current target that aren't used yet
+        const availablePieces = allPieces.filter(p => !usedPieceIds.has(p.id));
 
-        const leftPieces = [];
-        const rightPieces = [];
-
-        currentStage.items.forEach((item, idx) => {
-            if (currentStage.completedIndices.includes(idx)) return;
-
-            // Left Part
-            if (!(idx === targetIdx && gameState.gameMode === 'left-filled')) {
-                leftPieces.push({
-                    id: `left-${idx}-${item.leftPart}`,
-                    text: item.leftPart,
-                    type: leftType,
-                    color: 'bg-blue-500',
-                    itemIdx: idx,
-                    sortIndex: (idx * 0.137 + (item.leftPart?.charCodeAt(0) || 0) * 0.013) % 1
-                });
+        if (gameState.gameMode === 'left-filled' && !slots.left) {
+            const leftPiece = availablePieces.find(p =>
+                p.type === leftType && p.itemIdx === targetIdx
+            );
+            if (leftPiece) {
+                setSlots(prev => ({ ...prev, left: leftPiece }));
             }
+        }
 
-            // Right Part
-            if (!(idx === targetIdx && gameState.gameMode === 'right-filled')) {
-                rightPieces.push({
-                    id: `right-${idx}-${item.rightPart}`,
-                    text: item.rightPart,
-                    type: rightType,
-                    color: 'bg-blue-500',
-                    itemIdx: idx,
-                    sortIndex: (idx * 0.731 + (item.rightPart?.charCodeAt(0) || 0) * 0.017) % 1
-                });
+        if (gameState.gameMode === 'right-filled' && !slots.right) {
+            const rightPiece = availablePieces.find(p =>
+                p.type === rightType && p.itemIdx === targetIdx
+            );
+            if (rightPiece) {
+                setSlots(prev => ({ ...prev, right: rightPiece }));
             }
-        });
+        }
+    }, [gameState.gameMode, gameState.currentStageIndex, gameState.stages, gameState.gameStatus, allPieces, usedPieceIds, leftType, rightType, slots]);
 
-        // Stable pseudo-random sort
-        const allPieces = [...leftPieces, ...rightPieces].sort((a, b) => {
-            const sumA = (a.text || '').split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) + (a.itemIdx || 0);
-            const sumB = (b.text || '').split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) + (b.itemIdx || 0);
-            return (sumA % 7) - (sumB % 7) || (a.id || '').localeCompare(b.id || '');
-        });
-
-        console.log("useTwoPartPuzzle setupCurrentWord:", {
-            stageIndex: gameState.currentStageIndex,
-            targetIdx,
-            currentItem,
-            leftPiecesCount: leftPieces.length,
-            rightPiecesCount: rightPieces.length,
-            allPiecesCount: allPieces.length
-        });
-
-        setScrambledPieces(allPieces);
-    }, [gameState.currentStageIndex, gameState.gameStatus, gameState.stages, gameState.gameMode, leftType, rightType]);
-
-    useEffect(() => {
-        setupCurrentWord();
-    }, [gameState.currentStageIndex, gameState.gameStatus, gameState.gameMode, setupCurrentWord]);
-
-    // Timer ref to cancel auto-advance if user interrupts
-    const successTimerRef = useRef(null);
+    // ==========================================================================
+    // INTERACTIONS
+    // ==========================================================================
 
     const handleDrop = useCallback((targetRole) => {
-        if (isDragging === null) return; // Allow interaction during success (interrupt)
-        const draggingPiece = scrambledPieces.find(s => s.id === isDragging);
-        if (!draggingPiece) return;
+        if (isDragging === null) return;
+
+        // Find the piece being dragged from visible pieces
+        const draggingPiece = visiblePieces.find(p => p.id === isDragging);
+        if (!draggingPiece) {
+            // Maybe it's in a slot already (swapping)
+            const slotPiece = slots.left?.id === isDragging ? slots.left :
+                slots.right?.id === isDragging ? slots.right : null;
+            if (!slotPiece) {
+                setIsDragging(null);
+                return;
+            }
+        }
+
+        const pieceToPlace = draggingPiece ||
+            (slots.left?.id === isDragging ? slots.left : slots.right);
+
+        if (!pieceToPlace) {
+            setIsDragging(null);
+            return;
+        }
 
         // Check if piece type matches target
         const expectedType = targetRole === 'left' ? leftType : rightType;
-        if (draggingPiece.type !== expectedType) return;
+        if (pieceToPlace.type !== expectedType) {
+            setIsDragging(null);
+            return;
+        }
 
         // Interrupt success state if active
         if (showSuccess) {
@@ -182,19 +281,20 @@ export const useTwoPartPuzzle = ({
             }
         }
 
-        setPlacedPieces(prev => ({
-            ...prev,
-            [targetRole]: draggingPiece.text
-        }));
+        // If piece was in another slot, clear that slot
+        setSlots(prev => {
+            const newSlots = { ...prev };
+            if (prev.left?.id === pieceToPlace.id) newSlots.left = null;
+            if (prev.right?.id === pieceToPlace.id) newSlots.right = null;
+            newSlots[targetRole] = pieceToPlace;
+            return newSlots;
+        });
 
-        setScrambledPieces(prev => prev.filter(s => s.id !== isDragging));
         setIsDragging(null);
-    }, [isDragging, showSuccess, scrambledPieces, leftType, rightType]);
+    }, [isDragging, visiblePieces, slots, showSuccess, leftType, rightType]);
 
     const removePieceFromSlot = useCallback((role) => {
-        // Unlock interaction
-        const text = placedPieces[role];
-        if (!text) return;
+        if (!slots[role]) return;
 
         // Interrupt success state if active
         if (showSuccess) {
@@ -205,26 +305,103 @@ export const useTwoPartPuzzle = ({
             }
         }
 
-        setPlacedPieces(prev => ({
+        setSlots(prev => ({
             ...prev,
             [role]: null
         }));
+    }, [showSuccess, slots]);
 
-        // Add back to scrambled
-        const type = role === 'left' ? leftType : rightType;
-        const newPiece = {
-            id: `return-${role}-${Math.random()}`,
-            text,
-            type,
-            color: 'bg-blue-500',
-            sortIndex: Math.random()
-        };
-        setScrambledPieces(prev => [...prev, newPiece]);
-    }, [showSuccess, placedPieces, leftType, rightType]);
+    // ==========================================================================
+    // SUCCESS CHECK & ADVANCEMENT
+    // ==========================================================================
 
-    const handleNextItem = useCallback(() => {
+    const advanceToNextTarget = useCallback((matchedIdx) => {
+        // Mark the matched pieces as used
+        const leftPiece = slots.left;
+        const rightPiece = slots.right;
+
+        if (leftPiece && rightPiece) {
+            setUsedPieceIds(prev => {
+                const next = new Set(prev);
+                next.add(leftPiece.id);
+                next.add(rightPiece.id);
+                return next;
+            });
+        }
+
+        // Clear slots
+        setSlots({ left: null, right: null });
         setShowSuccess(false);
-        setPlacedPieces({ left: null, right: null });
+
+        // Update game state
+        setGameState(prev => {
+            const stage = prev.stages[prev.currentStageIndex];
+            if (!stage || !stage.items) return prev;
+
+            const newCompletedIndices = [...(stage.completedIndices || []), matchedIdx];
+
+            // Find next uncompleted item
+            let nextTargetIdx = 0;
+            while (newCompletedIndices.includes(nextTargetIdx) && nextTargetIdx < stage.items.length) {
+                nextTargetIdx++;
+            }
+
+            const allItemsCompleted = newCompletedIndices.length >= stage.items.length;
+
+            const newStages = prev.stages.map((s, idx) => {
+                if (idx === prev.currentStageIndex) {
+                    return {
+                        ...s,
+                        completedIndices: newCompletedIndices,
+                        targetIndex: nextTargetIdx < stage.items.length ? nextTargetIdx : 0
+                    };
+                }
+                return s;
+            });
+
+            const isFinalStage = prev.currentStageIndex >= prev.stages.length - 1;
+
+            return {
+                ...prev,
+                stages: newStages,
+                gameStatus: allItemsCompleted
+                    ? (isFinalStage ? 'all-complete' : 'stage-complete')
+                    : 'playing'
+            };
+        });
+    }, [slots]);
+
+    // Check for correct answer
+    useEffect(() => {
+        if (showSuccess) return;
+        if (!slots.left || !slots.right) return;
+
+        const currentStage = gameState.stages[gameState.currentStageIndex];
+        if (!currentStage || !currentStage.items) return;
+
+        const formedText = slots.left.text + slots.right.text;
+        const completedIndices = currentStage.completedIndices || [];
+
+        // Find ANY remaining word that matches the formed text
+        const matchingItemIdx = currentStage.items.findIndex((item, idx) =>
+            !completedIndices.includes(idx) && item.fullText === formedText
+        );
+
+        if (matchingItemIdx !== -1) {
+            setShowSuccess(true);
+
+            if (!manualAdvance) {
+                successTimerRef.current = setTimeout(() => {
+                    advanceToNextTarget(matchingItemIdx);
+                }, successDelay);
+            }
+        }
+    }, [slots, gameState.currentStageIndex, gameState.stages, showSuccess, successDelay, manualAdvance, advanceToNextTarget]);
+
+    // Manual advance handler (for "Weiter" button)
+    const handleNextItem = useCallback(() => {
+        if (!showSuccess) return;
+
         if (successTimerRef.current) {
             clearTimeout(successTimerRef.current);
             successTimerRef.current = null;
@@ -233,60 +410,26 @@ export const useTwoPartPuzzle = ({
         const currentStage = gameState.stages[gameState.currentStageIndex];
         if (!currentStage || !currentStage.items) return;
 
-        const targetIdx = currentStage.targetIndex ?? 0;
-        const nextIdx = targetIdx + 1;
-        const itemsCount = currentStage.items.length;
+        const formedText = (slots.left?.text || '') + (slots.right?.text || '');
+        const completedIndices = currentStage.completedIndices || [];
 
-        setGameState(prev => {
-            const stage = prev.stages[prev.currentStageIndex];
-            if (!stage || !stage.items) return prev;
+        // Find the matched word
+        const matchingItemIdx = currentStage.items.findIndex((item, idx) =>
+            !completedIndices.includes(idx) && item.fullText === formedText
+        );
 
-            const newStages = prev.stages.map((s, idx) => {
-                if (idx === prev.currentStageIndex) {
-                    return {
-                        ...s,
-                        completedIndices: [...s.completedIndices, targetIdx],
-                        targetIndex: nextIdx < itemsCount ? nextIdx : s.targetIndex
-                    };
-                }
-                return s;
-            });
-
-            const isStageFinished = nextIdx >= itemsCount;
-            const isFinalStage = prev.currentStageIndex >= prev.stages.length - 1;
-
-            return {
-                ...prev,
-                stages: newStages,
-                gameStatus: isStageFinished
-                    ? (isFinalStage ? 'all-complete' : 'stage-complete')
-                    : 'playing'
-            };
-        });
-    }, [gameState.stages, gameState.currentStageIndex]);
-
-    // Check for correct answer
-    useEffect(() => {
-        if (showSuccess) return;
-        if (!placedPieces.left || !placedPieces.right) return;
-
-        const currentStage = gameState.stages[gameState.currentStageIndex];
-        if (!currentStage || !currentStage.items) return;
-
-        const targetIdx = currentStage.targetIndex ?? 0;
-        const targetItem = currentStage.items[targetIdx];
-        if (!targetItem) return;
-
-        const formedText = placedPieces.left + placedPieces.right;
-
-        if (targetItem.fullText === formedText) {
-            setShowSuccess(true);
-
-            if (!manualAdvance) {
-                successTimerRef.current = setTimeout(handleNextItem, successDelay);
-            }
+        if (matchingItemIdx !== -1) {
+            advanceToNextTarget(matchingItemIdx);
+        } else {
+            // Fallback: just clear and show next
+            setSlots({ left: null, right: null });
+            setShowSuccess(false);
         }
-    }, [placedPieces, gameState.currentStageIndex, gameState.stages, showSuccess, successDelay, manualAdvance, handleNextItem]);
+    }, [showSuccess, gameState.stages, gameState.currentStageIndex, slots, advanceToNextTarget]);
+
+    // ==========================================================================
+    // OTHER CALLBACKS
+    // ==========================================================================
 
     const handleUpdateWordsCount = useCallback((delta) => {
         const nextValue = Math.max(2, Math.min(8, pendingWordsCount + delta));
@@ -301,6 +444,8 @@ export const useTwoPartPuzzle = ({
 
     const handleModeChange = useCallback((mode) => {
         setGameState(prev => ({ ...prev, gameMode: mode }));
+        // Clear slots when mode changes
+        setSlots({ left: null, right: null });
     }, []);
 
     const setScale = useCallback((scale) => {
@@ -315,7 +460,10 @@ export const useTwoPartPuzzle = ({
         }));
     }, []);
 
-    // Calculate progress
+    // ==========================================================================
+    // COMPUTED VALUES
+    // ==========================================================================
+
     const totalItems = useMemo(() =>
         gameState.stages.reduce((acc, stage) => acc + (stage.items?.length || 0), 0),
         [gameState.stages]
@@ -327,19 +475,26 @@ export const useTwoPartPuzzle = ({
             .slice(0, gameState.currentStageIndex)
             .reduce((acc, stage) => acc + (stage.items?.length || 0), 0);
         const currentStage = gameState.stages[gameState.currentStageIndex];
-        const currentTargetIdx = currentStage?.targetIndex ?? 0;
-        return Math.min(100, ((completedPriorStages + currentTargetIdx + 1) / totalItems) * 100);
+        const completedInCurrentStage = (currentStage?.completedIndices?.length || 0);
+        return Math.min(100, ((completedPriorStages + completedInCurrentStage) / totalItems) * 100);
     }, [gameState.stages, gameState.currentStageIndex, totalItems]);
 
     const currentStageInfo = gameState.stages[gameState.currentStageIndex];
     const currentTargetIdx = currentStageInfo?.targetIndex ?? 0;
     const currentTargetItem = currentStageInfo?.items?.[currentTargetIdx];
 
+    // ==========================================================================
+    // RETURN
+    // ==========================================================================
+
     return {
         // State
         gameState,
-        scrambledPieces,
-        placedPieces,
+        scrambledPieces: visiblePieces, // For compatibility with existing layout
+        placedPieces: { // For compatibility with existing layout
+            left: slots.left,
+            right: slots.right
+        },
         isDragging,
         showSuccess,
         pendingWordsCount,
@@ -356,7 +511,6 @@ export const useTwoPartPuzzle = ({
         handleUpdateWordsCount,
         handleModeChange,
         setScale,
-        setIsDragging,
         setIsDragging,
         advanceToNextStage,
         handleNextItem

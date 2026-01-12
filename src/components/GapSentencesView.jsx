@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { Word } from './Word';
 import { Icons } from './Icons';
 import { Minus, Plus } from 'lucide-react';
 import { EmptyStateMessage } from './EmptyStateMessage';
@@ -32,7 +33,7 @@ const HorizontalLines = ({ count }) => (
     </div>
 );
 
-export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordColors = {}, settings, setSettings, onClose, title }) => {
+export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordColors = {}, settings, setSettings, onClose, title, hyphenator }) => {
     const [mode, setMode] = useState('random'); // 'random' or 'marked'
     const [itemsPerStage, setItemsPerStage] = useState(5);
     const [currentGroupIdx, setCurrentGroupIdx] = useState(0);
@@ -473,9 +474,24 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
                 <div className="flex-1 p-8 overflow-y-auto custom-scroll flex flex-col gap-8 bg-white/50">
                     <div className="max-w-7xl mx-auto space-y-12 py-24">
                         {currentGroup.map(sentence => (
-                            <div key={sentence.id} className="flex flex-wrap items-center gap-x-3 gap-y-6 text-slate-800 leading-relaxed" style={{ fontSize: `${settings.fontSize}px`, fontFamily: settings.fontFamily }}>
+                            <div key={sentence.id} className="flex flex-wrap items-center text-slate-800 leading-relaxed" style={{ fontSize: `${settings.fontSize}px`, fontFamily: settings.fontFamily, columnGap: `${(settings.wordSpacing ?? 0.3)}em`, rowGap: '1.5em' }}>
                                 {sentence.parts.map((p, i) => {
-                                    if (p.type === 'text') return <span key={i}>{p.text}</span>;
+                                    if (p.type === 'text') {
+                                        return p.text.split(/(\s+)/).map((seg, sidx) => {
+                                            if (seg.trim().length === 0) return null;
+                                            return (
+                                                <Word
+                                                    key={`${i}-${sidx}`}
+                                                    word={seg}
+                                                    startIndex={0}
+                                                    settings={settings}
+                                                    hyphenator={hyphenator}
+                                                    isReadingMode={true}
+                                                    forceShowSyllables={true}
+                                                />
+                                            );
+                                        });
+                                    }
                                     const placed = placedWords[p.id];
                                     return (
                                         <div
@@ -495,7 +511,15 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
                                                     className={`px-1 py-0 rounded font-bold cursor-grab active:cursor-grabbing animate-[popIn_0.3s_ease-out] whitespace-nowrap leading-none touch-action-none touch-manipulation select-none ${placed.color}`}
                                                     style={{ fontSize: '1.2em' }}
                                                 >
-                                                    {placed.text}
+                                                    <Word
+                                                        word={placed.text}
+                                                        startIndex={0} // Dummy index
+                                                        settings={settings}
+                                                        hyphenator={hyphenator}
+                                                        isReadingMode={true} // Disable interactions
+                                                        forceNoMargin={true}
+                                                        forceShowSyllables={true}
+                                                    />
                                                 </div>
                                             ) : (
                                                 <span className="opacity-0 font-bold">{p.correctText}</span>
@@ -532,7 +556,15 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
                                 className={`w-full p-4 font-bold rounded-2xl transition-all flex items-center justify-center cursor-grab active:cursor-grabbing hover:scale-[1.02] touch-action-none touch-manipulation select-none ${w.color} ${selectedWord?.poolId === w.poolId ? 'ring-4 ring-blue-500 shadow-xl scale-105' : 'shadow-sm'}`}
                                 style={{ fontFamily: settings.fontFamily, fontSize: `${Math.max(20, settings.fontSize * 0.8)}px` }}
                             >
-                                {w.text}
+                                <Word
+                                    word={w.text}
+                                    startIndex={0}
+                                    settings={settings}
+                                    hyphenator={hyphenator}
+                                    isReadingMode={true}
+                                    forceNoMargin={true}
+                                    forceShowSyllables={true}
+                                />
                             </div>
                         ))}
                         {poolWords.length === 0 && (

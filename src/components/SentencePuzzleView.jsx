@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Word } from './Word';
 import { Icons } from './Icons';
 import { ProgressBar } from './ProgressBar';
 import { EmptyStateMessage } from './EmptyStateMessage';
@@ -34,7 +35,7 @@ const PASTEL_COLORS = [
     'bg-rose-100 border-rose-200'
 ];
 
-export const SentencePuzzleView = ({ text, mode = 'sentence', onClose, settings, setSettings, title }) => {
+export const SentencePuzzleView = ({ text, mode = 'sentence', onClose, settings, setSettings, title, hyphenator }) => {
     if (!text || text.trim().length === 0) return (<div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col items-center justify-center modal-animate font-sans"><EmptyStateMessage onClose={onClose} /></div>);
 
     const [pieces, setPieces] = useState([]);
@@ -216,7 +217,24 @@ export const SentencePuzzleView = ({ text, mode = 'sentence', onClose, settings,
                                     fontSize: `${settings.fontSize}px`
                                 }}
                             >
-                                {piece.text}
+                                <div className="flex flex-wrap items-start" style={{ columnGap: `${(settings.wordSpacing ?? 0.3)}em`, rowGap: '0.2em' }}>
+                                    {piece.text.split(/(\s+)/).map((seg, sidx) => {
+                                        if (seg.match(/\n/)) return <div key={sidx} className="w-full h-0" />;
+                                        if (seg.trim().length === 0) return null;
+                                        return (
+                                            <Word
+                                                key={sidx}
+                                                word={seg}
+                                                startIndex={0}
+                                                settings={settings}
+                                                hyphenator={hyphenator}
+                                                isReadingMode={true}
+                                                forceNoMargin={true}
+                                                forceShowSyllables={true}
+                                            />
+                                        );
+                                    })}
+                                </div>
                             </div>
                         </div>
                     ))}

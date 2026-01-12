@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { Word } from './Word';
 import { Icons } from './Icons';
 import { EmptyStateMessage } from './EmptyStateMessage';
 
@@ -23,7 +24,7 @@ const WORD_COLORS = [
     'bg-rose-100 text-rose-700'
 ];
 
-export const GapTextView = ({ text, settings, setSettings, onClose, title }) => {
+export const GapTextView = ({ text, settings, setSettings, onClose, title, hyphenator }) => {
     const [sentences, setSentences] = useState([]);
     const [placedWords, setPlacedWords] = useState({}); // { gapId: wordObj }
     const [poolWords, setPoolWords] = useState([]);
@@ -288,41 +289,62 @@ export const GapTextView = ({ text, settings, setSettings, onClose, title }) => 
                 {/* Scrollable Text Area */}
                 <div className="flex-1 overflow-y-auto custom-scroll p-12 bg-slate-50/50">
                     <div className="max-w-4xl mx-auto bg-white p-12 rounded-[2rem] shadow-sm border border-slate-100 min-h-full">
-                        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-4" style={{ fontSize: `${settings.fontSize}px`, fontFamily: settings.fontFamily, lineHeight: settings.lineHeight }}>
-                            {sentences.map((s, sIdx) => (
-                                <span key={s.id} className="inline flex-wrap items-baseline">
-                                    {s.parts.map((p, pIdx) => {
-                                        if (p.type === 'text') return <span key={pIdx}>{p.text} </span>;
-                                        const placed = placedWords[p.id];
-                                        return (
-                                            <span
-                                                key={pIdx}
-                                                onDragOver={(e) => e.preventDefault()}
-                                                onDragEnter={(e) => { e.preventDefault(); e.currentTarget.classList.add('bg-blue-50', 'border-blue-400'); }}
-                                                onDragLeave={(e) => { e.currentTarget.classList.remove('bg-blue-50', 'border-blue-400'); }}
-                                                onDrop={(e) => { e.currentTarget.classList.remove('bg-blue-50', 'border-blue-400'); handleDrop(e, p.id, p.correctText); }}
-                                                onClick={() => handleGapClick(p.id, p.correctText)}
-                                                className={`relative inline-flex items-center justify-center min-w-[5em] h-[1.4em] border-b-2 transition-all rounded px-2 mx-1 cursor-pointer ${placed ? 'border-transparent' : 'border-slate-300 bg-slate-100/30'} ${selectedWord ? 'ring-2 ring-blue-300 ring-offset-2 animate-pulse' : ''}`}
-                                            >
-                                                {placed ? (
-                                                    <div
-                                                        draggable
-                                                        onDragStart={(e) => handleDragStart(e, placed, 'gap', p.id)}
-                                                        onDragEnd={handleDragEnd}
-                                                        className={`px-1 py-0 rounded font-bold cursor-grab active:cursor-grabbing animate-[popIn_0.3s_ease-out] whitespace-nowrap leading-none touch-action-none touch-manipulation select-none ${placed.color}`}
-                                                        style={{ fontSize: '1.2em' }}
-                                                    >
-                                                        {placed.text}
-                                                    </div>
-                                                ) : (
-                                                    <span className="opacity-0">{p.correctText}</span>
-                                                )}
-                                            </span>
-                                        );
-                                    })}
-                                    {sIdx < sentences.length - 1 && <span className="mr-2"> </span>}
-                                </span>
-                            ))}
+                        <div className="flex flex-wrap items-baseline leading-relaxed" style={{ fontSize: `${settings.fontSize}px`, fontFamily: settings.fontFamily, columnGap: `${(settings.wordSpacing ?? 0.3)}em`, rowGap: '1.5em' }}>
+                            {sentences.flatMap((sentence, sIdx) => [
+                                ...sentence.parts.map((p, i) => {
+                                    if (p.type === 'text') {
+                                        return p.text.split(/(\s+)/).map((seg, sidx) => {
+                                            if (seg.trim().length === 0) return null;
+                                            return (
+                                                <Word
+                                                    key={`text_${sIdx}_${i}_${sidx}`}
+                                                    word={seg}
+                                                    startIndex={0}
+                                                    settings={settings}
+                                                    hyphenator={hyphenator}
+                                                    isReadingMode={true}
+                                                    forceShowSyllables={true}
+                                                />
+                                            );
+                                        });
+                                    }
+                                    const placed = placedWords[p.id];
+                                    return (
+                                        <div
+                                            key={`gap_${sIdx}_${i}`}
+                                            onDragOver={(e) => e.preventDefault()}
+                                            onDragEnter={(e) => { e.preventDefault(); e.currentTarget.classList.add('bg-blue-50', 'border-blue-400'); }}
+                                            onDragLeave={(e) => { e.currentTarget.classList.remove('bg-blue-50', 'border-blue-400'); }}
+                                            onDrop={(e) => { e.currentTarget.classList.remove('bg-blue-50', 'border-blue-400'); handleDrop(e, p.id, p.correctText); }}
+                                            onClick={() => handleGapClick(p.id, p.correctText)}
+                                            className={`relative inline-flex items-center justify-center min-w-[5em] h-[1.4em] border-b-2 transition-all rounded px-2 mx-1 cursor-pointer ${placed ? 'border-transparent' : 'border-slate-300 bg-slate-100/30'} ${selectedWord ? 'ring-2 ring-blue-300 ring-offset-2 animate-pulse' : ''}`}
+                                        >
+                                            {placed ? (
+                                                <div
+                                                    draggable
+                                                    onDragStart={(e) => handleDragStart(e, placed, 'gap', p.id)}
+                                                    onDragEnd={handleDragEnd}
+                                                    className={`px-1 py-0 rounded font-bold cursor-grab active:cursor-grabbing animate-[popIn_0.3s_ease-out] whitespace-nowrap leading-none touch-action-none touch-manipulation select-none ${placed.color}`}
+                                                    style={{ fontSize: '1.2em' }}
+                                                >
+                                                    <Word
+                                                        word={placed.text}
+                                                        startIndex={0}
+                                                        settings={settings}
+                                                        hyphenator={hyphenator}
+                                                        isReadingMode={true}
+                                                        forceNoMargin={true}
+                                                        forceShowSyllables={true}
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <span className="opacity-0">{p.correctText}</span>
+                                            )}
+                                        </div>
+                                    );
+                                }),
+                                sIdx < sentences.length - 1 && <span key={`space_${sIdx}`} className="mr-2"> </span>
+                            ])}
                         </div>
                     </div>
                 </div>
@@ -349,7 +371,15 @@ export const GapTextView = ({ text, settings, setSettings, onClose, title }) => 
                                 className={`w-full p-4 font-bold rounded-2xl transition-all flex items-center justify-center cursor-grab active:cursor-grabbing hover:scale-[1.02] draggable-piece ${w.color} ${selectedWord?.poolId === w.poolId ? 'selected-piece ring-4 ring-blue-500 z-50' : 'shadow-sm'}`}
                                 style={{ fontFamily: settings.fontFamily, fontSize: `${Math.max(20, settings.fontSize * 0.8)}px` }}
                             >
-                                {w.text}
+                                <Word
+                                    word={w.text}
+                                    startIndex={0}
+                                    settings={settings}
+                                    hyphenator={hyphenator}
+                                    isReadingMode={true}
+                                    forceNoMargin={true}
+                                    forceShowSyllables={true}
+                                />
                             </div>
                         ))}
                         {poolWords.length === 0 && (
@@ -359,8 +389,8 @@ export const GapTextView = ({ text, settings, setSettings, onClose, title }) => 
                             </div>
                         )}
                     </div>
-                </div>
-            </div>
-        </div>
+                </div >
+            </div >
+        </div >
     );
 };
