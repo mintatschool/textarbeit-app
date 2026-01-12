@@ -97,12 +97,32 @@ const App = () => {
         }
     }, [settings]);
 
+    // Save logo to localStorage
+    useEffect(() => {
+        try {
+            if (logo) {
+                localStorage.setItem('textarbeit_logo', logo);
+            } else {
+                localStorage.removeItem('textarbeit_logo');
+            }
+        } catch (e) {
+            console.error('Failed to save logo to localStorage', e);
+        }
+    }, [logo]);
+
 
     const [highlightedIndices, setHighlightedIndices] = useState(new Set());
     const [hiddenIndices, setHiddenIndices] = useState(new Set());
     const [hideYellowLetters, setHideYellowLetters] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
-    const [logo, setLogo] = useState(null);
+    const [logo, setLogo] = useState(() => {
+        try {
+            return localStorage.getItem('textarbeit_logo');
+        } catch (e) {
+            console.error('Failed to load logo from localStorage', e);
+            return null;
+        }
+    });
     const [activeTool, setActiveTool] = useState(null); // 'split', 'blur'
     const [showCorrectionModal, setShowCorrectionModal] = useState(false);
     const [correctionData, setCorrectionData] = useState(null);
@@ -762,7 +782,7 @@ const App = () => {
 
 
     return (
-        <div className={`min-h-screen flex flex-col bg-slate-50 transition-colors duration-500 ${settings.lockScroll ? 'overflow-hidden fixed w-full h-full' : ''}`}>
+        <div className={`min-h-screen flex flex-col bg-slate-50 transition-colors duration-500 ${isViewMode ? 'h-screen overflow-hidden' : ''} ${settings.lockScroll ? 'fixed w-full h-full' : ''}`}>
 
             {isViewMode && (
                 <Toolbar
