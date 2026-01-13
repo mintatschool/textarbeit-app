@@ -146,7 +146,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
         marginRight: (isTextMarkerMode || forceNoMargin) ? '0px' : `${(settings.wordSpacing ?? 0)}em`,
         zIndex: isZoomed ? 20 : 'auto',
         fontSize: `${currentFontSize}px`,
-        lineHeight: 1,
+        lineHeight: settings.lineHeight || 1.2,
         letterSpacing: `${(settings.letterSpacing ?? 0)}em`,
         transition: 'font-size 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.3s ease'
     };

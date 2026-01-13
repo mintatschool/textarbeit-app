@@ -97,7 +97,7 @@ export const WordListCell = React.memo(({
             onDragEnd={onDragEnd}
             onDrop={(e) => onDrop(e, colId, idx)}
             onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-            className="p-3 bg-white border border-slate-200 rounded-lg shadow-sm hover:shadow-md hover:border-blue-300 cursor-grab active:cursor-grabbing group relative select-none touch-action-none"
+            className="p-3 bg-white border border-slate-200 rounded-lg shadow-sm hover:shadow-md hover:border-blue-300 cursor-grab active:cursor-grabbing group relative select-none touch-none"
             style={{ fontFamily: settings.fontFamily, fontSize: `${settings.fontSize}px` }}
         >
             <div className="text-center pointer-events-auto">
