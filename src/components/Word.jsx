@@ -319,7 +319,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
             <span
                 ref={refForWord}
                 data-paint-index={startIndex}
-                className={`inline-block relative select-none transition-all origin-center ${wrapperCursorClass}`}
+                className={`inline-block relative select-none transition-all origin-center ${wrapperCursorClass} ${isTextMarkerMode || activeTool === 'pen' ? 'touch-none' : ''}`}
                 style={{
                     ...wordSpacingStyle,
                     backgroundColor: 'transparent',
@@ -447,7 +447,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
         <span
             ref={refForWord}
             data-paint-index={startIndex}
-            className={`inline-flex items-baseline whitespace-nowrap transition-all origin-center relative group leading-none ${wrapperCursorClass}`}
+            className={`inline-flex items-baseline whitespace-nowrap transition-all origin-center relative group leading-none ${wrapperCursorClass} ${isTextMarkerMode || activeTool === 'pen' ? 'touch-none' : ''}`}
             style={wordSpacingStyle}
             // FIX: Simplified event handlers for reliable paint/erase detection
             onMouseEnter={(e) => {
