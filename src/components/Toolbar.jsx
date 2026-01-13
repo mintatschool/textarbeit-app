@@ -152,7 +152,7 @@ export const Toolbar = ({
     };
 
     // Layout-Klasse: Feste Sidebar rechts (Docked)
-    const containerClasses = "fixed right-0 top-0 h-full w-24 flex-col items-center py-4 gap-4 overflow-y-auto custom-scroll border-l rounded-none";
+    const containerClasses = "fixed right-0 top-0 h-full w-24 flex-col items-center py-4 gap-4 overflow-y-auto custom-scroll no-scrollbar border-l rounded-none";
 
     // Show nothing in Edit Mode
     if (!isViewMode) return null;

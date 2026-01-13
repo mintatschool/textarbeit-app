@@ -17,7 +17,7 @@ import { speak } from '../utils/speech';
 import { EmptyStateMessage } from './EmptyStateMessage';
 
 const HorizontalLines = ({ count }) => (
-    <div className="flex flex-col gap-[2px] w-4 items-center justify-center">
+    <div className="flex flex-col gap-[2px] w-2 items-center justify-center">
         {Array.from({ length: count }).map((_, i) => (
             <div key={i} className="h-[2px] w-full bg-slate-300 rounded-full" />
         ))}

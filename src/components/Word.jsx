@@ -284,8 +284,8 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
     const markerClass = `${markerBase} ${markerBorder}`;
     const markerStyle = (showFrame || isColorMarked)
         ? ((!showFrame && isColorMarked)
-            ? { paddingTop: '0.05em', paddingBottom: '0.15em', paddingLeft: '0', paddingRight: '0', marginBottom: '-0.15em', marginTop: '-0.05em' }
-            : { paddingTop: '0.05em', paddingBottom: '0.05em', paddingLeft: '0.15em', paddingRight: '0.15em' }
+            ? { paddingTop: '0.01em', paddingBottom: '0.15em', paddingLeft: '0', paddingRight: '0', marginBottom: '-0.15em', marginTop: '-0.01em' }
+            : { paddingTop: '0.01em', paddingBottom: '0.05em', paddingLeft: '0.15em', paddingRight: '0.15em', marginTop: '-0.01em', marginBottom: '-0.05em' }
         ) : {};
 
     if (isHidden) {
@@ -368,7 +368,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                         let charClassName = `inline-block leading-none transition-transform ${isColorMarked ? '' : 'hover:bg-slate-100'} cursor-pointer`;
 
                         // Default char padding in em - Adjusted for better coverage (descenders)
-                        let charStyle = { paddingLeft: '0.02em', paddingRight: '0.02em', paddingTop: '0.02em', paddingBottom: '0.18em', marginTop: '-0.02em', marginBottom: '-0.16em' };
+                        let charStyle = { paddingLeft: '0.02em', paddingRight: '0.02em', paddingTop: '0.01em', paddingBottom: '0.18em', marginTop: '-0.01em', marginBottom: '-0.16em' };
 
                         if (isYellow) {
                             charClassName += ' bg-yellow-100';
@@ -498,7 +498,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                                     let style = { paddingLeft: '0.02em', paddingRight: '0.02em' };
 
                                     if (isYellow) {
-                                        style = { backgroundColor: '#feffc7', paddingTop: '0.02em', paddingBottom: '0.04em', marginTop: '-0.02em', marginBottom: '-0.02em' };
+                                        style = { backgroundColor: '#feffc7', paddingTop: '0.01em', paddingBottom: '0.04em', marginTop: '-0.01em', marginBottom: '-0.02em' };
                                         customClasses += ' bg-yellow-100';
 
                                         const simpleLeft = wordColors && wordColors[globalIndex - 1] === 'yellow';

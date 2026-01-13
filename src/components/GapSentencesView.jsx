@@ -26,7 +26,7 @@ const WORD_COLORS = [
 ];
 
 const HorizontalLines = ({ count }) => (
-    <div className="flex flex-col gap-[2px] w-4 items-center justify-center">
+    <div className="flex flex-col gap-[2px] w-2 items-center justify-center">
         {Array.from({ length: count }).map((_, i) => (
             <div key={i} className="h-[2px] w-full bg-slate-300 rounded-full" />
         ))}
@@ -411,14 +411,14 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
                     <div className="flex bg-slate-100 p-1 rounded-xl ml-4">
                         <button
                             onClick={() => setMode('marked')}
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all font-bold text-xs ${mode === 'marked' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
+                            className={`flex items-center gap-2 px-2 py-1.5 rounded-lg transition-all font-bold text-xs ${mode === 'marked' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
                         >
                             <div className={`w-5 h-4 rounded border-2 transition-all mr-1 ${mode === 'marked' ? 'border-blue-500 bg-blue-50' : 'border-slate-400 bg-transparent'}`} />
-                            markierte Wörter
+                            markiert
                         </button>
                         <button
                             onClick={() => setMode('random')}
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all font-bold text-xs ${mode === 'random' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
+                            className={`flex items-center gap-2 px-2 py-1.5 rounded-lg transition-all font-bold text-xs ${mode === 'random' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
                         >
                             <Icons.Dice5 size={16} className={mode === 'random' ? 'text-blue-500' : 'text-slate-400'} />
                             zufällige Wörter
@@ -508,7 +508,7 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
                                                     draggable
                                                     onDragStart={(e) => handleDragStart(e, placed, 'gap', p.id)}
                                                     onDragEnd={handleDragEnd}
-                                                    className={`px-1 py-0 rounded font-bold cursor-grab active:cursor-grabbing animate-[popIn_0.3s_ease-out] whitespace-nowrap leading-none touch-action-none touch-manipulation select-none ${placed.color}`}
+                                                    className={`px-1 py-0 rounded font-bold cursor-grab active:cursor-grabbing animate-[popIn_0.3s_ease-out] whitespace-nowrap leading-none touch-none touch-manipulation select-none ${placed.color}`}
                                                     style={{ fontSize: '1.2em' }}
                                                 >
                                                     <Word
@@ -553,7 +553,7 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
                                 onDragStart={(e) => handleDragStart(e, w, 'pool')}
                                 onDragEnd={handleDragEnd}
                                 onClick={() => handlePoolWordClick(w)}
-                                className={`w-full p-4 font-bold rounded-2xl transition-all flex items-center justify-center cursor-grab active:cursor-grabbing hover:scale-[1.02] touch-action-none touch-manipulation select-none ${w.color} ${selectedWord?.poolId === w.poolId ? 'ring-4 ring-blue-500 shadow-xl scale-105' : 'shadow-sm'}`}
+                                className={`w-full p-4 font-bold rounded-2xl transition-all flex items-center justify-center cursor-grab active:cursor-grabbing hover:scale-[1.02] touch-none touch-manipulation select-none ${w.color} ${selectedWord?.poolId === w.poolId ? 'ring-4 ring-blue-500 shadow-xl scale-105' : 'shadow-sm'}`}
                                 style={{ fontFamily: settings.fontFamily, fontSize: `${Math.max(20, settings.fontSize * 0.8)}px` }}
                             >
                                 <Word

@@ -22,19 +22,19 @@ export const Space = React.memo(({ id, content, index, color, onMouseDown, onMou
             data-paint-index={index}
             onMouseDown={(e) => { e.preventDefault(); if (onMouseDown) onMouseDown(index, e); }}
             onMouseEnter={(e) => { if (onMouseEnter) onMouseEnter(index, e); }}
-            onPointerEnter={(e) => { if (onMouseEnter && e.buttons === 1) onMouseEnter(index, e); }}
-            className={`select-none inline-block whitespace-pre transition-colors duration-200 ${isReadingMode ? 'cursor-default' : (showMarkerLayout ? 'cursor-text' : 'cursor-default')} ${touchClass}`}
+            onPointerEnter={(e) => { if (onMouseEnter && (e.buttons === 1 || e.pointerType === 'touch')) onMouseEnter(index, e); }}
+            className={`select-none inline-block whitespace-pre transition-colors duration-200 pointer-events-auto ${isReadingMode ? 'cursor-default' : (showMarkerLayout ? 'cursor-text' : 'cursor-default')} ${touchClass}`}
             style={{
                 backgroundColor: resolvedColor,
                 paddingRight: (showMarkerLayout && wordSpacing >= 0) ? `${wordSpacing}em` : '0px',
-                paddingTop: '0.05em',
+                paddingTop: '0.01em',
                 paddingBottom: '0.15em',
                 lineHeight: lineHeight,
                 fontSize: fontSize ? `${fontSize}px` : 'inherit',
                 letterSpacing: `${letterSpacing}em`,
                 verticalAlign: 'baseline',
                 marginRight: (showMarkerLayout && wordSpacing < 0) ? `${wordSpacing}em` : '0px',
-                marginTop: '-0.05em',
+                marginTop: '-0.01em',
                 marginBottom: '-0.15em'
             }}
         >

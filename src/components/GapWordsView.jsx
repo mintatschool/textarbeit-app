@@ -22,7 +22,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
 
     // Helper component for horizontal lines in the stepper control
     const HorizontalLines = ({ count }) => (
-        <div className="flex flex-col gap-[2px] w-4 items-center justify-center">
+        <div className="flex flex-col gap-[2px] w-2 items-center justify-center">
             {Array.from({ length: count }).map((_, i) => (
                 <div key={i} className="h-[2px] w-full bg-slate-300 rounded-full" />
             ))}
@@ -555,21 +555,21 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                     <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
                         <button
                             onClick={() => setMode('marked')}
-                            className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all font-bold text-sm mr-1 ${mode === 'marked' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
+                            className={`flex items-center gap-2 px-2 py-2 rounded-lg transition-all font-bold text-sm mr-1 ${mode === 'marked' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
                         >
                             <Icons.LetterMarker size={20} />
-                            <span className="hidden sm:inline">markierte Buchstaben</span>
+                            <span className="hidden sm:inline">markiert</span>
                         </button>
                         <div className="w-px bg-slate-300 my-2 mx-1"></div>
                         <button
                             onClick={() => setMode('vowels')}
-                            className={`px-4 py-2 rounded-lg font-bold text-lg transition-all ${mode === 'vowels' ? 'bg-yellow-400 text-yellow-900 border-yellow-500 shadow-[0_2px_0_0_#eab308]' : 'text-slate-500 hover:bg-slate-50'}`}
+                            className={`px-2 py-2 rounded-lg font-bold text-base transition-all ${mode === 'vowels' ? 'bg-yellow-400 text-yellow-900 border-yellow-500 shadow-[0_2px_0_0_#eab308]' : 'text-slate-500 hover:bg-slate-50'}`}
                         >
                             Vokale
                         </button>
                         <button
                             onClick={() => setMode('consonants')}
-                            className={`px-4 py-2 rounded-lg font-bold text-lg transition-all ${mode === 'consonants' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}
+                            className={`px-2 py-2 rounded-lg font-bold text-base transition-all ${mode === 'consonants' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}
                         >
                             Konsonanten
                         </button>
@@ -666,14 +666,14 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                                                                 onDrop={(e) => { e.currentTarget.classList.remove('active-target'); handleDrop(e, chunk.id, chunk.text); }}
                                                                 onClick={() => handleGapClick(chunk.id, chunk.text)}
                                                                 className={`relative flex items-center justify-center transition-all border-b-4 mx-2 rounded-t-xl gap-zone cursor-pointer ${placed ? 'border-transparent' : 'border-slate-400 bg-slate-50/50 hover:bg-slate-100 hover:border-slate-500'} ${selectedLetter ? 'ring-2 ring-blue-300 ring-offset-2 animate-pulse' : ''}`}
-                                                                style={{ minWidth: `${Math.max(1.2, chunk.text.length * 0.9)}em`, height: '2.2em' }}
+                                                                style={{ minWidth: `${Math.max(1.2, chunk.text.length * 0.9)}em`, height: '1.75em' }}
                                                             >
                                                                 {placed ? (
                                                                     <div
                                                                         draggable
                                                                         onDragStart={(e) => handleDragStart(e, placed, 'gap', chunk.id)}
                                                                         onDragEnd={handleDragEnd}
-                                                                        className={`font-bold transition-all px-1 rounded-sm cursor-grab active:cursor-grabbing animate-[popIn_0.3s_ease-out] touch-action-none touch-manipulation select-none ${showYellowStyle ? 'bg-yellow-100 shadow-border-yellow text-slate-900 mx-px' : 'text-blue-600'}`}
+                                                                        className={`font-bold transition-all px-1 rounded-sm cursor-grab active:cursor-grabbing animate-[popIn_0.3s_ease-out] touch-none touch-manipulation select-none ${showYellowStyle ? 'bg-yellow-100 shadow-border-yellow text-slate-900 mx-px' : 'text-blue-600'}`}
                                                                     >
                                                                         {placed.text}
                                                                     </div>

@@ -19,7 +19,7 @@ import PuzzleTestPiece from './PuzzleTestPiece';
  */
 
 const HorizontalLines = ({ count }) => (
-    <div className="flex flex-col gap-[2px] w-4 items-center justify-center">
+    <div className="flex flex-col gap-[2px] w-2 items-center justify-center">
         {Array.from({ length: count }).map((_, i) => (
             <div key={i} className="h-[2px] w-full bg-slate-300 rounded-full" />
         ))}
@@ -397,7 +397,7 @@ export const TwoPartPuzzleLayout = ({
                                                 {/* Filled Slot */}
                                                 {pieceText && (
                                                     <div
-                                                        className="absolute inset-0 flex items-center justify-center cursor-pointer hover:scale-105 transition-transform"
+                                                        className="absolute inset-0 flex items-center justify-center cursor-pointer hover:scale-105 transition-transform touch-none"
                                                         draggable
                                                         onDragStart={(e) => {
                                                             e.dataTransfer.setData("source-role", role);

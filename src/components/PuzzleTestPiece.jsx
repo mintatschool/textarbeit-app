@@ -116,7 +116,7 @@ const PuzzleTestPiece = ({
                 onDragStart={handleDragStart}
                 onDragEnd={onDragEnd}
                 className={`
-          relative flex items-center justify-center overflow-visible
+          relative flex items-center justify-center overflow-visible touch-none
           ${isDragging ? 'opacity-20 scale-95' : 'opacity-100'}
           ${onDragStart && !isGhost ? 'cursor-grab active:cursor-grabbing' : ''}
         `}

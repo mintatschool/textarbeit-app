@@ -35,7 +35,7 @@ import { ConnectionOverlay } from './components/ConnectionOverlay';
 // Initialize mobile-drag-drop polyfill
 polyfill({
     dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride,
-    holdToDrag: 150
+    holdToDrag: 30
 });
 import "mobile-drag-drop/default.css";
 
@@ -188,6 +188,13 @@ const App = () => {
     useEffect(() => {
         window.addEventListener('mouseup', handleMainPanMouseUp);
         return () => window.removeEventListener('mouseup', handleMainPanMouseUp);
+    }, []);
+
+    // Disable Context Menu Globally to prevent confusion (especially for children on long-press)
+    useEffect(() => {
+        const handleContextMenu = (e) => e.preventDefault();
+        document.addEventListener('contextmenu', handleContextMenu);
+        return () => document.removeEventListener('contextmenu', handleContextMenu);
     }, []);
 
     // Smart Text Update that shifts highlights
@@ -451,23 +458,36 @@ const App = () => {
             indicesToFill = Array.from(expandedIndices);
 
             let changed = false;
-            indicesToFill.forEach(idx => {
-                // Toggle logic: if dragging from an empty space into a filled one, we paint.
-                // If dragging from a filled space into a filled one with same color, we stay.
-                // To "Remove", maybe we need a dedicated "Transparent" state?
-                // For now, let's keep it simple: overwrite or stay.
+            let highlightsChanged = false;
 
-                if (next[idx] !== paintColor) {
-                    if (paintColor === 'transparent') {
-                        delete next[idx];
-                    } else {
-                        next[idx] = paintColor;
+            setHighlightedIndices(prevHighlights => {
+                const nextHighlights = new Set(prevHighlights);
+
+                indicesToFill.forEach(idx => {
+                    // Toggle logic: if dragging from an empty space into a filled one, we paint.
+                    // If dragging from a filled space into a filled one with same color, we stay.
+                    // To "Remove", maybe we need a dedicated "Transparent" state?
+                    // For now, let's keep it simple: overwrite or stay.
+
+                    if (next[idx] !== paintColor) {
+                        if (paintColor === 'transparent') {
+                            delete next[idx];
+                            // Also clear from highlightedIndices when erasing
+                            if (nextHighlights.has(idx)) {
+                                nextHighlights.delete(idx);
+                                highlightsChanged = true;
+                            }
+                        } else {
+                            next[idx] = paintColor;
+                        }
+                        changed = true;
                     }
-                    changed = true;
-                }
+                });
+
+                return highlightsChanged ? nextHighlights : prevHighlights;
             });
 
-            if (changed) {
+            if (changed || highlightsChanged) {
                 lastPaintedIndex.current = index;
                 return next;
             }
@@ -762,7 +782,7 @@ const App = () => {
 
 
     return (
-        <div className={`min-h-screen flex flex-col bg-slate-50 transition-colors duration-500 ${settings.lockScroll ? 'overflow-hidden fixed w-full h-full' : ''}`}>
+        <div className={`h-screen overflow-hidden flex flex-col bg-slate-50 transition-colors duration-500`}>
 
             {isViewMode && (
                 <Toolbar
