@@ -1,3 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=Andika&family=Comic+Neue:wght@400;700&family=Mali:wght@400;500;700&family=Open+Sans:wght@400;600&family=Patrick+Hand&display=swap');
+
+/* GLOBALER FONT-MAPPING FIX: iPad Ersatz für Comic Sans MS */
+@font-face {
+    font-family: 'Comic Sans MS';
+    src: local('Comic Neue'), local('Comic Neue Regular'), url('https://fonts.gstatic.com/s/comicneue/v8/4UaHr65GO1pc_EFT3SjOdE30Pw.woff2') format('woff2');
+    /* Maps any request for Comic Sans MS to Comic Neue */
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -8,6 +17,7 @@
     body {
         @apply antialiased;
         overscroll-behavior: none;
+        touch-action: pan-y pinch-zoom;
     }
 
     body {
@@ -18,6 +28,9 @@
         overflow-x: hidden;
         touch-action: pan-y;
         -webkit-tap-highlight-color: transparent;
+
+        /* Globaler Font-Stack: Bevorzugt Comic Neue vor Comic Sans */
+        font-family: 'Inter', 'Comic Neue', 'Comic Sans MS', 'Mali', -apple-system, sans-serif;
     }
 
     /* OPTIMIERUNG: Touch Targets optimieren & Delay entfernen */
@@ -73,12 +86,50 @@
         padding: 12px;
         touch-action: none;
         -webkit-touch-callout: none;
+        -webkit-user-drag: element;
+        /* iOS Safari Fix */
         user-select: none;
         cursor: grab;
+        transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, opacity 0.2s ease;
     }
 
+    .word-card {
+        -webkit-user-drag: element;
+        /* iOS Safari Fix */
+        transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, opacity 0.2s ease;
+    }
+
+    .word-card:active,
     .draggable-piece:active {
         cursor: grabbing;
+        transform: scale(1.08) translateY(-5px);
+        box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1) !important;
+        z-index: 100;
+    }
+
+    /* Polishing the dragging state for mobile-drag-drop polyfill */
+    [draggable="true"].opacity-50 {
+        opacity: 0.85 !important;
+        /* Keep visible, slight hint only */
+        transform: scale(0.98);
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1) !important;
+    }
+
+    .dragging {
+        opacity: 0.9;
+        /* Keep clearly visible */
+        transform: scale(1.05);
+        box-shadow: 0 20px 40px -10px rgb(0 0 0 / 0.2) !important;
+    }
+
+    /* CRITICAL FIX: Polyfill Drag Image Appearance */
+    .dnd-poly-drag-image {
+        opacity: 1 !important;
+        /* Force full visibility */
+        transform: scale(1.05) !important;
+        /* Slightly larger like Chrome */
+        z-index: 9999 !important;
+        box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.5) !important;
     }
 
     /* Erweiterte Drop-Zone für bessere Touch-Akzeptanz */
@@ -149,6 +200,44 @@
 
     ::-webkit-scrollbar-thumb:hover {
         background-color: #64748b;
+    }
+
+    /* Touch-friendly Range Inputs for iPad */
+    input[type="range"] {
+        -webkit-appearance: none;
+        appearance: none;
+        background: transparent;
+        cursor: pointer;
+        height: 44px;
+        /* Minimum touch target height */
+        padding: 0 4px;
+        touch-action: manipulation;
+    }
+
+    input[type="range"]::-webkit-slider-runnable-track {
+        background: #e2e8f0;
+        /* bg-slate-200 */
+        height: 12px;
+        border-radius: 6px;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        margin-top: -10px;
+        /* Centers thumb on the 12px track */
+        background-color: #3b82f6;
+        /* bg-blue-600 */
+        height: 32px;
+        width: 32px;
+        border-radius: 50%;
+        border: 4px solid white;
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        transition: transform 0.1s ease;
+    }
+
+    input[type="range"]:active::-webkit-slider-thumb {
+        transform: scale(1.1);
     }
 
     .custom-scroll {

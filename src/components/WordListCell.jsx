@@ -97,7 +97,7 @@ export const WordListCell = React.memo(({
             onDragEnd={onDragEnd}
             onDrop={(e) => onDrop(e, colId, idx)}
             onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-            className="p-3 bg-white border border-slate-200 rounded-lg shadow-sm hover:shadow-md hover:border-blue-300 cursor-grab active:cursor-grabbing group relative select-none touch-none"
+            className="p-3 bg-white border border-slate-200 rounded-lg shadow-sm hover-hover:shadow-md hover-hover:border-blue-300 cursor-grab active:cursor-grabbing group relative select-none touch-none active:scale-[0.98] transition-transform"
             style={{ fontFamily: settings.fontFamily, fontSize: `${settings.fontSize}px` }}
         >
             <div className="text-center pointer-events-auto">
@@ -142,7 +142,7 @@ export const WordListCell = React.memo(({
                                             const isCharHighlighted = absCharIndex !== null && wordColors && wordColors[absCharIndex] === 'yellow';
 
                                             let rounded = 'rounded px-[2px]'; // Default for non-highlighted
-                                            let customClasses = 'cursor-pointer hover:bg-slate-200 transition-colors';
+                                            let customClasses = 'cursor-pointer hover-hover:bg-slate-200 transition-colors active:bg-slate-300';
                                             let style = {};
 
                                             if (isCharHighlighted) {
@@ -193,7 +193,7 @@ export const WordListCell = React.memo(({
                 )}
             </div>
 
-            <button onClick={(e) => { e.stopPropagation(); onRemoveWord(word.id); }} className="absolute -top-2 -right-2 bg-red-100 text-red-500 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500 hover:text-white min-touch-target cursor-pointer z-20">
+            <button onClick={(e) => { e.stopPropagation(); onRemoveWord(word.id); }} className="absolute -top-2 -right-2 bg-red-100 text-red-500 rounded-full p-1 opacity-100 md:opacity-0 group-hover-hover:opacity-100 transition-opacity hover-hover:bg-red-500 hover-hover:text-white min-touch-target cursor-pointer z-20 shadow-sm border border-red-200">
                 <Icons.X size={14} />
             </button>
         </div>

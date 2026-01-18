@@ -247,7 +247,7 @@ export const PuzzleTestView = ({ words, onClose }) => {
                     {/* Scale Slider */}
                     <div className="flex items-center gap-3 bg-gray-50 px-4 py-1.5 rounded-2xl border border-gray-200 hidden sm:flex">
                         <Maximize2 className="w-4 h-4 text-blue-400" />
-                        <input type="range" min="0.6" max="1.2" step="0.1" value={scale} onChange={(e) => setScale(parseFloat(e.target.value))} className="w-24 h-1.5 bg-blue-100 rounded-lg appearance-none cursor-pointer accent-blue-600" />
+                        <input type="range" min="0.6" max="1.2" step="0.1" value={scale} onChange={(e) => setScale(parseFloat(e.target.value))} className="w-24 rounded-lg cursor-pointer accent-blue-600" />
                     </div>
 
                     <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 flex items-center justify-center transition-colors shadow-sm">

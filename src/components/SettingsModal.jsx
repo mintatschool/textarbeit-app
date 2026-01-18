@@ -41,7 +41,7 @@ export const SettingsModal = ({ settings, setSettings, onExport, onImport, logo,
 
     const fonts = [
         { name: "Patrick Hand", val: "'Patrick Hand', cursive" },
-        { name: "Comic Sans", val: "'Comic Sans MS', cursive" },
+        { name: "Comic Sans", val: "'Comic Neue', 'Comic Sans MS', cursive" },
         { name: "Mali", val: "'Mali', cursive" },
         { name: "Andika", val: "'Andika', sans-serif" },
         { name: "Open Sans", val: "'Open Sans', sans-serif" }
@@ -100,7 +100,7 @@ export const SettingsModal = ({ settings, setSettings, onExport, onImport, logo,
                                                     step="1"
                                                     value={settings.imageWidth || 15}
                                                     onChange={(e) => setSettings({ ...settings, imageWidth: parseInt(e.target.value) })}
-                                                    className="w-full accent-blue-600 h-1.5 bg-slate-200 rounded-full cursor-pointer"
+                                                    className="w-full accent-blue-600 rounded-full cursor-pointer"
                                                 />
                                             </div>
                                         )}
@@ -138,7 +138,7 @@ export const SettingsModal = ({ settings, setSettings, onExport, onImport, logo,
                                         <span className="text-xs font-black text-blue-600 bg-blue-50 px-2 py-1 rounded-lg">{settings.lineHeight.toFixed(1)}</span>
                                     </label>
                                     <div className="flex items-center gap-3 px-1">
-                                        <input type="range" min="-0.5" max="2.5" step="0.1" value={settings.lineHeight} onChange={(e) => setSettings({ ...settings, lineHeight: parseFloat(e.target.value) })} className="flex-1 accent-blue-600 h-1.5 bg-slate-100 rounded-full cursor-pointer" />
+                                        <input type="range" min="-0.5" max="2.5" step="0.1" value={settings.lineHeight} onChange={(e) => setSettings({ ...settings, lineHeight: parseFloat(e.target.value) })} className="flex-1 accent-blue-600 rounded-full cursor-pointer" />
                                     </div>
                                 </div>
                                 <div className="space-y-4">
@@ -147,7 +147,7 @@ export const SettingsModal = ({ settings, setSettings, onExport, onImport, logo,
                                         <span className="text-xs font-black text-blue-600 bg-blue-50 px-2 py-1 rounded-lg">{settings.wordSpacing.toFixed(1)}</span>
                                     </label>
                                     <div className="flex items-center gap-3 px-1">
-                                        <input type="range" min="-0.3" max="1.5" step="0.1" value={settings.wordSpacing} onChange={(e) => setSettings({ ...settings, wordSpacing: parseFloat(e.target.value) })} className="flex-1 accent-blue-600 h-1.5 bg-slate-100 rounded-full cursor-pointer" />
+                                        <input type="range" min="-0.3" max="1.5" step="0.1" value={settings.wordSpacing} onChange={(e) => setSettings({ ...settings, wordSpacing: parseFloat(e.target.value) })} className="flex-1 accent-blue-600 rounded-full cursor-pointer" />
                                     </div>
                                 </div>
                                 <div className="space-y-4">
@@ -156,7 +156,7 @@ export const SettingsModal = ({ settings, setSettings, onExport, onImport, logo,
                                         <span className="text-xs font-black text-blue-600 bg-blue-50 px-2 py-1 rounded-lg">{(settings.letterSpacing || 0).toFixed(2)}</span>
                                     </label>
                                     <div className="flex items-center gap-3 px-1">
-                                        <input type="range" min="-0.1" max="0.5" step="0.01" value={settings.letterSpacing || 0} onChange={(e) => setSettings({ ...settings, letterSpacing: parseFloat(e.target.value) })} className="flex-1 accent-blue-600 h-1.5 bg-slate-100 rounded-full cursor-pointer" />
+                                        <input type="range" min="-0.1" max="0.5" step="0.01" value={settings.letterSpacing || 0} onChange={(e) => setSettings({ ...settings, letterSpacing: parseFloat(e.target.value) })} className="flex-1 accent-blue-600 rounded-full cursor-pointer" />
                                     </div>
                                 </div>
                                 <div className="space-y-4">
@@ -165,7 +165,7 @@ export const SettingsModal = ({ settings, setSettings, onExport, onImport, logo,
                                         <span className="text-xs font-black text-blue-600 bg-blue-50 px-2 py-1 rounded-lg">{settings.textWidth}%</span>
                                     </label>
                                     <div className="flex items-center gap-3 px-1">
-                                        <input type="range" min="40" max="100" step="1" value={settings.textWidth} onChange={(e) => setSettings({ ...settings, textWidth: parseInt(e.target.value) })} className="flex-1 accent-blue-600 h-1.5 bg-slate-100 rounded-full cursor-pointer" />
+                                        <input type="range" min="40" max="100" step="1" value={settings.textWidth} onChange={(e) => setSettings({ ...settings, textWidth: parseInt(e.target.value) })} className="flex-1 accent-blue-600 rounded-full cursor-pointer" />
                                     </div>
                                 </div>
                             </div>
@@ -257,7 +257,7 @@ export const SettingsModal = ({ settings, setSettings, onExport, onImport, logo,
                                                 step="0.05"
                                                 value={settings.zoomScale || 1.2}
                                                 onChange={(e) => setSettings({ ...settings, zoomScale: parseFloat(e.target.value) })}
-                                                className="w-20 accent-blue-600 h-1.5 bg-slate-200 rounded-full cursor-pointer"
+                                                className="w-20 accent-blue-600 rounded-full cursor-pointer"
                                             />
                                             <span className="text-[10px] font-black text-blue-600 min-w-[2.5em] text-center bg-blue-50 px-1.5 py-0.5 rounded-md">x{settings.zoomScale?.toFixed(1) || '1.2'}</span>
                                         </div>
@@ -383,6 +383,8 @@ export const SettingsModal = ({ settings, setSettings, onExport, onImport, logo,
                                 </button>
                             </div>
                         </div>
+
+
                     </section>
                 </div>
 

@@ -9,7 +9,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
     const [currentGroupIdx, setCurrentGroupIdx] = useState(0);
     const [groups, setGroups] = useState([]);
     const [placedLetters, setPlacedLetters] = useState({}); // { gapId: letterObj }
-    const [poolLetters, setPoolLetters] = useState([]);
+    const [speicherLetters, setSpeicherLetters] = useState([]);
     const [showReward, setShowReward] = useState(false);
     const [groupSolved, setGroupSolved] = useState(false);
     const [solvedWordIds, setSolvedWordIds] = useState(new Set());
@@ -313,7 +313,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
     // Letter Pool Logic & Reset
     useEffect(() => {
         if (currentWords.length === 0) {
-            setPoolLetters([]);
+            setSpeicherLetters([]);
             setPlacedLetters({});
             setGroupSolved(false);
             setSolvedWordIds(new Set());
@@ -331,7 +331,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
         }
 
         // Grid-based positioning
-        setPoolLetters(shuffled);
+        setSpeicherLetters(shuffled);
         setPlacedLetters({});
         setGroupSolved(false);
         setSolvedWordIds(new Set());
@@ -378,7 +378,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
             return next;
         });
 
-        setPoolLetters(prev => {
+        setSpeicherLetters(prev => {
             let next = prev;
             if (dragData.source === 'pool') next = next.filter(l => l.poolId !== dragData.letter.poolId);
             if (existingLetter) next = [...next, existingLetter];
@@ -386,16 +386,16 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
         });
     };
 
-    const handlePoolDrop = (e) => {
+    const handleSpeicherDrop = (e) => {
         e.preventDefault();
         const dragData = dragItemRef.current;
         if (!dragData || dragData.source !== 'gap') return;
         setPlacedLetters(prev => { const next = { ...prev }; delete next[dragData.gapId]; return next; });
-        setPoolLetters(prev => [...prev, dragData.letter]);
+        setSpeicherLetters(prev => [...prev, dragData.letter]);
     };
 
     // Click-to-Place Handlers
-    const handlePoolLetterClick = (letter) => {
+    const handleSpeicherLetterClick = (letter) => {
         if (selectedLetter?.poolId === letter.poolId) {
             setSelectedLetter(null);
         } else {
@@ -409,7 +409,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
             if (placedLetters[gapId]) {
                 const letter = placedLetters[gapId];
                 setPlacedLetters(prev => { const next = { ...prev }; delete next[gapId]; return next; });
-                setPoolLetters(prev => [...prev, letter]);
+                setSpeicherLetters(prev => [...prev, letter]);
             }
             return;
         }
@@ -422,7 +422,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
             const existingLetter = placedLetters[gapId];
 
             setPlacedLetters(prev => ({ ...prev, [gapId]: letterToPlace }));
-            setPoolLetters(prev => {
+            setSpeicherLetters(prev => {
                 let next = prev.filter(l => l.poolId !== letterToPlace.poolId);
                 if (existingLetter) next = [...next, existingLetter];
                 return next;
@@ -596,7 +596,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
 
                     <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg">
                         <span className="text-xs font-bold text-slate-500">A</span>
-                        <input type="range" min="24" max="100" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-32 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer" />
+                        <input type="range" min="24" max="100" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-32 accent-blue-600 rounded-lg cursor-pointer" />
                         <span className="text-xl font-bold text-slate-500">A</span>
                     </div>
                     <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 shadow-sm transition-transform hover:scale-105 flex items-center justify-center min-touch-target sticky right-0"><Icons.X size={24} /></button>
@@ -714,16 +714,16 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                     )}
                 </div>
 
-                <div className={`${isInitialSound ? 'w-[200px]' : 'w-[30%]'} h-full flex flex-col bg-slate-200/50 border-l border-r border-slate-300 shadow-inner z-20`} onDragOver={(e) => e.preventDefault()} onDrop={handlePoolDrop}>
+                <div className={`${isInitialSound ? 'w-[200px]' : 'w-[30%]'} h-full flex flex-col bg-slate-200/50 border-l border-r border-slate-300 shadow-inner z-20`} onDragOver={(e) => e.preventDefault()} onDrop={handleSpeicherDrop}>
                     <div className="p-4 bg-white/80 border-b border-slate-200 shadow-sm space-y-3">
                         <div className="flex items-center justify-between">
-                            <span className="font-bold text-slate-600 flex items-center gap-2 uppercase tracking-wider text-[10px]">Pool</span>
-                            <span className="text-[10px] bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded-full">{poolLetters.length}</span>
+                            <span className="font-bold text-slate-600 flex items-center gap-2 uppercase tracking-wider text-[10px]">Speicher</span>
+                            <span className="text-[10px] bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded-full">{speicherLetters.length}</span>
                         </div>
 
                     </div>
                     <div className="flex-1 relative overflow-y-auto custom-scroll p-4 flex flex-wrap content-start justify-center gap-3">
-                        {poolLetters.map((l) => {
+                        {speicherLetters.map((l) => {
                             const isVowelTile = [...l.text.toLowerCase()].some(isVowel);
                             return (
                                 <div
@@ -731,7 +731,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                                     draggable
                                     onDragStart={(e) => handleDragStart(e, l, 'pool')}
                                     onDragEnd={handleDragEnd}
-                                    onClick={() => handlePoolLetterClick(l)}
+                                    onClick={() => handleSpeicherLetterClick(l)}
                                     onContextMenu={(e) => e.preventDefault()}
                                     className={`border-2 text-slate-800 font-bold rounded-2xl transition-all flex items-center justify-center p-3 cursor-grab active:cursor-grabbing hover:scale-110 bg-white border-slate-300 shadow-[0_4px_0_0_#cbd5e1] hover:shadow-[0_2px_0_0_#cbd5e1] hover:translate-y-[2px] draggable-piece ${isVowelTile ? 'bg-yellow-100 border-yellow-400' : ''} ${selectedLetter?.poolId === l.poolId ? 'selected-piece ring-4 ring-blue-500 !scale-110 z-50' : ''}`}
                                     style={{ fontSize: `${Math.max(20, settings.fontSize * 0.8)}px`, fontFamily: settings.fontFamily, minWidth: '3.5rem' }}
@@ -740,7 +740,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                                 </div>
                             );
                         })}
-                        {poolLetters.length === 0 && !groupSolved && <div className="absolute inset-0 flex items-center justify-center p-8 text-center text-slate-400 italic text-sm pointer-events-none">Prüfe deine Antworten...</div>}
+                        {speicherLetters.length === 0 && !groupSolved && <div className="absolute inset-0 flex items-center justify-center p-8 text-center text-slate-400 italic text-sm pointer-events-none">Prüfe deine Antworten...</div>}
                     </div>
                 </div>
             </div>

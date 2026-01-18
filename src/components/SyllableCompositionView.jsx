@@ -141,7 +141,7 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [], ti
             leftType="zigzag-left"
             rightType="zigzag-right"
             overlap={30}
-            icon={() => <img src={`${import.meta.env.BASE_URL}silbenbau1_logo.png`} className="w-auto h-6 object-contain" alt="Silbenbau 1" />}
+            icon={() => <Icons.Silbenbau1 size={28} className="text-blue-600" />}
             renderModeIcon={ArrowModeIcon}
             activeColor={activeColor}
             onSpeak={handleSpeak}

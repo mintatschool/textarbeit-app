@@ -34,6 +34,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
     });
 
     const [isDragging, setIsDragging] = useState(null);
+    const [selectedPiece, setSelectedPiece] = useState(null); // Tap-to-Select state
     const [pendingWordsCount, setPendingWordsCount] = useState(3);
 
     // Pieces & Slots State
@@ -256,6 +257,41 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
         });
     };
 
+    // Tap-to-Select Handlers
+    const handlePieceSelect = (piece) => {
+        if (!piece) {
+            setSelectedPiece(null);
+            return;
+        }
+        if (selectedPiece?.id === piece.id) {
+            setSelectedPiece(null);
+        } else {
+            setSelectedPiece(piece);
+        }
+    };
+
+    const handleSlotSelect = (wordId, slotIndex, targetWord) => {
+        if (!selectedPiece) return;
+
+        const targetLength = targetWord.syllables.length;
+        const requiredType = slotIndex === 0 ? 'left' : (slotIndex === targetLength - 1 ? 'right' : 'middle');
+
+        if (selectedPiece.type !== requiredType) {
+            setSelectedPiece(null);
+            return;
+        }
+
+        const slotKey = `${wordId}-${slotIndex}`;
+        setSlots(prev => {
+            const next = { ...prev };
+            const existingKey = Object.keys(next).find(k => next[k].id === selectedPiece.id);
+            if (existingKey) delete next[existingKey];
+            next[slotKey] = selectedPiece;
+            return next;
+        });
+        setSelectedPiece(null);
+    };
+
     // --------------------------------------------------------------------------------
     // 4. VALIDATION LOOP
     // --------------------------------------------------------------------------------
@@ -443,7 +479,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
             {/* Header */}
             <header className="bg-white border-b border-slate-200 px-6 py-3 flex justify-between items-center z-20 shadow-sm shrink-0">
                 <div className="flex items-center gap-3">
-                    <img src={`${import.meta.env.BASE_URL}silbenpuzzle2_logo.png`} className="w-auto h-8 object-contain rounded-lg" alt="Silbenpuzzle 2" />
+                    <Icons.Silbenpuzzle2 size={32} className="text-blue-600" />
                     <span className="text-xl font-bold text-slate-800 hidden md:inline">{title || "Silbenpuzzle 2"}</span>
 
                     {/* Numeric Progress Indicator (Standardized) */}
@@ -531,11 +567,15 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                     <div className="flex-1 overflow-y-auto custom-scroll p-4 flex flex-col items-center gap-4">
                         {getVisiblePieces('left').map(p => {
                             const isHighlighted = highlightedWordId === p.wordId;
+                            const isSelected = selectedPiece?.id === p.id;
                             return (
                                 <div key={p.id}
-                                    className={`cursor-grab active:cursor-grabbing transition-transform
-                                        ${isHighlighted ? 'scale-110 drop-shadow-xl' : 'hover:scale-105'}
+                                    className={`transition-all duration-200 cursor-pointer
+                                        ${isHighlighted ? 'scale-110 drop-shadow-xl' : ''}
+                                        ${isSelected ? 'scale-110 z-50' : 'hover:scale-105 active:scale-95'}
                                     `}
+                                    style={{ filter: isSelected ? 'drop-shadow(0 0 12px rgba(59, 130, 246, 0.8))' : 'none' }}
+                                    onClick={() => handlePieceSelect(p)}
                                     draggable onDragStart={(e) => { e.dataTransfer.setData("application/puzzle-piece-id", p.id); setIsDragging(p.id); }}
                                     onDragEnd={() => setIsDragging(null)}>
                                     <PuzzleTestPiece
@@ -567,12 +607,18 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                         <div className="w-full h-full relative pt-6 px-4 pb-4 flex flex-wrap items-center justify-center gap-4 content-center overflow-y-auto custom-scroll">
                             {getVisiblePieces('middle').map(p => {
                                 const isHighlighted = highlightedWordId === p.wordId;
+                                const isSelected = selectedPiece?.id === p.id;
                                 return (
                                     <div key={p.id}
-                                        className={`cursor-grab active:cursor-grabbing transition-transform
-                                            ${isHighlighted ? 'scale-110 z-[100] drop-shadow-xl' : 'hover:z-50'}
+                                        className={`transition-all duration-200 cursor-pointer
+                                            ${isHighlighted ? 'scale-110 z-[100] drop-shadow-xl' : ''}
+                                            ${isSelected ? 'scale-110 z-50' : 'hover:z-50 hover:scale-105 active:scale-95'}
                                         `}
-                                        style={{ transform: `rotate(${p.rotation}deg)` }}
+                                        style={{
+                                            transform: `rotate(${p.rotation}deg)`,
+                                            filter: isSelected ? 'drop-shadow(0 0 12px rgba(59, 130, 246, 0.8))' : 'none'
+                                        }}
+                                        onClick={() => handlePieceSelect(p)}
                                         draggable onDragStart={(e) => { e.dataTransfer.setData("application/puzzle-piece-id", p.id); setIsDragging(p.id); }}
                                         onDragEnd={() => setIsDragging(null)}>
                                         <PuzzleTestPiece
@@ -613,16 +659,25 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                                                 const type = idx === 0 ? 'left' : (idx === len - 1 ? 'right' : 'middle');
                                                 const slotStyles = getSlotStyles(piece, idx, len);
 
+                                                const slotIsTarget = !piece && selectedPiece && selectedPiece.type === type;
+
                                                 return (
                                                     <div
                                                         key={idx}
-                                                        className="relative flex items-center justify-center transition-all duration-300 group"
-                                                        style={slotStyles}
+                                                        className={`relative flex items-center justify-center transition-all duration-300 group ${slotIsTarget ? 'scale-105 cursor-pointer' : ''
+                                                            }`}
+                                                        style={{
+                                                            ...slotStyles,
+                                                            filter: slotIsTarget ? 'drop-shadow(0 0 10px rgba(59, 130, 246, 0.7))' : 'none'
+                                                        }}
                                                         onDragOver={(e) => e.preventDefault()}
                                                         onDrop={(e) => {
                                                             e.preventDefault();
                                                             const id = e.dataTransfer.getData("application/puzzle-piece-id");
                                                             if (!isComplete) handleDrop(id, word.id, idx);
+                                                        }}
+                                                        onClick={() => {
+                                                            if (!piece && !isComplete) handleSlotSelect(word.id, idx, word);
                                                         }}
                                                     >
                                                         {!piece && (
@@ -720,11 +775,15 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                     <div className="flex-1 overflow-y-auto custom-scroll p-4 flex flex-col items-center gap-4">
                         {getVisiblePieces('right').map(p => {
                             const isHighlighted = highlightedWordId === p.wordId;
+                            const isSelected = selectedPiece?.id === p.id;
                             return (
                                 <div key={p.id}
-                                    className={`cursor-grab active:cursor-grabbing transition-transform
-                                        ${isHighlighted ? 'scale-110 drop-shadow-xl' : 'hover:scale-105'}
+                                    className={`transition-all duration-200 cursor-pointer
+                                        ${isHighlighted ? 'scale-110 drop-shadow-xl' : ''}
+                                        ${isSelected ? 'scale-110 z-50' : 'hover:scale-105 active:scale-95'}
                                     `}
+                                    style={{ filter: isSelected ? 'drop-shadow(0 0 12px rgba(59, 130, 246, 0.8))' : 'none' }}
+                                    onClick={() => handlePieceSelect(p)}
                                     draggable onDragStart={(e) => { e.dataTransfer.setData("application/puzzle-piece-id", p.id); setIsDragging(p.id); }}
                                     onDragEnd={() => setIsDragging(null)}>
                                     <PuzzleTestPiece

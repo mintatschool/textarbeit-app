@@ -133,7 +133,11 @@ export const GapTextView = ({ text, settings, setSettings, onClose, title, hyphe
     const handleDragStart = (e, word, source, gapId = null) => {
         setIsDragging(true);
         dragItemRef.current = { word, source, gapId };
+
+        // Safari/iPad Fix: both JSON and plain text for maximum compatibility
         e.dataTransfer.setData('application/json', JSON.stringify(word));
+        e.dataTransfer.setData('text/plain', word.text);
+
         e.dataTransfer.effectAllowed = 'move';
     };
 
@@ -278,7 +282,7 @@ export const GapTextView = ({ text, settings, setSettings, onClose, title, hyphe
                 <div className="flex items-center gap-6">
                     <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl">
                         <span className="text-xs font-bold text-slate-500">A</span>
-                        <input type="range" min="16" max="48" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-32 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer" />
+                        <input type="range" min="16" max="48" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-32 accent-blue-600 rounded-lg cursor-pointer" />
                         <span className="text-xl font-bold text-slate-500">A</span>
                     </div>
                     <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 shadow-sm transition-transform hover:scale-105 flex items-center justify-center min-touch-target sticky right-0"><Icons.X size={24} /></button>
@@ -312,7 +316,7 @@ export const GapTextView = ({ text, settings, setSettings, onClose, title, hyphe
                                     return (
                                         <div
                                             key={`gap_${sIdx}_${i}`}
-                                            onDragOver={(e) => e.preventDefault()}
+                                            onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
                                             onDragEnter={(e) => { e.preventDefault(); e.currentTarget.classList.add('bg-blue-50', 'border-blue-400'); }}
                                             onDragLeave={(e) => { e.currentTarget.classList.remove('bg-blue-50', 'border-blue-400'); }}
                                             onDrop={(e) => { e.currentTarget.classList.remove('bg-blue-50', 'border-blue-400'); handleDrop(e, p.id, p.correctText); }}
@@ -358,7 +362,7 @@ export const GapTextView = ({ text, settings, setSettings, onClose, title, hyphe
 
                     <div
                         className="flex-1 overflow-y-auto custom-scroll p-6 flex flex-col gap-4"
-                        onDragOver={(e) => e.preventDefault()}
+                        onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
                         onDrop={handlePoolDrop}
                     >
                         {poolWords.map((w) => (
@@ -368,7 +372,7 @@ export const GapTextView = ({ text, settings, setSettings, onClose, title, hyphe
                                 onDragStart={(e) => handleDragStart(e, w, 'pool')}
                                 onDragEnd={handleDragEnd}
                                 onClick={() => handlePoolWordClick(w)}
-                                className={`w-full p-4 font-bold rounded-2xl transition-all flex items-center justify-center cursor-grab active:cursor-grabbing hover:scale-[1.02] draggable-piece touch-none ${w.color} ${selectedWord?.poolId === w.poolId ? 'selected-piece ring-4 ring-blue-500 z-50' : 'shadow-sm'}`}
+                                className={`w-full p-5 font-bold rounded-2xl transition-all flex items-center justify-center cursor-grab active:cursor-grabbing hover:scale-[1.02] draggable-piece touch-none border-b-4 border-black/5 ${w.color} ${selectedWord?.poolId === w.poolId ? 'selected-piece ring-4 ring-blue-500 shadow-xl z-50 scale-105' : 'shadow-md shadow-black/5 hover:shadow-lg'}`}
                                 style={{ fontFamily: settings.fontFamily, fontSize: `${Math.max(20, settings.fontSize * 0.8)}px` }}
                             >
                                 <Word

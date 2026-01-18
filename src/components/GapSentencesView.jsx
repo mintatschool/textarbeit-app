@@ -248,11 +248,11 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
         const dragData = dragItemRef.current;
         if (!dragData) return;
 
-        // Clean BOTH versions for comparison to ensure matching even with punctuation or case differences
-        const cleanDragged = dragData.word.text.replace(/[^\w\u00C0-\u017F]/g, '').toLowerCase();
-        const cleanTarget = targetWord.replace(/[^\w\u00C0-\u017F]/g, '').toLowerCase();
+        // Allow placement even if incorrect (User Request)
+        // const cleanDragged = dragData.word.text.replace(/[^\w\u00C0-\u017F]/g, '').toLowerCase();
+        // const cleanTarget = targetWord.replace(/[^\w\u00C0-\u017F]/g, '').toLowerCase();
 
-        if (cleanDragged !== cleanTarget) return;
+        // if (cleanDragged !== cleanTarget) return;
 
         const existingWord = placedWords[targetGapId];
 
@@ -299,34 +299,55 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
             return;
         }
 
-        const cleanSelected = selectedWord.text.replace(/[^\w\u00C0-\u017F]/g, '').toLowerCase();
-        const cleanTarget = correctText.replace(/[^\w\u00C0-\u017F]/g, '').toLowerCase();
+        // Allow placement even if incorrect
+        const wordToPlace = selectedWord;
+        const existingWord = placedWords[gapId];
 
-        if (cleanSelected === cleanTarget) {
-            const wordToPlace = selectedWord;
-            const existingWord = placedWords[gapId];
-
-            setPlacedWords(prev => ({ ...prev, [gapId]: wordToPlace }));
-            setPoolWords(prev => {
-                let next = prev.filter(w => w.poolId !== wordToPlace.poolId);
-                if (existingWord) next = [...next, existingWord];
-                return next;
-            });
-            setSelectedWord(null);
-        } else {
-            // Optional: Shake effect on mismatch?
-            setSelectedWord(null);
-        }
+        setPlacedWords(prev => ({ ...prev, [gapId]: wordToPlace }));
+        setPoolWords(prev => {
+            let next = prev.filter(w => w.poolId !== wordToPlace.poolId);
+            if (existingWord) next = [...next, existingWord];
+            return next;
+        });
+        setSelectedWord(null);
     };
 
     // Solution Checking
     useEffect(() => {
         if (currentGroup.length === 0) return;
+
         const totalGaps = currentGroup.reduce((acc, s) => acc + s.targets.length, 0);
-        if (Object.keys(placedWords).length === totalGaps) {
-            setGroupSolved(true);
-            if (currentGroupIdx === groups.length - 1) {
-                setTimeout(() => setShowReward(true), 800);
+        const placedCount = Object.keys(placedWords).length;
+
+        if (placedCount === totalGaps) {
+            // Check correctness of all placed words
+            let allCorrect = true;
+
+            for (const sentence of currentGroup) {
+                for (const p of sentence.parts) {
+                    if (p.type === 'gap') {
+                        const placed = placedWords[p.id];
+                        if (!placed) {
+                            allCorrect = false;
+                            break;
+                        }
+                        const cleanPlaced = placed.text.replace(/[^\w\u00C0-\u017F]/g, '').toLowerCase();
+                        const cleanTarget = p.correctText.replace(/[^\w\u00C0-\u017F]/g, '').toLowerCase();
+                        if (cleanPlaced !== cleanTarget) {
+                            allCorrect = false;
+                        }
+                    }
+                }
+                if (!allCorrect) break;
+            }
+
+            if (allCorrect) {
+                setGroupSolved(true);
+                if (currentGroupIdx === groups.length - 1) {
+                    setTimeout(() => setShowReward(true), 800);
+                }
+            } else {
+                setGroupSolved(false); // Filled but incorrect
             }
         } else {
             setGroupSolved(false);
@@ -453,7 +474,7 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
                     </div>
                     <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg">
                         <span className="text-xs font-bold text-slate-500">A</span>
-                        <input type="range" min="20" max="128" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-32 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer" />
+                        <input type="range" min="20" max="128" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-32 accent-blue-600 rounded-lg cursor-pointer" />
                         <span className="text-xl font-bold text-slate-500">A</span>
                     </div>
                     <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 shadow-sm transition-transform hover:scale-105 flex items-center justify-center min-touch-target sticky right-0"><Icons.X size={24} /></button>
@@ -553,8 +574,13 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
                                 onDragStart={(e) => handleDragStart(e, w, 'pool')}
                                 onDragEnd={handleDragEnd}
                                 onClick={() => handlePoolWordClick(w)}
-                                className={`w-full p-4 font-bold rounded-2xl transition-all flex items-center justify-center cursor-grab active:cursor-grabbing hover:scale-[1.02] touch-none touch-manipulation select-none ${w.color} ${selectedWord?.poolId === w.poolId ? 'ring-4 ring-blue-500 shadow-xl scale-105' : 'shadow-sm'}`}
-                                style={{ fontFamily: settings.fontFamily, fontSize: `${Math.max(20, settings.fontSize * 0.8)}px` }}
+                                className={`w-full p-4 font-bold rounded-2xl transition-all flex items-center justify-center cursor-grab active:cursor-grabbing hover:scale-[1.02] touch-none touch-manipulation select-none ${w.color} ${selectedWord?.poolId === w.poolId ? 'scale-105' : 'shadow-sm'}`}
+                                style={{
+                                    fontFamily: settings.fontFamily,
+                                    fontSize: `${Math.max(20, settings.fontSize * 0.8)}px`,
+                                    filter: selectedWord?.poolId === w.poolId ? 'drop-shadow(0 0 12px rgba(59, 130, 246, 0.8))' : 'none',
+                                    boxShadow: selectedWord?.poolId === w.poolId ? '0 10px 25px -5px rgba(0, 0, 0, 0.1)' : undefined
+                                }}
                             >
                                 <Word
                                     word={w.text}

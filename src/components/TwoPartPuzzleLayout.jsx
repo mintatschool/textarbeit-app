@@ -69,6 +69,7 @@ export const TwoPartPuzzleLayout = ({
     currentStageInfo,
     currentTargetIdx,
     currentTargetItem,
+    selectedPiece,
 
     // Actions from hook
     startNewGame,
@@ -80,6 +81,8 @@ export const TwoPartPuzzleLayout = ({
     setIsDragging,
     advanceToNextStage,
     handleNextItem,
+    handlePieceSelect,
+    handleSlotSelect,
 
     // Props
     onClose,
@@ -322,25 +325,33 @@ export const TwoPartPuzzleLayout = ({
                         if (sourceRole) removePieceFromSlot(sourceRole);
                     }}
                 >
-                    {scrambledPieces.filter(s => s.type === leftType).map(s => (
-                        <div
-                            key={s.id}
-                            className="transition-transform hover:scale-105 active:scale-95 cursor-grab active:cursor-grabbing"
-                            style={{ zIndex: isDragging === s.id ? 100 : 10 }}
-                            onContextMenu={(e) => e.preventDefault()}
-                        >
-                            <PuzzleTestPiece
-                                label={s.text}
-                                type={leftType}
-                                colorClass={getPieceColor(s.color)}
-                                scale={scale}
-                                onDragStart={() => setIsDragging(s.id)}
-                                onDragEnd={() => setIsDragging(null)}
-                                isDragging={isDragging === s.id}
-                                fontFamily={settings.fontFamily}
-                            />
-                        </div>
-                    ))}
+                    {scrambledPieces.filter(s => s.type === leftType).map(s => {
+                        const isSelected = selectedPiece?.id === s.id;
+                        return (
+                            <div
+                                key={s.id}
+                                className={`transition-all duration-200 cursor-pointer ${isSelected ? 'scale-110 z-50' : 'hover:scale-105 active:scale-95 z-20'
+                                    }`}
+                                style={{
+                                    zIndex: isDragging === s.id ? 100 : (isSelected ? 50 : 10),
+                                    filter: isSelected ? 'drop-shadow(0 0 12px rgba(59, 130, 246, 0.8))' : 'none'
+                                }}
+                                onClick={() => handlePieceSelect?.(s)}
+                                onContextMenu={(e) => e.preventDefault()}
+                            >
+                                <PuzzleTestPiece
+                                    label={s.text}
+                                    type={leftType}
+                                    colorClass={getPieceColor(s.color)}
+                                    scale={scale}
+                                    onDragStart={() => setIsDragging(s.id)}
+                                    onDragEnd={() => setIsDragging(null)}
+                                    isDragging={isDragging === s.id}
+                                    fontFamily={settings.fontFamily}
+                                />
+                            </div>
+                        );
+                    })}
                 </div>
 
                 {/* Center - Drop Zone */}
@@ -356,7 +367,7 @@ export const TwoPartPuzzleLayout = ({
                             ${showSuccess ? 'scale-105' : ''}
                         `}>
                             <div className="flex items-center gap-20">
-                                <div className="flex items-center pr-12 relative">
+                                <div className="flex items-center relative">
                                     {['left', 'right'].map((role, idx) => {
                                         // placedPieces now contains piece objects, not just text
                                         const placedPiece = placedPieces[role];
@@ -366,17 +377,29 @@ export const TwoPartPuzzleLayout = ({
                                         return (
                                             <div
                                                 key={role}
-                                                className="relative flex items-center justify-center transition-all duration-300 group overflow-visible"
+                                                className={`relative flex items-center justify-center transition-all duration-300 group overflow-visible ${!pieceText && selectedPiece && selectedPiece.type === (role === 'left' ? leftType : rightType)
+                                                        ? 'scale-105 cursor-pointer'
+                                                        : ''
+                                                    }`}
                                                 style={{
                                                     width: `${200 * scale}px`,
                                                     height: `${110 * scale}px`,
                                                     marginLeft: idx === 0 ? 0 : `-${scaledOverlap}px`,
-                                                    zIndex: idx === 0 ? 2 : 1
+                                                    zIndex: idx === 0 ? 2 : 1,
+                                                    filter: !pieceText && selectedPiece && selectedPiece.type === (role === 'left' ? leftType : rightType)
+                                                        ? 'drop-shadow(0 0 10px rgba(59, 130, 246, 0.7))'
+                                                        : 'none'
                                                 }}
                                                 onDragOver={(e) => e.preventDefault()}
                                                 onDrop={(e) => {
                                                     e.preventDefault();
                                                     handleDrop(role);
+                                                }}
+                                                onClick={() => {
+                                                    // If slot is empty and piece is selected, place it
+                                                    if (!pieceText && selectedPiece) {
+                                                        handleSlotSelect?.(role);
+                                                    }
                                                 }}
                                             >
                                                 <div className="absolute inset-[-20px] z-0" />
@@ -471,25 +494,33 @@ export const TwoPartPuzzleLayout = ({
                         if (sourceRole) removePieceFromSlot(sourceRole);
                     }}
                 >
-                    {scrambledPieces.filter(s => s.type === rightType).map(s => (
-                        <div
-                            key={s.id}
-                            className="transition-transform hover:scale-105 active:scale-95 cursor-grab active:cursor-grabbing"
-                            style={{ zIndex: isDragging === s.id ? 100 : 10 }}
-                            onContextMenu={(e) => e.preventDefault()}
-                        >
-                            <PuzzleTestPiece
-                                label={s.text}
-                                type={rightType}
-                                colorClass={getPieceColor(s.color)}
-                                scale={scale}
-                                onDragStart={() => setIsDragging(s.id)}
-                                onDragEnd={() => setIsDragging(null)}
-                                isDragging={isDragging === s.id}
-                                fontFamily={settings.fontFamily}
-                            />
-                        </div>
-                    ))}
+                    {scrambledPieces.filter(s => s.type === rightType).map(s => {
+                        const isSelected = selectedPiece?.id === s.id;
+                        return (
+                            <div
+                                key={s.id}
+                                className={`transition-all duration-200 cursor-pointer ${isSelected ? 'scale-110 z-50' : 'hover:scale-105 active:scale-95 z-20'
+                                    }`}
+                                style={{
+                                    zIndex: isDragging === s.id ? 100 : (isSelected ? 50 : 10),
+                                    filter: isSelected ? 'drop-shadow(0 0 12px rgba(59, 130, 246, 0.8))' : 'none'
+                                }}
+                                onClick={() => handlePieceSelect?.(s)}
+                                onContextMenu={(e) => e.preventDefault()}
+                            >
+                                <PuzzleTestPiece
+                                    label={s.text}
+                                    type={rightType}
+                                    colorClass={getPieceColor(s.color)}
+                                    scale={scale}
+                                    onDragStart={() => setIsDragging(s.id)}
+                                    onDragEnd={() => setIsDragging(null)}
+                                    isDragging={isDragging === s.id}
+                                    fontFamily={settings.fontFamily}
+                                />
+                            </div>
+                        );
+                    })}
                 </div>
             </main>
         </div>

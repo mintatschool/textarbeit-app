@@ -76,8 +76,8 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
     };
 
     const handleInteraction = useCallback((e, globalIndex) => {
-        e.stopPropagation();
         if (isReadingMode || activeTool === 'pen' || isTextMarkerMode) return;
+        e.stopPropagation();
         if (activeTool === 'split') {
             onEditMode(word, wordKey, syllables);
             return;
@@ -146,6 +146,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
         marginRight: (isTextMarkerMode || forceNoMargin) ? '0px' : `${(settings.wordSpacing ?? 0)}em`,
         zIndex: isZoomed ? 20 : 'auto',
         fontSize: `${currentFontSize}px`,
+        fontFamily: settings.fontFamily, // Explicitly set for better reliability
         lineHeight: settings.lineHeight || 1.2,
         letterSpacing: `${(settings.letterSpacing ?? 0)}em`,
         transition: 'font-size 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.3s ease'
@@ -402,11 +403,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                                 key={i}
                                 data-paint-index={globalIndex}
                                 onMouseDown={(e) => {
-                                    // FIX: Allow propagation in Paint/Eraser modes (Textmarker or Pen)
-                                    // This ensures the App's global handlePaint (via Wrapper onMouseDown) receives the event to start the drag state.
-                                    if (!isTextMarkerMode && activeTool !== 'pen') {
-                                        e.stopPropagation();
-                                    }
+                                    // Removed e.stopPropagation() to allow drag-and-drop bubbling
                                 }}
                                 onClick={(e) => {
                                     // Prevent highlighting in Marker/Pen/Reading modes
@@ -526,10 +523,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                                             key={cIdx}
                                             data-paint-index={globalIndex}
                                             onMouseDown={(e) => {
-                                                // Allow propagation in paint modes for drag detection
-                                                if (!isTextMarkerMode && activeTool !== 'pen') {
-                                                    e.stopPropagation();
-                                                }
+                                                // Removed e.stopPropagation() to allow drag-and-drop bubbling
                                             }}
                                             onClick={(e) => {
                                                 // Prevent highlighting in Marker/Pen/Reading modes

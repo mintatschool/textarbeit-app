@@ -219,11 +219,12 @@ export const SpeedReadingView = ({ words, settings, setSettings, onClose, title 
                                     />
                                 </div>
                             ) : (
-                                <div className={`w-64 h-64 bg-slate-100/30 rounded-[4rem] flex items-center justify-center transition-opacity duration-200 ${gameState === 'countdown' && !isFlashing ? 'opacity-0' : 'opacity-100'}`}>
+                                <div className={`w-64 h-64 bg-slate-100/30 rounded-[4rem] flex items-center justify-center ${gameState === 'countdown' && !isFlashing ? 'opacity-0' : 'opacity-100'}`}>
                                     <div className="relative flex items-center justify-center">
                                         <Icons.Zap
                                             size={gameState === 'countdown' ? 176 : 48}
                                             fill={gameState === 'countdown' ? 'currentColor' : 'none'}
+                                            strokeWidth={gameState === 'countdown' ? 0 : 2}
                                             className={`${gameState === 'countdown' ? 'text-yellow-400' : 'text-slate-200'}`}
                                         />
                                         {gameState === 'countdown' && (

@@ -7,13 +7,16 @@ const MULTI_QR_THRESHOLD = 800;
 
 export const QRCodeModal = ({ text, onClose }) => {
     const qrRef = useRef(null);
-    const qrRef2 = useRef(null); // Zweiter QR-Code für Multi-Part
     const fullQrRef = useRef(null);
-    const fullQrRef2 = useRef(null);
     const [linkInput, setLinkInput] = useState("");
     const [isMaximized, setIsMaximized] = useState(false);
-    const [tooLongError, setTooLongError] = useState(false);
-    const [mode, setMode] = useState('raw'); // Standard auf 'raw' für maximale Kompatibilität
+    const [mode, setMode] = useState('raw'); // 'raw' | 'text' | 'link'
+    const [showHashes, setShowHashes] = useState(false);
+
+    // Slideshow State
+    const [currentPart, setCurrentPart] = useState(0); // 0-indexed
+    const [isPlaying, setIsPlaying] = useState(false);
+    const timerRef = useRef(null);
 
     // UTF-8 Encoding Fix für Umlaute
     const toUtf8Bytes = (str) => {
@@ -24,21 +27,19 @@ export const QRCodeModal = ({ text, onClose }) => {
         }
     };
 
-    const [showHashes, setShowHashes] = useState(false);
-
     // Parsing Input Data
     const parsedData = useMemo(() => {
         try {
             return JSON.parse(text);
         } catch (e) {
-            return { text: text }; // Fallback if plain text passed
+            return { text: text };
         }
     }, [text]);
 
-    // Ermitteln ob Multi-QR benötigt wird
-    const { qrValues, isMultiPart, errorLevel } = useMemo(() => {
+    // Ermitteln ob Multi-QR benötigt wird - Jetzt dynamisch für N Teile
+    const { qrValues, isMultiPart, errorLevel, tooLong } = useMemo(() => {
         if (!parsedData || !parsedData.text) {
-            return { qrValues: [], isMultiPart: false, errorLevel: 'M' };
+            return { qrValues: [], isMultiPart: false, errorLevel: 'M', tooLong: false };
         }
 
         let contentToEncode = text;
@@ -51,22 +52,19 @@ export const QRCodeModal = ({ text, onClose }) => {
         if (showHashes && parsedData.highlights && Array.isArray(parsedData.highlights) && parsedData.highlights.length > 0) {
             const rawText = parsedData.text;
             const highlights = new Set(parsedData.highlights);
-
             const segments = rawText.split(/(\s+)/);
             let currentIndex = 0;
             let stringWithHashes = "";
 
             segments.forEach(segment => {
                 const match = segment.match(/^([^\w\u00C0-\u017F]*)(\w\u00C0-\u017F]+(?:\-[\w\u00C0-\u017F]+)*)([^\w\u00C0-\u017F]*)$/);
-
                 if (match) {
                     const prefix = match[1];
                     const cleanWord = match[2];
                     const suffix = match[3];
                     const wordStartIndex = currentIndex + prefix.length;
-                    const isHighlighted = highlights.has(wordStartIndex);
 
-                    if (isHighlighted) {
+                    if (highlights.has(wordStartIndex)) {
                         stringWithHashes += prefix + "#" + cleanWord + suffix;
                     } else {
                         stringWithHashes += segment;
@@ -76,11 +74,9 @@ export const QRCodeModal = ({ text, onClose }) => {
                 }
                 currentIndex += segment.length;
             });
-
             contentToEncode = stringWithHashes;
         }
 
-        // Standard behavior für mode !== 'raw'
         if (mode !== 'raw' && !showHashes) {
             contentToEncode = contentToEncode.length > 300
                 ? contentToEncode
@@ -89,133 +85,124 @@ export const QRCodeModal = ({ text, onClose }) => {
 
         const finalContent = toUtf8Bytes(contentToEncode);
 
-        // Check ob Multi-QR benötigt wird
-        if (finalContent.length > MULTI_QR_THRESHOLD) {
-            // Aufteilen in zwei Teile
-            const halfLength = Math.ceil(finalContent.length / 2);
-            const part1 = finalContent.substring(0, halfLength);
-            const part2 = finalContent.substring(halfLength);
+        // Konstanten für Chunking
+        // Wir nutzen etwas kleinere Chunks für bessere Scanbarkeit bei Slideshow
+        const MAX_CHUNK_SIZE = 600;
 
-            // Multi-Part Format: { p: part, t: total, d: data }
-            const qr1 = JSON.stringify({ p: 1, t: 2, d: part1 });
-            const qr2 = JSON.stringify({ p: 2, t: 2, d: part2 });
+        if (finalContent.length > MAX_CHUNK_SIZE) {
+            const totalParts = Math.ceil(finalContent.length / MAX_CHUNK_SIZE);
 
-            // Prüfen ob die Teile noch zu lang sind
-            if (qr1.length > 2000 || qr2.length > 2000) {
+            // Hard Limit verhindern
+            if (totalParts > 20) {
                 return { qrValues: [], isMultiPart: false, errorLevel: 'M', tooLong: true };
             }
 
+            // ID für diese Übertragung generieren, damit der Scanner weiß, welche Teile zusammengehören
+            // Einfacher Hash aus Textlänge und ersten/letzten Zeichen reicht hier für Kollisionsvermeidung
+            const transferId = (finalContent.length + finalContent.substring(0, 5) + finalContent.slice(-5)).replace(/[^a-zA-Z0-9]/g, '').substr(0, 8);
+
+            // Neu: Daten gleichmäßig verteilen, damit alle QR-Codes ähnlich dicht sind
+            const balancedChunkSize = Math.ceil(finalContent.length / totalParts);
+
+            const parts = [];
+            for (let i = 0; i < totalParts; i++) {
+                const start = i * balancedChunkSize;
+                const end = Math.min(start + balancedChunkSize, finalContent.length);
+                const chunkData = finalContent.substring(start, end);
+
+                // Format: { i: id, p: partNumber, t: total, d: data }
+                parts.push(JSON.stringify({
+                    i: transferId,
+                    p: i + 1,
+                    t: totalParts,
+                    d: chunkData
+                }));
+            }
+
             return {
-                qrValues: [qr1, qr2],
+                qrValues: parts,
                 isMultiPart: true,
-                errorLevel: 'M' // Medium für Multi-Part
+                errorLevel: 'M'
             };
         }
 
-        // Einzelner QR-Code
+        // Single QR
         if (finalContent.length > 2900) {
             return { qrValues: [], isMultiPart: false, errorLevel: 'M', tooLong: true };
         }
 
-        // Fehlerkorrektur: 'M' für kurze Texte (robuster), 'L' für längere
-        const errLevel = finalContent.length < 500 ? 'M' : 'L';
-
-        return { qrValues: [finalContent], isMultiPart: false, errorLevel: errLevel };
+        return {
+            qrValues: [finalContent],
+            isMultiPart: false,
+            errorLevel: finalContent.length < 500 ? 'M' : 'L'
+        };
     }, [text, parsedData, showHashes, mode]);
 
-    // Update tooLongError state
+    // Auto-Play Logic
     useEffect(() => {
-        setTooLongError(qrValues.length === 0 && mode !== 'link');
-    }, [qrValues, mode]);
+        if (isPlaying && isMultiPart && qrValues.length > 1) {
+            timerRef.current = setInterval(() => {
+                setCurrentPart(prev => (prev + 1) % qrValues.length);
+            }, 2500); // 2.5 Sekunden pro Code
+        } else {
+            if (timerRef.current) clearInterval(timerRef.current);
+        }
+        return () => {
+            if (timerRef.current) clearInterval(timerRef.current);
+        };
+    }, [isPlaying, isMultiPart, qrValues.length]);
 
-    // QR-Code 1 rendern
+    // Initial Start Auto-Play bei Multipart
     useEffect(() => {
-        if (mode === 'link') return;
-        if (qrRef.current && qrValues[0] && !isMaximized && !tooLongError) {
-            try {
-                new QRious({
-                    element: qrRef.current,
-                    value: qrValues[0],
-                    size: 1000,
-                    level: errorLevel,
-                    padding: 16 // Quiet Zone für bessere Erkennung
-                });
-            } catch (e) {
-                console.error("QR Generierung fehlgeschlagen:", e);
-                setTooLongError(true);
-            }
+        if (isMultiPart) {
+            setIsPlaying(true);
+            setCurrentPart(0);
+        } else {
+            setIsPlaying(false);
+            setCurrentPart(0);
         }
-    }, [qrValues, isMaximized, tooLongError, mode, errorLevel]);
+    }, [isMultiPart]);
 
-    // QR-Code 2 rendern (nur bei Multi-Part)
-    useEffect(() => {
-        if (mode === 'link') return;
-        if (qrRef2.current && qrValues[1] && !isMaximized && !tooLongError) {
-            try {
-                new QRious({
-                    element: qrRef2.current,
-                    value: qrValues[1],
-                    size: 1000,
-                    level: errorLevel,
-                    padding: 16
-                });
-            } catch (e) {
-                console.error("QR 2 Generierung fehlgeschlagen:", e);
-            }
-        }
-    }, [qrValues, isMaximized, tooLongError, mode, errorLevel]);
 
-    // Maximierte Ansicht
-    useEffect(() => {
-        if (!isMaximized || tooLongError) return;
-
-        const size = Math.min(window.innerWidth, window.innerHeight) * (isMultiPart ? 0.4 : 0.85);
-        const renderSize = Math.max(size * 2, 1200);
-
-        if (fullQrRef.current && qrValues[0]) {
-            try {
-                new QRious({
-                    element: fullQrRef.current,
-                    value: mode === 'link' ? linkInput : qrValues[0],
-                    size: renderSize,
-                    level: errorLevel,
-                    padding: 20
-                });
-            } catch (e) {
-                console.error("QR Maximierung fehlgeschlagen:", e);
-            }
-        }
-
-        if (fullQrRef2.current && qrValues[1]) {
-            try {
-                new QRious({
-                    element: fullQrRef2.current,
-                    value: qrValues[1],
-                    size: renderSize,
-                    level: errorLevel,
-                    padding: 20
-                });
-            } catch (e) {
-                console.error("QR 2 Maximierung fehlgeschlagen:", e);
-            }
-        }
-    }, [qrValues, isMaximized, tooLongError, linkInput, mode, isMultiPart, errorLevel]);
-
-    // QR-Code für Link-Eingabe generieren
-    const generateLinkQR = () => {
-        if (!linkInput || !qrRef.current) return;
-        setMode('link');
+    // QR Rendering Helper
+    const renderQR = (canvasRef, value, sizeParam) => {
+        if (!canvasRef.current || !value) return;
         try {
             new QRious({
-                element: qrRef.current,
-                value: linkInput,
-                size: 280,
-                level: 'M',
+                element: canvasRef.current,
+                value: value,
+                size: sizeParam,
+                level: errorLevel,
                 padding: 16
             });
         } catch (e) {
-            console.error("Link QR fehlgeschlagen:", e);
+            console.error("QR Render Error:", e);
         }
+    };
+
+    // Render Effects
+    useEffect(() => {
+        if (mode === 'link') return;
+        if (!tooLong && qrValues.length > 0) {
+            // Normal View
+            if (qrRef.current) renderQR(qrRef, qrValues[currentPart], 1000);
+
+            // Fullscreen View
+            if (fullQrRef.current) renderQR(fullQrRef, qrValues[currentPart], 1200);
+        }
+    }, [qrValues, currentPart, isMaximized, tooLong, mode, errorLevel]);
+
+    // Link QR Logic
+    useEffect(() => {
+        if (mode === 'link' && qrRef.current && linkInput) {
+            renderQR(qrRef, linkInput, 1000);
+        }
+    }, [mode, linkInput]);
+
+
+    const generateLinkQR = () => {
+        // Triggered via state change mainly, but logic kept for existing UI flow
+        setMode('link');
     };
 
     const textLength = parsedData?.text?.length || text?.length || 0;
@@ -223,37 +210,59 @@ export const QRCodeModal = ({ text, onClose }) => {
     return (
         <div className="fixed inset-0 z-[160] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 font-sans">
             {/* Maximierte Vollbild-Ansicht */}
-            {isMaximized && !tooLongError && (
+            {isMaximized && !tooLong && (
                 <div className="fixed inset-0 z-[200] bg-white flex flex-col items-center justify-center p-4 animate-fadeIn">
-                    <div className={`flex ${isMultiPart ? 'gap-6' : ''} items-center justify-center`}>
-                        <div className="bg-white p-4 border-8 border-slate-100 rounded-2xl shadow-2xl flex flex-col items-center">
-                            <canvas ref={fullQrRef} style={{ maxWidth: isMultiPart ? '40vw' : '100%', maxHeight: '70vh', objectFit: 'contain' }}></canvas>
+                    <div className="flex flex-col items-center max-w-[90vw]">
+                        <div className="bg-white p-4 border-8 border-slate-100 rounded-2xl shadow-2xl flex flex-col items-center relative">
+                            <canvas ref={fullQrRef} style={{ maxWidth: '100%', maxHeight: '70vh', objectFit: 'contain' }}></canvas>
+
+                            {/* Overlay Badge für Current Part */}
                             {isMultiPart && (
-                                <p className="mt-2 text-lg font-bold text-blue-600">① Zuerst scannen</p>
+                                <div className="absolute top-0 right-0 bg-blue-600 text-white font-bold px-4 py-2 rounded-bl-xl text-xl shadow-lg">
+                                    {currentPart + 1} / {qrValues.length}
+                                </div>
                             )}
                         </div>
-                        {isMultiPart && qrValues[1] && (
-                            <div className="bg-white p-4 border-8 border-slate-100 rounded-2xl shadow-2xl flex flex-col items-center">
-                                <canvas ref={fullQrRef2} style={{ maxWidth: '40vw', maxHeight: '70vh', objectFit: 'contain' }}></canvas>
-                                <p className="mt-2 text-lg font-bold text-green-600">② Dann scannen</p>
+
+                        {/* Controls für Fullscreen */}
+                        {isMultiPart && (
+                            <div className="flex items-center gap-6 mt-6 bg-slate-100 p-3 rounded-full shadow-lg">
+                                <button
+                                    onClick={() => { setIsPlaying(false); setCurrentPart(p => (p - 1 + qrValues.length) % qrValues.length); }}
+                                    className="p-4 bg-white rounded-full shadow-sm hover:scale-110 transition text-slate-700"
+                                    title="Zurück"
+                                >
+                                    <Icons.ChevronLeft size={32} />
+                                </button>
+                                <button
+                                    onClick={() => setIsPlaying(!isPlaying)}
+                                    className={`p-4 rounded-full shadow-md hover:scale-105 transition flex items-center gap-2 ${isPlaying ? 'bg-amber-100 text-amber-600' : 'bg-blue-600 text-white'}`}
+                                    title={isPlaying ? "Pause" : "Abspielen"}
+                                >
+                                    {isPlaying ? <Icons.Pause size={32} /> : <Icons.Play size={32} />}
+                                </button>
+                                <button
+                                    onClick={() => { setIsPlaying(false); setCurrentPart(p => (p + 1) % qrValues.length); }}
+                                    className="p-4 bg-white rounded-full shadow-sm hover:scale-110 transition text-slate-700"
+                                    title="Weiter"
+                                >
+                                    <Icons.ChevronRight size={32} />
+                                </button>
                             </div>
                         )}
                     </div>
-                    <p className="mt-4 text-slate-500 font-medium">
-                        {mode === 'link' ? 'Link-QR-Code' : (mode === 'raw' ? 'Nur Text' : 'Kompletter Status')}
-                        {isMultiPart && ' (2 Teile)'}
-                    </p>
+
                     <button
                         onClick={() => setIsMaximized(false)}
-                        className="mt-6 px-8 py-3 bg-slate-800 text-white rounded-full font-bold shadow-xl flex items-center gap-2 hover:scale-105 transition min-touch-target"
+                        className="mt-8 px-8 py-3 bg-slate-800 text-white rounded-full font-bold shadow-xl flex items-center gap-2 hover:scale-105 transition min-touch-target"
                     >
-                        <Icons.Minimize /> Verkleinern
+                        <Icons.Minimize /> Schließen
                     </button>
                 </div>
             )}
 
             {/* Normales Modal */}
-            <div className="bg-white rounded-2xl shadow-2xl p-6 modal-animate flex flex-col items-center max-w-lg w-full max-h-[90vh] overflow-y-auto custom-scroll">
+            <div className="bg-white rounded-2xl shadow-2xl p-6 modal-animate flex flex-col items-center max-w-lg w-full max-h-[90vh] overflow-y-auto custom-scroll relative">
                 <div className="flex justify-between items-center w-full mb-4">
                     <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
                         <Icons.QrCode className="text-blue-600" /> Text teilen
@@ -267,39 +276,28 @@ export const QRCodeModal = ({ text, onClose }) => {
                 <div className="flex w-full gap-2 mb-4">
                     <button
                         onClick={() => { setMode('text'); setLinkInput(""); }}
-                        className={`flex-1 py-2 rounded-lg font-bold text-xs transition ${mode === 'text'
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                            }`}
+                        className={`flex-1 py-2 rounded-lg font-bold text-xs transition ${mode === 'text' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
                     >
                         📝 Alles
                     </button>
                     <button
                         onClick={() => { setMode('raw'); setLinkInput(""); }}
-                        className={`flex-1 py-2 rounded-lg font-bold text-xs transition ${mode === 'raw'
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                            }`}
+                        className={`flex-1 py-2 rounded-lg font-bold text-xs transition ${mode === 'raw' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
                     >
                         📄 Nur Text
                     </button>
                     <button
                         onClick={() => setMode('link')}
-                        className={`flex-1 py-2 rounded-lg font-bold text-xs transition ${mode === 'link'
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                            }`}
+                        className={`flex-1 py-2 rounded-lg font-bold text-xs transition ${mode === 'link' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
                     >
                         🔗 Link
                     </button>
                 </div>
 
-                {/* Link-Eingabe (nur wenn mode === 'link') */}
+                {/* Link-Eingabe */}
                 {mode === 'link' && (
                     <div className="w-full mb-4 p-3 bg-slate-50 rounded-xl border border-slate-200">
-                        <label className="text-sm font-bold text-slate-600 block mb-2">
-                            Datei-Link (Cloud) für Schüler:
-                        </label>
+                        <label className="text-sm font-bold text-slate-600 block mb-2">Datei-Link (Cloud) für Schüler:</label>
                         <div className="flex gap-2">
                             <input
                                 type="text"
@@ -308,16 +306,7 @@ export const QRCodeModal = ({ text, onClose }) => {
                                 value={linkInput}
                                 onChange={e => setLinkInput(e.target.value)}
                             />
-                            <button
-                                onClick={generateLinkQR}
-                                className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 min-touch-target"
-                            >
-                                OK
-                            </button>
                         </div>
-                        <p className="text-xs text-slate-400 mt-2">
-                            Füge hier den Link zu deiner exportierten JSON-Datei ein.
-                        </p>
                     </div>
                 )}
 
@@ -326,64 +315,77 @@ export const QRCodeModal = ({ text, onClose }) => {
                     <div className="w-full mb-4 p-3 bg-amber-50 rounded-xl border border-amber-200 flex items-start gap-2">
                         <Icons.AlertTriangle className="text-amber-500 flex-shrink-0 mt-0.5" size={20} />
                         <div>
-                            <p className="text-sm font-bold text-amber-700">Langer Text erkannt</p>
+                            <p className="text-sm font-bold text-amber-700">Langer Text ({qrValues.length} Teile)</p>
                             <p className="text-xs text-amber-600 mt-1">
-                                Der Text wurde auf 2 QR-Codes aufgeteilt. Bitte beide nacheinander scannen!
+                                Die QR-Codes werden automatisch gewechselt. Scanne sie nacheinander.
                             </p>
                         </div>
                     </div>
                 )}
 
-                {/* QR-Code Anzeige */}
-                <div className="relative group w-full flex justify-center">
-                    {tooLongError ? (
+                {/* QR-Code Display Area */}
+                <div className="relative group w-full flex flex-col items-center">
+                    {tooLong ? (
                         <div className="bg-red-50 text-red-600 p-6 rounded-xl border border-red-200 text-center text-sm font-bold min-h-[280px] flex flex-col items-center justify-center gap-2">
                             <Icons.AlertTriangle size={48} className="text-red-400" />
-                            <p>Der Text ist zu lang für QR-Codes.</p>
-                            <p className="text-red-400 font-normal">({textLength} / 4000 Zeichen)</p>
-                            <p className="text-slate-500 font-normal mt-2">
-                                Nutze "Speichern" und einen Cloud-Link stattdessen.
-                            </p>
+                            <p>Der Text ist auch für Split-QR zu lang.</p>
+                            <p className="text-red-400 font-normal">({textLength} Zeichen)</p>
                         </div>
                     ) : (
                         <>
-                            <div className={`flex ${isMultiPart ? 'gap-4' : ''} mb-4`}>
-                                <div className="bg-white p-4 rounded-xl border-4 border-slate-100 flex flex-col items-center">
-                                    <canvas ref={qrRef} style={{ width: isMultiPart ? '140px' : '100%', maxWidth: isMultiPart ? '140px' : '280px', height: 'auto' }}></canvas>
-                                    {isMultiPart && (
-                                        <p className="text-xs font-bold text-blue-600 mt-2">① Zuerst</p>
-                                    )}
-                                </div>
+                            <div className="bg-white p-4 rounded-xl border-4 border-slate-100 flex flex-col items-center relative">
+                                <canvas ref={qrRef} style={{ width: '260px', height: '260px', maxWidth: '100%' }}></canvas>
+
                                 {isMultiPart && (
-                                    <div className="bg-white p-4 rounded-xl border-4 border-slate-100 flex flex-col items-center">
-                                        <canvas ref={qrRef2} style={{ width: '140px', maxWidth: '140px', height: 'auto' }}></canvas>
-                                        <p className="text-xs font-bold text-green-600 mt-2">② Dann</p>
+                                    <div className="absolute top-2 right-2 bg-slate-800/80 text-white text-xs font-bold px-2 py-1 rounded">
+                                        {currentPart + 1} / {qrValues.length}
                                     </div>
                                 )}
                             </div>
+
+                            {/* Controls im kleinen Modal */}
+                            {isMultiPart && mode !== 'link' && (
+                                <div className="flex items-center gap-4 mt-3">
+                                    <button
+                                        onClick={() => { setIsPlaying(false); setCurrentPart(p => (p - 1 + qrValues.length) % qrValues.length); }}
+                                        className="p-2 bg-slate-100 rounded-full hover:bg-slate-200"
+                                    >
+                                        <Icons.ChevronLeft size={20} />
+                                    </button>
+
+                                    <button
+                                        onClick={() => setIsPlaying(!isPlaying)}
+                                        className={`px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2 transition ${isPlaying ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}
+                                    >
+                                        {isPlaying ? <><Icons.Pause size={16} /> Pause</> : <><Icons.Play size={16} /> Start</>}
+                                    </button>
+
+                                    <button
+                                        onClick={() => { setIsPlaying(false); setCurrentPart(p => (p + 1) % qrValues.length); }}
+                                        className="p-2 bg-slate-100 rounded-full hover:bg-slate-200"
+                                    >
+                                        <Icons.ChevronRight size={20} />
+                                    </button>
+                                </div>
+                            )}
+
                             <button
                                 onClick={() => setIsMaximized(true)}
-                                className="absolute bottom-8 right-2 p-3 bg-white/90 shadow-md border rounded-full text-slate-600 hover:text-blue-600 hover:scale-110 transition min-touch-target"
+                                className="absolute bottom-2 right-2 p-2 bg-white/90 shadow-md border rounded-full text-slate-600 hover:text-blue-600 hover:scale-110 transition min-touch-target z-10"
                                 title="Vergrößern"
                             >
-                                <Icons.Maximize size={20} />
+                                <Icons.Maximize size={18} />
                             </button>
                         </>
                     )}
                 </div>
 
-                {!tooLongError && mode !== 'link' && (
-                    <p className="text-xs text-slate-400 mt-1 mb-2 text-center">
-                        {mode === 'text' ? 'Status + Text' : 'Nur Text'} ({textLength} Zeichen)
-                        {errorLevel === 'M' && <span className="text-green-600"> • Erweiterte Fehlererkennung</span>}
-                    </p>
-                )}
-
-                <p className="text-center text-slate-500 text-sm mb-4">
-                    {isMultiPart
-                        ? 'Bitte beide Codes nacheinander scannen!'
-                        : 'Scanne diesen Code mit der App-Kamera eines anderen Geräts.'
-                    }
+                <p className="text-center text-slate-500 text-sm mt-4 mb-4">
+                    {mode === 'link'
+                        ? 'Diesen Link manuell auf dem anderen Gerät öffnen.'
+                        : (isMultiPart
+                            ? 'Die Kamera erkennt automatisch, wenn alle Teile gescannt sind.'
+                            : 'Scanne diesen Code mit der App-Kamera.')}
                 </p>
 
                 <button

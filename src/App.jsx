@@ -32,12 +32,14 @@ import { compressIndices, decompressIndices } from './utils/compression';
 import { SpeedReadingView } from './components/SpeedReadingView';
 import { ConnectionOverlay } from './components/ConnectionOverlay';
 
+import "mobile-drag-drop/default.css";
+
 // Initialize mobile-drag-drop polyfill
 polyfill({
     dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride,
-    holdToDrag: 30
+    holdToDrag: 100, // Short delay to prevent accidental drags during scrolls, but feel "instant"
+    force: true
 });
-import "mobile-drag-drop/default.css";
 
 
 
@@ -79,8 +81,14 @@ const App = () => {
         try {
             const saved = localStorage.getItem('textarbeit_settings');
             if (saved) {
+                const parsed = JSON.parse(saved);
+                // Migration: Ensure robust Comic Sans Stack
+                // Unify all "Comic" variations to the robust stack with Neue first
+                if (parsed.fontFamily && /Comic/i.test(parsed.fontFamily)) {
+                    parsed.fontFamily = "'Comic Neue', 'Comic Sans MS', cursive";
+                }
                 // Merge saved settings with defaults to ensure new keys are present
-                return { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };
+                return { ...DEFAULT_SETTINGS, ...parsed };
             }
         } catch (e) {
             console.error('Failed to load settings from localStorage', e);
@@ -966,7 +974,7 @@ const App = () => {
                                 </button>
                             </div>
                         </div>
-                        <textarea ref={textAreaRef} className="flex-1 w-full p-6 text-xl border-2 border-slate-200 rounded-2xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all resize-none shadow-inner bg-slate-50 leading-relaxed font-medium text-slate-700 placeholder:text-slate-400 custom-scroll" placeholder="Füge hier deinen Text ein..." value={text} onChange={(e) => handleTextChange(e.target.value)} spellCheck={false} inputMode="text"></textarea>
+                        <textarea ref={textAreaRef} className="flex-1 w-full p-6 text-xl border-2 border-slate-200 rounded-2xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all resize-none shadow-inner bg-slate-50 leading-relaxed font-medium text-slate-700 placeholder:text-slate-400 custom-scroll" placeholder="Füge hier deinen Text ein..." value={text} onChange={(e) => handleTextChange(e.target.value)} spellCheck={true} lang="de" inputMode="text"></textarea>
 
                         <div className="mt-6 flex flex-wrap gap-4 justify-between items-center">
                             <div className="flex gap-2">
@@ -1349,7 +1357,7 @@ const App = () => {
                                 // Einfaches { text: "..." } Objekt
                                 if (confirm("Gescannter Text wird eingefügt. Überschreiben?")) {
                                     setText(data.text);
-                                    setIsViewMode(true);
+                                    setIsViewMode(false); // Bleibe im Eingabemodus für Korrekturen
                                 }
                             } else if (data.text || data.settings) {
                                 // Vollständiger State (mit Settings etc.)
@@ -1366,7 +1374,7 @@ const App = () => {
                         if (trimmed.length > 0) {
                             if (confirm("Gescannter Text wird eingefügt. Überschreiben?")) {
                                 setText(trimmed);
-                                setIsViewMode(true);
+                                setIsViewMode(false); // Bleibe im Eingabemodus für Korrekturen
                             }
                         }
                     }

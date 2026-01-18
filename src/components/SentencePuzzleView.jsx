@@ -94,6 +94,9 @@ export const SentencePuzzleView = ({ text, mode = 'sentence', onClose, settings,
     const handleDragStart = (e, position) => {
         setIsDragging(true);
         dragItem.current = position;
+
+        // Safari/iPad Fix: setData is mandatory to trigger drag
+        e.dataTransfer.setData('text/plain', '');
         e.dataTransfer.effectAllowed = 'move';
         // Add dragging class for visuals
         setTimeout(() => e.target.classList.add('dragging'), 0);
@@ -186,7 +189,7 @@ export const SentencePuzzleView = ({ text, mode = 'sentence', onClose, settings,
                 <div className="flex items-center gap-3">
                     <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg">
                         <span className="text-xs font-bold text-slate-500">A</span>
-                        <input type="range" min="16" max="64" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-32 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer" />
+                        <input type="range" min="16" max="64" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-32 accent-blue-600 rounded-lg cursor-pointer" />
                         <span className="text-xl font-bold text-slate-500">A</span>
                     </div>
                     <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 shadow-sm transition-transform hover:scale-105 flex items-center justify-center min-touch-target sticky right-0"><Icons.X size={24} /></button>
@@ -204,8 +207,8 @@ export const SentencePuzzleView = ({ text, mode = 'sentence', onClose, settings,
                             onDragStart={(e) => handleDragStart(e, idx)}
                             onDragEnter={(e) => handleDragEnter(e, idx)}
                             onDragEnd={handleDragEnd}
-                            onDragOver={(e) => e.preventDefault()}
-                            className={`${piece.color} p-6 rounded-xl border-l-4 shadow-sm hover:shadow-md hover:scale-[1.01] transition-all cursor-grab active:cursor-grabbing flex gap-4 items-start bg-opacity-50 touch-action-none touch-manipulation select-none`}
+                            onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; return false; }}
+                            className={`${piece.color} p-6 rounded-xl border-l-4 shadow-sm hover:shadow-md hover:scale-[1.01] transition-all cursor-grab active:cursor-grabbing flex gap-4 items-start bg-opacity-50 touch-action-none touch-manipulation select-none touch-none`}
                         >
                             <div className="mt-1 text-slate-400 font-bold select-none opacity-50 flex flex-col items-center gap-1">
                                 <Icons.Move size={20} />

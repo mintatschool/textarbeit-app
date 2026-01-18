@@ -37,12 +37,8 @@ const PuzzleModeIcon = ({ mode, active }) => {
 
 // Custom Icon Component for the PNG
 const CustomIcon = (props) => (
-    <div className={`${props.className} rounded-lg overflow-hidden flex items-center justify-center`}>
-        <img
-            src={`${import.meta.env.BASE_URL}silbenpuzzle1_logo.png`}
-            alt="Silbenpuzzle 1"
-            className="w-full h-full object-contain"
-        />
+    <div className={`${props.className} flex items-center justify-center`}>
+        <Icons.Silbenpuzzle1 size={32} className="text-blue-600" />
     </div>
 );
 

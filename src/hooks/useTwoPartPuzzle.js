@@ -52,6 +52,9 @@ export const useTwoPartPuzzle = ({
     const [isDragging, setIsDragging] = useState(null);
     const [showSuccess, setShowSuccess] = useState(false);
 
+    // Tap-to-Select state
+    const [selectedPiece, setSelectedPiece] = useState(null);
+
     const successTimerRef = useRef(null);
     const lastGeneratedStageRef = useRef(-1); // Track which stage we last generated pieces for
     const stagesRef = useRef([]); // Ref to access stages without re-triggering effects
@@ -239,7 +242,57 @@ export const useTwoPartPuzzle = ({
     }, [gameState.gameMode, gameState.currentStageIndex, gameState.stages, gameState.gameStatus, allPieces, usedPieceIds, leftType, rightType, slots]);
 
     // ==========================================================================
-    // INTERACTIONS
+    // TAP-TO-SELECT INTERACTIONS
+    // ==========================================================================
+
+    const handlePieceSelect = useCallback((piece) => {
+        if (!piece) {
+            setSelectedPiece(null);
+            return;
+        }
+
+        // Toggle selection: deselect if clicking same piece
+        if (selectedPiece?.id === piece.id) {
+            setSelectedPiece(null);
+        } else {
+            setSelectedPiece(piece);
+        }
+    }, [selectedPiece]);
+
+    const handleSlotSelect = useCallback((targetRole) => {
+        if (!selectedPiece) return;
+
+        // Check if piece type matches target
+        const expectedType = targetRole === 'left' ? leftType : rightType;
+        if (selectedPiece.type !== expectedType) {
+            setSelectedPiece(null);
+            return;
+        }
+
+        // Interrupt success state if active
+        if (showSuccess) {
+            setShowSuccess(false);
+            if (successTimerRef.current) {
+                clearTimeout(successTimerRef.current);
+                successTimerRef.current = null;
+            }
+        }
+
+        // Place the piece
+        setSlots(prev => {
+            const newSlots = { ...prev };
+            // If piece was in another slot, clear that slot
+            if (prev.left?.id === selectedPiece.id) newSlots.left = null;
+            if (prev.right?.id === selectedPiece.id) newSlots.right = null;
+            newSlots[targetRole] = selectedPiece;
+            return newSlots;
+        });
+
+        setSelectedPiece(null);
+    }, [selectedPiece, leftType, rightType, showSuccess]);
+
+    // ==========================================================================
+    // DRAG-AND-DROP INTERACTIONS
     // ==========================================================================
 
     const handleDrop = useCallback((targetRole) => {
@@ -503,6 +556,7 @@ export const useTwoPartPuzzle = ({
         currentStageInfo,
         currentTargetIdx,
         currentTargetItem,
+        selectedPiece,
 
         // Actions
         startNewGame,
@@ -513,7 +567,9 @@ export const useTwoPartPuzzle = ({
         setScale,
         setIsDragging,
         advanceToNextStage,
-        handleNextItem
+        handleNextItem,
+        handlePieceSelect,
+        handleSlotSelect
     };
 };
 

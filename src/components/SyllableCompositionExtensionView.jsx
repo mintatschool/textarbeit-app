@@ -35,6 +35,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
     });
 
     const [isDragging, setIsDragging] = useState(null);
+    const [selectedPiece, setSelectedPiece] = useState(null); // Tap-to-Select state
 
     // iPad Fix: Prevent touch scrolling during drag
     useEffect(() => {
@@ -318,6 +319,44 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
         });
     };
 
+    // Tap-to-Select Handlers
+    const handlePieceSelect = (piece) => {
+        if (!piece) {
+            setSelectedPiece(null);
+            return;
+        }
+        if (selectedPiece?.id === piece.id) {
+            setSelectedPiece(null);
+        } else {
+            setSelectedPiece(piece);
+        }
+    };
+
+    const handleSlotSelect = (targetId, slotIndex, target) => {
+        if (!selectedPiece) return;
+
+        const isStart = slotIndex === 0;
+        const isEnd = slotIndex === target.parts.length - 1;
+        let requiredType = 'zigzag-middle';
+        if (isStart) requiredType = 'zigzag-left';
+        if (isEnd) requiredType = 'zigzag-right';
+
+        if (selectedPiece.type !== requiredType) {
+            setSelectedPiece(null);
+            return;
+        }
+
+        const slotKey = `${targetId}-${slotIndex}`;
+        setPlacedPieces(prev => {
+            const next = { ...prev };
+            const existingKey = Object.keys(next).find(k => next[k].id === selectedPiece.id);
+            if (existingKey) delete next[existingKey];
+            next[slotKey] = selectedPiece;
+            return next;
+        });
+        setSelectedPiece(null);
+    };
+
     // --------------------------------------------------------------------------------
     // 5. VALIDATION
     // --------------------------------------------------------------------------------
@@ -479,7 +518,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
             {/* HEADER */}
             <header className="bg-white border-b border-slate-200 px-6 py-3 flex justify-between items-center z-20 shadow-sm shrink-0">
                 <div className="flex items-center gap-3">
-                    <img src={`${import.meta.env.BASE_URL}silbenbau2_logo.png`} className="w-auto h-10 object-contain" alt="Silbenbau 2" />
+                    <Icons.Silbenbau2 size={40} className="text-blue-600" />
                     <span className="text-xl font-bold text-slate-800 hidden md:inline">{title || "Silbenbau 2"}</span>
 
                     {/* Numeric Progress Indicator (Standardized) */}
@@ -557,14 +596,21 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                         if (pid) handleReturnToPool(pid);
                     }}
                 >
-                    <div className="bg-slate-200/50 py-1 text-center text-[10px] font-bold text-slate-400 uppercase">Anfang</div>
-                    <div className="flex-1 overflow-y-auto custom-scroll p-4 content-center gap-4 flex flex-col items-center">
-                        {leftVisible.map(p => (
-                            <div key={p.id} className="cursor-grab active:cursor-grabbing hover:scale-105 transition-transform"
-                                draggable onDragStart={(e) => { e.dataTransfer.setData("pieceId", p.id); setIsDragging(p.id); }} onDragEnd={() => setIsDragging(null)}>
-                                <PuzzleTestPiece label={p.text} type="zigzag-left" colorClass={getPieceColor(p.color)} scale={gameState.pieceScale * 0.8} fontFamily={settings.fontFamily} onDragStart={() => { }} />
-                            </div>
-                        ))}
+                    <div className="bg-slate-200/50 py-1 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Anfang</div>
+                    <div className="flex-1 overflow-y-auto custom-scroll p-4 flex flex-col items-center gap-4">
+                        {leftVisible.map(p => {
+                            const isSelected = selectedPiece?.id === p.id;
+                            return (
+                                <div key={p.id}
+                                    className={`transition-all duration-200 cursor-pointer ${isSelected ? 'scale-110 z-50' : 'hover:scale-105 active:scale-95'
+                                        }`}
+                                    style={{ filter: isSelected ? 'drop-shadow(0 0 12px rgba(59, 130, 246, 0.8))' : 'none' }}
+                                    onClick={() => handlePieceSelect(p)}
+                                    draggable onDragStart={(e) => { e.dataTransfer.setData("pieceId", p.id); setIsDragging(p.id); }} onDragEnd={() => setIsDragging(null)}>
+                                    <PuzzleTestPiece label={p.text} type="zigzag-left" colorClass={getPieceColor(p.color)} scale={gameState.pieceScale * 0.8} fontFamily={settings.fontFamily} onDragStart={() => { }} />
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
 
@@ -581,15 +627,19 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                     >
                         <div className="absolute top-1 left-2 text-[10px] font-bold text-slate-400 uppercase">Mitte</div>
                         <div className="w-full h-full relative pt-6 px-4 pb-4 flex flex-wrap items-center justify-center gap-4 content-center overflow-y-auto custom-scroll">
-                            {middleVisible.map(p => (
-                                <div key={p.id}
-                                    className="cursor-grab active:cursor-grabbing hover:z-50 transition-transform"
-                                    style={{ transform: `rotate(${p.rotation}deg)` }}
-                                    draggable onDragStart={(e) => { e.dataTransfer.setData("pieceId", p.id); setIsDragging(p.id); }} onDragEnd={() => setIsDragging(null)}
-                                >
-                                    <PuzzleTestPiece label={p.text} type="zigzag-middle" colorClass={getPieceColor(p.color)} scale={gameState.pieceScale * 0.8} fontFamily={settings.fontFamily} onDragStart={() => { }} />
-                                </div>
-                            ))}
+                            {middleVisible.map(p => {
+                                const isSelected = selectedPiece?.id === p.id;
+                                return (
+                                    <div key={p.id}
+                                        className={`transition-all duration-200 cursor-pointer ${isSelected ? 'scale-110 z-50' : 'hover:z-50 hover:scale-105 active:scale-95'}`}
+                                        style={{ transform: `rotate(${p.rotation}deg)`, filter: isSelected ? 'drop-shadow(0 0 12px rgba(59, 130, 246, 0.8))' : 'none' }}
+                                        onClick={() => handlePieceSelect(p)}
+                                        draggable onDragStart={(e) => { e.dataTransfer.setData("pieceId", p.id); setIsDragging(p.id); }} onDragEnd={() => setIsDragging(null)}
+                                    >
+                                        <PuzzleTestPiece label={p.text} type="zigzag-middle" colorClass={getPieceColor(p.color)} scale={gameState.pieceScale * 0.8} fontFamily={settings.fontFamily} onDragStart={() => { }} />
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
 
@@ -607,9 +657,9 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                                 : target.full;
 
                             return (
-                                <div key={target.id} className={`flex items-center gap-20 transition-all duration-500 ${isComplete ? 'opacity-80 scale-95' : ''}`}>
+                                <div key={target.id} className={`flex items-center gap-4 transition-all duration-500 ${isComplete ? 'opacity-80 scale-95' : ''}`}>
                                     {/* Slot Row */}
-                                    <div className="relative flex items-center pr-12" style={{ height: 110 * gameState.pieceScale }}>
+                                    <div className="relative flex items-center" style={{ height: 110 * gameState.pieceScale }}>
                                         <div className="flex items-center gap-0" style={{ transform: `scale(${gameState.pieceScale})`, transformOrigin: 'left center', height: 110 }}>
                                             {Array.from({ length: target.parts.length }).map((_, idx) => {
                                                 const slotKey = `${target.id}-${idx}`;
@@ -621,20 +671,27 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                                                 const marginLeft = idx === 0 ? 0 : -overlap;
                                                 const targetType = isStart ? 'zigzag-left' : (isEnd ? 'zigzag-right' : 'zigzag-middle');
 
+                                                const slotIsTarget = !piece && selectedPiece && selectedPiece.type === targetType;
+
                                                 return (
                                                     <div
                                                         key={idx}
-                                                        className="relative flex items-center justify-center group"
+                                                        className={`relative flex items-center justify-center group transition-all duration-200 ${slotIsTarget ? 'scale-105 cursor-pointer' : ''
+                                                            }`}
                                                         style={{
                                                             width: 200, height: 110,
                                                             marginLeft: marginLeft,
-                                                            zIndex: 10 + idx
+                                                            zIndex: 10 + idx,
+                                                            filter: slotIsTarget ? 'drop-shadow(0 0 10px rgba(59, 130, 246, 0.7))' : 'none'
                                                         }}
                                                         onDragOver={(e) => e.preventDefault()}
                                                         onDrop={(e) => {
                                                             e.preventDefault();
                                                             const pid = e.dataTransfer.getData("pieceId");
                                                             if (pid && !isComplete) handleDrop(pid, target.id, idx);
+                                                        }}
+                                                        onClick={() => {
+                                                            if (!piece && !isComplete) handleSlotSelect(target.id, idx, target);
                                                         }}
                                                     >
                                                         {!piece && (
@@ -662,7 +719,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                                     </div>
 
                                     {/* Audio, Checkmark & Manual Advance Group */}
-                                    <div className="flex flex-col items-center ml-4 gap-4">
+                                    <div className="flex flex-col items-center gap-2 shrink-0">
                                         <div className="flex items-center gap-4 min-h-[56px]">
                                             {/* Speaker */}
                                             {audioEnabled && (
@@ -712,14 +769,20 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                         if (pid) handleReturnToPool(pid);
                     }}
                 >
-                    <div className="bg-slate-200/50 py-1 text-center text-[10px] font-bold text-slate-400 uppercase">Ende</div>
-                    <div className="flex-1 overflow-y-auto custom-scroll p-4 content-center gap-4 flex flex-col items-center">
-                        {rightVisible.map(p => (
-                            <div key={p.id} className="cursor-grab active:cursor-grabbing hover:scale-105 transition-transform"
-                                draggable onDragStart={(e) => { e.dataTransfer.setData("pieceId", p.id); setIsDragging(p.id); }} onDragEnd={() => setIsDragging(null)}>
-                                <PuzzleTestPiece label={p.text} type="zigzag-right" colorClass={getPieceColor(p.color)} scale={gameState.pieceScale * 0.8} fontFamily={settings.fontFamily} onDragStart={() => { }} />
-                            </div>
-                        ))}
+                    <div className="bg-slate-200/50 py-1 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ende</div>
+                    <div className="flex-1 overflow-y-auto custom-scroll p-4 flex flex-col items-center gap-4">
+                        {rightVisible.map(p => {
+                            const isSelected = selectedPiece?.id === p.id;
+                            return (
+                                <div key={p.id}
+                                    className={`transition-all duration-200 cursor-pointer ${isSelected ? 'scale-110 z-50' : 'hover:scale-105 active:scale-95'}`}
+                                    style={{ filter: isSelected ? 'drop-shadow(0 0 12px rgba(59, 130, 246, 0.8))' : 'none' }}
+                                    onClick={() => handlePieceSelect(p)}
+                                    draggable onDragStart={(e) => { e.dataTransfer.setData("pieceId", p.id); setIsDragging(p.id); }} onDragEnd={() => setIsDragging(null)}>
+                                    <PuzzleTestPiece label={p.text} type="zigzag-right" colorClass={getPieceColor(p.color)} scale={gameState.pieceScale * 0.8} fontFamily={settings.fontFamily} onDragStart={() => { }} />
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             </div>

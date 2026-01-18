@@ -484,10 +484,10 @@ export const Toolbar = ({
                 <MenuItem onClick={() => setShowCarpet(true)} icon={<Icons.Grid2x2 size={20} className="text-indigo-600" />}>
                     Silbenteppich
                 </MenuItem>
-                <MenuItem onClick={() => setShowSyllableComposition(true)} icon={<img src={`${import.meta.env.BASE_URL}silbenbau1_logo.png`} className="h-4 w-auto object-contain mr-4" alt="Silbenbau 1" />}>
+                <MenuItem onClick={() => setShowSyllableComposition(true)} icon={<Icons.Silbenbau1 size={28} className="text-blue-600" />}>
                     Silbenbau 1
                 </MenuItem>
-                <MenuItem onClick={() => setShowSyllableExtension(true)} icon={<img src={`${import.meta.env.BASE_URL}silbenbau2_logo.png`} className="h-4 w-auto object-contain mr-4" alt="Silbenbau 2" />}>
+                <MenuItem onClick={() => setShowSyllableExtension(true)} icon={<Icons.Silbenbau2 size={28} className="text-blue-600" />}>
                     Silbenbau 2
                 </MenuItem>
             </MenuDropdown>
@@ -506,10 +506,10 @@ export const Toolbar = ({
                 <MenuItem onClick={() => setShowSpeedReading(true)} icon={<Icons.Zap size={20} className="text-purple-600" />}>
                     Blitzlesen
                 </MenuItem>
-                <MenuItem onClick={() => setShowPuzzleTestTwo(true)} icon={<img src={`${import.meta.env.BASE_URL}silbenpuzzle1_logo.png`} className="h-4 w-auto object-contain rounded-md mr-4" alt="Silbenpuzzle 1" />}>
+                <MenuItem onClick={() => setShowPuzzleTestTwo(true)} icon={<Icons.Silbenpuzzle1 size={28} className="text-blue-600" />}>
                     Silbenpuzzle 1
                 </MenuItem>
-                <MenuItem onClick={() => setShowPuzzleTestMulti(true)} icon={<img src={`${import.meta.env.BASE_URL}silbenpuzzle2_logo.png`} className="h-4 w-auto object-contain rounded-md mr-4" alt="Silbenpuzzle 2" />}>
+                <MenuItem onClick={() => setShowPuzzleTestMulti(true)} icon={<Icons.Silbenpuzzle2 size={28} className="text-blue-600" />}>
                     Silbenpuzzle 2
                 </MenuItem>
                 <MenuItem onClick={() => setShowInitialSound(true)} icon={<Icons.InitialSound size={20} className="text-blue-600" />}>
@@ -602,17 +602,6 @@ export const Toolbar = ({
             <div className="mt-auto flex flex-col gap-4 w-full items-center">
                 <Separator horizontal={false} />
 
-                {!settings?.reduceMenu && (
-                    <ToolbarButton
-                        title="Silben korrigieren"
-                        icon={Icons.SplitVertical}
-                        onClick={() => onToolChange(activeTool === 'split' ? null : 'split')}
-                        active={activeTool === 'split'}
-                        activeColor="teal"
-                        disabled={isReadingMode}
-                    />
-                )}
-
                 <ToolbarButton
                     title="Lesemodus"
                     icon={Icons.Hand}
@@ -620,6 +609,17 @@ export const Toolbar = ({
                     active={isReadingMode}
                     activeColor="orange"
                 />
+
+                {!settings?.reduceMenu && (
+                    <ToolbarButton
+                        title="Silben korrigieren"
+                        icon={Icons.SilbenKorrigieren}
+                        onClick={() => onToolChange(activeTool === 'split' ? null : 'split')}
+                        active={activeTool === 'split'}
+                        activeColor="teal"
+                        disabled={isReadingMode}
+                    />
+                )}
 
                 {/* --- SECTION 5: GLOBAL UTILITIES --- */}
                 <ToolbarButton
