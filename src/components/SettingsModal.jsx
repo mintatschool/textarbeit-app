@@ -382,6 +382,13 @@ export const SettingsModal = ({ settings, setSettings, onExport, onImport, logo,
                                     <Icons.Trash2 size={16} /> Alle Einstellungen zurücksetzen
                                 </button>
                             </div>
+
+                            {/* Authorship Credit */}
+                            <div className="flex justify-center pb-2">
+                                <span className="text-[10px] font-medium text-slate-300">
+                                    Gestaltung & Programmierung: Peter Rogoll (KI-gestützt)
+                                </span>
+                            </div>
                         </div>
 
 
