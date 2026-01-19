@@ -384,8 +384,8 @@ export const SettingsModal = ({ settings, setSettings, onExport, onImport, logo,
                             </div>
 
                             {/* Authorship Credit */}
-                            <div className="flex justify-center pb-2">
-                                <span className="text-[10px] font-medium text-slate-300">
+                            <div className="flex justify-center pb-6 mt-4">
+                                <span className="text-sm font-bold text-slate-400">
                                     Gestaltung & Programmierung: Peter Rogoll (KI-gestützt)
                                 </span>
                             </div>
