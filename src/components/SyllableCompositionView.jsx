@@ -122,7 +122,7 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [], ti
         rightType: 'zigzag-right',
         initialScale: 1.0,
         successDelay: 1000,
-        manualAdvance: true
+        manualAdvance: false
     });
 
     const handleSpeak = (item) => {
@@ -154,7 +154,8 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [], ti
             allCompleteMessage="Alle Silben gebaut!"
             stageCompleteMessage="Level geschafft!"
             hideSpeakerToggle={true}
-            manualAdvance={true}
+            skipStageConfirmation={true}
+            manualAdvance={false}
         />
     );
 };

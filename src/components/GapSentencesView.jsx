@@ -473,7 +473,7 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
                         </button>
                         <HorizontalLines count={5} />
                     </div>
-                    <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg">
+                    <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 h-10 rounded-lg">
                         <span className="text-xs font-bold text-slate-500">A</span>
                         <input type="range" min="20" max="128" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-32 accent-blue-600 rounded-lg cursor-pointer" />
                         <span className="text-xl font-bold text-slate-500">A</span>
@@ -496,7 +496,7 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
                 <div className="flex-1 p-8 overflow-y-auto custom-scroll flex flex-col gap-8 bg-white/50">
                     <div className="max-w-7xl mx-auto space-y-12 py-24">
                         {currentGroup.map(sentence => (
-                            <div key={sentence.id} className="flex flex-wrap items-center text-slate-800 leading-relaxed" style={{ fontSize: `${settings.fontSize}px`, fontFamily: settings.fontFamily, columnGap: `${(settings.wordSpacing ?? 0.3)}em`, rowGap: '1.5em' }}>
+                            <div key={sentence.id} className="flex flex-wrap items-center text-slate-800 leading-relaxed" style={{ fontSize: `${settings.fontSize}px`, fontFamily: settings.fontFamily, columnGap: `${(settings.wordSpacing ?? 0.5)}em`, rowGap: '1.5em' }}>
                                 {sentence.parts.map((p, i) => {
                                     if (p.type === 'text') {
                                         return p.text.split(/(\s+)/).map((seg, sidx) => {
@@ -575,12 +575,10 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
                                 onDragStart={(e) => handleDragStart(e, w, 'pool')}
                                 onDragEnd={handleDragEnd}
                                 onClick={() => handlePoolWordClick(w)}
-                                className={`w-full p-4 font-bold rounded-2xl transition-all flex items-center justify-center cursor-grab active:cursor-grabbing hover:scale-[1.02] touch-none touch-manipulation select-none bg-white border-2 border-slate-300 text-slate-800 shadow-[0_4px_0_0_#cbd5e1] hover:shadow-[0_2px_0_0_#cbd5e1] hover:translate-y-[2px] ${selectedWord?.poolId === w.poolId ? 'scale-105 border-blue-500 ring-4 ring-blue-500/20' : ''}`}
+                                className={`w-full p-4 font-bold rounded-2xl transition-all flex items-center justify-center cursor-grab active:cursor-grabbing hover:scale-[1.02] touch-none touch-manipulation select-none bg-white border border-blue-600 text-slate-800 ${selectedWord?.poolId === w.poolId ? 'scale-105 ring-4 ring-blue-500/20' : ''}`}
                                 style={{
                                     fontFamily: settings.fontFamily,
                                     fontSize: `${Math.max(20, settings.fontSize * 0.8)}px`,
-                                    filter: selectedWord?.poolId === w.poolId ? 'drop-shadow(0 0 12px rgba(59, 130, 246, 0.5))' : 'none',
-                                    // boxShadow: selectedWord?.poolId === w.poolId ? '0 10px 25px -5px rgba(0, 0, 0, 0.1)' : undefined
                                 }}
                             >
                                 <Word

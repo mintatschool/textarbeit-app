@@ -187,7 +187,7 @@ export const SentencePuzzleView = ({ text, mode = 'sentence', onClose, settings,
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg">
+                    <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 h-10 rounded-lg">
                         <span className="text-xs font-bold text-slate-500">A</span>
                         <input type="range" min="16" max="64" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-32 accent-blue-600 rounded-lg cursor-pointer" />
                         <span className="text-xl font-bold text-slate-500">A</span>
@@ -220,7 +220,7 @@ export const SentencePuzzleView = ({ text, mode = 'sentence', onClose, settings,
                                     fontSize: `${settings.fontSize}px`
                                 }}
                             >
-                                <div className="flex flex-wrap items-start" style={{ columnGap: `${(settings.wordSpacing ?? 0.3)}em`, rowGap: '0.2em' }}>
+                                <div className="flex flex-wrap items-start" style={{ columnGap: `${(settings.wordSpacing ?? 0.5)}em`, rowGap: '0.2em' }}>
                                     {piece.text.split(/(\s+)/).map((seg, sidx) => {
                                         if (seg.match(/\n/)) return <div key={sidx} className="w-full h-0" />;
                                         if (seg.trim().length === 0) return null;

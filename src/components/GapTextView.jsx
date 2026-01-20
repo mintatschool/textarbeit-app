@@ -280,7 +280,7 @@ export const GapTextView = ({ text, settings, setSettings, onClose, title, hyphe
                     <Icons.GapText className="text-blue-600" /> {title || "Lückentext"}
                 </h2>
                 <div className="flex items-center gap-6">
-                    <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl">
+                    <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 h-10 rounded-xl">
                         <span className="text-xs font-bold text-slate-500">A</span>
                         <input type="range" min="16" max="48" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-32 accent-blue-600 rounded-lg cursor-pointer" />
                         <span className="text-xl font-bold text-slate-500">A</span>
@@ -293,7 +293,7 @@ export const GapTextView = ({ text, settings, setSettings, onClose, title, hyphe
                 {/* Scrollable Text Area */}
                 <div className="flex-1 overflow-y-auto custom-scroll p-12 bg-slate-50/50">
                     <div className="max-w-4xl mx-auto bg-white p-12 rounded-[2rem] shadow-sm border border-slate-100 min-h-full">
-                        <div className="flex flex-wrap items-baseline leading-relaxed" style={{ fontSize: `${settings.fontSize}px`, fontFamily: settings.fontFamily, columnGap: `${(settings.wordSpacing ?? 0.3)}em`, rowGap: '1.5em' }}>
+                        <div className="flex flex-wrap items-baseline leading-relaxed" style={{ fontSize: `${settings.fontSize}px`, fontFamily: settings.fontFamily, columnGap: `${(settings.wordSpacing ?? 0.5)}em`, rowGap: '1.5em' }}>
                             {sentences.flatMap((sentence, sIdx) => [
                                 ...sentence.parts.map((p, i) => {
                                     if (p.type === 'text') {

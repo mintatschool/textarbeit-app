@@ -104,7 +104,7 @@ export const SyllableCarpetView = ({ words, settings, setSettings, onClose, titl
                         >
                             <Icons.Hand size={28} />
                         </button>
-                        <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg no-print">
+                        <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 h-10 rounded-lg no-print">
                             <span className="text-xs font-bold text-slate-500">A</span>
                             <input type="range" min="16" max="120" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-32 accent-blue-600 rounded-lg cursor-pointer" />
                             <span className="text-xl font-bold text-slate-500">A</span>

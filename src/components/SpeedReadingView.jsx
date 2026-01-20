@@ -8,7 +8,7 @@ import { EmptyStateMessage } from './EmptyStateMessage';
 export const SpeedReadingView = ({ words, settings, setSettings, onClose, title }) => {
     // Level calculation Round 5 (Exponential gaps):
     const SPEED_LEVELS = [
-        2000, 1600, 1250, 950, 720, 540, 400, 290, 200, 130, 75, 30
+        1800, 1440, 1125, 855, 648, 486, 360, 261, 180, 117, 67, 27
     ];
     const [level, setLevel] = useState(6);
     const speed = SPEED_LEVELS[level - 1];
@@ -50,10 +50,10 @@ export const SpeedReadingView = ({ words, settings, setSettings, onClose, title 
                     }
                     // Sync flash with each number decrement
                     setIsFlashing(true);
-                    setTimeout(() => setIsFlashing(false), 320);
+                    setTimeout(() => setIsFlashing(false), 290);
                     return prev - 1;
                 });
-            }, 1000);
+            }, 900);
 
             return () => {
                 clearInterval(countdownTimer);
@@ -110,47 +110,51 @@ export const SpeedReadingView = ({ words, settings, setSettings, onClose, title 
             <header className="bg-white border-b border-slate-200 px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4 z-20 shrink-0">
                 <div className="flex items-center gap-3">
                     <Icons.Zap className="text-purple-600 w-8 h-8" />
-                    <span className="text-2xl font-black text-slate-800">{title || "Blitzlesen"}</span>
+                    <div className="flex flex-col">
+                        <span className="text-2xl font-black text-slate-800 leading-tight">{title || "Blitzlesen"}</span>
+                        {gameState !== 'results' && (
+                            <span className="text-base font-black transition-colors duration-200" style={{ color: getSliderColor(level) }}>
+                                Stufe {level}
+                            </span>
+                        )}
+                    </div>
                 </div>
 
                 {gameState !== 'results' && (
-                    <div className="flex items-center gap-6 min-w-[550px]">
-                        <Icons.Walker size={42} className="text-green-500 shrink-0" />
-                        <div className="flex-1 flex flex-col items-center">
-                            <div className="w-full relative mt-2 mb-2">
-                                <input
-                                    type="range"
-                                    min="1"
-                                    max="12"
-                                    step="1"
-                                    value={level}
-                                    onChange={(e) => setLevel(Number(e.target.value))}
-                                    className="w-full h-4 rounded-lg appearance-none cursor-pointer transition-all accent-current z-10 relative speed-range"
-                                    style={{
-                                        backgroundColor: '#e2e8f0',
-                                        color: getSliderColor(level)
-                                    }}
-                                />
-                                {/* Ticks */}
-                                <div className="absolute top-1/2 -translate-y-1/2 w-[calc(100%-12px)] left-[6px] flex justify-between pointer-events-none opacity-30">
-                                    {Array.from({ length: 12 }).map((_, i) => (
-                                        <div key={i} className="w-[1px] h-2 bg-slate-600 rounded-full" />
-                                    ))}
+                    <div className="flex items-center gap-6">
+                        <div className="relative flex flex-col items-center w-[420px] h-10 justify-center">
+                            <div className="flex items-center gap-3 w-full">
+                                <Icons.Walker size={42} className="text-green-500 shrink-0" />
+                                <div className="flex-1 relative h-10 flex items-center">
+                                    <input
+                                        type="range"
+                                        min="1"
+                                        max="12"
+                                        step="1"
+                                        value={level}
+                                        onChange={(e) => setLevel(Number(e.target.value))}
+                                        className="w-full appearance-none cursor-pointer transition-all accent-current z-10 relative speed-range"
+                                        style={{
+                                            color: getSliderColor(level)
+                                        }}
+                                    />
+                                    {/* Ticks */}
+                                    <div className="absolute top-1/2 -translate-y-1/2 w-[calc(100%-12px)] left-[6px] flex justify-between pointer-events-none opacity-30">
+                                        {Array.from({ length: 12 }).map((_, i) => (
+                                            <div key={i} className="w-[1px] h-2 bg-slate-600 rounded-full" />
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
-
-                            <div className="text-xl font-black mt-1" style={{ color: getSliderColor(level) }}>
-                                Stufe {level}
+                                <Icons.Runner size={42} className="text-orange-500 shrink-0" />
                             </div>
                         </div>
-                        <Icons.Runner size={42} className="text-orange-500 shrink-0" />
                     </div>
                 )}
 
                 <div className="flex items-center gap-4">
                     {/* Font Size Slider - Standard App Style */}
                     {setSettings && (
-                        <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg">
+                        <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 h-10 rounded-lg">
                             <span className="text-xs font-bold text-slate-500">A</span>
                             <input
                                 type="range"
@@ -222,7 +226,7 @@ export const SpeedReadingView = ({ words, settings, setSettings, onClose, title 
                                 <div className={`w-64 h-64 bg-slate-100/30 rounded-[4rem] flex items-center justify-center ${gameState === 'countdown' && !isFlashing ? 'opacity-0' : 'opacity-100'}`}>
                                     <div className="relative flex items-center justify-center">
                                         <Icons.Zap
-                                            size={gameState === 'countdown' ? 176 : 48}
+                                            size={gameState === 'countdown' ? 210 : 48}
                                             fill={gameState === 'countdown' ? 'currentColor' : 'none'}
                                             strokeWidth={gameState === 'countdown' ? 0 : 2}
                                             className={`${gameState === 'countdown' ? 'text-yellow-400' : 'text-slate-200'}`}
@@ -263,13 +267,15 @@ export const SpeedReadingView = ({ words, settings, setSettings, onClose, title 
                 {gameState === 'results' && (
                     <div className="w-full max-w-3xl bg-white rounded-[3rem] p-10 flex flex-col md:max-h-[85vh] animate-fadeIn border border-slate-100 relative overflow-hidden">
 
-                        <div className="flex items-center gap-5 mb-8 relative z-10">
-                            <div>
-                                <h1 className="text-3xl font-black text-slate-800 tracking-tight">Ergebnis</h1>
-                                <p className="text-slate-500 font-bold text-lg">
-                                    Du hast in der {level}. Stufe {results.filter(r => r.success).length} Wörter erkannt.
-                                </p>
-                            </div>
+                        <div className="mb-8 relative z-10 flex justify-between items-baseline">
+                            <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-tight">
+                                Du hast {results.filter(r => r.success).length === 1
+                                    ? "1 Wort"
+                                    : `${results.filter(r => r.success).length} Wörter`} erkannt!
+                            </h1>
+                            <span className="text-2xl font-black" style={{ color: getSliderColor(level) }}>
+                                Stufe {level}
+                            </span>
                         </div>
 
                         <div className="flex-1 overflow-y-auto pr-4 custom-scroll mb-8 relative z-10 pl-2">
@@ -298,18 +304,12 @@ export const SpeedReadingView = ({ words, settings, setSettings, onClose, title 
                             </div>
                         </div>
 
-                        <div className="flex gap-4 relative z-10 pt-4 border-t border-slate-100">
+                        <div className="relative z-10 pt-6 border-t border-slate-100 flex justify-center">
                             <button
                                 onClick={() => setGameState('intro')}
-                                className="flex-1 bg-blue-600 text-white py-4 rounded-2xl font-black text-xl hover:bg-blue-700 transition-all flex items-center justify-center gap-3 shadow-lg shadow-blue-200 hover:scale-[1.02] active:scale-[0.98]"
+                                className="w-[60%] bg-blue-600 text-white py-4 rounded-2xl font-black text-xl hover:bg-blue-700 transition-all flex items-center justify-center gap-3 shadow-lg shadow-blue-200 hover:scale-[1.02] active:scale-[0.98]"
                             >
                                 <Icons.RotateCcw size={24} /> Noch einmal
-                            </button>
-                            <button
-                                onClick={onClose}
-                                className="px-10 bg-white text-slate-600 border border-slate-200 py-4 rounded-2xl font-black text-xl hover:bg-slate-50 transition-all hover:text-red-500 hover:border-red-200 shadow-sm"
-                            >
-                                Beenden
                             </button>
                         </div>
                     </div>
@@ -329,6 +329,16 @@ export const SpeedReadingView = ({ words, settings, setSettings, onClose, title 
                 .animate-fadeIn { animation: fadeIn 0.4s ease-out forwards; }
                 .animate-scaleIn { animation: scaleIn 0.15s ease-out forwards; }
                 
+                input[type=range].speed-range::-webkit-slider-runnable-track {
+                    height: 8px;
+                    background: #e2e8f0;
+                    border-radius: 4px;
+                }
+                input[type=range].speed-range::-moz-range-track {
+                    height: 8px;
+                    background: #e2e8f0;
+                    border-radius: 4px;
+                }
                 input[type=range].speed-range::-webkit-slider-thumb {
                     -webkit-appearance: none;
                     height: 38px;
@@ -337,11 +347,22 @@ export const SpeedReadingView = ({ words, settings, setSettings, onClose, title 
                     background: white;
                     border: 3px solid currentColor;
                     cursor: pointer;
-                    margin-top: -8px;
+                    margin-top: -15px; /* (38 - 8) / 2 = 15 */
                     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
                     transition: all 0.2s;
                     position: relative;
                     z-index: 20;
+                }
+                input[type=range].speed-range::-moz-range-thumb {
+                    height: 38px;
+                    width: 38px;
+                    border-radius: 50%;
+                    background: white;
+                    border: 3px solid currentColor;
+                    cursor: pointer;
+                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                    transition: all 0.2s;
+                    border: 3px solid currentColor;
                 }
                 input[type=range].speed-range:active::-webkit-slider-thumb {
                     transform: scale(1.15);

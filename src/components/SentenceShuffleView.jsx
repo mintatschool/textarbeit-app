@@ -244,7 +244,7 @@ export const SentenceShuffleView = ({ text, settings, setSettings, onClose, titl
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg">
+                    <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-4 h-10 rounded-lg">
                         <span className="text-xs font-bold text-slate-500">A</span>
                         <input
                             type="range"
@@ -276,7 +276,7 @@ export const SentenceShuffleView = ({ text, settings, setSettings, onClose, titl
                     id="word-container"
                     className={`flex flex-wrap justify-center items-center max-w-[95vw] p-4 rounded-2xl transition-all duration-300 ${isCorrect ? 'bg-green-50' : 'bg-white'
                         }`}
-                    style={{ columnGap: `${(settings.wordSpacing ?? 0.3)}em`, rowGap: '1em' }}
+                    style={{ columnGap: `${(settings.wordSpacing ?? 0.5)}em`, rowGap: '1em' }}
                 >
                     {words.map((word, idx) => (
                         <div

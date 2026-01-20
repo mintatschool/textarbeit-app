@@ -441,7 +441,7 @@ export const FindLettersView = ({ text, settings, setSettings, onClose, title })
                     </div>
 
                     <div className="flex items-center gap-6">
-                        <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg">
+                        <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 h-10 rounded-lg">
                             <span className="text-xs font-bold text-slate-500">A</span>
                             <input
                                 type="range"

@@ -95,7 +95,8 @@ export const PuzzleTestTwoSyllableView = ({ words, settings, onClose, title, act
             allCompleteMessage="Alle Wörter geschafft!"
             stageCompleteMessage="Level geschafft!"
             hideSpeakerToggle={true}
-            manualAdvance={true}
+            manualAdvance={false}
+            skipStageConfirmation={true}
         />
     );
 };

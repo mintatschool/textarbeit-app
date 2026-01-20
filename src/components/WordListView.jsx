@@ -3,7 +3,7 @@ import { Icons } from './Icons';
 import { EmptyStateMessage } from './EmptyStateMessage';
 import { WordListCell } from './WordListCell';
 
-export const WordListView = ({ words, columnsState, setColumnsState, onClose, settings, setSettings, onRemoveWord, onWordUpdate, wordColors = {}, colorHeaders = {}, setColorHeaders, colorPalette = [], title, groups = [], sortByColor, setSortByColor, columnCount, setColumnCount, updateTimestamp, activeColor, isTextMarkerMode, onToggleLetterMarker, toggleHighlights, highlightedIndices }) => {
+export const WordListView = ({ words, columnsState, setColumnsState, onClose, settings, setSettings, onRemoveWord, onWordUpdate, onUpdateWordColor, wordColors = {}, colorHeaders = {}, setColorHeaders, colorPalette = [], title, groups = [], sortByColor, setSortByColor, columnCount, setColumnCount, updateTimestamp, activeColor, isTextMarkerMode, onToggleLetterMarker, toggleHighlights, highlightedIndices }) => {
     if (!words || words.length === 0) return (<div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col items-center justify-center modal-animate font-sans"><EmptyStateMessage onClose={onClose} /></div>);
     const [isDragging, setIsDragging] = useState(false);
     const dragItemRef = useRef(null);
@@ -128,18 +128,43 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                 } else noColorItems.push(w);
             });
             const newCols = {}; const newOrder = [];
+
+            // SORT LOGIC: Priority to Palette Colors in defined order
+            // User requested order: Blue(0), Red(2), Green(4), Purple(1), Orange(3)
+            // Let's create a specific order of indices
+            // If colorPalette is ['#3b82f6', '#a855f7', '#ef4444', '#f97316', '#22c55e']
+            // 0=Blue, 1=Purple, 2=Red, 3=Orange, 4=Green
+            // Target: 0, 2, 4, 1, 3
+
+            // Generate standard Palette Keys first
+            const paletteKeys = [];
+            if (colorPalette && colorPalette.length > 0) {
+                // Even Indices
+                for (let i = 0; i < colorPalette.length; i += 2) paletteKeys.push(`palette-${i}`);
+                // Odd Indices
+                for (let i = 1; i < colorPalette.length; i += 2) paletteKeys.push(`palette-${i}`);
+            }
+
+            // 1. Add Palette Columns in Order
+            paletteKeys.forEach((key, idx) => {
+                if (colorGroups[key]) {
+                    const id = `col-color-${key}`; // Use key in ID to be stable? Or just idx? Original used idx.
+                    // Original used `Object.keys(colorGroups).forEach((key, idx) => ... id = col-color-${idx}`
+                    // We should try to keep IDs stable or just use unique IDs based on color key.
+                    const stableId = `col-${key}`;
+                    newCols[stableId] = { id: stableId, title: colorHeaders[key] || '', color: key, items: colorGroups[key] };
+                    newOrder.push(stableId);
+                    delete colorGroups[key]; // Mark as processed
+                }
+            });
+
+            // 2. Add remaining colors (custom hexes or disorder)
             Object.keys(colorGroups).forEach((key, idx) => {
-                const id = `col-color-${idx}`;
+                const id = `col-color-custom-${idx}`;
                 newCols[id] = { id, title: colorHeaders[key] || '', color: key, items: colorGroups[key] };
                 newOrder.push(id);
             });
-            /* 
-            if (noColorItems.length > 0) {
-                const id = 'col-no-color';
-                newCols[id] = { id, title: 'Keine Farbe', items: noColorItems };
-                newOrder.push(id);
-            } 
-            */
+
             setColumnsState({ cols: newCols, order: newOrder });
             setColumnCount(newOrder.length);
             return;
@@ -153,7 +178,7 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
 
         if (Object.keys(columnsState.cols).length === 0 && displayWords.length > 0) {
             if (sortByColor) {
-                const colorGroups = {}; const noColorItems = [];
+                const colorGroups = {}; const noColorItems = []; // eslint-disable-line no-unused-vars
                 displayWords.forEach(w => {
                     const k = wordColors[w.index];
                     if (k && k !== 'yellow') {
@@ -162,18 +187,33 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                     } else noColorItems.push(w);
                 });
                 const newCols = {}; const newOrder = [];
+
+                // SORT LOGIC: Priority to Palette Colors in defined order
+                const paletteKeys = [];
+                if (colorPalette && colorPalette.length > 0) {
+                    // Even Indices
+                    for (let i = 0; i < colorPalette.length; i += 2) paletteKeys.push(`palette-${i}`);
+                    // Odd Indices
+                    for (let i = 1; i < colorPalette.length; i += 2) paletteKeys.push(`palette-${i}`);
+                }
+
+                // 1. Add Palette Columns in Order
+                paletteKeys.forEach((key) => {
+                    if (colorGroups[key]) {
+                        const stableId = `col-${key}`;
+                        newCols[stableId] = { id: stableId, title: colorHeaders[key] || '', color: key, items: colorGroups[key] };
+                        newOrder.push(stableId);
+                        delete colorGroups[key];
+                    }
+                });
+
+                // 2. Add remaining colors
                 Object.keys(colorGroups).forEach((key, idx) => {
-                    const id = `col-color-${idx}`;
+                    const id = `col-color-custom-${idx}`;
                     newCols[id] = { id, title: colorHeaders[key] || '', color: key, items: colorGroups[key] };
                     newOrder.push(id);
                 });
-                /*
-                if (noColorItems.length > 0) {
-                    const id = 'col-no-color';
-                    newCols[id] = { id, title: 'Keine Farbe', items: noColorItems };
-                    newOrder.push(id);
-                }
-                */
+
                 setColumnsState({ cols: newCols, order: newOrder });
                 setColumnCount(newOrder.length);
             } else {
@@ -374,6 +414,14 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
         if (sourceColId !== targetColId) {
             newCols[sourceColId] = { ...newCols[sourceColId], items: sourceItems };
             newCols[targetColId] = { ...newCols[targetColId], items: targetItems };
+
+            // COLOR SYNC: If moving to a colored column, update the word's color
+            if (sortByColor && newCols[targetColId].color && onUpdateWordColor) {
+                // Determine target color
+                const targetColor = newCols[targetColId].color;
+                // Update word
+                onUpdateWordColor(word.index, targetColor);
+            }
         } else {
             newCols[sourceColId] = { ...newCols[sourceColId], items: sourceItems };
         }
@@ -549,7 +597,7 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
 
                 </div>
                 <div className="flex items-center gap-4 ml-auto">
-                    <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg no-print">
+                    <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 h-10 rounded-lg no-print">
                         <span className="text-xs font-bold text-slate-500">A</span>
                         <input type="range" min="16" max="80" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-32 accent-blue-600 rounded-lg cursor-pointer" />
                         <span className="text-xl font-bold text-slate-500">A</span>

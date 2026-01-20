@@ -149,7 +149,7 @@ export const WordCloudView = ({ words, settings, setSettings, onClose, title }) 
                         >
                             Vokale
                         </button>
-                        <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg ml-2">
+                        <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-4 h-10 rounded-lg ml-2">
                             <span className="text-xs font-bold text-slate-500">A</span>
                             <input type="range" min="24" max="80" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-32 accent-blue-600 rounded-lg cursor-pointer" />
                             <span className="text-xl font-bold text-slate-500">A</span>

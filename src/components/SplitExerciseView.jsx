@@ -11,6 +11,8 @@ export const SplitExerciseView = ({ words, onClose, settings, setSettings, title
     const [showVowels, setShowVowels] = useState(false);
     const [status, setStatus] = useState('idle');
     const [isSessionFinished, setIsSessionFinished] = useState(false);
+    const [isShaking, setIsShaking] = useState(false);
+    const [isError, setIsError] = useState(false);
     const currentWordObj = words[currentIndex];
     const fullWord = currentWordObj ? currentWordObj.word : '';
     const correctSyllables = currentWordObj ? currentWordObj.syllables : [];
@@ -21,8 +23,22 @@ export const SplitExerciseView = ({ words, onClose, settings, setSettings, title
     const correctSplitIndices = useMemo(() => { const indices = new Set(); let acc = 0; for (let i = 0; i < correctSyllables.length - 1; i++) { acc += correctSyllables[i].length; indices.add(acc - 1); } return indices; }, [correctSyllables]);
     const vowelStatus = useMemo(() => { const status = new Array(fullWord.length).fill(null); const text = fullWord.toLowerCase(); const diphthongs = ['eu', 'äu', 'au', 'ei', 'ie', 'ai']; const singleVowels = ['a', 'e', 'i', 'o', 'u', 'ä', 'ö', 'ü']; let i = 0; while (i < text.length) { let isDiphthong = false; for (let d of diphthongs) { if (text.startsWith(d, i)) { status[i] = { type: 'start' }; if (d.length > 1) { for (let k = 1; k < d.length - 1; k++) status[i + k] = { type: 'mid' }; status[i + d.length - 1] = { type: 'end' }; } else { status[i] = { type: 'single' }; } i += d.length; isDiphthong = true; break; } } if (isDiphthong) continue; if (singleVowels.includes(text[i])) { status[i] = { type: 'single' }; } i++; } return status; }, [fullWord]);
 
-    const handleGapClick = (index) => { if (status === 'correct') return; const newSplits = new Set(userSplits); if (newSplits.has(index)) newSplits.delete(index); else newSplits.add(index); setUserSplits(newSplits); setStatus('idle'); };
-    const checkAnswer = () => { const isCorrect = userSplits.size === correctSplitIndices.size && [...userSplits].every(x => correctSplitIndices.has(x)); setStatus(isCorrect ? 'correct' : 'wrong'); };
+    const handleGapClick = (index) => { if (status === 'correct') return; const newSplits = new Set(userSplits); if (newSplits.has(index)) newSplits.delete(index); else newSplits.add(index); setUserSplits(newSplits); setStatus('idle'); setIsError(false); };
+    const checkAnswer = () => {
+        const isCorrect = userSplits.size === correctSplitIndices.size && [...userSplits].every(x => correctSplitIndices.has(x));
+        if (isCorrect) {
+            setStatus('correct');
+        } else {
+            setStatus('wrong'); // Keep internal status for button logic if needed, but rely on effect for visuals
+            setIsShaking(true);
+            setIsError(true);
+            setTimeout(() => {
+                setIsShaking(false);
+                setIsError(false);
+                setStatus('idle'); // Optional: reset status to idle so 'Check' button comes back if desired, or keep as 'wrong' but remove message
+            }, 500);
+        }
+    };
     const nextWord = () => { if (currentIndex < words.length - 1) { setCurrentIndex(prev => prev + 1); } else { setIsSessionFinished(true); } };
     if (!currentWordObj) return null;
 
@@ -74,7 +90,7 @@ export const SplitExerciseView = ({ words, onClose, settings, setSettings, title
                     >
                         Vokale
                     </button>
-                    <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg ml-2">
+                    <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 h-10 rounded-lg ml-2">
                         <span className="text-xs font-bold text-slate-500">A</span>
                         <input
                             type="range"
@@ -95,7 +111,7 @@ export const SplitExerciseView = ({ words, onClose, settings, setSettings, title
             <ProgressBar progress={progress} />
 
             <div className="flex-1 flex flex-col items-center justify-center p-4 bg-white/50 overflow-y-auto custom-scroll">
-                <div className="flex flex-wrap justify-center items-end gap-16 py-4">
+                <div className={`flex flex-wrap justify-center items-end gap-16 py-4 ${isShaking ? 'shake' : ''}`}>
                     <div className="flex flex-wrap justify-center items-end select-none" style={{ fontFamily: settings.fontFamily }}>
                         {fullWord.split('').map((char, i) => {
                             const vStat = vowelStatus[i]; let vowelClass = ""; let borderStyle = "";
@@ -103,7 +119,7 @@ export const SplitExerciseView = ({ words, onClose, settings, setSettings, title
                             return (
                                 <React.Fragment key={i}>
                                     <div className="relative flex flex-col items-center justify-end">
-                                        <div className={`font-bold text-slate-800 leading-none px-0 py-1 transition-all ${vowelClass} ${borderStyle}`} style={{ fontSize: `${settings.fontSize * 2.5}px` }}>
+                                        <div className={`font-bold leading-none px-0 py-1 transition-all ${isError ? 'text-red-500' : 'text-slate-800'} ${vowelClass} ${borderStyle}`} style={{ fontSize: `${settings.fontSize * 2.5}px` }}>
                                             {char}
                                         </div>
                                     </div>
@@ -125,7 +141,7 @@ export const SplitExerciseView = ({ words, onClose, settings, setSettings, title
                     </button>
                 </div>
                 <div className="h-16 flex items-center">
-                    {status === 'wrong' && <p className="text-red-500 font-bold text-lg animate-pulse">Das stimmt noch nicht ganz.</p>}
+                    {/* Removed text feedback 'Das stimmt noch nicht ganz.' */}
                     {status === 'correct' && <p className="text-green-600 font-bold text-2xl pop-animate flex items-center gap-2"><Icons.CheckCircle size={28} /> Richtig!</p>}
                 </div>
             </div>

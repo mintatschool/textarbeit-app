@@ -530,7 +530,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                         <HorizontalLines count={5} />
                     </div>
 
-                    <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg hidden md:flex">
+                    <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 h-10 rounded-lg hidden md:flex">
                         <span className="text-xs font-bold text-slate-500">A</span>
                         <input
                             type="range"

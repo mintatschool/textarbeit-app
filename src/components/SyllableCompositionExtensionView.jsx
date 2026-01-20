@@ -565,7 +565,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                     </div>
 
                     {/* Scale Control */}
-                    <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg ml-2">
+                    <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 h-10 rounded-lg ml-2">
                         <span className="text-xs font-bold text-slate-500">A</span>
                         <input
                             type="range"
@@ -588,7 +588,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
 
             <div className="flex-1 relative flex overflow-hidden">
                 {/* LEFT SIDEBAR (Start Pieces) */}
-                <div className="w-[230px] bg-slate-100/50 border-r border-slate-200 flex flex-col shrink-0"
+                <div className="w-[180px] bg-slate-100/50 border-r border-slate-200 flex flex-col shrink-0"
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={(e) => {
                         e.preventDefault();
@@ -659,15 +659,19 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                             return (
                                 <div key={target.id} className={`flex items-center gap-4 transition-all duration-500 ${isComplete ? 'opacity-80 scale-95' : ''}`}>
                                     {/* Slot Row */}
-                                    <div className="relative flex items-center" style={{ height: 110 * gameState.pieceScale }}>
-                                        <div className="flex items-center gap-0" style={{ transform: `scale(${gameState.pieceScale})`, transformOrigin: 'left center', height: 110 }}>
+                                    <div className="relative flex items-center justify-center transition-all duration-300"
+                                        style={{
+                                            height: 110 * gameState.pieceScale,
+                                            width: ((170 * target.parts.length) - (45 * (target.parts.length - 1))) * gameState.pieceScale
+                                        }}>
+                                        <div className="flex items-center gap-0 absolute left-0 top-0" style={{ transform: `scale(${gameState.pieceScale})`, transformOrigin: 'left top', height: 110 }}>
                                             {Array.from({ length: target.parts.length }).map((_, idx) => {
                                                 const slotKey = `${target.id}-${idx}`;
                                                 const piece = placedPieces[slotKey];
                                                 const isStart = idx === 0;
                                                 const isEnd = idx === target.parts.length - 1;
 
-                                                const overlap = 30;
+                                                const overlap = 45;
                                                 const marginLeft = idx === 0 ? 0 : -overlap;
                                                 const targetType = isStart ? 'zigzag-left' : (isEnd ? 'zigzag-right' : 'zigzag-middle');
 
@@ -679,7 +683,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                                                         className={`relative flex items-center justify-center group transition-all duration-200 ${slotIsTarget ? 'scale-105 cursor-pointer' : ''
                                                             }`}
                                                         style={{
-                                                            width: 200, height: 110,
+                                                            width: 170, height: 110,
                                                             marginLeft: marginLeft,
                                                             zIndex: 10 + idx,
                                                             filter: slotIsTarget ? 'drop-shadow(0 0 10px rgba(59, 130, 246, 0.7))' : 'none'
@@ -761,7 +765,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                 </div>
 
                 {/* RIGHT SIDEBAR (End Pieces) */}
-                <div className="w-[230px] bg-slate-100/50 border-l border-slate-200 flex flex-col shrink-0"
+                <div className="w-[180px] bg-slate-100/50 border-l border-slate-200 flex flex-col shrink-0"
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={(e) => {
                         e.preventDefault();

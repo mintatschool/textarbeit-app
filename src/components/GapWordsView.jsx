@@ -625,7 +625,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                         <HorizontalLines count={5} />
                     </div>
 
-                    <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg">
+                    <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 h-10 rounded-lg">
                         <span className="text-xs font-bold text-slate-500">A</span>
                         <input type="range" min="24" max="100" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-32 accent-blue-600 rounded-lg cursor-pointer" />
                         <span className="text-xl font-bold text-slate-500">A</span>

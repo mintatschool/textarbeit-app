@@ -56,7 +56,7 @@ const useHypherLoader = () => {
 const DEFAULT_SETTINGS = {
     fontSize: 48,
     lineHeight: 1.3,
-    wordSpacing: 0.3,
+    wordSpacing: 0.5,
     visualType: 'block',
     displayTrigger: 'click',
     fontFamily: "'Patrick Hand', cursive",
@@ -1091,7 +1091,7 @@ const App = () => {
                             style={{ maxWidth: `100%` }}
                         >
                             {/* Font Size Slider - Sticky Top Right */}
-                            <div className="fixed top-2 right-28 z-40 bg-white/95 backdrop-blur-sm shadow-lg rounded-xl px-4 py-3 border border-slate-200 flex items-center gap-3">
+                            <div className="fixed top-2 right-28 z-40 bg-white/95 backdrop-blur-sm shadow-lg rounded-xl px-4 h-10 border border-slate-200 flex items-center gap-3">
                                 <span className="text-xs font-bold text-slate-500">A</span>
                                 <input
                                     type="range"
@@ -1288,7 +1288,25 @@ const App = () => {
                             const lookupKey = `${target.word}_${target.index}`;
                             console.log("Setting correction for key:", lookupKey, "to", newText);
                             setTextCorrections(prev => ({ ...prev, [lookupKey]: newText }));
-                        }} />}
+                        }}
+                        onUpdateWordColor={(index, color) => {
+                            setWordColors(prev => {
+                                const next = { ...prev };
+                                if (!color) delete next[index];
+                                else next[index] = color;
+                                return next;
+                            });
+                            // Also ensure the word is highlighted if it wasn't
+                            setHighlightedIndices(prev => {
+                                const next = new Set(prev);
+                                const target = processedWords.find(w => w.index === index);
+                                if (target) {
+                                    for (let i = 0; i < target.word.length; i++) next.add(index + i);
+                                }
+                                return next;
+                            });
+                        }}
+                    />}
                     {activeView === 'sentence' && <SentencePuzzleView text={text} mode="sentence" settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Satzpuzzle" hyphenator={hyphenator} />}
                     {activeView === 'textpuzzle' && <SentencePuzzleView text={text} mode="text" settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Textpuzzle" hyphenator={hyphenator} />}
                     {activeView === 'sentenceshuffle' && <SentenceShuffleView text={text} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Schüttelsätze" hyphenator={hyphenator} />}

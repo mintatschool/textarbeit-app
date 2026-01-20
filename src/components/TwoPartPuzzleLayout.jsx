@@ -103,7 +103,8 @@ export const TwoPartPuzzleLayout = ({
     stageCompleteMessage = "Level geschafft!",
     activeColor, // Added activeColor prop
     hideSpeakerToggle = false,
-    manualAdvance = false
+    manualAdvance = false,
+    skipStageConfirmation = false // New prop to skip stage complete modal
 }) => {
     const { gameStatus } = gameState;
 
@@ -134,6 +135,16 @@ export const TwoPartPuzzleLayout = ({
 
     const [audioEnabled, setAudioEnabled] = React.useState(true);
 
+    // Auto-advance if stage complete and skipStageConfirmation is true
+    React.useEffect(() => {
+        if (gameStatus === 'stage-complete' && skipStageConfirmation) {
+            const timer = setTimeout(() => {
+                advanceToNextStage();
+            }, 1000); // 1s delay to see the last word success
+            return () => clearTimeout(timer);
+        }
+    }, [gameStatus, skipStageConfirmation, advanceToNextStage]);
+
     const getPieceColor = (pieceColor) => {
         if (activeColor === 'neutral') return 'bg-blue-500'; // Default to blue
         if (activeColor && activeColor !== 'neutral') return activeColor;
@@ -159,8 +170,10 @@ export const TwoPartPuzzleLayout = ({
         );
     }
 
+
+
     // Stage/All complete overlay
-    if (gameStatus === 'all-complete' || gameStatus === 'stage-complete') {
+    if (gameStatus === 'all-complete' || (gameStatus === 'stage-complete' && !skipStageConfirmation)) {
         const isAllDone = gameStatus === 'all-complete';
         return (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-md">
@@ -228,7 +241,7 @@ export const TwoPartPuzzleLayout = ({
                     </div>
                 </div>
 
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
                     {/* Audio Toggle */}
                     {!hideSpeakerToggle && (
                         <button
@@ -241,13 +254,13 @@ export const TwoPartPuzzleLayout = ({
                     )}
 
                     {/* Mode Selector */}
-                    <div className="flex items-center gap-2 bg-slate-100/80 p-1.5 rounded-[1.25rem] border border-slate-200 hidden md:flex">
+                    <div className="flex items-center gap-0.5 bg-slate-100/80 p-1.5 rounded-[1.25rem] border border-slate-200 hidden md:flex">
                         {['both-empty', 'left-filled', 'right-filled'].map((m) => (
                             <button
                                 key={m}
                                 onClick={() => handleModeChange(m)}
                                 className={`
-                                    relative px-3 py-1.5 rounded-xl transition-all duration-300
+                                    relative px-2 py-1.5 rounded-xl transition-all duration-300
                                     ${gameState.gameMode === m
                                         ? 'bg-white shadow-lg scale-105 border border-blue-100'
                                         : 'hover:bg-white/50 border border-transparent'}
@@ -288,7 +301,7 @@ export const TwoPartPuzzleLayout = ({
                     </div>
 
                     {/* Scale Slider */}
-                    <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg">
+                    <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 h-10 rounded-lg">
                         <span className="text-xs font-bold text-slate-500">A</span>
                         <input
                             type="range"
@@ -305,7 +318,7 @@ export const TwoPartPuzzleLayout = ({
                     {/* Close Button */}
                     <button
                         onClick={onClose}
-                        className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 flex items-center justify-center transition-colors shadow-sm ml-2"
+                        className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 flex items-center justify-center transition-colors shadow-sm"
                     >
                         <Icons.X size={24} />
                     </button>
@@ -366,7 +379,7 @@ export const TwoPartPuzzleLayout = ({
                             relative flex items-center justify-center transition-all duration-500 py-8
                             ${showSuccess ? 'scale-105' : ''}
                         `}>
-                            <div className="flex items-center gap-8">
+                            <div className="flex items-center gap-4">
                                 <div className="flex items-center relative">
                                     {['left', 'right'].map((role, idx) => {
                                         // placedPieces now contains piece objects, not just text
@@ -444,7 +457,7 @@ export const TwoPartPuzzleLayout = ({
                                 </div>
 
                                 {/* Success Checkmark & Audio Group */}
-                                <div className="flex flex-col items-center gap-4 ml-6">
+                                <div className="flex flex-col items-center gap-4 ml-2">
                                     <div className="flex items-center gap-5">
                                         {/* Speaker */}
                                         {audioEnabled && (
@@ -485,8 +498,8 @@ export const TwoPartPuzzleLayout = ({
                     </div>
                 </div>
 
-                {/* Right Pieces */}
-                <div className="w-1/4 relative border-l border-blue-50 bg-white/20 shrink-0 overflow-y-auto overflow-x-hidden custom-scroll py-6 space-y-8 flex flex-col items-center"
+                {/* Right Pieces - Fixed Width for "Ende" */}
+                <div className="w-80 shrink-0 relative border-l border-blue-50 bg-white/20 overflow-y-auto overflow-x-hidden custom-scroll py-6 space-y-8 flex flex-col items-center"
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={(e) => {
                         e.preventDefault();
