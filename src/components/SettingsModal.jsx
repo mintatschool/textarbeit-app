@@ -434,6 +434,7 @@ export const SettingsModal = ({ settings, setSettings, onExport, onImport, logo,
                                     }}
                                     placeholder="z.B. qu, ie, sch"
                                     className="flex-1 bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-2 font-bold outline-none focus:border-blue-500 transition-all"
+                                    spellCheck={false}
                                 />
                                 <button
                                     onClick={() => {

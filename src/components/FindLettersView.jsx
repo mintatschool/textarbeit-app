@@ -4,6 +4,7 @@ import german from 'hyphenation.de';
 import { Icons } from './Icons';
 import { Word } from './Word';
 import { getCachedSyllables } from '../utils/syllables';
+import { ProgressBar } from './ProgressBar';
 
 // Ensure standard clusters are available
 const DEFAULT_CLUSTERS = ['Au', 'Ei', 'Eu', 'Äu', 'Ai', 'Ch', 'Sch', 'Sp', 'St', 'Pf', 'Ph', 'Qu', 'Ck', 'Tz', 'Ie'];
@@ -118,12 +119,7 @@ export const FindLettersView = ({ text, settings, setSettings, onClose, title })
             const countLow = frequencyCounts[lowCluster] || 0;
 
             // Special Rule: "ie" and "chs" stay lowercase
-            let label = "";
-            if (lowCluster === 'ie' || lowCluster === 'chs') {
-                label = lowCluster;
-            } else {
-                label = `${capCluster} ${lowCluster}`;
-            }
+            const label = (lowCluster === 'ie' || lowCluster === 'chs') ? lowCluster : `${capCluster} ${lowCluster}`;
 
             if (countCap > 0 || countLow > 0) {
                 targets.push({
@@ -135,12 +131,9 @@ export const FindLettersView = ({ text, settings, setSettings, onClose, title })
             }
         });
 
-        // Single Letters (Include ALL letters a-z, ä, ö, ü, ß as requested)
+        // Single Letters
         const ALL_LETTERS = "abcdefghijklmnopqrstuvwxyzäöüß";
-        const lettersList = ALL_LETTERS.split("");
-
-        lettersList.forEach(l => {
-            // ß has no uppercase variant in common usage, show only lowercase
+        ALL_LETTERS.split("").forEach(l => {
             if (l === 'ß') {
                 const countLower = frequencyCounts[l] || 0;
                 targets.push({
@@ -278,8 +271,48 @@ export const FindLettersView = ({ text, settings, setSettings, onClose, title })
         return set;
     }, [targetHits]);
 
-    // Compatible with Word component's expected signature
-    // The Word component calls: toggleHighlights(indicesToToggle)
+    // NEW: Helper to check if a specific hit index corresponds to an uppercase or lowercase letter
+    const getHitCase = (hitIndex) => {
+        for (const item of processedWords) {
+            if (item.type === 'word' && hitIndex >= item.index && hitIndex < item.index + item.word.length) {
+                const char = item.word[hitIndex - item.index];
+                return (char === char.toUpperCase() && char !== char.toLowerCase()) ? 'upper' : 'lower';
+            }
+        }
+        return 'lower'; // Fallback
+    };
+
+    // NEW: Calculate detailed stats
+    const stats = useMemo(() => {
+        if (!selectedTarget) return { upper: { found: 0, total: 0 }, lower: { found: 0, total: 0 } };
+
+        const upperTotal = Math.max(selectedTarget.counts?.upper || 0, 0);
+        const lowerTotal = Math.max(selectedTarget.counts?.lower || 0, 0);
+
+        let upperFound = 0;
+        let lowerFound = 0;
+
+        markedIndices.forEach(idx => {
+            if (targetIndices.has(idx)) {
+                if (getHitCase(idx) === 'upper') upperFound++;
+                else lowerFound++;
+            }
+        });
+
+        return {
+            upper: { found: Math.min(upperFound, upperTotal), total: upperTotal },
+            lower: { found: Math.min(lowerFound, lowerTotal), total: lowerTotal }
+        };
+    }, [selectedTarget, markedIndices, targetIndices, processedWords]);
+
+    // NEW: Progress Percentage
+    const progressPercentage = useMemo(() => {
+        const total = stats.upper.total + stats.lower.total;
+        if (total === 0) return 100;
+        return ((stats.upper.found + stats.lower.found) / total) * 100;
+    }, [stats]);
+
+
     const handleToggleHighlights = (indices) => {
         if (showCorrection || success) return;
         const indexArray = Array.isArray(indices) ? indices : [indices];
@@ -291,16 +324,10 @@ export const FindLettersView = ({ text, settings, setSettings, onClose, title })
                 indexArray.forEach(i => next.delete(i));
             } else {
                 indexArray.forEach(i => next.add(i));
-                // Only flash if the clicked item is actually a target
                 const isCorrectHit = indexArray.some(i => targetIndices.has(i));
                 if (isCorrectHit) {
-                    // Check if it's an uppercase or lowercase hit
-                    // We assume the first index in the array gives us a clue
                     let firstIdx = indexArray[0];
-                    // Find which segment this index belongs to
                     let foundChar = '';
-                    // Iterate processedWords to find the character at this global index
-                    // This is a bit expensive but robust
                     for (const item of processedWords) {
                         if (item.type === 'word' && firstIdx >= item.index && firstIdx < item.index + item.word.length) {
                             foundChar = item.word[firstIdx - item.index];
@@ -350,8 +377,8 @@ export const FindLettersView = ({ text, settings, setSettings, onClose, title })
         const colors = {};
         markedIndices.forEach(idx => colors[idx] = 'yellow');
         if (showCorrection) {
-            missedIndices.forEach(idx => colors[idx] = '#fecaca'); // Light Red for missed
-            wrongIndices.forEach(idx => colors[idx] = '#ef4444'); // Strong Red for wrong
+            missedIndices.forEach(idx => colors[idx] = '#fecaca');
+            wrongIndices.forEach(idx => colors[idx] = '#ef4444');
         }
         return colors;
     }, [markedIndices, showCorrection, missedIndices, wrongIndices]);
@@ -360,65 +387,82 @@ export const FindLettersView = ({ text, settings, setSettings, onClose, title })
     return (
         <div className="fixed inset-0 z-[100] bg-slate-50 flex flex-col font-sans select-none animate-fadeIn">
             {/* Header */}
-            <div className="bg-white px-2 py-3 shadow-sm flex justify-between items-center z-20 shrink-0 border-b border-slate-100">
-                <div className="flex flex-col items-start px-1">
-                    <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-1.5 pl-0.5">
-                        <Icons.LetterSearch size={28} className="text-blue-600" /> {title || "Buchstaben finden"}
-                    </h2>
+            <div className="bg-white shadow-sm z-20 shrink-0 border-b border-slate-100">
+                <div className="px-2 py-3 flex justify-between items-center">
+                    <div className="flex flex-col items-start px-1">
+                        <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-1.5 pl-0.5">
+                            <Icons.LetterSearch size={28} className="text-blue-600" /> {title || "Buchstaben finden"}
+                        </h2>
 
-                    {!showSelection && (
-                        <div className="flex items-center gap-4">
-                            <button
-                                onClick={() => setShowSelection(true)}
-                                className={`ml-1 flex items-center gap-3 px-3 py-1 border-2 rounded-xl transition-all duration-300 group animate-[fadeIn_0.3s] ${flashMode && flashMode.startsWith('correct') ? 'bg-green-100 border-green-400 scale-105' : flashMode === 'wrong' ? 'bg-red-100 border-red-400 animate-shake' : 'bg-slate-100 hover:bg-white border-transparent hover:border-blue-300'
-                                    }`}
-                            >
-                                <span className="text-slate-500 font-bold text-xs uppercase tracking-wider">Gesucht:</span>
-                                <span className={`text-xl font-black transition-colors duration-300 ${flashMode && flashMode.startsWith('correct') ? 'text-green-600' : flashMode === 'wrong' ? 'text-red-600' : 'text-blue-800'
-                                    }`} style={{ fontFamily: settings.fontFamily }}>
-                                    {selectedTarget?.label || "?"}
-                                </span>
-                                <Icons.ChevronDown size={16} className="text-slate-400 group-hover:text-blue-500" />
-                            </button>
+                        {!showSelection && (
+                            <div className="flex items-center gap-4 mt-2">
+                                <button
+                                    onClick={() => setShowSelection(true)}
+                                    className={`ml-1 flex items-center gap-3 px-3 py-1 border-2 rounded-xl transition-all duration-300 group animate-[fadeIn_0.3s] ${flashMode && flashMode.startsWith('correct') ? 'bg-green-100 border-green-400' : flashMode === 'wrong' ? 'bg-red-100 border-red-400 animate-shake' : 'bg-slate-100 hover:bg-white border-transparent hover:border-blue-300'
+                                        }`}
+                                >
+                                    <span className="text-slate-500 font-bold text-xs uppercase tracking-wider">Gesucht:</span>
+                                    <span className={`text-xl font-black transition-colors duration-300 ${flashMode && flashMode.startsWith('correct') ? 'text-green-600' : flashMode === 'wrong' ? 'text-red-600' : 'text-blue-700'
+                                        }`} style={{ fontFamily: settings.fontFamily }}>
+                                        {selectedTarget?.label || "?"}
+                                    </span>
+                                    <Icons.ChevronDown size={16} className="text-slate-400 group-hover:text-blue-500" />
+                                </button>
 
-                            {selectedTarget && targetHits.length > 0 && (
-                                <div className="flex items-center gap-2 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100">
-                                    <div className="flex items-center gap-1.5">
-                                        <div className="w-2.5 h-2.5 rounded-full bg-blue-500"></div>
-                                        <span className="text-sm font-bold text-blue-800">
-                                            {(() => {
-                                                const foundHits = targetHits.filter(hit =>
-                                                    Array.from(hit).every(idx => markedIndices.has(idx))
-                                                ).length;
-                                                return `${foundHits} / ${targetHits.length}`;
-                                            })()}
-                                        </span>
+                                {selectedTarget && (
+                                    <div className="flex items-center gap-3">
+                                        {/* Uppercase Stat */}
+                                        {selectedTarget.counts.upper > 0 && (
+                                            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-colors duration-500 ${stats.upper.found === stats.upper.total ? 'bg-green-100 border-green-200' : 'bg-blue-50 border-blue-100'}`}>
+                                                <span className="text-lg font-black text-slate-700" style={{ fontFamily: settings.fontFamily }}>
+                                                    {selectedTarget.value.toUpperCase()}
+                                                </span>
+                                                <span className={`text-sm font-bold ${stats.upper.found === stats.upper.total ? 'text-green-700' : 'text-blue-800'}`}>
+                                                    {stats.upper.found} / {stats.upper.total}
+                                                </span>
+                                            </div>
+                                        )}
+
+                                        {/* Lowercase Stat */}
+                                        {selectedTarget.counts.lower > 0 && (
+                                            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-colors duration-500 ${stats.lower.found === stats.lower.total ? 'bg-green-100 border-green-200' : 'bg-blue-50 border-blue-100'}`}>
+                                                <span className="text-lg font-black text-slate-700" style={{ fontFamily: settings.fontFamily }}>
+                                                    {selectedTarget.value.toLowerCase()}
+                                                </span>
+                                                <span className={`text-sm font-bold ${stats.lower.found === stats.lower.total ? 'text-green-700' : 'text-blue-800'}`}>
+                                                    {stats.lower.found} / {stats.lower.total}
+                                                </span>
+                                            </div>
+                                        )}
                                     </div>
-                                    <span className="text-xs font-semibold text-blue-400 uppercase tracking-tighter">gefunden</span>
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
-
-                <div className="flex items-center gap-6">
-                    <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg">
-                        <span className="text-xs font-bold text-slate-500">A</span>
-                        <input
-                            type="range"
-                            min="16"
-                            max="120"
-                            step="2"
-                            value={settings.fontSize}
-                            onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })}
-                            className="w-32 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer"
-                        />
-                        <span className="text-xl font-bold text-slate-500">A</span>
+                                )}
+                            </div>
+                        )}
                     </div>
 
-                    <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 flex items-center justify-center shadow-sm transition-transform hover:scale-105">
-                        <Icons.X size={24} />
-                    </button>
+                    <div className="flex items-center gap-6">
+                        <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg">
+                            <span className="text-xs font-bold text-slate-500">A</span>
+                            <input
+                                type="range"
+                                min="16"
+                                max="120"
+                                step="2"
+                                value={settings.fontSize}
+                                onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })}
+                                className="w-32 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer"
+                            />
+                            <span className="text-xl font-bold text-slate-500">A</span>
+                        </div>
+
+                        <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 flex items-center justify-center shadow-sm transition-transform hover:scale-105">
+                            <Icons.X size={24} />
+                        </button>
+                    </div>
+                </div>
+                {/* Progress Bar */}
+                <div className="w-full">
+                    <ProgressBar progress={progressPercentage} />
                 </div>
             </div>
 
@@ -440,9 +484,6 @@ export const FindLettersView = ({ text, settings, setSettings, onClose, title })
                                 const isEmpty = totalCount === 0;
 
                                 // Frequency-based scaling
-                                // Base size: 1.125rem (18px)
-                                // Max bonus: 1.375rem (22px)
-                                // Total range: 1.125rem to 2.5rem
                                 const scale = totalCount / maxCount;
                                 const labelSize = 1.125 + (scale * 1.375);
                                 const countSize = 0.875 + (scale * 0.375);
@@ -468,7 +509,7 @@ export const FindLettersView = ({ text, settings, setSettings, onClose, title })
                 </div>
 
                 {showSelection && (
-                    <div className="absolute inset-0 z-20 bg-black/20 backdrop-blur-[1px] transition-opacity" onClick={() => setShowSelection(false)}></div>
+                    <div className="absolute inset-0 z-20 bg-white/40 backdrop-blur-[1px] transition-opacity" onClick={() => setShowSelection(false)}></div>
                 )}
 
                 <div className="flex-1 flex flex-col relative z-10 w-full overflow-hidden bg-slate-50/50">
@@ -485,8 +526,8 @@ export const FindLettersView = ({ text, settings, setSettings, onClose, title })
                                     const parts = selectedTarget.label.split(' ');
                                     if (parts.length === 1) {
                                         return (
-                                            <span className={`inline-block transition-all duration-300 ${flashMode && flashMode.startsWith('correct') ? 'text-green-500 scale-125' :
-                                                flashMode === 'wrong' ? 'text-red-500' : 'text-slate-600'
+                                            <span className={`inline-block transition-all duration-300 ${flashMode && flashMode.startsWith('correct') ? 'text-green-500' :
+                                                flashMode === 'wrong' ? 'text-red-500' : 'text-blue-700'
                                                 }`}>
                                                 {parts[0]}
                                             </span>
@@ -494,14 +535,14 @@ export const FindLettersView = ({ text, settings, setSettings, onClose, title })
                                     }
                                     return (
                                         <>
-                                            <span className={`inline-block transition-all duration-300 ${flashMode === 'correct-upper' ? 'text-green-500 scale-125' :
-                                                flashMode === 'wrong' ? 'text-red-500' : 'text-slate-600'
+                                            <span className={`inline-block transition-all duration-300 ${flashMode === 'correct-upper' ? 'text-green-500' :
+                                                flashMode === 'wrong' ? 'text-red-500' : 'text-blue-700'
                                                 }`}>
                                                 {parts[0]}
                                             </span>
                                             <span className="whitespace-pre"> </span>
-                                            <span className={`inline-block transition-all duration-300 ${flashMode === 'correct-lower' ? 'text-green-500 scale-125' :
-                                                flashMode === 'wrong' ? 'text-red-500' : 'text-slate-600'
+                                            <span className={`inline-block transition-all duration-300 ${flashMode === 'correct-lower' ? 'text-green-500' :
+                                                flashMode === 'wrong' ? 'text-red-500' : 'text-blue-700'
                                                 }`}>
                                                 {parts[1]}
                                             </span>

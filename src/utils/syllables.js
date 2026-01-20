@@ -148,6 +148,7 @@ export const getCachedSyllables = (word, hyphenator) => {
         s = syllabifyImproved(word);
     }
     s = enforceVowelRule(word, s);
+    s = mergeDiphthongs(s);
 
     SYLLABLE_CACHE.set(cacheKey, s);
     return s;
@@ -173,4 +174,53 @@ export const getChunks = (text, useClusters, activeClusters = CLUSTERS) => {
         else { result.push(text[i]); i++; }
     }
     return result;
+};
+
+export const mergeDiphthongs = (syllables) => {
+    if (!syllables || syllables.length < 2) return syllables;
+    // Diphthongs that should not be split
+    const diphthongs = ['eu', 'äu', 'au', 'ei', 'ie', 'ai'];
+
+    // Check if a character pair forms a diphthong
+    const isD = (pair) => diphthongs.includes(pair.toLowerCase());
+
+    const merged = [];
+    let buffer = syllables[0];
+
+    for (let i = 1; i < syllables.length; i++) {
+        const next = syllables[i];
+        if (!buffer || !next) {
+            merged.push(buffer);
+            buffer = next;
+            continue;
+        }
+
+        const lastChar = buffer.slice(-1);
+        const firstChar = next.charAt(0);
+        const pair = lastChar + firstChar;
+
+        let shouldMerge = false;
+        if (isD(pair)) {
+            // Check if the last char of buffer is ALREADY part of a diphthong?
+            // "Fei" -> last 'i'. prev 'e'. 'ei' is diphthong.
+            const prevChar = buffer.length > 1 ? buffer.slice(-2, -1) : '';
+            const prevPair = prevChar + lastChar;
+
+            if (prevChar && isD(prevPair)) {
+                // Already part of a diphthong pattern ending the buffer
+                shouldMerge = false;
+            } else {
+                shouldMerge = true;
+            }
+        }
+
+        if (shouldMerge) {
+            buffer += next;
+        } else {
+            merged.push(buffer);
+            buffer = next;
+        }
+    }
+    merged.push(buffer);
+    return merged;
 };

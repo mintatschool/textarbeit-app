@@ -551,7 +551,7 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                 <div className="flex items-center gap-4 ml-auto">
                     <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg no-print">
                         <span className="text-xs font-bold text-slate-500">A</span>
-                        <input type="range" min="16" max="64" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-48 accent-blue-600 rounded-lg cursor-pointer" />
+                        <input type="range" min="16" max="80" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-32 accent-blue-600 rounded-lg cursor-pointer" />
                         <span className="text-xl font-bold text-slate-500">A</span>
                     </div>
                     <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 shadow-sm transition-transform hover:scale-105 flex items-center justify-center min-touch-target sticky right-0">
@@ -597,6 +597,7 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                                             }}
                                             onClick={(e) => e.stopPropagation()}
                                             draggable={false}
+                                            spellCheck={false}
                                         />
                                     </div>
                                 ) : (
@@ -610,6 +611,7 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                                             onChange={(e) => { const newCols = { ...columnsState.cols, [colId]: { ...col, title: e.target.value } }; setColumnsState({ ...columnsState, cols: newCols }); }}
                                             onClick={(e) => e.stopPropagation()}
                                             draggable={false}
+                                            spellCheck={false}
                                         />
                                     </div>
                                 )}

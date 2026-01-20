@@ -147,7 +147,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
         zIndex: isZoomed ? 20 : 'auto',
         fontSize: `${currentFontSize}px`,
         fontFamily: settings.fontFamily, // Explicitly set for better reliability
-        lineHeight: settings.lineHeight || 1.2,
+        lineHeight: settings.lineHeight || 1.3,
         letterSpacing: `${(settings.letterSpacing ?? 0)}em`,
         transition: 'font-size 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.3s ease'
     };
@@ -278,16 +278,46 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
     // Use different style for Textmarker (isColorMarked) to create a continuous line
     // Use linear scaling units (em) instead of fixed px to ensure drawing overlay matches
     // PERSISTENCE: Apply marker styling if colored, even if not in Marker Mode
-    const markerBase = (showFrame || isColorMarked)
-        ? (showFrame ? 'border-2 rounded-lg' : 'rounded-none')
-        : '';
-    const markerBorder = showFrame ? 'border-slate-300/80' : (isColorMarked ? 'border-0' : 'border-transparent');
-    const markerClass = `${markerBase} ${markerBorder}`;
-    const markerStyle = (showFrame || isColorMarked)
-        ? ((!showFrame && isColorMarked)
-            ? { paddingTop: '0.01em', paddingBottom: '0.15em', paddingLeft: '0', paddingRight: '0', marginBottom: '-0.15em', marginTop: '-0.01em' }
-            : { paddingTop: '0.01em', paddingBottom: '0.05em', paddingLeft: '0.15em', paddingRight: '0.15em', marginTop: '-0.01em', marginBottom: '-0.05em' }
-        ) : {};
+    // Use box-shadow (ring) instead of border to prevent layout shifts
+    const markerBase = showFrame
+        ? 'rounded-lg' // removed border-2
+        : (isColorMarked ? 'rounded-none' : 'rounded-lg');
+
+    // Box Shadow Logic
+    // If showFrame: Inner Ring (Slate)
+    // If Textmarker: No Ring (or specific marker ring if designed)
+    // Neutral: No Ring
+    const boxShadowStyle = showFrame
+        ? '0 0 0 2px rgba(203, 213, 225, 0.8)' // slate-300/80
+        : 'none';
+
+    const markerClass = `${markerBase}`;
+
+    // Standardize styling to reserve layout space (prevent jumps)
+    // Frame/Neutral: Visually expand into whitespace using negative margins
+    // Old Padding: 0.15em. New Padding: 0.30em. Margin: -0.15em. Net Effect: 0.15em (Same as before)
+    // Standardize styling to reserve layout space (prevent jumps)
+    // Frame/Neutral: Zero Net Width Impact
+    // The padding visually expands the background, the negative margin pulls the flow back.
+    // Net result: 0em horizontal space consumed. Frame floats over whitespace.
+    const frameStyle = {
+        paddingTop: '0.01em',
+        paddingBottom: '0.05em',
+        paddingLeft: '0.20em',
+        paddingRight: '0.20em',
+        marginTop: '-0.01em',
+        marginBottom: '-0.05em',
+        marginLeft: '-0.20em',
+        marginRight: '-0.20em'
+    };
+
+    const markerStyle = showFrame
+        ? frameStyle
+        : (isColorMarked
+            // Textmarker: Also use zero-impact Logic to match Frame geometry (Net 0 width)
+            ? { paddingTop: '0.01em', paddingBottom: '0.15em', paddingLeft: '0', paddingRight: '0', marginBottom: '-0.15em', marginTop: '-0.01em', marginLeft: '0', marginRight: '0' }
+            : frameStyle
+        );
 
     if (isHidden) {
         return (
@@ -299,10 +329,10 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                 <span
                     className={`inline-block ${markerClass}`}
                     style={{
-                        marginRight: showFrame ? '0.05em' : '0',
-                        marginLeft: showFrame ? '0.05em' : '0',
+                        marginRight: '0',
+                        marginLeft: '0',
                         ...markerStyle,
-                        borderColor: 'transparent',
+                        boxShadow: boxShadowStyle,
                         backgroundColor: 'transparent'
                     }}
                 >
@@ -349,8 +379,9 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                 <span
                     className={`inline-block ${markerClass} ${isNeutralMarked ? '' : ''} ${isSelection && !isNeutralMarked ? 'animate-pulse bg-slate-100 rounded-lg' : ''}`}
                     style={{
-                        marginRight: showFrame ? '0.05em' : '0',
-                        marginLeft: showFrame ? '0.05em' : '0',
+                        marginRight: '0', // Fixed 0 to use word spacing only
+                        marginLeft: '0',
+                        boxShadow: isNeutralMarked ? 'none' : boxShadowStyle,
                         backgroundColor: isNeutralMarked ? 'transparent' : (isSelection ? '#e2e8f0' : backgroundColor),
                         color: isColorMarked ? 'black' : undefined,
                         ...markerStyle
@@ -468,7 +499,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
             onClick={(e) => !isReadingMode && !isTextMarkerMode && activeTool !== 'pen' && (activeTool === 'split' || activeTool === 'blur' || activeColor !== 'yellow') ? handleInteraction(e) : null}
         >
             {renderPrefix()}
-            <span className={`inline-flex items-baseline ${markerClass} ${isSelection && !isNeutralMarked ? 'animate-pulse bg-slate-100 rounded-lg' : ''}`} style={{ backgroundColor: 'transparent', marginLeft: isNeutralMarked ? '0.05em' : '0', marginRight: isNeutralMarked ? '0.05em' : '0', ...markerStyle }}>
+            <span className={`inline-flex items-baseline ${markerClass} ${isSelection && !isNeutralMarked ? 'animate-pulse bg-slate-100 rounded-lg' : ''}`} style={{ backgroundColor: 'transparent', marginLeft: '0', marginRight: '0', boxShadow: boxShadowStyle, ...markerStyle }}>
                 {syllables.map((syl, sIdx) => {
                     const currentStart = charCounter;
                     charCounter += syl.length;
@@ -478,7 +509,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
 
                     return (
 
-                        <span key={sIdx} className={`inline-block relative leading-none ${settings.visualType === 'block' ? ('rounded ' + bgClass + ' border border-blue-200/50 shadow-sm') : ''}`} style={settings.visualType === 'block' ? { marginLeft: '0.02em', marginRight: '0.02em', paddingLeft: '0.05em', paddingRight: '0.05em', minHeight: '1.2em', display: 'inline-flex', alignItems: 'flex-end', paddingBottom: '0.15em' } : { height: '1.1em', marginLeft: '0', marginRight: '0' }}>
+                        <span key={sIdx} className={`inline-block relative leading-none ${settings.visualType === 'block' ? ('rounded ' + bgClass + ' border border-blue-200/50 shadow-sm') : ''}`} style={settings.visualType === 'block' ? { marginLeft: '0.02em', marginRight: '0.02em', paddingLeft: '0.02em', paddingRight: '0.02em', minHeight: '1.2em', display: 'inline-flex', alignItems: 'flex-end', paddingBottom: '0.15em' } : { height: '1.1em', marginLeft: '0', marginRight: '0' }}>
                             <span className={`inline-block relative z-10 ${settings.visualType === 'black_gray' ? (isEven ? 'text-black' : 'text-gray-400') : ''}`}>
                                 {syl.split('').map((char, cIdx) => {
                                     const globalIndex = startIndex + currentStart + cIdx;

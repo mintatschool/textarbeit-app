@@ -297,7 +297,7 @@ export const TwoPartPuzzleLayout = ({
                             step="0.1"
                             value={scale}
                             onChange={(e) => setScale(parseFloat(e.target.value))}
-                            className="w-48 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer"
+                            className="w-32 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer"
                         />
                         <span className="text-xl font-bold text-slate-500">A</span>
                     </div>
@@ -355,18 +355,18 @@ export const TwoPartPuzzleLayout = ({
                 </div>
 
                 {/* Center - Drop Zone */}
-                <div className="flex-1 flex flex-col items-center justify-center px-4 relative overflow-hidden">
+                <div className="flex-1 flex flex-col px-4 relative overflow-y-hidden overflow-x-auto">
 
 
-                    {/* Target Area */}
-                    <div className="relative flex flex-col items-center gap-4 w-full mt-6">
+                    {/* Target Area - using m-auto for safe centering (centers if fits, aligns start if overflows) */}
+                    <div className="m-auto flex flex-col items-center gap-4 w-fit p-4">
                         <span className="text-xs font-bold text-slate-300 uppercase tracking-widest">{subtitle}</span>
 
                         <div className={`
                             relative flex items-center justify-center transition-all duration-500 py-8
                             ${showSuccess ? 'scale-105' : ''}
                         `}>
-                            <div className="flex items-center gap-20">
+                            <div className="flex items-center gap-8">
                                 <div className="flex items-center relative">
                                     {['left', 'right'].map((role, idx) => {
                                         // placedPieces now contains piece objects, not just text
@@ -378,8 +378,8 @@ export const TwoPartPuzzleLayout = ({
                                             <div
                                                 key={role}
                                                 className={`relative flex items-center justify-center transition-all duration-300 group overflow-visible ${!pieceText && selectedPiece && selectedPiece.type === (role === 'left' ? leftType : rightType)
-                                                        ? 'scale-105 cursor-pointer'
-                                                        : ''
+                                                    ? 'scale-105 cursor-pointer'
+                                                    : ''
                                                     }`}
                                                 style={{
                                                     width: `${200 * scale}px`,

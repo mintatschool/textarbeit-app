@@ -18,10 +18,65 @@ export const QRScannerModal = ({ onClose, onScanSuccess }) => {
     const [ocrStatus, setOcrStatus] = useState(''); // 'initializing', 'recognizing', 'success', 'error'
     const [ocrProgress, setOcrProgress] = useState(0);
 
+    // Camera Management
+    const [cameras, setCameras] = useState([]);
+    const [selectedCameraId, setSelectedCameraId] = useState(null);
+    const [cameraLabel, setCameraLabel] = useState('');
+
     const scannerRef = useRef(null);
     const videoRef = useRef(null);
     const streamRef = useRef(null);
+    const lastStreamRef = useRef(null); // Reference to QR stream for cleanup
     const imgRef = useRef(null);
+
+    // --- Camera Discovery ---
+    useEffect(() => {
+        const getCameras = async () => {
+            try {
+                const devices = await Html5Qrcode.getCameras();
+                if (devices && devices.length) {
+                    // Filter for back cameras if possible
+                    const backCameras = devices.filter(d =>
+                        d.label.toLowerCase().includes('back') ||
+                        d.label.toLowerCase().includes('rear') ||
+                        d.label.toLowerCase().includes('environment')
+                    );
+
+                    // If we found back cameras, use those. Otherwise use all.
+                    // The user prefers to NOT see front cameras if possible.
+                    const targetCameras = backCameras.length > 0 ? backCameras : devices;
+                    setCameras(targetCameras);
+
+                    // Select the first one by default
+                    if (targetCameras.length > 0) {
+                        setSelectedCameraId(targetCameras[0].id);
+                        setCameraLabel(targetCameras[0].label);
+                    }
+                }
+            } catch (e) {
+                console.error("Error enumerating cameras:", e);
+            }
+        };
+        getCameras();
+    }, []);
+
+    const handleSwitchCamera = () => {
+        if (cameras.length <= 1) return;
+
+        const currentIndex = cameras.findIndex(c => c.id === selectedCameraId);
+        const nextIndex = (currentIndex + 1) % cameras.length;
+        const nextCamera = cameras[nextIndex];
+
+        setSelectedCameraId(nextCamera.id);
+        setCameraLabel(nextCamera.label);
+
+        // Restart logic will be handled by effects listening to selectedCameraId logic
+        // But for QR, we need to manually trigger restart if running
+        if (mode === 'qr' && isScanning) {
+            // The useEffect [selectedCameraId] will trigger? 
+            // Better to let the effect handle it by adding selectedCameraId to dependencies.
+        }
+    };
 
     // --- QR Code Logic ---
 
@@ -40,6 +95,41 @@ export const QRScannerModal = ({ onClose, onScanSuccess }) => {
 
     const handleScanResult = (decodedText, html5QrCode) => {
         const multiPart = parseMultiPart(decodedText);
+
+        const killCameraTracks = () => {
+            try {
+                // Nuclear cleanup: Stop all possible video tracks on the page
+                // Strategy: PAUSE -> NULLIFY -> STOP
+
+                // 1. Pause and Nullify explicitly on all video elements
+                const videos = document.querySelectorAll("video");
+                videos.forEach(v => {
+                    if (!v.paused) v.pause(); // Pause first to stop frame requests
+                    if (v.srcObject) {
+                        // Save track reference before nullifying
+                        const tracks = v.srcObject.getTracks();
+                        v.srcObject = null; // Detach from element
+                        tracks.forEach(t => {
+                            t.enabled = false; // Disable first
+                            t.stop(); // Then stop
+                        });
+                    }
+                    v.src = "";
+                    v.load();
+                });
+
+                // 2. Kill via saved stream ref (redundant but safe)
+                if (lastStreamRef.current) {
+                    lastStreamRef.current.getTracks().forEach(track => {
+                        track.enabled = false;
+                        track.stop();
+                    });
+                    lastStreamRef.current = null;
+                }
+            } catch (e) {
+                console.warn("Proactive track kill failed", e);
+            }
+        };
 
         if (multiPart) {
             setMultiPartState(prev => {
@@ -60,22 +150,62 @@ export const QRScannerModal = ({ onClose, onScanSuccess }) => {
                         combined += newState.parts[i] || '';
                     }
                     setIsScanning(false);
-                    html5QrCode.stop().then(() => {
-                        onScanSuccess(combined);
-                    }).catch(() => {
-                        onScanSuccess(combined);
-                    });
+                    killCameraTracks(); // Nuclear hardware stop
+                    // Heavy delay (800ms) for Surface hardware to register shutdown before unmount
+                    setTimeout(() => onScanSuccess(combined), 800);
                     return null;
                 }
                 return newState;
             });
         } else {
             setIsScanning(false);
-            html5QrCode.stop().then(() => {
-                onScanSuccess(decodedText);
-            }).catch(() => {
-                onScanSuccess(decodedText);
-            });
+            killCameraTracks();
+            setTimeout(() => onScanSuccess(decodedText), 800);
+        }
+    };
+
+    // Helper to safely stop the scanner
+    const safeStop = async (scannerInstance) => {
+        if (!scannerInstance) return;
+        const elementId = "qr-reader";
+
+        const killTracksManually = () => {
+            try {
+                // 1. Kill via saved stream ref
+                if (lastStreamRef.current) {
+                    lastStreamRef.current.getTracks().forEach(track => track.stop());
+                    lastStreamRef.current = null;
+                }
+                // 2. Nuclear DOM search - stop EVERY video on page
+                const videoEls = document.querySelectorAll(`video`);
+                videoEls.forEach(v => {
+                    if (v.srcObject instanceof MediaStream) {
+                        v.srcObject.getTracks().forEach(t => t.stop());
+                        v.srcObject = null;
+                    }
+                    v.pause();
+                    v.src = "";
+                });
+            } catch (e) { console.warn("Manual track shutdown failed", e); }
+        };
+
+        try {
+            // Check state if available
+            if (scannerInstance.getState && typeof scannerInstance.getState === 'function') {
+                const state = scannerInstance.getState();
+                if (state !== 2 && state !== 3) { // 2=SCANNING, 3=PAUSED
+                    killTracksManually();
+                    return scannerInstance.clear();
+                }
+            }
+
+            await scannerInstance.stop();
+            killTracksManually();
+            return scannerInstance.clear();
+        } catch (err) {
+            console.warn("SafeStop caught error:", err);
+            killTracksManually();
+            try { return scannerInstance.clear(); } catch (e) { }
         }
     };
 
@@ -83,88 +213,88 @@ export const QRScannerModal = ({ onClose, onScanSuccess }) => {
     useEffect(() => {
         if (mode !== 'qr') return;
 
-        let html5QrCode = null;
         const elementId = "qr-reader";
         let isMounted = true;
+        let scannerInstance = null;
 
         const startScanner = async () => {
-            await new Promise(r => setTimeout(r, 200));
-            // Check if element exists before starting
-            if (!document.getElementById(elementId) || !isMounted) return;
+            // 1. Wait for DOM
+            await new Promise(r => setTimeout(r, 100));
+            if (!isMounted || !document.getElementById(elementId)) return;
 
             try {
-                // If there's already a scanner instance (cleanup failed?), try to reuse or stop it
-                if (scannerRef.current) {
-                    try {
-                        if (scannerRef.current.isScanning) {
-                            await scannerRef.current.stop();
-                        }
-                        scannerRef.current.clear();
-                    } catch (e) {
-                        // ignore
-                    }
-                }
+                // 2. Create Instance
+                scannerInstance = new Html5Qrcode(elementId);
+                scannerRef.current = scannerInstance;
 
-                html5QrCode = new Html5Qrcode(elementId);
-                scannerRef.current = html5QrCode;
-
+                // 3. Config
                 const config = {
                     fps: 15,
                     qrbox: { width: 300, height: 300 },
                     aspectRatio: 1.0,
-                    experimentalFeatures: {
-                        useBarCodeDetectorIfSupported: true
-                    }
+                    experimentalFeatures: { useBarCodeDetectorIfSupported: true }
                 };
+
+                const cameraConfig = selectedCameraId ? { deviceId: { exact: selectedCameraId } } : { facingMode: "environment" };
 
                 if (!isMounted) return;
 
-                await html5QrCode.start(
-                    { facingMode: "environment" },
+                // 4. Start with extensive error handling
+                await scannerInstance.start(
+                    cameraConfig,
                     config,
                     (decodedText) => {
-                        if (isMounted) handleScanResult(decodedText, html5QrCode);
+                        if (isMounted) handleScanResult(decodedText, scannerInstance);
                     },
-                    (error) => {
-                        // Ignore scan errors, but logging might be useful for debug
-                    }
+                    (error) => { /* ignore */ }
                 );
 
-                if (isMounted) setIsScanning(true);
+                if (isMounted) {
+                    setIsScanning(true);
+                    // Capture the stream reference for reliable cleanup
+                    try {
+                        const videoEl = document.querySelector(`#${elementId} video`);
+                        if (videoEl && videoEl.srcObject) {
+                            lastStreamRef.current = videoEl.srcObject;
+                        }
+                    } catch (e) { }
+                }
+
             } catch (err) {
-                console.error("Kamera Error:", err);
-                if (isMounted) setErrorMsg("Kamera konnte nicht gestartet werden.");
+                console.error("Scanner Start Error:", err);
+                // "Already under transition" is benign here - just means we retried too fast
+                // Don't show critical error for transition issues
+                const isTransitionError = err?.toString().includes("transition");
+                if (isMounted && !isTransitionError) {
+                    setErrorMsg("Kamera konnte nicht gestartet werden.");
+                }
+            }
+        };
+
+        // Cleanup function dealing with the *specific* instance created in this effect
+        const cleanup = async () => {
+            isMounted = false;
+            setIsScanning(false);
+            if (scannerInstance) {
+                // Remove from ref only if it matches (though locally scoped is safer)
+                if (scannerRef.current === scannerInstance) {
+                    scannerRef.current = null;
+                }
+                await safeStop(scannerInstance);
             }
         };
 
         startScanner();
 
         return () => {
-            isMounted = false;
-            setIsScanning(false);
-            if (scannerRef.current) {
-                const scannerToStop = scannerRef.current;
-                scannerRef.current = null;
-
-                // Attempt to stop, then clear.
-                // We don't await here because cleanup is sync, but we trigger the promise chain.
-                scannerToStop.stop()
-                    .then(() => {
-                        return scannerToStop.clear();
-                    })
-                    .catch((err) => {
-                        // If stop() fails, it might be because it wasn't running.
-                        // Try clear() anyway if appropriate, or just ignore.
-                        console.log("Scanner stop error:", err);
-                        try { scannerToStop.clear(); } catch (e) { }
-                    });
-            }
+            cleanup();
         };
-    }, [mode, onScanSuccess]);
+    }, [mode, onScanSuccess, selectedCameraId]);
 
 
     // --- OCR Logic ---
 
+    // OCR Camera Effect
     // OCR Camera Effect
     useEffect(() => {
         if (mode !== 'ocr' || capturedImage) {
@@ -178,9 +308,14 @@ export const QRScannerModal = ({ onClose, onScanSuccess }) => {
 
         const startOcrCamera = async () => {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: 'environment' }
-                });
+                // Use selected camera or environment
+                const constraints = {
+                    video: selectedCameraId
+                        ? { deviceId: { exact: selectedCameraId } }
+                        : { facingMode: 'environment' }
+                };
+
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
                 streamRef.current = stream;
                 if (videoRef.current) {
                     videoRef.current.srcObject = stream;
@@ -199,7 +334,7 @@ export const QRScannerModal = ({ onClose, onScanSuccess }) => {
                 streamRef.current = null;
             }
         };
-    }, [mode, capturedImage]);
+    }, [mode, capturedImage, selectedCameraId]);
 
     const handleCapture = () => {
         if (videoRef.current) {
@@ -340,15 +475,27 @@ export const QRScannerModal = ({ onClose, onScanSuccess }) => {
 
     return (
         <div className="fixed inset-0 z-[160] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 font-sans">
-            <div className="bg-white rounded-2xl shadow-2xl p-6 modal-animate flex flex-col items-center max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className={`bg-white rounded-2xl shadow-2xl p-6 modal-animate flex flex-col items-center w-full max-h-[90vh] overflow-y-auto transition-all duration-300 ${(mode === 'ocr' && capturedImage) ? 'max-w-5xl h-[85vh]' : 'max-w-md'}`}>
 
                 {/* Header with Switch */}
                 <div className="flex flex-col w-full mb-4 gap-4">
                     <div className="flex justify-between items-center w-full">
-                        <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                            {mode === 'qr' ? <Icons.Camera className="text-blue-600" /> : <Icons.Type className="text-blue-600" />}
-                            {mode === 'qr' ? 'Code scannen' : 'Text scannen'}
-                        </h2>
+                        <div className="flex items-center gap-2">
+                            <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                                {mode === 'qr' ? <Icons.Camera className="text-blue-600" /> : <Icons.Type className="text-blue-600" />}
+                                {mode === 'qr' ? 'Code scannen' : 'Text scannen'}
+                            </h2>
+                            {/* Camera Switcher (only if multiple cameras) */}
+                            {cameras.length > 1 && (
+                                <button
+                                    onClick={handleSwitchCamera}
+                                    className="ml-2 p-2 bg-slate-100 rounded-full hover:bg-slate-200 text-slate-600"
+                                    title="Kamera wechseln"
+                                >
+                                    <Icons.RefreshCw size={18} />
+                                </button>
+                            )}
+                        </div>
                         <button onClick={onClose} className="p-3 hover:bg-slate-100 rounded-full min-touch-target">
                             <Icons.X size={24} />
                         </button>

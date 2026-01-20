@@ -160,7 +160,8 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
                 ...t,
                 text: t.text.replace(/[.,!?;:]+$/, ''), // Clean word for pool card
                 id: `gap_${sIdx}_${t.index}`,
-                color: WORD_COLORS[(sIdx + t.index) % WORD_COLORS.length]
+                id: `gap_${sIdx}_${t.index}`
+                // color: WORD_COLORS[(sIdx + t.index) % WORD_COLORS.length] // Removed per user request
             }))
         };
     };
@@ -529,7 +530,7 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
                                                     draggable
                                                     onDragStart={(e) => handleDragStart(e, placed, 'gap', p.id)}
                                                     onDragEnd={handleDragEnd}
-                                                    className={`px-1 py-0 rounded font-bold cursor-grab active:cursor-grabbing animate-[popIn_0.3s_ease-out] whitespace-nowrap leading-none touch-none touch-manipulation select-none ${placed.color}`}
+                                                    className={`px-1 py-0 rounded font-bold cursor-grab active:cursor-grabbing animate-[popIn_0.3s_ease-out] whitespace-nowrap leading-none touch-none touch-manipulation select-none text-blue-600`}
                                                     style={{ fontSize: '1.2em' }}
                                                 >
                                                     <Word
@@ -574,12 +575,12 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
                                 onDragStart={(e) => handleDragStart(e, w, 'pool')}
                                 onDragEnd={handleDragEnd}
                                 onClick={() => handlePoolWordClick(w)}
-                                className={`w-full p-4 font-bold rounded-2xl transition-all flex items-center justify-center cursor-grab active:cursor-grabbing hover:scale-[1.02] touch-none touch-manipulation select-none ${w.color} ${selectedWord?.poolId === w.poolId ? 'scale-105' : 'shadow-sm'}`}
+                                className={`w-full p-4 font-bold rounded-2xl transition-all flex items-center justify-center cursor-grab active:cursor-grabbing hover:scale-[1.02] touch-none touch-manipulation select-none bg-white border-2 border-slate-300 text-slate-800 shadow-[0_4px_0_0_#cbd5e1] hover:shadow-[0_2px_0_0_#cbd5e1] hover:translate-y-[2px] ${selectedWord?.poolId === w.poolId ? 'scale-105 border-blue-500 ring-4 ring-blue-500/20' : ''}`}
                                 style={{
                                     fontFamily: settings.fontFamily,
                                     fontSize: `${Math.max(20, settings.fontSize * 0.8)}px`,
-                                    filter: selectedWord?.poolId === w.poolId ? 'drop-shadow(0 0 12px rgba(59, 130, 246, 0.8))' : 'none',
-                                    boxShadow: selectedWord?.poolId === w.poolId ? '0 10px 25px -5px rgba(0, 0, 0, 0.1)' : undefined
+                                    filter: selectedWord?.poolId === w.poolId ? 'drop-shadow(0 0 12px rgba(59, 130, 246, 0.5))' : 'none',
+                                    // boxShadow: selectedWord?.poolId === w.poolId ? '0 10px 25px -5px rgba(0, 0, 0, 0.1)' : undefined
                                 }}
                             >
                                 <Word

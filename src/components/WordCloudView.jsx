@@ -3,6 +3,7 @@ import { Icons } from './Icons';
 import { EmptyStateMessage } from './EmptyStateMessage';
 import { getChunks } from '../utils/syllables';
 import { speak } from '../utils/speech';
+import { ProgressBar } from './ProgressBar';
 
 export const WordCloudView = ({ words, settings, setSettings, onClose, title }) => {
     if (!words || words.length === 0) return (<div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col items-center justify-center modal-animate font-sans"><EmptyStateMessage onClose={onClose} /></div>);
@@ -55,6 +56,14 @@ export const WordCloudView = ({ words, settings, setSettings, onClose, title }) 
     const handleDragEnd = (e) => { setIsDragging(false); e.target.classList.remove('dragging'); dragItemRef.current = null; document.querySelectorAll('.active-target').forEach(el => el.classList.remove('active-target')); };
     const handleDrop = (e, targetWordId, targetChunkId) => { setIsDragging(false); e.preventDefault(); e.stopPropagation(); document.querySelectorAll('.active-target').forEach(el => el.classList.remove('active-target')); const dragData = dragItemRef.current; if (!dragData || dragData.chunk.wordId !== targetWordId) return; const existingChunk = placedChunks[targetChunkId]; setPlacedChunks(prev => { const next = { ...prev, [targetChunkId]: dragData.chunk }; if (dragData.source === 'slot' && dragData.slotId) delete next[dragData.slotId]; return next; }); setPoolChunks(prev => { let next = prev; if (dragData.source === 'pool') next = next.filter(c => c.id !== dragData.chunk.id); if (existingChunk) next = [...next, existingChunk]; return next; }); };
     const handleCloudReturnDrop = (e, targetWordId) => { setIsDragging(false); e.preventDefault(); e.stopPropagation(); const dragData = dragItemRef.current; if (!dragData || dragData.chunk.wordId !== targetWordId) return; if (dragData.source === 'slot') { setPlacedChunks(prev => { const next = { ...prev }; delete next[dragData.slotId]; return next; }); setPoolChunks(prev => [...prev, dragData.chunk]); } };
+
+    // Progress Calculation
+    const progressPercentage = React.useMemo(() => {
+        const totalChunks = cloudWords.reduce((acc, w) => acc + w.allChunks.length, 0);
+        if (totalChunks === 0) return 0;
+        const placedCount = Object.keys(placedChunks).length;
+        return (placedCount / totalChunks) * 100;
+    }, [cloudWords, placedChunks]);
 
     // Click-to-Place Handlers
     const handleChunkClick = (chunk, source, slotId = null) => {
@@ -127,26 +136,32 @@ export const WordCloudView = ({ words, settings, setSettings, onClose, title }) 
                     </div>
                 </div>
             )}
-            <div className="bg-white px-6 py-4 shadow-sm flex justify-between items-center z-10 shrink-0 flex-wrap gap-4">
-                <div className="flex items-center gap-4">
-                    <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2"><Icons.Cloud className="text-blue-500" /> {title || "Schüttelwörter"}</h2>
-                    <span className="bg-slate-100 px-3 py-1 rounded-full text-slate-500 font-medium text-sm">{poolChunks.length} Teile übrig</span>
-                </div>
-                <div className="flex items-center gap-3">
-                    <button
-                        onClick={() => setShowVowels(!showVowels)}
-                        className={`px-4 py-2 rounded-xl font-bold text-lg border transition-all min-touch-target ${showVowels ? 'bg-yellow-400 text-yellow-900 border-yellow-500 shadow-[0_2px_0_0_#eab308]' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}
-                    >
-                        Vokale
-                    </button>
-                    <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg ml-2">
-                        <span className="text-xs font-bold text-slate-500">A</span>
-                        <input type="range" min="24" max="80" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-32 accent-blue-600 rounded-lg cursor-pointer" />
-                        <span className="text-xl font-bold text-slate-500">A</span>
+            <div className="bg-white px-2 py-3 shadow-sm z-10 shrink-0 border-b border-slate-100">
+                <div className="flex justify-between items-center flex-wrap gap-4 px-4">
+                    <div className="flex items-center gap-4">
+                        <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2"><Icons.Cloud className="text-blue-500" /> {title || "Schüttelwörter"}</h2>
+                        <span className="bg-slate-100 px-3 py-1 rounded-full text-slate-500 font-medium text-sm">{poolChunks.length} Teile übrig</span>
                     </div>
-                    <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 shadow-sm transition-transform hover:scale-105 flex items-center justify-center min-touch-target">
-                        <Icons.X size={24} />
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => setShowVowels(!showVowels)}
+                            className={`px-4 py-2 rounded-xl font-bold text-lg border transition-all min-touch-target ${showVowels ? 'bg-yellow-400 text-yellow-900 border-yellow-500 shadow-[0_2px_0_0_#eab308]' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}
+                        >
+                            Vokale
+                        </button>
+                        <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg ml-2">
+                            <span className="text-xs font-bold text-slate-500">A</span>
+                            <input type="range" min="24" max="80" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-32 accent-blue-600 rounded-lg cursor-pointer" />
+                            <span className="text-xl font-bold text-slate-500">A</span>
+                        </div>
+                        <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 shadow-sm transition-transform hover:scale-105 flex items-center justify-center min-touch-target">
+                            <Icons.X size={24} />
+                        </button>
+                    </div>
+                </div>
+                {/* Progress Bar */}
+                <div className="w-full mt-2">
+                    <ProgressBar progress={progressPercentage} />
                 </div>
             </div>
             <div className="flex-1 overflow-y-auto custom-scroll p-6 pb-32">

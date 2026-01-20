@@ -6,6 +6,8 @@ import availableSyllables from '../utils/available_syllables.json';
 
 const syllableSet = new Set(availableSyllables);
 
+import { ProgressBar } from './ProgressBar';
+
 export const SyllableCarpetView = ({ words, settings, setSettings, onClose, title }) => {
     if (!words || words.length === 0) return (<div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col items-center justify-center modal-animate font-sans"><EmptyStateMessage onClose={onClose} /></div>);
     const [hiddenSyllables, setHiddenSyllables] = useState(new Set());
@@ -22,6 +24,13 @@ export const SyllableCarpetView = ({ words, settings, setSettings, onClose, titl
     const uniqueSyllables = useMemo(() => { const set = new Set(); words.forEach(w => { if (w.syllables) w.syllables.forEach(s => set.add(s.toLowerCase().trim())); }); return Array.from(set).sort((a, b) => a.localeCompare(b, 'de')); }, [JSON.stringify(words)]);
     useEffect(() => { setShuffledSyllables(uniqueSyllables); }, [uniqueSyllables]);
     useEffect(() => { let interval; if (timerActive) { interval = setInterval(() => setTimer(t => t + 1), 1000); } return () => clearInterval(interval); }, [timerActive]);
+
+    const progressPercentage = useMemo(() => {
+        if (!isGameMode) return 0;
+        const total = completedSyllables.size + remainingPool.length;
+        if (total === 0) return 100;
+        return (completedSyllables.size / total) * 100;
+    }, [completedSyllables.size, remainingPool.length, isGameMode]);
 
     const getVisibleList = () => shuffledSyllables.filter(s => !hiddenSyllables.has(s));
     const toggleGameMode = () => { if (isGameMode) { setIsGameMode(false); setTargetSyllable(null); setTimerActive(false); window.speechSynthesis.cancel(); } else { const visible = getVisibleList(); if (visible.length === 0) return; const shuffled = [...shuffledSyllables]; for (let i = shuffled.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]; } setShuffledSyllables(shuffled); const pool = shuffled.filter(s => !hiddenSyllables.has(s)); if (pool.length === 0) return; setRemainingPool(pool); setCompletedSyllables(new Set()); setIsGameMode(true); setTimer(0); setTimerActive(true); setShowReward(false); setIsFingerMode(false); pickNextSyllable(pool); } };
@@ -59,48 +68,55 @@ export const SyllableCarpetView = ({ words, settings, setSettings, onClose, titl
                     </div>
                 </div>
             )}
-            <div className="bg-white px-6 py-4 shadow-sm flex flex-wrap gap-4 justify-between items-center z-10 shrink-0">
-                <div className="flex items-center gap-4 md:gap-6">
-                    <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2"><Icons.Grid2x2 className="text-blue-600" /> {title || "Silbenteppich"}</h2>
-                    <div className="flex items-center gap-2 md:gap-4 no-print">
+            <div className="bg-white shadow-sm z-10 shrink-0">
+                <div className="px-6 py-4 flex flex-wrap gap-4 justify-between items-center">
+                    <div className="flex items-center gap-4 md:gap-6">
+                        <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2"><Icons.Grid2x2 className="text-blue-600" /> {title || "Silbenteppich"}</h2>
+                        <div className="flex items-center gap-2 md:gap-4 no-print">
+                            {isGameMode && (
+                                <div className="flex items-center gap-2 bg-slate-100 px-3 py-1 rounded-lg border border-slate-200 font-mono text-lg font-bold text-blue-600">
+                                    <Icons.Clock size={20} /> {timer}s
+                                </div>
+                            )}
+                            <button
+                                onClick={toggleGameMode}
+                                className={`p-4 rounded-full transition-all shadow-lg flex items-center gap-2 font-black text-xl hover:scale-105 active:scale-95 ring-4 ring-white/50 ${isGameMode ? 'bg-red-500 text-white' : 'bg-blue-500 hover:bg-blue-600 text-white'}`}
+                            >
+                                {isGameMode ? <><Icons.Square size={20} fill="currentColor" /> Stopp</> : <><Icons.Volume2 size={24} /> Start</>}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-4 no-print">
                         {isGameMode && (
-                            <div className="flex items-center gap-2 bg-slate-100 px-3 py-1 rounded-lg border border-slate-200 font-mono text-lg font-bold text-blue-600">
-                                <Icons.Clock size={20} /> {timer}s
-                            </div>
+                            <button
+                                onClick={() => targetSyllable && speak(targetSyllable)}
+                                className="w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl flex items-center justify-center shadow-lg transition-all hover:scale-105 active:scale-95 border-b-4 border-blue-800 active:border-b-0 active:translate-y-1"
+                                title="Nochmal hören"
+                            >
+                                <Icons.Volume2 size={32} />
+                            </button>
                         )}
                         <button
-                            onClick={toggleGameMode}
-                            className={`p-4 rounded-full transition-all shadow-lg flex items-center gap-2 font-black text-xl hover:scale-105 active:scale-95 ring-4 ring-white/50 ${isGameMode ? 'bg-red-500 text-white' : 'bg-blue-500 hover:bg-blue-600 text-white'}`}
+                            onClick={() => setIsFingerMode(!isFingerMode)}
+                            className={`p-2.5 rounded-xl transition-all flex items-center justify-center border-2 mr-2 ${isFingerMode ? 'bg-orange-500 text-white border-orange-600 shadow-inner' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 shadow-sm'}`}
+                            title="Lese-Modus (Finger)"
                         >
-                            {isGameMode ? <><Icons.Square size={20} fill="currentColor" /> Stopp</> : <><Icons.Volume2 size={24} /> Start</>}
+                            <Icons.Hand size={28} />
                         </button>
+                        <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg no-print">
+                            <span className="text-xs font-bold text-slate-500">A</span>
+                            <input type="range" min="16" max="120" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-32 accent-blue-600 rounded-lg cursor-pointer" />
+                            <span className="text-xl font-bold text-slate-500">A</span>
+                        </div>
+                        <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 shadow-sm transition-transform hover:scale-105 flex items-center justify-center min-touch-target sticky right-0"><Icons.X size={24} /></button>
                     </div>
                 </div>
-
-                <div className="flex items-center gap-4 no-print">
-                    {isGameMode && (
-                        <button
-                            onClick={() => targetSyllable && speak(targetSyllable)}
-                            className="w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl flex items-center justify-center shadow-lg transition-all hover:scale-105 active:scale-95 border-b-4 border-blue-800 active:border-b-0 active:translate-y-1"
-                            title="Nochmal hören"
-                        >
-                            <Icons.Volume2 size={32} />
-                        </button>
-                    )}
-                    <button
-                        onClick={() => setIsFingerMode(!isFingerMode)}
-                        className={`p-2.5 rounded-xl transition-all flex items-center justify-center border-2 mr-2 ${isFingerMode ? 'bg-orange-500 text-white border-orange-600 shadow-inner' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 shadow-sm'}`}
-                        title="Lese-Modus (Finger)"
-                    >
-                        <Icons.Hand size={28} />
-                    </button>
-                    <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg no-print">
-                        <span className="text-xs font-bold text-slate-500">A</span>
-                        <input type="range" min="16" max="120" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-48 accent-blue-600 rounded-lg cursor-pointer" />
-                        <span className="text-xl font-bold text-slate-500">A</span>
+                {isGameMode && (
+                    <div className="w-full">
+                        <ProgressBar progress={progressPercentage} />
                     </div>
-                    <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 shadow-sm transition-transform hover:scale-105 flex items-center justify-center min-touch-target sticky right-0"><Icons.X size={24} /></button>
-                </div>
+                )}
             </div>
             <div className={`flex-1 p-6 pr-6 overflow-y-auto custom-scroll`}>
                 <div className="grid gap-3 pb-32" style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${minColWidth}px, 1fr))` }}>
@@ -129,7 +145,7 @@ export const SyllableCarpetView = ({ words, settings, setSettings, onClose, titl
                                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSyllableClick(syl); } }}
                                 key={idx}
                                 onClick={() => handleSyllableClick(syl)}
-                                className={`px-4 py-2 rounded-lg ${audioClass} ${boxClass} ${textClass} font-medium select-none text-center flex items-center justify-center transition-all duration-200 lowercase relative ${!isFingerMode && !isGameMode ? 'cursor-pointer hover:bg-red-100 hover:text-red-800 hover:border-red-200' : ''} ${isGameMode && !isCompleted && !isFingerMode ? 'cursor-pointer active:scale-95 hover:shadow-md' : ''} ${isFingerMode ? 'cursor-default' : ''}`}
+                                className={`px-4 py-2 rounded-lg ${audioClass} ${boxClass} ${textClass} font-medium select-none text-center flex items-center justify-center transition-all duration-200 lowercase relative ${!isFingerMode && !isGameMode ? 'cursor-pointer hover:bg-slate-200 hover:text-slate-800 hover:border-slate-300' : ''} ${isGameMode && !isCompleted && !isFingerMode ? 'cursor-pointer active:scale-95 hover:shadow-md' : ''} ${isFingerMode ? 'cursor-default' : ''}`}
                                 style={{ fontFamily: settings.fontFamily, fontSize: `${settings.fontSize}px`, minHeight: `${settings.fontSize * 1.5}px` }}
                             >
                                 {syl}

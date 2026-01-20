@@ -55,7 +55,7 @@ const useHypherLoader = () => {
 
 const DEFAULT_SETTINGS = {
     fontSize: 48,
-    lineHeight: 1.2,
+    lineHeight: 1.3,
     wordSpacing: 0.3,
     visualType: 'block',
     displayTrigger: 'click',
@@ -1096,7 +1096,7 @@ const App = () => {
                                 <input
                                     type="range"
                                     min="16"
-                                    max="120"
+                                    max="80"
                                     step="2"
                                     value={settings.fontSize}
                                     onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })}
@@ -1105,7 +1105,7 @@ const App = () => {
                                 <span className="text-xl font-bold text-slate-500">A</span>
                             </div>
 
-                            <div ref={textContainerRef} className={`mx-auto w-full transition-all duration-300 relative ${isTextMarkerMode ? 'cursor-text' : ''}`} style={{ maxWidth: `${settings.textWidth}%` }}>
+                            <div ref={textContainerRef} className={`mx-auto w-full transition-all duration-300 relative ${isTextMarkerMode ? 'cursor-text' : ''}`} style={{ maxWidth: `${settings.textWidth}%`, paddingRight: '5%' }}>
 
                                 {logo && (
                                     <img

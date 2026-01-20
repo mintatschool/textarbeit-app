@@ -337,7 +337,24 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
         setSolvedWordIds(new Set());
     }, [currentWords, mode, isInitialSound]);
 
-    // Drag & Drop
+
+    // Background Drop Handler (for removing letters)
+    const handleBackgroundDrop = (e) => {
+        e.preventDefault();
+        const dragData = dragItemRef.current;
+        // Only handle drops coming from a gap
+        if (!dragData || dragData.source !== 'gap') return;
+
+        // Remove from gap and return to pool
+        setPlacedLetters(prev => {
+            const next = { ...prev };
+            delete next[dragData.gapId];
+            return next;
+        });
+
+        setSpeicherLetters(prev => [...prev, dragData.letter]);
+    };
+
     const handleDragStart = (e, letter, source, gapId = null) => {
         setIsDragging(true);
         dragItemRef.current = { letter, source, gapId };
@@ -364,7 +381,8 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
         const dragData = dragItemRef.current;
         if (!dragData) return;
 
-        if (dragData.letter.text.toLowerCase() !== targetText.toLowerCase()) return;
+        // CHANGED: Allow incorrect insertion (removed strict check)
+        // if (dragData.letter.text.toLowerCase() !== targetText.toLowerCase()) return;
 
         // Haptic Feedback bei erfolgreichem Drop
         triggerHapticFeedback();
@@ -414,23 +432,20 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
             return;
         }
 
-        if (selectedLetter.text.toLowerCase() === correctText.toLowerCase()) {
-            // Haptic Feedback bei erfolgreichem Click-to-Place
-            triggerHapticFeedback();
+        // CHANGED: Allow incorrect insertion via Click-to-Place
+        // Haptic Feedback bei Click-to-Place
+        triggerHapticFeedback();
 
-            const letterToPlace = selectedLetter;
-            const existingLetter = placedLetters[gapId];
+        const letterToPlace = selectedLetter;
+        const existingLetter = placedLetters[gapId];
 
-            setPlacedLetters(prev => ({ ...prev, [gapId]: letterToPlace }));
-            setSpeicherLetters(prev => {
-                let next = prev.filter(l => l.poolId !== letterToPlace.poolId);
-                if (existingLetter) next = [...next, existingLetter];
-                return next;
-            });
-            setSelectedLetter(null);
-        } else {
-            setSelectedLetter(null);
-        }
+        setPlacedLetters(prev => ({ ...prev, [gapId]: letterToPlace }));
+        setSpeicherLetters(prev => {
+            let next = prev.filter(l => l.poolId !== letterToPlace.poolId);
+            if (existingLetter) next = [...next, existingLetter];
+            return next;
+        });
+        setSelectedLetter(null);
     };
 
     const handleWordsCountChange = (delta) => {
@@ -453,13 +468,29 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
         // Track per-word success for visual feedback
         const newSolvedIds = new Set();
         currentWords.forEach(w => {
-            const isSolved = w.syllables.every(s => s.chunks.every(c => !c.isTarget || placedLetters[c.id]));
+            // CHANGED: Strict validation only here - check if placed letter matches target text
+            const isSolved = w.syllables.every(s => s.chunks.every(c => {
+                if (!c.isTarget) return true;
+                const placed = placedLetters[c.id];
+                return placed && placed.text.toLowerCase() === c.text.toLowerCase();
+            }));
             if (isSolved) newSolvedIds.add(w.id);
         });
         setSolvedWordIds(newSolvedIds);
 
         const totalTargets = currentWords.reduce((acc, w) => acc + w.syllables.reduce((sAcc, s) => sAcc + s.chunks.filter(c => c.isTarget).length, 0), 0);
-        if (totalTargets > 0 && Object.keys(placedLetters).length === totalTargets) {
+
+        // Group solved only if ALL words are solved (all targets filled correctly)
+        // Check if all targets have CORRECT letters
+        const allCorrect = currentWords.every(w =>
+            w.syllables.every(s => s.chunks.every(c => {
+                if (!c.isTarget) return true;
+                const placed = placedLetters[c.id];
+                return placed && placed.text.toLowerCase() === c.text.toLowerCase();
+            }))
+        );
+
+        if (allCorrect) {
             setGroupSolved(true);
         } else {
             setGroupSolved(false);
@@ -615,8 +646,12 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
 
             <div className={`flex-1 flex overflow-hidden bg-white/50 ${isInitialSound ? 'flex flex-row-reverse' : ''}`}>
                 {/* Fixed Layout: Centering wrapper that allows proper scrolling without top-clipping - CHANGED: justify-start and more padding */}
-                {/* Content Column - Scrolls independently */}
-                <div className="flex-1 overflow-y-auto custom-scroll min-h-full pt-24 pb-24 px-8 flex flex-col items-center justify-start gap-12">
+                {/* Content Column - Scrolls independently - Added background drop handler */}
+                <div
+                    className="flex-1 overflow-y-auto custom-scroll min-h-full pt-24 pb-24 px-8 flex flex-col items-center justify-start gap-12 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent"
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={handleBackgroundDrop}
+                >
                     <div className="w-full max-w-4xl space-y-8">
                         {currentWords.map((word) => {
                             const isSolved = solvedWordIds.has(word.id);

@@ -539,7 +539,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                             step="0.1"
                             value={gameState.pieceScale}
                             onChange={(e) => setGameState(prev => ({ ...prev, pieceScale: parseFloat(e.target.value) }))}
-                            className="w-48 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer"
+                            className="w-32 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer"
                         />
                         <span className="text-xl font-bold text-slate-500">A</span>
                     </div>

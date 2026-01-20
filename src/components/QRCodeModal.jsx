@@ -276,21 +276,21 @@ export const QRCodeModal = ({ text, onClose }) => {
                 <div className="flex w-full gap-2 mb-4">
                     <button
                         onClick={() => { setMode('text'); setLinkInput(""); }}
-                        className={`flex-1 py-2 rounded-lg font-bold text-xs transition ${mode === 'text' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                        className={`flex-1 py-2 rounded-lg font-bold text-xs transition flex items-center justify-center gap-2 ${mode === 'text' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
                     >
-                        📝 Alles
+                        <Icons.Files size={16} /> Alles
                     </button>
                     <button
                         onClick={() => { setMode('raw'); setLinkInput(""); }}
-                        className={`flex-1 py-2 rounded-lg font-bold text-xs transition ${mode === 'raw' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                        className={`flex-1 py-2 rounded-lg font-bold text-xs transition flex items-center justify-center gap-2 ${mode === 'raw' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
                     >
-                        📄 Nur Text
+                        <Icons.FileText size={16} /> Nur Text
                     </button>
                     <button
                         onClick={() => setMode('link')}
-                        className={`flex-1 py-2 rounded-lg font-bold text-xs transition ${mode === 'link' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                        className={`flex-1 py-2 rounded-lg font-bold text-xs transition flex items-center justify-center gap-2 ${mode === 'link' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
                     >
-                        🔗 Link
+                        <Icons.Link size={16} /> Link
                     </button>
                 </div>
 
@@ -325,7 +325,7 @@ export const QRCodeModal = ({ text, onClose }) => {
 
                 {/* QR-Code Display Area */}
                 <div className="relative group w-full flex flex-col items-center">
-                    {tooLong ? (
+                    {tooLong && mode !== 'link' ? (
                         <div className="bg-red-50 text-red-600 p-6 rounded-xl border border-red-200 text-center text-sm font-bold min-h-[280px] flex flex-col items-center justify-center gap-2">
                             <Icons.AlertTriangle size={48} className="text-red-400" />
                             <p>Der Text ist auch für Split-QR zu lang.</p>
@@ -333,56 +333,65 @@ export const QRCodeModal = ({ text, onClose }) => {
                         </div>
                     ) : (
                         <>
-                            <div className="bg-white p-4 rounded-xl border-4 border-slate-100 flex flex-col items-center relative">
-                                <canvas ref={qrRef} style={{ width: '260px', height: '260px', maxWidth: '100%' }}></canvas>
-
-                                {isMultiPart && (
-                                    <div className="absolute top-2 right-2 bg-slate-800/80 text-white text-xs font-bold px-2 py-1 rounded">
-                                        {currentPart + 1} / {qrValues.length}
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Controls im kleinen Modal */}
-                            {isMultiPart && mode !== 'link' && (
-                                <div className="flex items-center gap-4 mt-3">
-                                    <button
-                                        onClick={() => { setIsPlaying(false); setCurrentPart(p => (p - 1 + qrValues.length) % qrValues.length); }}
-                                        className="p-2 bg-slate-100 rounded-full hover:bg-slate-200"
-                                    >
-                                        <Icons.ChevronLeft size={20} />
-                                    </button>
-
-                                    <button
-                                        onClick={() => setIsPlaying(!isPlaying)}
-                                        className={`px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2 transition ${isPlaying ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}
-                                    >
-                                        {isPlaying ? <><Icons.Pause size={16} /> Pause</> : <><Icons.Play size={16} /> Start</>}
-                                    </button>
-
-                                    <button
-                                        onClick={() => { setIsPlaying(false); setCurrentPart(p => (p + 1) % qrValues.length); }}
-                                        className="p-2 bg-slate-100 rounded-full hover:bg-slate-200"
-                                    >
-                                        <Icons.ChevronRight size={20} />
-                                    </button>
+                            {mode === 'link' && !linkInput ? (
+                                <div className="bg-slate-50 border-4 border-slate-100 border-dashed rounded-xl w-[260px] h-[260px] flex flex-col items-center justify-center text-slate-400 gap-2">
+                                    <Icons.Link size={48} className="opacity-50" />
+                                    <span className="text-sm font-medium">Link eingeben...</span>
                                 </div>
-                            )}
+                            ) : (
+                                <>
+                                    <div className="bg-white p-4 rounded-xl border-4 border-slate-100 flex flex-col items-center relative">
+                                        <canvas ref={qrRef} style={{ width: '260px', height: '260px', maxWidth: '100%' }}></canvas>
 
-                            <button
-                                onClick={() => setIsMaximized(true)}
-                                className="absolute bottom-2 right-2 p-2 bg-white/90 shadow-md border rounded-full text-slate-600 hover:text-blue-600 hover:scale-110 transition min-touch-target z-10"
-                                title="Vergrößern"
-                            >
-                                <Icons.Maximize size={18} />
-                            </button>
+                                        {isMultiPart && (
+                                            <div className="absolute top-2 right-2 bg-slate-800/80 text-white text-xs font-bold px-2 py-1 rounded">
+                                                {currentPart + 1} / {qrValues.length}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Controls im kleinen Modal */}
+                                    {isMultiPart && mode !== 'link' && (
+                                        <div className="flex items-center gap-4 mt-3">
+                                            <button
+                                                onClick={() => { setIsPlaying(false); setCurrentPart(p => (p - 1 + qrValues.length) % qrValues.length); }}
+                                                className="p-2 bg-slate-100 rounded-full hover:bg-slate-200"
+                                            >
+                                                <Icons.ChevronLeft size={20} />
+                                            </button>
+
+                                            <button
+                                                onClick={() => setIsPlaying(!isPlaying)}
+                                                className={`px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2 transition ${isPlaying ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}
+                                            >
+                                                {isPlaying ? <><Icons.Pause size={16} /> Pause</> : <><Icons.Play size={16} /> Start</>}
+                                            </button>
+
+                                            <button
+                                                onClick={() => { setIsPlaying(false); setCurrentPart(p => (p + 1) % qrValues.length); }}
+                                                className="p-2 bg-slate-100 rounded-full hover:bg-slate-200"
+                                            >
+                                                <Icons.ChevronRight size={20} />
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    <button
+                                        onClick={() => setIsMaximized(true)}
+                                        className="absolute bottom-2 right-2 p-2 bg-white/90 shadow-md border rounded-full text-slate-600 hover:text-blue-600 hover:scale-110 transition min-touch-target z-10"
+                                        title="Vergrößern"
+                                    >
+                                        <Icons.Maximize size={18} />
+                                    </button>
+                                </>
+                            )}
                         </>
                     )}
                 </div>
 
                 <p className="text-center text-slate-500 text-sm mt-4 mb-4">
                     {mode === 'link'
-                        ? 'Diesen Link manuell auf dem anderen Gerät öffnen.'
+                        ? (linkInput ? 'Scanne diesen Code, um den Link zu öffnen.' : 'Füge einen Link ein, um einen QR-Code zu erstellen.')
                         : (isMultiPart
                             ? 'Die Kamera erkennt automatisch, wenn alle Teile gescannt sind.'
                             : 'Scanne diesen Code mit der App-Kamera.')}
@@ -395,6 +404,6 @@ export const QRCodeModal = ({ text, onClose }) => {
                     Schließen
                 </button>
             </div>
-        </div>
+        </div >
     );
 };

@@ -4,13 +4,17 @@ import { VitePWA } from 'vite-plugin-pwa'
 import mkcert from 'vite-plugin-mkcert'
 import webfontDl from 'vite-plugin-webfont-dl'
 
+const isNoHttps = process.env.VITE_NO_HTTPS === 'true';
+const port = process.env.VITE_PORT ? parseInt(process.env.VITE_PORT) : 5173;
+
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     react(),
-    mkcert(),
+    !isNoHttps && mkcert(),
     webfontDl(),
     VitePWA({
+      disable: isNoHttps,
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'logo.png', 'available_syllables.json'],
       manifest: {
@@ -39,7 +43,7 @@ export default defineConfig({
         ]
       },
       devOptions: {
-        enabled: true
+        enabled: !isNoHttps
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,json,mp3,wav,woff2,ttf}'],
@@ -71,14 +75,16 @@ export default defineConfig({
         ]
       }
     })
-  ],
+  ].filter(Boolean),
   base: './', // Makes the build portable (works in subfolders and locally)
   server: {
     host: true, // Listen on all local IP addresses
-    https: true,
+    https: !isNoHttps,
+    port: port,
   },
   preview: {
     host: true, // Listen on all local IP addresses for preview as well
-    https: true,
+    https: !isNoHttps,
+    port: port,
   },
 })
