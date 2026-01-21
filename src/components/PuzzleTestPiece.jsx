@@ -36,7 +36,7 @@ const PuzzleTestPiece = ({
     const svgWidth = 220;
     const svgHeight = 130;
 
-    const effectiveScale = isGhost ? scale * 1.05 : scale;
+    const effectiveScale = scale;
     let path = PUZZLE_PATH_LEFT;
     if (type === 'right') path = PUZZLE_PATH_RIGHT;
     if (type === 'middle') path = PUZZLE_PATH_MIDDLE;
@@ -110,7 +110,6 @@ const PuzzleTestPiece = ({
                 ...style
             }}
         >
-            {console.log("Piece Render:", { id, label, type, isGhost })}
             <div
                 draggable={!!onDragStart && !isGhost}
                 onDragStart={handleDragStart}

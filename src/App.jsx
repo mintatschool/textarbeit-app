@@ -1096,11 +1096,11 @@ const App = () => {
                                 <input
                                     type="range"
                                     min="16"
-                                    max="80"
+                                    max="96"
                                     step="2"
                                     value={settings.fontSize}
                                     onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })}
-                                    className="w-32 md:w-48 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer"
+                                    className="w-32 md:w-48 accent-blue-600 rounded-lg cursor-pointer"
                                 />
                                 <span className="text-xl font-bold text-slate-500">A</span>
                             </div>
@@ -1139,7 +1139,7 @@ const App = () => {
                                             return <div key={item.id} style={{ height: `${newlineHeight}em`, width: '100%' }}></div>;
                                         }
                                         if (item.type === 'space') {
-                                            return <Space key={item.id} {...item} isTextMarkerMode={isTextMarkerMode || activeTool === 'pen'} isReadingMode={activeTool === 'read'} color={wordColors[item.index]} colorPalette={colorPalette} wordSpacing={settings.wordSpacing} letterSpacing={settings.letterSpacing} fontSize={settings.fontSize} lineHeight={settings.lineHeight || 1.2} onMouseDown={(idx) => { isPaintActive.current = true; dragStartIndex.current = idx; lastPaintedIndex.current = idx; }} onMouseEnter={(idx, e) => { if (isPaintActive.current || (e && e.buttons === 1)) handlePaint(idx); }} />;
+                                            return <Space key={item.id} {...item} isTextMarkerMode={isTextMarkerMode || activeTool === 'pen'} isReadingMode={activeTool === 'read'} color={wordColors[item.index]} colorPalette={colorPalette} wordSpacing={settings.wordSpacing} letterSpacing={settings.letterSpacing} fontSize={settings.fontSize} lineHeight={settings.lineHeight || 1.3} onMouseDown={(idx) => { isPaintActive.current = true; dragStartIndex.current = idx; lastPaintedIndex.current = idx; }} onMouseEnter={(idx, e) => { if (isPaintActive.current || (e && e.buttons === 1)) handlePaint(idx); }} />;
                                         }
                                         if (item.type === 'text') return <span key={item.id} className="text-slate-800 break-words" style={{ fontSize: `${settings.fontSize}px` }}>{item.content}</span>;
                                         const isWordHighlighted = Array.from({ length: item.word.length }, (_, i) => item.index + i).some(idx => highlightedIndices.has(idx));
@@ -1279,14 +1279,12 @@ const App = () => {
                         toggleHighlights={toggleHighlights}
                         highlightedIndices={highlightedIndices}
                         onWordUpdate={(wordId, newText) => {
-                            console.log("onWordUpdate triggered:", wordId, newText);
                             const index = parseInt(wordId.replace('word_', ''), 10);
-                            if (isNaN(index)) { console.error("Invalid word index"); return; }
+                            if (isNaN(index)) return;
                             const target = processedWords.find(w => w.index === index);
-                            if (!target) { console.error("Target word not found for index:", index); return; }
+                            if (!target) return;
 
                             const lookupKey = `${target.word}_${target.index}`;
-                            console.log("Setting correction for key:", lookupKey, "to", newText);
                             setTextCorrections(prev => ({ ...prev, [lookupKey]: newText }));
                         }}
                         onUpdateWordColor={(index, color) => {

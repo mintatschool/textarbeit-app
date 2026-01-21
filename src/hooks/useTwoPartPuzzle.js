@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { usePreventTouchScroll } from './usePreventTouchScroll';
 
 /**
  * Shared hook for two-part puzzle exercises (Silbenbau 1 & Silbenpuzzle 1).
@@ -34,7 +35,8 @@ export const useTwoPartPuzzle = ({
         gameStatus: 'loading',
         pieceScale: initialScale,
         wordsPerStage: 3,
-        gameMode: 'both-empty'
+        gameMode: 'both-empty',
+        gameId: 0 // Track unique game sessions to force effect re-runs
     });
 
     const [pendingWordsCount, setPendingWordsCount] = useState(3);
@@ -77,16 +79,41 @@ export const useTwoPartPuzzle = ({
     // iPad Fix: Prevent touch scrolling during drag
     // ==========================================================================
 
-    useEffect(() => {
-        if (!isDragging) return;
-        const preventDefault = (e) => { e.preventDefault(); };
-        document.body.style.overflow = 'hidden';
-        document.addEventListener('touchmove', preventDefault, { passive: false });
-        return () => {
-            document.body.style.overflow = '';
-            document.removeEventListener('touchmove', preventDefault);
-        };
-    }, [isDragging]);
+    usePreventTouchScroll(isDragging);
+
+    // ==========================================================================
+    // HELPER: Generate Pieces for a stage
+    // ==========================================================================
+
+    const generatePiecesHelper = useCallback((stageIndex, stageItems) => {
+        if (!stageItems) return [];
+        const pieces = [];
+
+        // Generate pieces for ALL items in the stage
+        stageItems.forEach((item, idx) => {
+            // Left Part
+            pieces.push({
+                id: `left-${stageIndex}-${idx}-${Math.random().toString(36).substr(2, 5)}`,
+                text: item.leftPart,
+                type: leftType,
+                color: 'bg-blue-500',
+                itemIdx: idx
+            });
+
+            // Right Part
+            pieces.push({
+                id: `right-${stageIndex}-${idx}-${Math.random().toString(36).substr(2, 5)}`,
+                text: item.rightPart,
+                type: rightType,
+                color: 'bg-blue-500',
+                itemIdx: idx
+            });
+        });
+
+        // Shuffle pieces
+        pieces.sort(() => Math.random() - 0.5);
+        return pieces;
+    }, [leftType, rightType]);
 
     // ==========================================================================
     // GAME INITIALIZATION
@@ -97,10 +124,14 @@ export const useTwoPartPuzzle = ({
 
         // Reset all state
         setSlots({ left: null, right: null });
-        setAllPieces([]);
+        // setAllPieces([]); // Don't clear here, we will set them synchronously below
         setUsedPieceIds(new Set());
         setShowSuccess(false);
-        lastGeneratedStageRef.current = -1; // Force piece regeneration for new game
+        setIsDragging(null);
+        setSelectedPiece(null);
+
+        // Force reset refs
+        lastGeneratedStageRef.current = -1;
 
         if (successTimerRef.current) {
             clearTimeout(successTimerRef.current);
@@ -109,6 +140,7 @@ export const useTwoPartPuzzle = ({
 
         if (!items || items.length === 0) {
             setGameState(prev => ({ ...prev, gameStatus: 'playing', stages: [] }));
+            setAllPieces([]);
             return;
         }
 
@@ -127,15 +159,26 @@ export const useTwoPartPuzzle = ({
             }
         }
 
+        // SYNCHRONOUS GENERATION FOR FIRST STAGE
+        // This ensures pieces are ready immediately, no useEffect delay
+        let initialPieces = [];
+        if (newStages.length > 0) {
+            initialPieces = generatePiecesHelper(0, newStages[0].items);
+            lastGeneratedStageRef.current = 0; // Mark 0 as generated so effect skips it
+        }
+
+        setAllPieces(initialPieces);
+
         setGameState({
             stages: newStages,
             currentStageIndex: 0,
             gameStatus: 'playing',
             pieceScale: initialScale,
             wordsPerStage: wps,
-            gameMode: 'both-empty'
+            gameMode: 'both-empty',
+            gameId: (gameState.gameId || 0) + 1
         });
-    }, [pendingWordsCount, items, initialScale]);
+    }, [pendingWordsCount, items, initialScale, generatePiecesHelper, gameState.gameId]);
 
     // Auto-start game when items change
     useEffect(() => {
@@ -163,46 +206,19 @@ export const useTwoPartPuzzle = ({
             return; // Already generated for this stage
         }
 
-        const stages = stagesRef.current;
-        if (!stages || stages.length === 0) return;
-
-        const currentStage = stages[gameState.currentStageIndex];
+        const currentStage = gameState.stages[gameState.currentStageIndex];
         if (!currentStage || !currentStage.items) return;
 
+        // Use helper to generate pieces
+        const pieces = generatePiecesHelper(gameState.currentStageIndex, currentStage.items);
+
         lastGeneratedStageRef.current = gameState.currentStageIndex;
-
-        const pieces = [];
-
-        // Generate pieces for ALL items in the stage
-        currentStage.items.forEach((item, idx) => {
-            // Left Part
-            pieces.push({
-                id: `left-${gameState.currentStageIndex}-${idx}-${Math.random().toString(36).substr(2, 5)}`,
-                text: item.leftPart,
-                type: leftType,
-                color: 'bg-blue-500',
-                itemIdx: idx
-            });
-
-            // Right Part
-            pieces.push({
-                id: `right-${gameState.currentStageIndex}-${idx}-${Math.random().toString(36).substr(2, 5)}`,
-                text: item.rightPart,
-                type: rightType,
-                color: 'bg-blue-500',
-                itemIdx: idx
-            });
-        });
-
-        // Shuffle pieces
-        pieces.sort(() => Math.random() - 0.5);
-
         setAllPieces(pieces);
         setSlots({ left: null, right: null });
         setUsedPieceIds(new Set());
         setShowSuccess(false);
 
-    }, [gameState.currentStageIndex, gameState.gameStatus, leftType, rightType]); // Removed gameState.stages!
+    }, [gameState.currentStageIndex, gameState.gameStatus, gameState.gameId, generatePiecesHelper]); // Removed leftType/rightType as they are in helper dependency
 
     // ==========================================================================
     // GAME MODE: Pre-fill slots based on mode

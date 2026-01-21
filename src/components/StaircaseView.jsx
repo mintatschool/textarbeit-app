@@ -58,10 +58,12 @@ const buildStaircase = (units) => {
     return lines;
 };
 
+import { shuffleArray } from '../utils/arrayUtils';
+
 export const StaircaseView = ({ words, settings, setSettings, onClose, title }) => {
     // Filter to only highlighted words
     const highlightedWords = useMemo(() => {
-        return words.filter(w => w.isHighlighted);
+        return shuffleArray(words.filter(w => w.isHighlighted));
     }, [words]);
 
     const [currentIndex, setCurrentIndex] = useState(0);

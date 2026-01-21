@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Icons } from './Icons';
+import { shuffleArray } from '../utils/arrayUtils';
 import { Minus, Plus } from 'lucide-react';
 import { EmptyStateMessage } from './EmptyStateMessage';
 import { speak } from '../utils/speech';
+import { HorizontalLines } from './shared/UIComponents';
+import { usePreventTouchScroll } from '../hooks/usePreventTouchScroll';
 
 export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialSound = false, title, highlightedIndices = new Set(), wordColors = {} }) => {
     const [mode, setMode] = useState('vowels'); // 'vowels', 'consonants', or 'marked'
@@ -20,26 +23,8 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
     const debounceTimerRef = useRef(null);
     const dragItemRef = useRef(null);
 
-    // Helper component for horizontal lines in the stepper control
-    const HorizontalLines = ({ count }) => (
-        <div className="flex flex-col gap-[2px] w-2 items-center justify-center">
-            {Array.from({ length: count }).map((_, i) => (
-                <div key={i} className="h-[2px] w-full bg-slate-300 rounded-full" />
-            ))}
-        </div>
-    );
-
     // iPad Fix: Prevent touch scrolling during drag
-    useEffect(() => {
-        if (!isDragging) return;
-        const preventDefault = (e) => { e.preventDefault(); };
-        document.body.style.overflow = 'hidden';
-        document.addEventListener('touchmove', preventDefault, { passive: false });
-        return () => {
-            document.body.style.overflow = '';
-            document.removeEventListener('touchmove', preventDefault);
-        };
-    }, [isDragging]);
+    usePreventTouchScroll(isDragging);
 
     // Audio support
     const speakWord = (text) => {
@@ -172,7 +157,8 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
     useEffect(() => {
         if (!words || words.length === 0) return;
 
-        let wordsToGroup = words;
+        const shuffledWords = shuffleArray(words);
+        let wordsToGroup = shuffledWords;
 
         if (mode === 'marked') {
             // Filter words that have marked letters
@@ -378,6 +364,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
 
     const handleDrop = (e, targetGapId, targetText) => {
         e.preventDefault();
+        e.stopPropagation();
         const dragData = dragItemRef.current;
         if (!dragData) return;
 
@@ -406,6 +393,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
 
     const handleSpeicherDrop = (e) => {
         e.preventDefault();
+        e.stopPropagation();
         const dragData = dragItemRef.current;
         if (!dragData || dragData.source !== 'gap') return;
         setPlacedLetters(prev => { const next = { ...prev }; delete next[dragData.gapId]; return next; });
@@ -472,7 +460,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
             const isSolved = w.syllables.every(s => s.chunks.every(c => {
                 if (!c.isTarget) return true;
                 const placed = placedLetters[c.id];
-                return placed && placed.text.toLowerCase() === c.text.toLowerCase();
+                return placed && placed.text === c.text;
             }));
             if (isSolved) newSolvedIds.add(w.id);
         });
@@ -486,7 +474,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
             w.syllables.every(s => s.chunks.every(c => {
                 if (!c.isTarget) return true;
                 const placed = placedLetters[c.id];
-                return placed && placed.text.toLowerCase() === c.text.toLowerCase();
+                return placed && placed.text === c.text;
             }))
         );
 
@@ -648,15 +636,21 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                 {/* Fixed Layout: Centering wrapper that allows proper scrolling without top-clipping - CHANGED: justify-start and more padding */}
                 {/* Content Column - Scrolls independently - Added background drop handler */}
                 <div
-                    className="flex-1 overflow-y-auto custom-scroll min-h-full pt-24 pb-24 px-8 flex flex-col items-center justify-start gap-12 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent"
+                    className="flex-1 overflow-y-auto custom-scroll min-h-full pt-24 pb-48 px-8 flex flex-col items-center justify-start gap-12 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent"
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={handleBackgroundDrop}
                 >
                     <div className="w-full max-w-4xl space-y-8">
                         {currentWords.map((word) => {
                             const isSolved = solvedWordIds.has(word.id);
+                            // Check for errors in Initial Sound mode when all letters are placed
+                            const hasErrors = isInitialSound && speicherLetters.length === 0 && word.syllables.some(s => s.chunks.some(c => {
+                                const placed = placedLetters[c.id];
+                                return c.isTarget && placed && placed.text !== c.text;
+                            }));
+
                             return (
-                                <div key={word.id} className={`p-8 bg-white rounded-3xl border shadow-sm flex flex-wrap justify-center items-center gap-x-4 gap-y-4 transition-all duration-500 transform relative ${isSolved ? 'border-green-300 bg-green-50/50 scale-[1.01] shadow-md' : 'border-slate-100 hover:border-slate-200'}`}>
+                                <div key={word.id} className={`p-8 bg-white rounded-3xl border shadow-sm flex flex-wrap justify-center items-center gap-x-4 gap-y-4 transition-all duration-500 transform relative ${isSolved ? 'border-green-300 bg-green-50/50 scale-[1.01] shadow-md' : hasErrors ? 'border-red-400 bg-red-50/30' : 'border-slate-100 hover:border-slate-200'}`}>
                                     <div className="flex flex-wrap justify-center gap-x-1 gap-y-4">
                                         {word.syllables.map((syl, sIdx) => {
                                             const isEven = sIdx % 2 === 0;
@@ -700,7 +694,16 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                                                                 onDragLeave={(e) => { e.currentTarget.classList.remove('active-target'); }}
                                                                 onDrop={(e) => { e.currentTarget.classList.remove('active-target'); handleDrop(e, chunk.id, chunk.text); }}
                                                                 onClick={() => handleGapClick(chunk.id, chunk.text)}
-                                                                className={`relative flex items-center justify-center transition-all border-b-4 mx-2 rounded-t-xl gap-zone cursor-pointer ${placed ? 'border-transparent' : 'border-slate-400 bg-slate-50/50 hover:bg-slate-100 hover:border-slate-500'} ${selectedLetter ? 'ring-2 ring-blue-300 ring-offset-2 animate-pulse' : ''}`}
+                                                                className={`relative flex items-center justify-center transition-all mx-2 rounded-t-xl gap-zone cursor-pointer 
+                                                                    ${placed && speicherLetters.length === 0
+                                                                        ? (placed.text === chunk.text
+                                                                            ? (isInitialSound ? 'border-b-4 border-transparent' : 'border-2 border-green-400 bg-white/50')
+                                                                            : (isInitialSound ? 'border-b-4 border-transparent' : 'border-2 border-red-400 bg-white/50'))
+                                                                        : placed
+                                                                            ? 'border-b-4 border-transparent'
+                                                                            : 'border-b-4 border-slate-400 bg-slate-50/50 hover:bg-slate-100 hover:border-slate-500'
+                                                                    }
+                                                                    ${selectedLetter ? 'ring-2 ring-blue-300 ring-offset-2 animate-pulse' : ''}`}
                                                                 style={{ minWidth: `${Math.max(1.2, chunk.text.length * 0.9)}em`, height: '1.75em' }}
                                                             >
                                                                 {placed ? (
@@ -740,8 +743,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                     </div>
 
                     {groupSolved && currentGroupIdx < groups.length - 1 && (
-                        <div className="mt-8 flex flex-col items-center">
-                            <span className="text-green-600 font-bold mb-3 flex items-center gap-2 text-xl"><Icons.CheckCircle size={28} /> Prima!</span>
+                        <div className="mt-4 flex flex-col items-center">
                             <button onClick={() => { setCurrentGroupIdx(prev => prev + 1); setGroupSolved(false); }} className="px-8 py-4 bg-green-500 text-white rounded-2xl font-bold shadow-lg hover:bg-green-600 hover:scale-105 transition-all flex items-center gap-2 text-lg">
                                 weiter <Icons.ArrowRight size={20} />
                             </button>
@@ -775,7 +777,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                                 </div>
                             );
                         })}
-                        {speicherLetters.length === 0 && !groupSolved && <div className="absolute inset-0 flex items-center justify-center p-8 text-center text-slate-400 italic text-sm pointer-events-none">Prüfe deine Antworten...</div>}
+
                     </div>
                 </div>
             </div>

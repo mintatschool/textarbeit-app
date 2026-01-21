@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Word } from './Word';
 import { Icons } from './Icons';
+import { shuffleArray } from '../utils/arrayUtils';
 import { Minus, Plus } from 'lucide-react';
 import { EmptyStateMessage } from './EmptyStateMessage';
+import { HorizontalLines } from './shared/UIComponents';
+import { usePreventTouchScroll } from '../hooks/usePreventTouchScroll';
 
 // Pastel colors for words
 const WORD_COLORS = [
@@ -25,14 +28,6 @@ const WORD_COLORS = [
     'bg-rose-100 text-rose-700'
 ];
 
-const HorizontalLines = ({ count }) => (
-    <div className="flex flex-col gap-[2px] w-2 items-center justify-center">
-        {Array.from({ length: count }).map((_, i) => (
-            <div key={i} className="h-[2px] w-full bg-slate-300 rounded-full" />
-        ))}
-    </div>
-);
-
 export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordColors = {}, settings, setSettings, onClose, title, hyphenator }) => {
     const [mode, setMode] = useState('random'); // 'random' or 'marked'
     const [itemsPerStage, setItemsPerStage] = useState(5);
@@ -49,16 +44,7 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
     const dragItemRef = useRef(null);
 
     // iPad Fix: Prevent touch scrolling during drag
-    useEffect(() => {
-        if (!isDragging) return;
-        const preventDefault = (e) => { e.preventDefault(); };
-        document.body.style.overflow = 'hidden';
-        document.addEventListener('touchmove', preventDefault, { passive: false });
-        return () => {
-            document.body.style.overflow = '';
-            document.removeEventListener('touchmove', preventDefault);
-        };
-    }, [isDragging]);
+    usePreventTouchScroll(isDragging);
 
     // Sentence Splitting Logic
     const splitSentences = (txt) => {
@@ -159,7 +145,6 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
             targets: targets.map(t => ({
                 ...t,
                 text: t.text.replace(/[.,!?;:]+$/, ''), // Clean word for pool card
-                id: `gap_${sIdx}_${t.index}`,
                 id: `gap_${sIdx}_${t.index}`
                 // color: WORD_COLORS[(sIdx + t.index) % WORD_COLORS.length] // Removed per user request
             }))
@@ -170,6 +155,7 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
     useEffect(() => {
         if (!text) return;
         const rawSentences = splitSentences(text);
+        // User requested original order:
         const processed = rawSentences.map((s, i) => processSentence(s, i)).filter(Boolean);
 
         // If in marked mode and no sentences processing, it means no marked words found

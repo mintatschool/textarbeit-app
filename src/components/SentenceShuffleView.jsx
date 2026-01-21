@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Word } from './Word';
 import { Icons } from './Icons';
+import { shuffleArray } from '../utils/arrayUtils';
 import { ProgressBar } from './ProgressBar';
 import { EmptyStateMessage } from './EmptyStateMessage';
 
@@ -36,14 +37,7 @@ const splitIntoWords = (sentence) => {
 };
 
 // Fisher-Yates shuffle
-const shuffle = (array) => {
-    const arr = [...array];
-    for (let i = arr.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-    return arr;
-};
+// Fisher-Yates shuffle moved to utils
 
 export const SentenceShuffleView = ({ text, settings, setSettings, onClose, title, hyphenator }) => {
     if (!text || text.trim().length === 0) {
@@ -81,7 +75,7 @@ export const SentenceShuffleView = ({ text, settings, setSettings, onClose, titl
             onClose();
             return;
         }
-        setSentences(allSentences);
+        setSentences(shuffleArray(allSentences));
         setCurrentIndex(0);
         setCompletedSentences(new Set());
         setShowReward(false);
@@ -107,7 +101,7 @@ export const SentenceShuffleView = ({ text, settings, setSettings, onClose, titl
         });
 
         // Shuffle words
-        const shuffled = shuffle(wordObjects);
+        const shuffled = shuffleArray(wordObjects);
         setWords(shuffled);
         setIsCorrect(false);
     }, [sentences, currentIndex]);

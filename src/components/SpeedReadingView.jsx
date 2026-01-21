@@ -2,13 +2,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Icons } from './Icons';
 import { Word } from './Word'; // Import Word for consistent rendering (arcs etc)
+import { shuffleArray } from '../utils/arrayUtils';
 import { ProgressBar } from './ProgressBar';
 import { EmptyStateMessage } from './EmptyStateMessage';
 
 export const SpeedReadingView = ({ words, settings, setSettings, onClose, title }) => {
     // Level calculation Round 5 (Exponential gaps):
     const SPEED_LEVELS = [
-        1800, 1440, 1125, 855, 648, 486, 360, 261, 180, 117, 67, 27
+        2000, 1500, 1100, 800, 580, 420, 300, 200, 130, 80, 45, 20
     ];
     const [level, setLevel] = useState(6);
     const speed = SPEED_LEVELS[level - 1];
@@ -18,11 +19,13 @@ export const SpeedReadingView = ({ words, settings, setSettings, onClose, title 
     const [results, setResults] = useState([]); // { ...wordObject, success: boolean, levelAtTime: number }
     const [countdownValue, setCountdownValue] = useState(3);
     const [isFlashing, setIsFlashing] = useState(false);
+    const [round, setRound] = useState(0);
 
     const exerciseWords = useMemo(() => {
         if (!words || words.length === 0) return [];
-        return words.filter(w => w.type === 'word');
-    }, [words]);
+        const filtered = words.filter(w => w.type === 'word');
+        return shuffleArray(filtered);
+    }, [words, round]);
 
     const currentWord = exerciseWords[currentIndex];
 
@@ -226,10 +229,10 @@ export const SpeedReadingView = ({ words, settings, setSettings, onClose, title 
                                 <div className={`w-64 h-64 bg-slate-100/30 rounded-[4rem] flex items-center justify-center ${gameState === 'countdown' && !isFlashing ? 'opacity-0' : 'opacity-100'}`}>
                                     <div className="relative flex items-center justify-center">
                                         <Icons.Zap
-                                            size={gameState === 'countdown' ? 210 : 48}
+                                            size={gameState === 'countdown' ? 240 : 48}
                                             fill={gameState === 'countdown' ? 'currentColor' : 'none'}
                                             strokeWidth={gameState === 'countdown' ? 0 : 2}
-                                            className={`${gameState === 'countdown' ? 'text-yellow-400' : 'text-slate-200'}`}
+                                            className={`${gameState === 'countdown' ? 'text-yellow-300' : 'text-slate-200'}`}
                                         />
                                         {gameState === 'countdown' && (
                                             <div className="absolute inset-0 flex items-center justify-center mb-2">
@@ -306,7 +309,10 @@ export const SpeedReadingView = ({ words, settings, setSettings, onClose, title 
 
                         <div className="relative z-10 pt-6 border-t border-slate-100 flex justify-center">
                             <button
-                                onClick={() => setGameState('intro')}
+                                onClick={() => {
+                                    setRound(prev => prev + 1);
+                                    setGameState('intro');
+                                }}
                                 className="w-[60%] bg-blue-600 text-white py-4 rounded-2xl font-black text-xl hover:bg-blue-700 transition-all flex items-center justify-center gap-3 shadow-lg shadow-blue-200 hover:scale-[1.02] active:scale-[0.98]"
                             >
                                 <Icons.RotateCcw size={24} /> Noch einmal

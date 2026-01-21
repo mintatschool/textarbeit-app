@@ -18,11 +18,6 @@ export const hasAudio = (text) => {
         .replace(/[^a-zäöüß]/g, '');
 
     const exists = syllableSet.has(normalized);
-    if (!exists && text.length > 0) {
-        console.log(`hasAudio: "${text}" -> "${normalized}" [NOT FOUND]`);
-    } else if (exists) {
-        // console.log(`hasAudio: "${text}" -> "${normalized}" [FOUND]`);
-    }
     return exists;
 };
 

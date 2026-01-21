@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Icons } from './Icons';
 import { EmptyStateMessage } from './EmptyStateMessage';
 
+import { shuffleArray } from '../utils/arrayUtils';
+
 export const SyllablePuzzleView = ({ words, settings, setSettings, onClose, title }) => {
     if (!words || words.length === 0) return (<div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col items-center justify-center p-6"><EmptyStateMessage onClose={onClose} secondStepText="Wörter zum Puzzeln markieren." /></div>);
     const [puzzleWords, setPuzzleWords] = useState([]);
@@ -22,7 +24,7 @@ export const SyllablePuzzleView = ({ words, settings, setSettings, onClose, titl
 
     useEffect(() => {
         const pWords = words.map(w => { return { id: w.id, fullWord: w.word, syllables: w.syllables, pieces: w.syllables.map((txt, idx) => ({ id: `${w.id}_syl_${idx}`, text: txt, wordId: w.id, index: idx, isStart: idx === 0, isEnd: idx === w.syllables.length - 1, isSolo: w.syllables.length === 1 })) }; });
-        setPuzzleWords(pWords);
+        setPuzzleWords(shuffleArray(pWords));
         const allPieces = pWords.flatMap(w => w.pieces);
         for (let i = allPieces.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[allPieces[i], allPieces[j]] = [allPieces[j], allPieces[i]]; }
         setPoolPieces(allPieces);

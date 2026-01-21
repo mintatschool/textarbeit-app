@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Icons } from './Icons';
 import { EmptyStateMessage } from './EmptyStateMessage';
 import { WordListCell } from './WordListCell';
+import { usePreventTouchScroll } from '../hooks/usePreventTouchScroll';
 
 export const WordListView = ({ words, columnsState, setColumnsState, onClose, settings, setSettings, onRemoveWord, onWordUpdate, onUpdateWordColor, wordColors = {}, colorHeaders = {}, setColorHeaders, colorPalette = [], title, groups = [], sortByColor, setSortByColor, columnCount, setColumnCount, updateTimestamp, activeColor, isTextMarkerMode, onToggleLetterMarker, toggleHighlights, highlightedIndices }) => {
     if (!words || words.length === 0) return (<div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col items-center justify-center modal-animate font-sans"><EmptyStateMessage onClose={onClose} /></div>);
@@ -28,16 +29,7 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
     }, [showSortAlert]);
 
     // iPad Fix: Prevent touch scrolling during drag
-    useEffect(() => {
-        if (!isDragging) return;
-        const preventDefault = (e) => { e.preventDefault(); };
-        document.body.style.overflow = 'hidden';
-        document.addEventListener('touchmove', preventDefault, { passive: false });
-        return () => {
-            document.body.style.overflow = '';
-            document.removeEventListener('touchmove', preventDefault);
-        };
-    }, [isDragging]);
+    usePreventTouchScroll(isDragging);
 
     // Helper to resolve palette-X to hex
     const resolveColor = (colorCode) => {
@@ -223,15 +215,12 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
     }, [sortByColor, words, wordColors, colorPalette, groups]);
 
     // 3. Word Content Sync (If text changes while list is open)
-    // 3. Word Content Sync (If text changes while list is open)
     const prevTimestamp = useRef(updateTimestamp);
     useEffect(() => {
         const wordsChanged = prevWordsProp.current !== words;
         const timestampChanged = prevTimestamp.current !== updateTimestamp;
 
         if (!wordsChanged && !timestampChanged) return;
-
-        console.log("WordListView: Sync triggered. Words changed:", wordsChanged, "Timestamp changed:", timestampChanged);
 
         prevWordsProp.current = words;
         prevTimestamp.current = updateTimestamp;
@@ -255,7 +244,6 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                         existingIdsInCols.add(item.id);
                         // Check if content actually changed to avoid unnecessary state updates
                         if (JSON.stringify(freshData) !== JSON.stringify(item)) {
-                            console.log("WordListView: Detected change for", item.id, item.word, "->", freshData.word);
                             colHasChanges = true;
                             return freshData;
                         }
@@ -599,7 +587,7 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                 <div className="flex items-center gap-4 ml-auto">
                     <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 h-10 rounded-lg no-print">
                         <span className="text-xs font-bold text-slate-500">A</span>
-                        <input type="range" min="16" max="80" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-32 accent-blue-600 rounded-lg cursor-pointer" />
+                        <input type="range" min="16" max="96" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-32 accent-blue-600 rounded-lg cursor-pointer" />
                         <span className="text-xl font-bold text-slate-500">A</span>
                     </div>
                     <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 shadow-sm transition-transform hover:scale-105 flex items-center justify-center min-touch-target sticky right-0">
@@ -652,7 +640,7 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                                     <div className={headerClass} title="Spalte verschieben" draggable={true} onDragStart={(e) => handleDragStart(e, 'column', colId)}>
                                         <input
                                             type="text"
-                                            placeholder="Titel eingeben..."
+                                            placeholder="Titel"
                                             className="w-full bg-transparent font-bold text-slate-700 placeholder:text-slate-400 focus:outline-none text-center cursor-grab active:cursor-grabbing"
                                             style={{ fontFamily: settings.fontFamily, fontSize: `${settings.fontSize}px`, letterSpacing: '0.04em' }}
                                             value={col.title}

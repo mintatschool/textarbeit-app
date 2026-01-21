@@ -307,11 +307,10 @@ export const Toolbar = ({
                                     onSetActiveColor(toHighlighterColor('#f97316'));
                                 }
                             }}
-                            className={`p-1 rounded-xl transition flex-1 flex flex-col justify-center items-center gap-0.5 min-w-0 ${isTextMarkerMode ? 'bg-slate-800 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-100 hover:text-blue-600'}`}
-                            title="Textmarker Modus (Helle Farben)"
+                            className={`p-1 rounded-xl transition flex-1 flex justify-center items-center min-w-0 ${isTextMarkerMode ? 'bg-slate-800 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-100 hover:text-blue-600'}`}
+                            title="Textmarker"
                         >
-                            <Icons.Highlighter size={18} />
-                            <span className="text-[9px] font-bold truncate w-full text-center">Marker</span>
+                            <Icons.Highlighter size={24} />
                         </button>
 
                         <button
@@ -329,11 +328,10 @@ export const Toolbar = ({
                                     onSetActiveColor(toHighlighterColor('#f97316'));
                                 }
                             }}
-                            className={`p-1 rounded-xl transition flex-1 flex flex-col justify-center items-center gap-0.5 min-w-0 ${activeTool === 'pen' ? 'bg-slate-800 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-100 hover:text-blue-600'}`}
-                            title="Leuchtstift (Freies Malen)"
+                            className={`p-1 rounded-xl transition flex-1 flex justify-center items-center min-w-0 ${activeTool === 'pen' ? 'bg-slate-800 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-100 hover:text-blue-600'}`}
+                            title="Leuchtstift"
                         >
-                            <Icons.Pen size={18} />
-                            <span className="text-[9px] font-bold truncate w-full text-center">Stift</span>
+                            <Icons.Pen size={24} />
                         </button>
                     </div>
                 )}
@@ -342,11 +340,10 @@ export const Toolbar = ({
                 {(isTextMarkerMode || activeTool === 'pen') && (
                     <button
                         onClick={() => onSetActiveColor('transparent')}
-                        className={`p-1.5 rounded-xl transition w-full flex justify-center items-center gap-2 mb-1 ${activeColor === 'transparent' ? 'bg-red-600 text-white shadow-lg' : 'text-red-500 hover:bg-slate-100 hover:text-red-600 hover:text-white'}`}
+                        className={`py-1 px-2 rounded-xl transition w-full flex justify-center items-center mb-1 ${activeColor === 'transparent' ? 'bg-red-600 text-white shadow-lg' : 'text-red-500 hover:bg-slate-100 hover:text-red-600'}`}
                         title="Markierung/Zeichnung entfernen (Radiergummi)"
                     >
-                        <Icons.Eraser size={18} />
-                        <span className="text-[10px] font-bold">Radieren</span>
+                        <Icons.Eraser size={24} />
                     </button>
                 )}
 

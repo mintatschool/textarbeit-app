@@ -3,20 +3,27 @@ import { Icons } from './Icons';
 import { EmptyStateMessage } from './EmptyStateMessage';
 import { ProgressBar } from './ProgressBar';
 import { speak } from '../utils/speech';
+import { shuffleArray } from '../utils/arrayUtils';
 
 export const SplitExerciseView = ({ words, onClose, settings, setSettings, title }) => {
     if (!words || words.length === 0) return (<div className="fixed inset-0 z-[130] bg-slate-100 modal-animate font-sans flex flex-col items-center justify-center"><EmptyStateMessage onClose={onClose} /></div>);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [userSplits, setUserSplits] = useState(new Set());
+
+    // Randomize words
+    const randomWords = useMemo(() => {
+        return shuffleArray(words);
+    }, [words]);
+
     const [showVowels, setShowVowels] = useState(false);
     const [status, setStatus] = useState('idle');
     const [isSessionFinished, setIsSessionFinished] = useState(false);
     const [isShaking, setIsShaking] = useState(false);
     const [isError, setIsError] = useState(false);
-    const currentWordObj = words[currentIndex];
+    const currentWordObj = randomWords[currentIndex];
     const fullWord = currentWordObj ? currentWordObj.word : '';
     const correctSyllables = currentWordObj ? currentWordObj.syllables : [];
-    const progress = ((currentIndex + 1) / words.length) * 100;
+    const progress = ((currentIndex + 1) / (words ? words.length : 1)) * 100;
 
     useEffect(() => { setUserSplits(new Set()); setStatus('idle'); }, [currentIndex]);
 

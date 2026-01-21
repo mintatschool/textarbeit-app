@@ -13,15 +13,9 @@ import { ProgressBar } from './ProgressBar';
 import PuzzleTestPiece from './PuzzleTestPiece';
 import { speak } from '../utils/speech';
 import { EmptyStateMessage } from './EmptyStateMessage';
-
-// Helper component for horizontal lines in the stepper control
-const HorizontalLines = ({ count }) => (
-    <div className="flex flex-col gap-[2px] w-2 items-center justify-center">
-        {Array.from({ length: count }).map((_, i) => (
-            <div key={i} className="h-[2px] w-full bg-slate-300 rounded-full" />
-        ))}
-    </div>
-);
+import { HorizontalLines } from './shared/UIComponents';
+import { getPieceColor } from './shared/puzzleUtils';
+import { usePreventTouchScroll } from '../hooks/usePreventTouchScroll';
 
 export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, activeColor }) => {
     // Game State
@@ -49,16 +43,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
     const audioHighlightTimerRef = useRef(null);
 
     // iPad Fix: Prevent touch scrolling during drag
-    useEffect(() => {
-        if (!isDragging) return;
-        const preventDefault = (e) => { e.preventDefault(); };
-        document.body.style.overflow = 'hidden';
-        document.addEventListener('touchmove', preventDefault, { passive: false });
-        return () => {
-            document.body.style.overflow = '';
-            document.removeEventListener('touchmove', preventDefault);
-        };
-    }, [isDragging]);
+    usePreventTouchScroll(isDragging);
 
 
     // --------------------------------------------------------------------------------
@@ -403,31 +388,83 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
         }, 1200);
     };
 
-    const getPieceColor = (pieceColor) => {
-        if (activeColor === 'neutral') return 'bg-blue-500'; // Default to blue
-        if (activeColor && activeColor !== 'neutral') return activeColor;
-        return pieceColor || 'bg-blue-500';
-    };
+    // getPieceColor is now imported from shared/puzzleUtils
 
     const getVisiblePieces = (zone) => {
         const inSlots = Object.values(slots).map(p => p.id);
         return pieces[zone].filter(p => !inSlots.includes(p.id));
     };
 
-    const getSlotStyles = (piece, index, length) => {
+    const getSlotStyles = (word, index, placedPiece, isComplete) => {
         const base = 200;
-        const pieceWidth = piece ? piece.width : base;
-        const stretchX = pieceWidth / base;
-        const overlap = 25 * stretchX * gameState.pieceScale;
+
+        // Calculate projected width based on the actual target syllable
+        // This ensures ghost slots match the geometry of the target word
+        const text = word.syllables[index];
+        const standardBaseWidth = 200;
+        let projectedWidth = standardBaseWidth;
+        if (text && text.length > 5) {
+            projectedWidth = standardBaseWidth + ((text.length - 5) * 20);
+        }
+
+        // Use the placed piece width if available, otherwise the projected width
+        const finalWidth = placedPiece ? placedPiece.width : projectedWidth;
+        const stretchX = finalWidth / base;
+
+        // Perfect geometric overlap based on SVG coordinates (unscaled)
+        // Left->Middle: 80px (scaled by stretchX)
+        // Middle->Next: 60px (scaled by stretchX)
+        const SNAP_OFFSET = 20;
+        let baseOverlap = index === 0 ? 0 : (index === 1 ? 80 : 60);
+
+        if (!isComplete && index > 0) {
+            baseOverlap -= SNAP_OFFSET;
+        }
+
+        const overlap = baseOverlap * stretchX;
 
         return {
-            width: `${pieceWidth * gameState.pieceScale}px`,
-            height: `${110 * gameState.pieceScale}px`,
+            width: `${finalWidth}px`,
+            height: `110px`,
             marginLeft: index === 0 ? 0 : `-${overlap}px`,
-            zIndex: 10 + index
+            zIndex: 10 + index,
+            transition: 'margin-left 0.5s ease-in-out'
         };
     };
+    const getRowWidth = (word, isComplete) => {
+        let totalWidth = 0;
+        const len = word.syllables.length;
+        if (len === 0) return 0;
+        const SNAP_OFFSET = 20;
 
+        // Helper to get width from text
+        const getW = (text) => {
+            const standardBaseWidth = 200;
+            if (!text || text.length <= 5) return standardBaseWidth;
+            return standardBaseWidth + ((text.length - 5) * 20);
+        };
+
+        word.syllables.forEach((syl, i) => {
+            const w = getW(syl);
+
+            if (i === 0) {
+                totalWidth += w;
+            } else {
+                // Perfect geometric overlap based on SVG coordinates
+                const stretchX = w / 200;
+                let baseOverlap = i === 1 ? 80 : 60;
+
+                if (!isComplete) {
+                    baseOverlap -= SNAP_OFFSET;
+                }
+
+                const overlap = baseOverlap * stretchX;
+                totalWidth += (w - overlap);
+            }
+        });
+
+        return totalWidth;
+    };
     // --------------------------------------------------------------------------------
     // 6. RENDER
     // --------------------------------------------------------------------------------
@@ -581,7 +618,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                                     <PuzzleTestPiece
                                         label={p.text}
                                         type="left"
-                                        colorClass={getPieceColor(p.color)}
+                                        colorClass={getPieceColor(p.color, activeColor)}
                                         dynamicWidth={p.width}
                                         scale={gameState.pieceScale * 0.8}
                                         fontFamily={settings.fontFamily}
@@ -624,7 +661,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                                         <PuzzleTestPiece
                                             label={p.text}
                                             type="middle"
-                                            colorClass={getPieceColor(p.color)}
+                                            colorClass={getPieceColor(p.color, activeColor)}
                                             dynamicWidth={p.width}
                                             scale={gameState.pieceScale * 0.8}
                                             fontFamily={settings.fontFamily}
@@ -649,15 +686,15 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                                 : word.word;
 
                             return (
-                                <div key={word.id} className={`flex items-center gap-20 transition-all duration-500 ${isComplete ? 'opacity-80 scale-95' : ''}`}>
-                                    <div className="relative flex items-center pr-12" style={{ height: 110 * gameState.pieceScale }}>
-                                        <div className="flex items-center gap-0" style={{ transform: `scale(${gameState.pieceScale})`, transformOrigin: 'left center', height: 110 }}>
+                                <div key={word.id} className={`flex items-center gap-0 transition-all duration-500 ${isComplete ? 'opacity-80 scale-95' : ''}`}>
+                                    <div className="relative flex items-center pr-0 transition-[width] duration-500" style={{ height: 110 * gameState.pieceScale, width: getRowWidth(word, isComplete) * gameState.pieceScale }}>
+                                        <div className="flex items-center gap-0 absolute left-0 top-0 transition-transform duration-500" style={{ transform: `scale(${gameState.pieceScale})`, transformOrigin: 'left center', height: 110 }}>
                                             {word.syllables.map((syl, idx) => {
                                                 const slotKey = `${word.id}-${idx}`;
                                                 const piece = slots[slotKey];
                                                 const len = word.syllables.length;
                                                 const type = idx === 0 ? 'left' : (idx === len - 1 ? 'right' : 'middle');
-                                                const slotStyles = getSlotStyles(piece, idx, len);
+                                                const slotStyles = getSlotStyles(word, idx, piece, isComplete);
 
                                                 const slotIsTarget = !piece && selectedPiece && selectedPiece.type === type;
 
@@ -706,7 +743,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                                                                 <PuzzleTestPiece
                                                                     label={piece.text}
                                                                     type={type}
-                                                                    colorClass={getPieceColor(piece.color)}
+                                                                    colorClass={getPieceColor(piece.color, activeColor)}
                                                                     scale={1}
                                                                     dynamicWidth={piece.width}
                                                                     showSeamLine={true}
@@ -789,7 +826,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                                     <PuzzleTestPiece
                                         label={p.text}
                                         type="right"
-                                        colorClass={getPieceColor(p.color)}
+                                        colorClass={getPieceColor(p.color, activeColor)}
                                         dynamicWidth={p.width}
                                         scale={gameState.pieceScale * 0.8}
                                         fontFamily={settings.fontFamily}

@@ -67,7 +67,8 @@ export const PuzzleTestTwoSyllableView = ({ words, settings, onClose, title, act
         leftType: 'left',
         rightType: 'right',
         initialScale: settings.pieceScale || 1.0,
-        successDelay: 1000
+        successDelay: 1000,
+        manualAdvance: true
     });
 
     const handleSpeak = (item) => {
@@ -95,8 +96,10 @@ export const PuzzleTestTwoSyllableView = ({ words, settings, onClose, title, act
             allCompleteMessage="Alle Wörter geschafft!"
             stageCompleteMessage="Level geschafft!"
             hideSpeakerToggle={true}
-            manualAdvance={false}
+            manualAdvance={true}
             skipStageConfirmation={true}
+            hideStageFeedback={true}
+            maxWordsPerStage={validItems.length}
         />
     );
 };
