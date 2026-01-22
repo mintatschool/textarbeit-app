@@ -25,7 +25,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
         stages: [],
         currentStageIndex: 0,
         gameStatus: 'loading',
-        pieceScale: 1.0,
+        pieceScale: 0.7,
         wordsPerStage: 3
     });
 

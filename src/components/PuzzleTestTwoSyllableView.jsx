@@ -66,7 +66,7 @@ export const PuzzleTestTwoSyllableView = ({ words, settings, onClose, title, act
         items: validItems,
         leftType: 'left',
         rightType: 'right',
-        initialScale: settings.pieceScale || 1.0,
+        initialScale: 0.7,
         successDelay: 1000,
         manualAdvance: true
     });

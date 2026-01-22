@@ -23,7 +23,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
         stages: [],
         currentStageIndex: 0,
         gameStatus: 'loading',
-        pieceScale: 1.0,
+        pieceScale: 0.6,
         wordsPerStage: 3
     });
 
@@ -592,7 +592,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
             <div className="flex-1 relative flex overflow-hidden">
 
                 {/* LEFT ZONE - Anfangsstücke */}
-                <div className="w-[230px] bg-slate-100/50 border-r border-slate-200 flex flex-col shrink-0"
+                <div className="w-[180px] bg-slate-100/50 border-r border-slate-200 flex flex-col shrink-0"
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={(e) => {
                         e.preventDefault();
@@ -601,7 +601,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                     }}
                 >
                     <div className="bg-slate-200/50 py-1 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Anfang</div>
-                    <div className="flex-1 overflow-y-auto custom-scroll p-4 flex flex-col items-center gap-4">
+                    <div className="flex-1 overflow-y-auto custom-scroll p-4 flex flex-col items-start gap-4">
                         {getVisiblePieces('left').map(p => {
                             const isHighlighted = highlightedWordId === p.wordId;
                             const isSelected = selectedPiece?.id === p.id;
@@ -800,7 +800,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                 </div>
 
                 {/* RIGHT ZONE - Endstücke */}
-                <div className="w-[230px] bg-slate-100/50 border-l border-slate-200 flex flex-col shrink-0"
+                <div className="w-[180px] bg-slate-100/50 border-l border-slate-200 flex flex-col shrink-0"
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={(e) => {
                         e.preventDefault();
@@ -809,7 +809,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                     }}
                 >
                     <div className="bg-slate-200/50 py-1 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ende</div>
-                    <div className="flex-1 overflow-y-auto custom-scroll p-4 flex flex-col items-center gap-4">
+                    <div className="flex-1 overflow-y-auto custom-scroll p-4 flex flex-col items-end gap-4">
                         {getVisiblePieces('right').map(p => {
                             const isHighlighted = highlightedWordId === p.wordId;
                             const isSelected = selectedPiece?.id === p.id;

@@ -120,7 +120,7 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [], ti
         items: validItems,
         leftType: 'zigzag-left',
         rightType: 'zigzag-right',
-        initialScale: 1.0,
+        initialScale: 0.7,
         successDelay: 1000,
         manualAdvance: true
     });
