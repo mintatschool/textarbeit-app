@@ -18,6 +18,7 @@ import { EmptyStateMessage } from './EmptyStateMessage';
 import { HorizontalLines } from './shared/UIComponents';
 import { getPieceColor } from './shared/puzzleUtils';
 import { usePreventTouchScroll } from '../hooks/usePreventTouchScroll';
+import { ExerciseHeader } from './ExerciseHeader';
 
 export const SyllableCompositionExtensionView = ({ words, settings, onClose, title, activeColor }) => {
     // Game Configuration
@@ -25,7 +26,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
         stages: [],
         currentStageIndex: 0,
         gameStatus: 'loading',
-        pieceScale: 0.7,
+        pieceScale: 0.8,
         wordsPerStage: 3
     });
 
@@ -498,79 +499,56 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
     return (
         <div className="fixed inset-0 bg-blue-50 z-[100] flex flex-col font-sans no-select select-none">
             {/* HEADER */}
-            <header className="bg-white border-b border-slate-200 px-6 py-3 flex justify-between items-center z-20 shadow-sm shrink-0">
-                <div className="flex items-center gap-3">
-                    <Icons.Silbenbau2 size={40} className="text-blue-600" />
-                    <span className="text-xl font-bold text-slate-800 hidden md:inline">{title || "Silbenbau 2"}</span>
-
-                    {/* Numeric Progress Indicator (Standardized) */}
-                    <div className="flex items-center gap-1 ml-4 overflow-x-auto max-w-[400px] no-scrollbar py-2 px-1">
-                        {gameState.stages.map((_, i) => (
-                            <div
-                                key={i}
-                                className={`
-                                    w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-all shrink-0
-                                    ${i === gameState.currentStageIndex
-                                        ? 'bg-blue-600 text-white scale-110 shadow-md'
-                                        : i < gameState.currentStageIndex
-                                            ? 'bg-emerald-500 text-white'
-                                            : 'bg-gray-100 text-gray-300'
-                                    }
-                                `}
-                            >
-                                {i + 1}
+            <ExerciseHeader
+                title={title || "Silbenbau 2"}
+                icon={(p) => <Icons.Silbenbau2 {...p} size={30} />}
+                current={gameState.currentStageIndex + 1}
+                total={gameState.stages.length}
+                progressPercentage={progress}
+                settings={settings}
+                setSettings={(newSettings) => { /* No-op, using gameState for scale */ }}
+                onClose={onClose}
+                showSlider={false}
+                customControls={
+                    <>
+                        {/* Words Count Control */}
+                        <div className="flex items-center gap-2 bg-slate-50 px-2 py-1 rounded-2xl border border-slate-200 hidden lg:flex">
+                            <HorizontalLines count={2} />
+                            <button onClick={() => handleWordsCountChange(-1)} disabled={pendingWordsCount <= 2} className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 active:scale-90 transition-all shadow-sm disabled:opacity-20 ml-1">
+                                <Minus className="w-5 h-5" />
+                            </button>
+                            <div className="flex flex-col items-center min-w-[24px]">
+                                <span className={`text-xl font-black transition-colors leading-none ${pendingWordsCount !== gameState.wordsPerStage ? 'text-orange-500' : 'text-slate-800'}`}>
+                                    {pendingWordsCount}
+                                </span>
                             </div>
-                        ))}
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-4">
-                    {/* Audio Toggle */}
-                    {/* Audio Toggle Removed per User Request */}
-                    {/* <button ... /> */}
-
-                    {/* Words Count Control */}
-                    <div className="flex items-center gap-2 bg-slate-50 px-2 py-1 rounded-2xl border border-slate-200 hidden lg:flex">
-                        <HorizontalLines count={2} />
-                        <button onClick={() => handleWordsCountChange(-1)} disabled={pendingWordsCount <= 2} className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 active:scale-90 transition-all shadow-sm disabled:opacity-20 ml-1">
-                            <Minus className="w-4 h-4" />
-                        </button>
-                        <div className="flex flex-col items-center min-w-[24px]">
-                            <span className={`text-xl font-black transition-colors leading-none ${pendingWordsCount !== gameState.wordsPerStage ? 'text-orange-500' : 'text-slate-800'}`}>
-                                {pendingWordsCount}
-                            </span>
+                            <button onClick={() => handleWordsCountChange(1)} disabled={pendingWordsCount >= 6} className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 active:scale-90 transition-all shadow-sm disabled:opacity-20 mr-1">
+                                <Plus className="w-5 h-5" />
+                            </button>
+                            <HorizontalLines count={5} />
                         </div>
-                        <button onClick={() => handleWordsCountChange(1)} disabled={pendingWordsCount >= 6} className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 active:scale-90 transition-all shadow-sm disabled:opacity-20 mr-1">
-                            <Plus className="w-4 h-4" />
-                        </button>
-                        <HorizontalLines count={5} />
-                    </div>
 
-                    {/* Scale Control */}
-                    <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 h-10 rounded-lg ml-2">
-                        <span className="text-xs font-bold text-slate-500">A</span>
-                        <input
-                            type="range"
-                            min="0.7"
-                            max="1.4"
-                            step="0.1"
-                            value={gameState.pieceScale}
-                            onChange={(e) => setGameState(prev => ({ ...prev, pieceScale: parseFloat(e.target.value) }))}
-                            className="w-32 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer"
-                        />
-                        <span className="text-xl font-bold text-slate-500">A</span>
-                    </div>
-
-                    <button onClick={onClose} className="bg-red-500 text-white rounded-lg w-10 h-10 flex items-center justify-center ml-2 border-b-4 border-red-700 active:border-b-0 active:translate-y-1 transition-all">
-                        <Icons.X size={24} />
-                    </button>
-                </div>
-            </header>
-            <ProgressBar progress={progress} />
+                        {/* Scale Control */}
+                        <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 h-10 rounded-lg ml-2">
+                            <span className="text-xs font-bold text-slate-500">A</span>
+                            <input
+                                type="range"
+                                min="0.7"
+                                max="1.4"
+                                step="0.1"
+                                value={gameState.pieceScale}
+                                onChange={(e) => setGameState(prev => ({ ...prev, pieceScale: parseFloat(e.target.value) }))}
+                                className="w-32 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer"
+                            />
+                            <span className="text-xl font-bold text-slate-500">A</span>
+                        </div>
+                    </>
+                }
+            />
 
             <div className="flex-1 relative flex overflow-hidden">
                 {/* LEFT SIDEBAR (Start Pieces) */}
-                <div className="w-[180px] bg-slate-100/50 border-r border-slate-200 flex flex-col shrink-0"
+                <div className="w-[150px] bg-slate-100/50 border-r border-slate-200 flex flex-col shrink-0"
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={(e) => {
                         e.preventDefault();
@@ -579,7 +557,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                     }}
                 >
                     <div className="bg-slate-200/50 py-1 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Anfang</div>
-                    <div className="flex-1 overflow-y-auto custom-scroll p-4 flex flex-col items-center gap-4">
+                    <div className="flex-1 overflow-y-auto custom-scroll p-2 flex flex-col items-center gap-4">
                         {leftVisible.map(p => {
                             const isSelected = selectedPiece?.id === p.id;
                             return (
@@ -626,7 +604,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                     </div>
 
                     {/* TARGETS LIST */}
-                    <div className="flex-1 overflow-y-auto custom-scroll p-6 pt-12 flex flex-col items-center gap-8 bg-slate-50/30">
+                    <div className="flex-1 overflow-y-auto custom-scroll p-2 pt-12 flex flex-col items-center gap-8 bg-slate-50/30">
                         {currentStage.items.map((target, idx) => {
                             const solvedId = completedRows[target.id];
                             const isComplete = !!solvedId;
@@ -658,14 +636,14 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                             const totalWidth = (target.parts.length * 200) - totalOverlapReduction;
 
                             return (
-                                <div key={target.id} className={`flex items-center gap-4 transition-all duration-500 ${isComplete ? 'opacity-80 scale-95' : ''}`}>
+                                <div key={target.id} className={`flex items-center gap-2 transition-all duration-500 ${isComplete ? 'opacity-80 scale-95' : ''}`}>
                                     {/* Slot Row */}
                                     <div className="relative flex items-center justify-center transition-all duration-500 will-change-[width]"
                                         style={{
-                                            height: 110 * gameState.pieceScale,
-                                            width: totalWidth * gameState.pieceScale
+                                            height: 110 * (gameState.pieceScale * 0.85),
+                                            width: totalWidth * (gameState.pieceScale * 0.85)
                                         }}>
-                                        <div className="flex items-center gap-0 absolute left-0 top-0 transition-transform duration-500" style={{ transform: `scale(${gameState.pieceScale})`, transformOrigin: 'left top', height: 110 }}>
+                                        <div className="flex items-center gap-0 absolute left-0 top-0 transition-transform duration-500" style={{ transform: `scale(${gameState.pieceScale * 0.85})`, transformOrigin: 'left top', height: 110 }}>
                                             {Array.from({ length: target.parts.length }).map((_, idx) => {
                                                 const slotKey = `${target.id}-${idx}`;
                                                 const piece = placedPieces[slotKey];
@@ -731,15 +709,15 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
 
                                     {/* Audio, Checkmark & Manual Advance Group */}
                                     <div className="flex flex-col items-center gap-2 shrink-0">
-                                        <div className="flex items-center gap-4 min-h-[56px]">
+                                        <div className="flex items-center gap-2 min-h-[56px]">
                                             {/* Speaker */}
                                             {audioEnabled && (
                                                 <button
                                                     onClick={() => speak(audioText)}
-                                                    className="w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg transition-all ring-4 ring-white/50 hover:scale-105 active:scale-95 z-10 shrink-0"
+                                                    className="w-[70px] h-[70px] bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg transition-all ring-4 ring-white/50 hover:scale-105 active:scale-95 z-10 shrink-0"
                                                     title="Anhören"
                                                 >
-                                                    <Volume2 size={24} />
+                                                    <Volume2 size={30} />
                                                 </button>
                                             )}
 
@@ -747,7 +725,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                                             <div className={`transition-all duration-500 ease-out flex items-center
                                                 ${isComplete ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}
                                             `}>
-                                                <CheckCircle2 className="text-green-500 drop-shadow-2xl" style={{ width: '56px', height: '56px' }} />
+                                                <CheckCircle2 className="text-green-500 drop-shadow-2xl" style={{ width: '70px', height: '70px' }} />
                                             </div>
                                         </div>
 
@@ -758,7 +736,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                                                     onClick={handleManualAdvance}
                                                     className="bg-blue-600 hover:bg-blue-700 text-white pl-6 pr-4 py-3 rounded-2xl font-bold shadow-xl text-lg hover:scale-105 transition-all flex items-center gap-2 ring-4 ring-white/50 whitespace-nowrap"
                                                 >
-                                                    Weiter <CheckCircle2 size={24} />
+                                                    Weiter <CheckCircle2 size={30} />
                                                 </button>
                                             </div>
                                         )}
@@ -772,7 +750,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                 </div>
 
                 {/* RIGHT SIDEBAR (End Pieces) */}
-                <div className="w-[180px] bg-slate-100/50 border-l border-slate-200 flex flex-col shrink-0"
+                <div className="w-[150px] bg-slate-100/50 border-l border-slate-200 flex flex-col shrink-0"
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={(e) => {
                         e.preventDefault();
@@ -781,7 +759,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                     }}
                 >
                     <div className="bg-slate-200/50 py-1 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ende</div>
-                    <div className="flex-1 overflow-y-auto custom-scroll p-4 flex flex-col items-center gap-4">
+                    <div className="flex-1 overflow-y-auto custom-scroll p-2 flex flex-col items-center gap-4">
                         {rightVisible.map(p => {
                             const isSelected = selectedPiece?.id === p.id;
                             return (

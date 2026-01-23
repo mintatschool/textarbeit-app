@@ -208,26 +208,14 @@ export const TwoPartPuzzleLayout = ({
             {/* Header */}
             <header className="bg-white border-b-2 border-blue-100 px-6 py-3 flex justify-between items-center z-20 shadow-md shrink-0">
                 <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-3 mr-4">
+                    <div className="flex items-center gap-2">
                         <HeaderIcon className="text-blue-600 w-8 h-8" />
-                        <span className="text-xl font-bold text-slate-800 hidden md:inline">{title}</span>
+                        <span className="text-2xl font-bold text-slate-800 hidden md:inline">{title}</span>
                     </div>
 
-                    <div className="flex items-center gap-2 overflow-x-auto max-w-[200px] md:max-w-md no-scrollbar py-2 px-1">
-                        {gameState.stages.map((_, idx) => (
-                            <div
-                                key={idx}
-                                className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-all shrink-0 ${gameState.currentStageIndex === idx
-                                    ? 'bg-blue-600 text-white scale-110 shadow-md'
-                                    : idx < gameState.currentStageIndex
-                                        ? 'bg-emerald-500 text-white'
-                                        : 'bg-gray-100 text-gray-300'
-                                    }`}
-                            >
-                                {idx + 1}
-                            </div>
-                        ))}
-                    </div>
+                    <span className="bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full font-bold text-lg">
+                        {gameState.currentStageIndex + 1}/{gameState.stages.length}
+                    </span>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -324,7 +312,7 @@ export const TwoPartPuzzleLayout = ({
             {/* Main Content */}
             <main className="flex-1 relative flex overflow-hidden">
                 {/* Left Pieces */}
-                <div className="w-72 relative border-r border-blue-50 bg-white/20 shrink-0 overflow-y-auto overflow-x-hidden custom-scroll py-6 px-4 space-y-8 flex flex-col items-start"
+                <div className="w-52 relative border-r border-blue-50 bg-white/20 shrink-0 overflow-y-auto overflow-x-hidden custom-scroll py-6 px-4 space-y-8 flex flex-col items-start"
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={(e) => {
                         e.preventDefault();
@@ -365,9 +353,8 @@ export const TwoPartPuzzleLayout = ({
                 <div className="flex-1 flex flex-col px-4 relative overflow-y-hidden overflow-x-auto">
 
 
-                    {/* Target Area - using m-auto for safe centering (centers if fits, aligns start if overflows) */}
-                    <div className="m-auto flex flex-col items-center gap-4 w-fit p-4">
-                        <span className="text-xs font-bold text-slate-300 uppercase tracking-widest">{subtitle}</span>
+                    {/* Target Area - using mx-auto mt-32 for fixed top positioning */}
+                    <div className="mx-auto mt-32 flex items-center justify-center w-fit p-4 relative">
 
                         {/* Inline Stage Complete UI - Only show if feedback is NOT hidden */}
                         {gameStatus === 'stage-complete' && skipStageConfirmation && !hideStageFeedback ? (
@@ -384,89 +371,95 @@ export const TwoPartPuzzleLayout = ({
                         ) : (
                             <div className={`
                                 relative flex items-center justify-center transition-all duration-500 py-8
-                                ${showSuccess ? 'scale-105' : ''}
+                                ${showSuccess ? 'scale-110' : ''}
                             `}>
-                                <div className="flex items-center gap-4">
-                                    <div className="flex items-center relative">
-                                        {['left', 'right'].map((role, idx) => {
-                                            // placedPieces now contains piece objects, not just text
-                                            const placedPiece = placedPieces[role];
-                                            const pieceText = placedPiece?.text || placedPiece; // Handle both object and legacy string
-                                            const typeName = role === 'left' ? leftType : rightType;
+                                <div className="flex items-center gap-6">
+                                    {/* Subtitle and Pieces Group */}
+                                    <div className="flex flex-col items-center gap-4">
+                                        <span className="text-xs font-bold text-slate-300 uppercase tracking-widest">{subtitle}</span>
 
-                                            return (
-                                                <div
-                                                    key={role}
-                                                    className={`relative flex items-center justify-center transition-all duration-300 group overflow-visible ${!pieceText && selectedPiece && selectedPiece.type === (role === 'left' ? leftType : rightType)
-                                                        ? 'scale-105 cursor-pointer'
-                                                        : ''
-                                                        }`}
-                                                    style={{
-                                                        width: `${200 * scale}px`,
-                                                        height: `${110 * scale}px`,
-                                                        // Animate margin if snapped. Use a larger overlap (e.g. +52) to pull them together tightly.
-                                                        marginLeft: idx === 0 ? 0 : `-${(isSnapped && pieceText ? (overlap + 52) : overlap) * scale}px`,
-                                                        zIndex: idx === 0 ? 2 : 1,
-                                                        transform: 'none',
-                                                        filter: !pieceText && selectedPiece && selectedPiece.type === (role === 'left' ? leftType : rightType)
-                                                            ? 'drop-shadow(0 0 10px rgba(59, 130, 246, 0.7))'
-                                                            : 'none'
-                                                    }}
-                                                    onDragOver={(e) => e.preventDefault()}
-                                                    onDrop={(e) => {
-                                                        e.preventDefault();
-                                                        handleDrop(role);
-                                                    }}
-                                                    onClick={() => {
-                                                        // If slot is empty and piece is selected, place it
-                                                        if (!pieceText && selectedPiece) {
-                                                            handleSlotSelect?.(role);
-                                                        }
-                                                    }}
-                                                >
-                                                    <div className="absolute inset-[-20px] z-0" />
+                                        <div className="flex items-center relative">
+                                            {['left', 'right'].map((role, idx) => {
+                                                // placedPieces now contains piece objects, not just text
+                                                const placedPiece = placedPieces[role];
+                                                const pieceText = placedPiece?.text || placedPiece; // Handle both object and legacy string
+                                                const typeName = role === 'left' ? leftType : rightType;
 
-                                                    {/* Empty Slot Ghost */}
-                                                    {!pieceText && (
-                                                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                                                            <PuzzleTestPiece
-                                                                label=""
-                                                                type={typeName}
-                                                                isGhost={true}
-                                                                scale={scale}
-                                                                fontFamily={settings.fontFamily}
-                                                            />
-                                                        </div>
-                                                    )}
+                                                return (
+                                                    <div
+                                                        key={role}
+                                                        className={`relative flex items-center justify-center transition-all duration-300 group overflow-visible ${!pieceText && selectedPiece && selectedPiece.type === (role === 'left' ? leftType : rightType)
+                                                            ? 'scale-105 cursor-pointer'
+                                                            : ''
+                                                            }`}
+                                                        style={{
+                                                            width: `${200 * scale}px`,
+                                                            height: `${110 * scale}px`,
+                                                            // Animate margin if snapped. Use a larger overlap (e.g. +52) to pull them together tightly.
+                                                            marginLeft: idx === 0 ? 0 : `-${(isSnapped && pieceText ? (overlap + 52) : overlap) * scale}px`,
+                                                            zIndex: idx === 0 ? 2 : 1,
+                                                            transform: 'none',
+                                                            filter: !pieceText && selectedPiece && selectedPiece.type === (role === 'left' ? leftType : rightType)
+                                                                ? 'drop-shadow(0 0 10px rgba(59, 130, 246, 0.7))'
+                                                                : 'none'
+                                                        }}
+                                                        onDragOver={(e) => e.preventDefault()}
+                                                        onDrop={(e) => {
+                                                            e.preventDefault();
+                                                            handleDrop(role);
+                                                        }}
+                                                        onClick={() => {
+                                                            // If slot is empty and piece is selected, place it
+                                                            if (!pieceText && selectedPiece) {
+                                                                handleSlotSelect?.(role);
+                                                            }
+                                                        }}
+                                                    >
+                                                        <div className="absolute inset-[-20px] z-0" />
 
-                                                    {/* Filled Slot */}
-                                                    {pieceText && (
-                                                        <div
-                                                            className="absolute inset-0 flex items-center justify-center cursor-pointer hover:scale-105 transition-transform touch-none"
-                                                            draggable
-                                                            onDragStart={(e) => {
-                                                                e.dataTransfer.setData("source-role", role);
-                                                            }}
-                                                            onClick={() => removePieceFromSlot(role)}
-                                                            onContextMenu={(e) => e.preventDefault()}
-                                                        >
-                                                            <PuzzleTestPiece
-                                                                label={pieceText}
-                                                                type={typeName}
-                                                                colorClass={getPieceColor(null, activeColor)} // Use activeColor or default
-                                                                scale={scale}
-                                                                showSeamLine={true}
-                                                                fontFamily={settings.fontFamily}
-                                                            />
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
+                                                        {/* Empty Slot Ghost */}
+                                                        {!pieceText && (
+                                                            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                                                                <PuzzleTestPiece
+                                                                    label=""
+                                                                    type={typeName}
+                                                                    isGhost={true}
+                                                                    scale={scale}
+                                                                    fontFamily={settings.fontFamily}
+                                                                />
+                                                            </div>
+                                                        )}
+
+                                                        {/* Filled Slot */}
+                                                        {pieceText && (
+                                                            <div
+                                                                className="absolute inset-0 flex items-center justify-center cursor-pointer hover:scale-105 transition-transform touch-none"
+                                                                draggable
+                                                                onDragStart={(e) => {
+                                                                    e.dataTransfer.setData("source-role", role);
+                                                                }}
+                                                                onClick={() => removePieceFromSlot(role)}
+                                                                onContextMenu={(e) => e.preventDefault()}
+                                                            >
+                                                                <PuzzleTestPiece
+                                                                    label={pieceText}
+                                                                    type={typeName}
+                                                                    colorClass={getPieceColor(null, activeColor)} // Use activeColor or default
+                                                                    scale={scale}
+                                                                    showSeamLine={true}
+                                                                    fontFamily={settings.fontFamily}
+                                                                />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
 
-                                    {/* Success Checkmark & Audio Group */}
-                                    <div className="flex flex-col items-center gap-4 ml-2">
+                                    {/* Success Checkmark & Audio Group - Now strictly to the right of the Pieces Group */}
+                                    {/* We wrap it in a container that has the same height-center alignment */}
+                                    <div className="flex flex-col items-center gap-4 ml-2 self-center mt-8">
                                         <div className="flex items-center gap-5">
                                             {/* Speaker */}
                                             {audioEnabled && (
@@ -492,7 +485,7 @@ export const TwoPartPuzzleLayout = ({
 
                                         {/* Manual Advance Button - Below Speaker/Checkmark */}
                                         {manualAdvance && showSuccess && (
-                                            <div className="animate-in slide-in-from-top-4 duration-300 mt-6">
+                                            <div className="animate-in slide-in-from-top-4 duration-300">
                                                 <button
                                                     onClick={handleNextItem}
                                                     className="bg-blue-600 hover:bg-blue-700 text-white pl-6 pr-4 py-3 rounded-2xl font-bold shadow-xl text-lg hover:scale-105 transition-all flex items-center gap-2 ring-4 ring-white/50 whitespace-nowrap"
@@ -509,7 +502,7 @@ export const TwoPartPuzzleLayout = ({
                 </div>
 
                 {/* Right Pieces - Fixed Width for "Ende" */}
-                <div className="w-72 shrink-0 relative border-l border-blue-50 bg-white/20 overflow-y-auto overflow-x-hidden custom-scroll py-6 px-4 space-y-8 flex flex-col items-end"
+                <div className="w-52 shrink-0 relative border-l border-blue-50 bg-white/20 overflow-y-auto overflow-x-hidden custom-scroll py-6 px-4 space-y-8 flex flex-col items-end"
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={(e) => {
                         e.preventDefault();

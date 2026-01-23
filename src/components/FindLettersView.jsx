@@ -5,6 +5,7 @@ import { Icons } from './Icons';
 import { Word } from './Word';
 import { getCachedSyllables } from '../utils/syllables';
 import { ProgressBar } from './ProgressBar';
+import { ExerciseHeader } from './ExerciseHeader';
 
 // Ensure standard clusters are available
 const DEFAULT_CLUSTERS = ['Au', 'Ei', 'Eu', 'Äu', 'Ai', 'Ch', 'Sch', 'Sp', 'St', 'Pf', 'Ph', 'Qu', 'Ck', 'Tz', 'Ie'];
@@ -386,85 +387,62 @@ export const FindLettersView = ({ text, settings, setSettings, onClose, title })
     // Z-Index 100 to cover Toolbar (z-90)
     return (
         <div className="fixed inset-0 z-[100] bg-slate-50 flex flex-col font-sans select-none animate-fadeIn">
-            {/* Header */}
-            <div className="bg-white shadow-sm z-20 shrink-0 border-b border-slate-100">
-                <div className="px-2 py-3 flex justify-between items-center">
-                    <div className="flex flex-col items-start px-1">
-                        <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-1.5 pl-0.5">
-                            <Icons.LetterSearch size={28} className="text-blue-600" /> {title || "Buchstaben finden"}
-                        </h2>
+            <ExerciseHeader
+                title={title || "Buchstaben finden"}
+                icon={Icons.LetterSearch}
 
-                        {!showSelection && (
-                            <div className="flex items-center gap-4 mt-2">
-                                <button
-                                    onClick={() => setShowSelection(true)}
-                                    className={`ml-1 flex items-center gap-3 px-3 py-1 border-2 rounded-xl transition-all duration-300 group animate-[fadeIn_0.3s] ${flashMode && flashMode.startsWith('correct') ? 'bg-green-100 border-green-400' : flashMode === 'wrong' ? 'bg-red-100 border-red-400 animate-shake' : 'bg-slate-100 hover:bg-white border-transparent hover:border-blue-300'
-                                        }`}
-                                >
-                                    <span className="text-slate-500 font-bold text-xs uppercase tracking-wider">Gesucht:</span>
-                                    <span className={`text-xl font-black transition-colors duration-300 ${flashMode && flashMode.startsWith('correct') ? 'text-green-600' : flashMode === 'wrong' ? 'text-red-600' : 'text-blue-700'
-                                        }`} style={{ fontFamily: settings.fontFamily }}>
-                                        {selectedTarget?.label || "?"}
-                                    </span>
-                                    <Icons.ChevronDown size={16} className="text-slate-400 group-hover:text-blue-500" />
-                                </button>
-
-                                {selectedTarget && (
-                                    <div className="flex items-center gap-3">
-                                        {/* Uppercase Stat */}
-                                        {selectedTarget.counts.upper > 0 && (
-                                            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-colors duration-500 ${stats.upper.found === stats.upper.total ? 'bg-green-100 border-green-200' : 'bg-blue-50 border-blue-100'}`}>
-                                                <span className="text-lg font-black text-slate-700" style={{ fontFamily: settings.fontFamily }}>
-                                                    {selectedTarget.value.toUpperCase()}
-                                                </span>
-                                                <span className={`text-sm font-bold ${stats.upper.found === stats.upper.total ? 'text-green-700' : 'text-blue-800'}`}>
-                                                    {stats.upper.found} / {stats.upper.total}
-                                                </span>
-                                            </div>
-                                        )}
-
-                                        {/* Lowercase Stat */}
-                                        {selectedTarget.counts.lower > 0 && (
-                                            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-colors duration-500 ${stats.lower.found === stats.lower.total ? 'bg-green-100 border-green-200' : 'bg-blue-50 border-blue-100'}`}>
-                                                <span className="text-lg font-black text-slate-700" style={{ fontFamily: settings.fontFamily }}>
-                                                    {selectedTarget.value.toLowerCase()}
-                                                </span>
-                                                <span className={`text-sm font-bold ${stats.lower.found === stats.lower.total ? 'text-green-700' : 'text-blue-800'}`}>
-                                                    {stats.lower.found} / {stats.lower.total}
-                                                </span>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="flex items-center gap-6">
-                        <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 h-10 rounded-lg">
-                            <span className="text-xs font-bold text-slate-500">A</span>
-                            <input
-                                type="range"
-                                min="16"
-                                max="120"
-                                step="2"
-                                value={settings.fontSize}
-                                onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })}
-                                className="w-32 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer"
-                            />
-                            <span className="text-xl font-bold text-slate-500">A</span>
-                        </div>
-
-                        <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 flex items-center justify-center shadow-sm transition-transform hover:scale-105">
-                            <Icons.X size={24} />
+                progressPercentage={progressPercentage}
+                settings={settings}
+                setSettings={setSettings}
+                onClose={onClose}
+                sliderMin={16}
+                sliderMax={120}
+            >
+                {/* Sub-Header with Target Selection and Counts */}
+                <div className="px-4 py-2 border-t border-slate-50 flex items-center gap-4 bg-slate-50/30">
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setShowSelection(true)}
+                            className={`flex items-center gap-3 px-4 py-2 bg-slate-100/80 border-2 rounded-2xl transition-all duration-300 group hover:bg-white hover:border-blue-300 ${flashMode === 'wrong' ? 'border-red-400 animate-shake' : 'border-transparent'}`}
+                        >
+                            <span className="text-slate-500 font-bold text-sm uppercase tracking-wider">GESUCHT:</span>
+                            <span className={`text-2xl font-black transition-colors duration-300 ${flashMode && flashMode.startsWith('correct') ? 'text-green-600' : flashMode === 'wrong' ? 'text-red-600' : 'text-blue-700'
+                                }`} style={{ fontFamily: settings.fontFamily }}>
+                                {selectedTarget?.label || "?"}
+                            </span>
+                            <Icons.ChevronDown size={20} className="text-slate-400 group-hover:text-blue-500" />
                         </button>
                     </div>
+
+                    {selectedTarget && (
+                        <div className="flex items-center gap-3">
+                            {/* Uppercase Bubble */}
+                            {stats.upper.total > 0 && (
+                                <div className="flex items-center gap-2 px-4 py-2 bg-blue-50/50 border-2 border-blue-100 rounded-2xl">
+                                    <span className="text-xl font-bold text-slate-700" style={{ fontFamily: settings.fontFamily }}>
+                                        {selectedTarget.label.split(' ')[0]}
+                                    </span>
+                                    <span className="text-xl font-black text-blue-700">
+                                        {stats.upper.found} / {stats.upper.total}
+                                    </span>
+                                </div>
+                            )}
+
+                            {/* Lowercase Bubble */}
+                            {stats.lower.total > 0 && (
+                                <div className="flex items-center gap-2 px-4 py-2 bg-blue-50/50 border-2 border-blue-100 rounded-2xl">
+                                    <span className="text-xl font-bold text-slate-700" style={{ fontFamily: settings.fontFamily }}>
+                                        {selectedTarget.label.split(' ').pop()}
+                                    </span>
+                                    <span className="text-xl font-black text-blue-700">
+                                        {stats.lower.found} / {stats.lower.total}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
-                {/* Progress Bar */}
-                <div className="w-full">
-                    <ProgressBar progress={progressPercentage} />
-                </div>
-            </div>
+            </ExerciseHeader>
 
             <div className="flex-1 flex overflow-hidden relative">
                 {/* Left Sidebar Overlay */}

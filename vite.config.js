@@ -49,6 +49,8 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,json,mp3,wav,woff2,ttf}'],
         navigateFallback: 'index.html',
         cleanupOutdatedCaches: true,
+        skipWaiting: true,
+        clientsClaim: true,
         runtimeCaching: [
           {
             urlPattern: ({ url }) => url.pathname.includes('/audio/'),

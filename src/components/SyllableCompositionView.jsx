@@ -120,7 +120,7 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [], ti
         items: validItems,
         leftType: 'zigzag-left',
         rightType: 'zigzag-right',
-        initialScale: 0.7,
+        initialScale: 0.9,
         successDelay: 1000,
         manualAdvance: true
     });
@@ -136,7 +136,7 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [], ti
             {...puzzleState}
             onClose={onClose}
             title={title || "Silbenbau 1"}
-            subtitle="Silbe bauen"
+            subtitle="SILBE BAUEN"
             settings={settings}
             leftType="zigzag-left"
             rightType="zigzag-right"

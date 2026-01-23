@@ -4,10 +4,14 @@ import { EmptyStateMessage } from './EmptyStateMessage';
 import { speak } from '../utils/speech';
 import availableSyllables from '../utils/available_syllables.json';
 import { getChunks } from '../utils/syllables';
+import { ExerciseHeader } from './ExerciseHeader';
 
 const syllableSet = new Set(availableSyllables);
 
 export const SyllableBuilderView = ({ settings, onClose }) => {
+    const [round, setRound] = useState(1);
+    const TOTAL_ROUNDS = 10;
+
     // 1. Filter syllables that consist of exactly 2 parts (Letter/Cluster)
     const candidates = useMemo(() => {
         return availableSyllables.filter(syl => {
@@ -30,6 +34,7 @@ export const SyllableBuilderView = ({ settings, onClose }) => {
     }, []);
 
     const nextRound = () => {
+        setRound(prev => prev > 10 ? 1 : prev + 1);
         if (candidates.length === 0) return;
         const next = candidates[Math.floor(Math.random() * candidates.length)];
         const p = getChunks(next, true);
@@ -41,52 +46,43 @@ export const SyllableBuilderView = ({ settings, onClose }) => {
         setShowReward(false);
 
         // Generate distractors
-        // Ideally distractors should be similar. For simplicity, pick random parts from other syllables.
         const otherParts = candidates
             .filter(c => c !== next)
             .map(c => getChunks(c, true))
             .flat();
 
-        // Pick 2-3 distractors
         const pickedDistractors = [];
         for (let i = 0; i < 3; i++) {
             pickedDistractors.push(otherParts[Math.floor(Math.random() * otherParts.length)]);
         }
         setDistractors(pickedDistractors);
 
-        // Combine and shuffle options
         const allOptions = [...p, ...pickedDistractors].map((val, idx) => ({ id: `opt-${idx}`, val, status: 'available' }));
 
-        // Shuffle
         for (let i = allOptions.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [allOptions[i], allOptions[j]] = [allOptions[j], allOptions[i]];
         }
         setOptions(allOptions);
 
-        // Auto-play audio
         setTimeout(() => speak(next), 500);
     };
 
     const handleOptionClick = (option) => {
         if (option.status !== 'available' || isComplete) return;
 
-        // Find first empty slot
         const emptySlotIndex = slots.findIndex(s => s === null);
-        if (emptySlotIndex === -1) return; // Full
+        if (emptySlotIndex === -1) return;
 
         const newSlots = [...slots];
         newSlots[emptySlotIndex] = option;
         setSlots(newSlots);
 
-        // Mark option as used
         setOptions(prev => prev.map(o => o.id === option.id ? { ...o, status: 'used' } : o));
 
-        // Check completion logic
-        // If both slots are filled, check if correct
-        if (emptySlotIndex === 1) { // We just filled the last slot (index 1)
+        if (emptySlotIndex === 1) {
             const checkSlots = [...newSlots];
-            checkSlots[1] = option; // Ensure we have the latest state just in case
+            checkSlots[1] = option;
 
             const builtSyllable = checkSlots.map(s => s.val).join('');
             if (builtSyllable === currentSyllable) {
@@ -95,12 +91,10 @@ export const SyllableBuilderView = ({ settings, onClose }) => {
                 speak(currentSyllable);
                 setTimeout(nextRound, 2000);
             } else {
-                // Wrong: Reset after short delay
                 setTimeout(() => {
                     setSlots([null, null]);
                     setOptions(prev => prev.map(o => ({ ...o, status: 'available' })));
-                    speak('Falsch'); // Or a sound effect? Let's just create a visual shake or similar?
-                    // Currently just speak "Start" logic re-trigger?
+                    speak('Falsch');
                 }, 1000);
             }
         }
@@ -121,23 +115,23 @@ export const SyllableBuilderView = ({ settings, onClose }) => {
 
     return (
         <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans">
-            {/* Header */}
-            <div className="bg-white px-6 py-4 shadow-sm flex items-center justify-between z-10 shrink-0">
-                <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                    <Icons.Blocks className="text-indigo-600" /> Silben-Baukasten
-                </h2>
-                <div className="flex gap-4 items-center">
+            <ExerciseHeader
+                title="Silben-Baukasten"
+                icon={Icons.Blocks}
+                current={Number(round)}
+                total={Number(TOTAL_ROUNDS)}
+                progressPercentage={(Number(round) / Number(TOTAL_ROUNDS)) * 100}
+                onClose={onClose}
+                settings={settings}
+                customControls={
                     <button
                         onClick={() => currentSyllable && speak(currentSyllable)}
                         className="p-3 bg-blue-50 border-2 border-blue-200 text-blue-600 rounded-xl hover:bg-blue-100 transition shadow-sm font-bold flex items-center gap-2 min-touch-target"
                     >
                         <Icons.Volume2 size={24} /> Anhören
                     </button>
-                    <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 shadow-sm transition-transform hover:scale-105 flex items-center justify-center min-touch-target">
-                        <Icons.X size={24} />
-                    </button>
-                </div>
-            </div>
+                }
+            />
 
             {/* Game Area */}
             <div className="flex-1 flex flex-col items-center justify-center gap-12 p-6 relative overflow-hidden">
@@ -163,8 +157,8 @@ export const SyllableBuilderView = ({ settings, onClose }) => {
                             key={idx}
                             onClick={() => handleSlotClick(idx)}
                             className={`w-32 h-32 md:w-40 md:h-40 rounded-2xl border-4 border-dashed flex items-center justify-center text-5xl font-bold cursor-pointer transition-all ${slot
-                                    ? 'bg-white border-blue-500 text-slate-800 shadow-md scale-100'
-                                    : 'bg-slate-50 border-slate-300 text-slate-300 scale-95 hover:bg-white hover:border-blue-300'
+                                ? 'bg-white border-blue-500 text-slate-800 shadow-md scale-100'
+                                : 'bg-slate-50 border-slate-300 text-slate-300 scale-95 hover:bg-white hover:border-blue-300'
                                 } ${isComplete ? 'border-green-500 bg-green-50 text-green-700' : ''}`}
                         >
                             {slot ? slot.val : idx + 1}
@@ -185,8 +179,8 @@ export const SyllableBuilderView = ({ settings, onClose }) => {
                             disabled={opt.status === 'used'}
                             onClick={() => handleOptionClick(opt)}
                             className={`px-6 py-4 rounded-xl text-3xl font-bold shadow-sm transition-all min-touch-target ${opt.status === 'used'
-                                    ? 'bg-slate-100 text-slate-300 opacity-50 scale-90'
-                                    : 'bg-white border-b-4 border-blue-200 text-blue-600 hover:-translate-y-1 hover:border-blue-400 hover:shadow-md'
+                                ? 'bg-slate-100 text-slate-300 opacity-50 scale-90'
+                                : 'bg-white border-b-4 border-blue-200 text-blue-600 hover:-translate-y-1 hover:border-blue-400 hover:shadow-md'
                                 }`}
                         >
                             {opt.val}

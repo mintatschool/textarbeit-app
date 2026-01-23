@@ -55,7 +55,7 @@ const useHypherLoader = () => {
 
 const DEFAULT_SETTINGS = {
     fontSize: 48,
-    lineHeight: 1.3,
+    lineHeight: 1.4,
     wordSpacing: 0.5,
     visualType: 'block',
     displayTrigger: 'click',
@@ -341,6 +341,19 @@ const App = () => {
             return w;
         });
     }, [wordsOnly, highlightedIndices, wordColors, textCorrections, hyphenator]);
+
+    const uniqueExerciseWords = useMemo(() => {
+        const unique = [];
+        const seen = new Set();
+        exerciseWords.forEach(w => {
+            // Deduplicate based on exact word text
+            if (!seen.has(w.word)) {
+                seen.add(w.word);
+                unique.push(w);
+            }
+        });
+        return unique;
+    }, [exerciseWords]);
 
     const hasMarkings = highlightedIndices.size > 0 || Object.keys(wordColors).length > 0;
 
@@ -1139,7 +1152,7 @@ const App = () => {
                                             return <div key={item.id} style={{ height: `${newlineHeight}em`, width: '100%' }}></div>;
                                         }
                                         if (item.type === 'space') {
-                                            return <Space key={item.id} {...item} isTextMarkerMode={isTextMarkerMode || activeTool === 'pen'} isReadingMode={activeTool === 'read'} color={wordColors[item.index]} colorPalette={colorPalette} wordSpacing={settings.wordSpacing} letterSpacing={settings.letterSpacing} fontSize={settings.fontSize} lineHeight={settings.lineHeight || 1.3} onMouseDown={(idx) => { isPaintActive.current = true; dragStartIndex.current = idx; lastPaintedIndex.current = idx; }} onMouseEnter={(idx, e) => { if (isPaintActive.current || (e && e.buttons === 1)) handlePaint(idx); }} />;
+                                            return <Space key={item.id} {...item} isTextMarkerMode={isTextMarkerMode || activeTool === 'pen'} isReadingMode={activeTool === 'read'} color={wordColors[item.index]} colorPalette={colorPalette} wordSpacing={settings.wordSpacing} letterSpacing={settings.letterSpacing} fontSize={settings.fontSize} lineHeight={settings.lineHeight || 1.4} onMouseDown={(idx) => { isPaintActive.current = true; dragStartIndex.current = idx; lastPaintedIndex.current = idx; }} onMouseEnter={(idx, e) => { if (isPaintActive.current || (e && e.buttons === 1)) handlePaint(idx); }} />;
                                         }
                                         if (item.type === 'text') return <span key={item.id} className="text-slate-800 break-words" style={{ fontSize: `${settings.fontSize}px` }}>{item.content}</span>;
                                         const isWordHighlighted = Array.from({ length: item.word.length }, (_, i) => item.index + i).some(idx => highlightedIndices.has(idx));
@@ -1193,13 +1206,13 @@ const App = () => {
 
 
 
-                    {activeView === 'puzzletest_two' && <PuzzleTestTwoSyllableView words={hasMarkings ? exerciseWords : []} settings={settings} onClose={() => setActiveView('text')} title="Silbenpuzzle 1" activeColor={activeColor} />}
-                    {activeView === 'syllable_composition' && <SyllableCompositionView words={hasMarkings ? exerciseWords : []} settings={settings} onClose={() => setActiveView('text')} title="Silbenbau 1" activeColor={activeColor} />}
-                    {activeView === 'syllable_composition_extension' && <SyllableCompositionExtensionView words={hasMarkings ? exerciseWords : []} settings={settings} onClose={() => setActiveView('text')} title="Silbenbau 2" activeColor={activeColor} />}
-                    {activeView === 'puzzletest_multi' && <PuzzleTestMultiSyllableView words={hasMarkings ? exerciseWords : []} settings={settings} onClose={() => setActiveView('text')} title="Silbenpuzzle 2" activeColor={activeColor} />}
-                    {activeView === 'cloud' && <WordCloudView words={hasMarkings ? exerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Wortwolke" />}
+                    {activeView === 'puzzletest_two' && <PuzzleTestTwoSyllableView words={hasMarkings ? uniqueExerciseWords : []} settings={settings} onClose={() => setActiveView('text')} title="Silbenpuzzle 1" activeColor={activeColor} />}
+                    {activeView === 'syllable_composition' && <SyllableCompositionView words={hasMarkings ? uniqueExerciseWords : []} settings={settings} onClose={() => setActiveView('text')} title="Silbenbau 1" activeColor={activeColor} />}
+                    {activeView === 'syllable_composition_extension' && <SyllableCompositionExtensionView words={hasMarkings ? uniqueExerciseWords : []} settings={settings} onClose={() => setActiveView('text')} title="Silbenbau 2" activeColor={activeColor} />}
+                    {activeView === 'puzzletest_multi' && <PuzzleTestMultiSyllableView words={hasMarkings ? uniqueExerciseWords : []} settings={settings} onClose={() => setActiveView('text')} title="Silbenpuzzle 2" activeColor={activeColor} />}
+                    {activeView === 'cloud' && <WordCloudView words={hasMarkings ? uniqueExerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Wortwolke" />}
                     {activeView === 'carpet' && <SyllableCarpetView words={hasMarkings ? exerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Silbenteppich" />}
-                    {activeView === 'speed_reading' && <SpeedReadingView words={hasMarkings ? exerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Blitzlesen" />}
+                    {activeView === 'speed_reading' && <SpeedReadingView words={hasMarkings ? uniqueExerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Blitzlesen" />}
                     {activeView === 'list' && <WordListView
                         words={exerciseWords}
                         columnsState={columnsState}
@@ -1259,7 +1272,7 @@ const App = () => {
                                 }
                             }
                         }}
-                        title="Wortliste/Tabelle"
+                        title="Tabelle"
                         sortByColor={wordListSortByColor}
                         setSortByColor={setWordListSortByColor}
                         columnCount={wordListColumnCount}
@@ -1308,10 +1321,10 @@ const App = () => {
                     {activeView === 'sentence' && <SentencePuzzleView text={text} mode="sentence" settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Satzpuzzle" hyphenator={hyphenator} />}
                     {activeView === 'textpuzzle' && <SentencePuzzleView text={text} mode="text" settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Textpuzzle" hyphenator={hyphenator} />}
                     {activeView === 'sentenceshuffle' && <SentenceShuffleView text={text} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Schüttelsätze" hyphenator={hyphenator} />}
-                    {activeView === 'staircase' && <StaircaseView words={hasMarkings ? exerciseWords.map(w => ({ ...w, isHighlighted: highlightedIndices.has(w.index) })) : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Treppenwörter" />}
-                    {activeView === 'split' && <SplitExerciseView words={hasMarkings ? exerciseWords : []} onClose={() => setActiveView('text')} settings={settings} setSettings={setSettings} title="Wörter trennen" />}
-                    {activeView === 'gapWords' && <GapWordsView words={hasMarkings ? exerciseWords : []} highlightedIndices={highlightedIndices} wordColors={wordColors} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Lückenwörter" />}
-                    {activeView === 'initialSound' && <GapWordsView words={hasMarkings ? exerciseWords : []} highlightedIndices={highlightedIndices} wordColors={wordColors} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} isInitialSound={true} title="Anfangsbuchstaben finden" />}
+                    {activeView === 'staircase' && <StaircaseView words={hasMarkings ? uniqueExerciseWords.map(w => ({ ...w, isHighlighted: highlightedIndices.has(w.index) })) : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Treppenwörter" />}
+                    {activeView === 'split' && <SplitExerciseView words={hasMarkings ? uniqueExerciseWords : []} onClose={() => setActiveView('text')} settings={settings} setSettings={setSettings} title="Wörter trennen" />}
+                    {activeView === 'gapWords' && <GapWordsView words={hasMarkings ? uniqueExerciseWords : []} highlightedIndices={highlightedIndices} wordColors={wordColors} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Lückenwörter" />}
+                    {activeView === 'initialSound' && <GapWordsView words={hasMarkings ? uniqueExerciseWords : []} highlightedIndices={highlightedIndices} wordColors={wordColors} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} isInitialSound={true} title="Anfangsbuchstaben finden" />}
                     {activeView === 'gapSentences' && <GapSentencesView text={text} highlightedIndices={highlightedIndices} wordColors={wordColors} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Lückensätze" hyphenator={hyphenator} />}
                     {activeView === 'gapText' && <GapTextView text={text} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Lückentext" hyphenator={hyphenator} />}
                     {activeView === 'caseExercise' && <CaseExerciseView text={text} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Groß-/Kleinschreibung" />}
@@ -1350,36 +1363,48 @@ const App = () => {
                 setShowScanner(false);
                 const trimmed = decodedText.trim();
 
+                const applyImport = (newText, successMessage = null) => {
+                    setText(newText);
+                    setIsViewMode(true); // Direkt zur Ansicht wechseln
+                    if (successMessage) {
+                        // Optional: Toast/Notification logic if available, currently just silent success
+                    }
+                };
+
+                const confirmIfNeeded = (action) => {
+                    if (!text || text.trim().length === 0) {
+                        action();
+                    } else {
+                        if (confirm("Vorhandenen Text ersetzen?")) {
+                            action();
+                        }
+                    }
+                };
+
                 // FALL A: Es ist ein Link (Cloud JSON Datei)
                 if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
-                    fetch(trimmed)
-                        .then(res => res.json())
-                        .then(data => {
-                            loadState(JSON.stringify(data));
-                        })
-                        .catch(err => alert("Fehler beim Laden vom Link: " + err.message));
+                    confirmIfNeeded(() => {
+                        fetch(trimmed)
+                            .then(res => res.json())
+                            .then(data => {
+                                loadState(JSON.stringify(data));
+                            })
+                            .catch(err => alert("Fehler beim Laden vom Link: " + err.message));
+                    });
 
                     // FALL B: Es ist ein JSON-Objekt
-                    // FALL B: Versuch als JSON zu parsen (Objekt oder Full State)
                 } else {
                     try {
-                        // Versuch Parsing
                         const data = JSON.parse(trimmed);
 
-                        // Check ob es ein gültiges State-Objekt oder Text-Objekt ist
-                        // Wir akzeptieren alles was wie unsere Struktur aussieht
                         if (data && typeof data === 'object') {
                             if (data.text && !data.settings && Object.keys(data).length <= 2) {
                                 // Einfaches { text: "..." } Objekt
-                                if (confirm("Gescannter Text wird eingefügt. Überschreiben?")) {
-                                    setText(data.text);
-                                    setIsViewMode(false); // Bleibe im Eingabemodus für Korrekturen
-                                }
+                                confirmIfNeeded(() => applyImport(data.text));
                             } else if (data.text || data.settings) {
-                                // Vollständiger State (mit Settings etc.)
-                                loadState(trimmed);
+                                // Vollständiger State
+                                confirmIfNeeded(() => loadState(trimmed));
                             } else {
-                                // Unbekanntes JSON - Behandle als Text?
                                 throw new Error("Unbekanntes JSON Format");
                             }
                         } else {
@@ -1388,10 +1413,7 @@ const App = () => {
                     } catch (e) {
                         // FALL C: Reiner Text (kein JSON)
                         if (trimmed.length > 0) {
-                            if (confirm("Gescannter Text wird eingefügt. Überschreiben?")) {
-                                setText(trimmed);
-                                setIsViewMode(false); // Bleibe im Eingabemodus für Korrekturen
-                            }
+                            confirmIfNeeded(() => applyImport(trimmed));
                         }
                     }
                 }

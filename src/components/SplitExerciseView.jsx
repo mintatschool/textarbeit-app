@@ -4,6 +4,7 @@ import { EmptyStateMessage } from './EmptyStateMessage';
 import { ProgressBar } from './ProgressBar';
 import { speak } from '../utils/speech';
 import { shuffleArray } from '../utils/arrayUtils';
+import { ExerciseHeader } from './ExerciseHeader';
 
 export const SplitExerciseView = ({ words, onClose, settings, setSettings, title }) => {
     if (!words || words.length === 0) return (<div className="fixed inset-0 z-[130] bg-slate-100 modal-animate font-sans flex flex-col items-center justify-center"><EmptyStateMessage onClose={onClose} /></div>);
@@ -79,43 +80,26 @@ export const SplitExerciseView = ({ words, onClose, settings, setSettings, title
                 </div>
             )}
 
-            <div className="bg-white px-6 py-4 shadow-sm flex flex-wrap gap-4 justify-between items-center z-10 shrink-0">
-                <div className="flex items-center gap-4">
-                    <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                        <Icons.Scissors className="text-orange-500 -rotate-90" />
-                        {title || "Wörter trennen"}
-                    </h2>
-                    <span className="bg-slate-100 px-3 py-1 rounded-full text-slate-600 font-bold text-sm">
-                        {currentIndex + 1} / {words.length}
-                    </span>
-                </div>
-
-                <div className="flex items-center gap-3">
+            <ExerciseHeader
+                title={title || "Wörter trennen"}
+                icon={Icons.Scissors}
+                current={currentIndex + 1}
+                total={words.length}
+                progressPercentage={progress}
+                settings={settings}
+                setSettings={setSettings}
+                onClose={onClose}
+                sliderMin={24}
+                sliderMax={100}
+                customControls={
                     <button
                         onClick={() => setShowVowels(!showVowels)}
                         className={`px-4 py-2 rounded-xl font-bold text-lg border transition-all min-touch-target ${showVowels ? 'bg-yellow-400 text-yellow-900 border-yellow-500 shadow-[0_2px_0_0_#eab308]' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}
                     >
                         Vokale
                     </button>
-                    <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 h-10 rounded-lg ml-2">
-                        <span className="text-xs font-bold text-slate-500">A</span>
-                        <input
-                            type="range"
-                            min="24"
-                            max="100"
-                            value={settings.fontSize}
-                            onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })}
-                            className="w-32 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer"
-                        />
-                        <span className="text-xl font-bold text-slate-500">A</span>
-                    </div>
-                    <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 shadow-sm transition-transform hover:scale-105 flex items-center justify-center min-touch-target">
-                        <Icons.X size={24} />
-                    </button>
-                </div>
-            </div>
-
-            <ProgressBar progress={progress} />
+                }
+            />
 
             <div className="flex-1 flex flex-col items-center justify-center p-4 bg-white/50 overflow-y-auto custom-scroll">
                 <div className={`flex flex-wrap justify-center items-end gap-16 py-4 ${isShaking ? 'shake' : ''}`}>
@@ -158,7 +142,7 @@ export const SplitExerciseView = ({ words, onClose, settings, setSettings, title
                 {status !== 'correct' ? (
                     <button onClick={checkAnswer} className="px-8 py-3 bg-blue-600 text-white text-lg font-bold rounded-xl hover:bg-blue-700 shadow-lg active:scale-95 transition min-touch-target">Prüfen</button>
                 ) : (
-                    <button onClick={nextWord} className="px-8 py-3 bg-green-500 text-white text-lg font-bold rounded-xl hover:bg-green-600 shadow-lg active:scale-95 transition flex items-center gap-2 pop-animate min-touch-target">
+                    <button onClick={nextWord} className="px-8 py-3 bg-blue-600 text-white text-lg font-bold rounded-xl hover:bg-blue-700 shadow-lg active:scale-95 transition flex items-center gap-2 pop-animate min-touch-target">
                         {currentIndex < words.length - 1 ? 'Nächstes Wort' : 'Fertig'} <Icons.ArrowRight />
                     </button>
                 )}

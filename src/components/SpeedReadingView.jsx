@@ -202,12 +202,13 @@ export const SpeedReadingView = ({ words, settings, setSettings, onClose, title 
                         </button>
                     </div>
                 )}
-
                 {(gameState === 'showing' || gameState === 'hidden' || gameState === 'feedback' || gameState === 'countdown') && (
                     <div className="flex flex-col items-center justify-center w-full h-full max-w-4xl relative">
 
-                        <div className="absolute top-2 left-1/2 -translate-x-1/2 text-slate-400 font-bold text-[15px] tracking-widest mt-1">
-                            WORT {currentIndex + 1} VON {exerciseWords.length}
+                        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
+                            <span className="bg-blue-100 text-blue-700 px-4 py-2 rounded-full font-bold text-xl shadow-sm border border-blue-200">
+                                {currentIndex + 1} / {exerciseWords.length}
+                            </span>
                         </div>
 
                         {/* Word Display Area */}

@@ -4,16 +4,25 @@ import { EmptyStateMessage } from './EmptyStateMessage';
 import { getChunks } from '../utils/syllables';
 import { speak } from '../utils/speech';
 import { ProgressBar } from './ProgressBar';
+import { ExerciseHeader } from './ExerciseHeader';
 
 export const WordCloudView = ({ words, settings, setSettings, onClose, title }) => {
     if (!words || words.length === 0) return (<div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col items-center justify-center modal-animate font-sans"><EmptyStateMessage onClose={onClose} /></div>);
-    const [cloudWords, setCloudWords] = useState([]);
+
+    // Stage State
+    const [stages, setStages] = useState([]);
+    const [currentStageIndex, setCurrentStageIndex] = useState(0);
+    const [stageWords, setStageWords] = useState([]);
+
+    // Game State
     const [placedChunks, setPlacedChunks] = useState({});
     const [poolChunks, setPoolChunks] = useState([]);
     const [showReward, setShowReward] = useState(false);
     const [showVowels, setShowVowels] = useState(false);
+
+    // Drag/UI State
     const [isDragging, setIsDragging] = useState(false);
-    const [selectedChunk, setSelectedChunk] = useState(null); // For Click-to-Place
+    const [selectedChunk, setSelectedChunk] = useState(null);
     const dragItemRef = useRef(null);
 
     useEffect(() => {
@@ -24,8 +33,7 @@ export const WordCloudView = ({ words, settings, setSettings, onClose, title }) 
         return () => { document.body.style.overflow = ''; document.removeEventListener('touchmove', preventDefault); };
     }, [isDragging]);
 
-
-
+    // Initialization & Grouping
     useEffect(() => {
         const cWords = words.map(w => {
             let totalChunkIndex = 0;
@@ -38,71 +46,123 @@ export const WordCloudView = ({ words, settings, setSettings, onClose, title }) 
                     return chunkObj;
                 });
                 return { text: syl, chunks };
-                return { text: syl, chunks };
             });
-            // We just shuffle the chunks to prevent direct order hints
+            // Shuffle chunks for the cloud
             const shuffledChunks = [...wordChunks].sort(() => Math.random() - 0.5);
             return { id: w.id, fullWord: w.word, syllables: syllables, allChunks: shuffledChunks };
         });
-        setCloudWords(cWords);
-        setPoolChunks(cWords.flatMap(w => w.allChunks));
+
+        // Group into pairs
+        const newStages = [];
+        for (let i = 0; i < cWords.length; i += 2) {
+            newStages.push(cWords.slice(i, i + 2));
+        }
+        setStages(newStages);
+        setCurrentStageIndex(0);
         setPlacedChunks({});
         setShowReward(false);
     }, [JSON.stringify(words), settings.smartSelection, settings.fontSize]);
 
+    // Update Stage Words & Pool
+    useEffect(() => {
+        if (stages.length === 0) return;
+        const currentBatch = stages[currentStageIndex];
+        setStageWords(currentBatch);
 
-    useEffect(() => { const totalSlots = cloudWords.reduce((acc, w) => acc + w.allChunks.length, 0); if (words.length > 0 && totalSlots > 0 && Object.keys(placedChunks).length === totalSlots) { let allCorrect = true; cloudWords.forEach(word => { word.allChunks.forEach(chunk => { const placed = placedChunks[chunk.id]; if (!placed || placed.text !== chunk.text) allCorrect = false; }); }); if (allCorrect) setTimeout(() => setShowReward(true), 200); } }, [placedChunks, words, cloudWords]);
+        // Only set pool chunks for the current stage words that haven't been placed yet
+        // Since we persist placedChunks generally, we need to carefully filter
+        const currentWordIds = currentBatch.map(w => w.id);
+        const relevantChunks = currentBatch.flatMap(w => w.allChunks);
+
+        // Filter out chunks that are already placed
+        const remainingChunks = relevantChunks.filter(c => !placedChunks[c.id]);
+        setPoolChunks(remainingChunks);
+
+    }, [stages, currentStageIndex, placedChunks]);
+
+    // Check Global Completion (only for "Reward" logic at the very end)
+    useEffect(() => {
+        // Logic moved to "Weiter" / "Beenden" button
+    }, []);
+
     const handleDragStart = (e, chunk, source, slotId = null) => { setIsDragging(true); dragItemRef.current = { chunk, source, slotId }; e.dataTransfer.setData('application/json', JSON.stringify(chunk)); e.dataTransfer.effectAllowed = 'move'; setTimeout(() => e.target.classList.add('dragging'), 0); };
     const handleDragEnd = (e) => { setIsDragging(false); e.target.classList.remove('dragging'); dragItemRef.current = null; document.querySelectorAll('.active-target').forEach(el => el.classList.remove('active-target')); };
-    const handleDrop = (e, targetWordId, targetChunkId) => { setIsDragging(false); e.preventDefault(); e.stopPropagation(); document.querySelectorAll('.active-target').forEach(el => el.classList.remove('active-target')); const dragData = dragItemRef.current; if (!dragData || dragData.chunk.wordId !== targetWordId) return; const existingChunk = placedChunks[targetChunkId]; setPlacedChunks(prev => { const next = { ...prev, [targetChunkId]: dragData.chunk }; if (dragData.source === 'slot' && dragData.slotId) delete next[dragData.slotId]; return next; }); setPoolChunks(prev => { let next = prev; if (dragData.source === 'pool') next = next.filter(c => c.id !== dragData.chunk.id); if (existingChunk) next = [...next, existingChunk]; return next; }); };
-    const handleCloudReturnDrop = (e, targetWordId) => { setIsDragging(false); e.preventDefault(); e.stopPropagation(); const dragData = dragItemRef.current; if (!dragData || dragData.chunk.wordId !== targetWordId) return; if (dragData.source === 'slot') { setPlacedChunks(prev => { const next = { ...prev }; delete next[dragData.slotId]; return next; }); setPoolChunks(prev => [...prev, dragData.chunk]); } };
+    const handleDrop = (e, targetWordId, targetChunkId) => {
+        setIsDragging(false);
+        e.preventDefault();
+        e.stopPropagation();
+        document.querySelectorAll('.active-target').forEach(el => el.classList.remove('active-target'));
+        const dragData = dragItemRef.current;
+        if (!dragData || dragData.chunk.wordId !== targetWordId) return;
 
-    // Progress Calculation
+        const existingChunk = placedChunks[targetChunkId];
+
+        setPlacedChunks(prev => {
+            const next = { ...prev, [targetChunkId]: dragData.chunk };
+            if (dragData.source === 'slot' && dragData.slotId) delete next[dragData.slotId];
+            return next;
+        });
+
+        // Pool update is handled by useEffect dependency on placedChunks
+    };
+
+    const handleCloudReturnDrop = (e, targetWordId) => {
+        setIsDragging(false);
+        e.preventDefault();
+        e.stopPropagation();
+        const dragData = dragItemRef.current;
+        if (!dragData || dragData.chunk.wordId !== targetWordId) return;
+        if (dragData.source === 'slot') {
+            setPlacedChunks(prev => {
+                const next = { ...prev };
+                delete next[dragData.slotId];
+                return next;
+            });
+        }
+    };
+
+    // Calculate Progress (Global)
     const progressPercentage = React.useMemo(() => {
-        const totalChunks = cloudWords.reduce((acc, w) => acc + w.allChunks.length, 0);
-        if (totalChunks === 0) return 0;
+        if (stages.length === 0) return 0;
+        const totalChunksAll = stages.flat().reduce((acc, w) => acc + w.allChunks.length, 0);
+        if (totalChunksAll === 0) return 0;
         const placedCount = Object.keys(placedChunks).length;
-        return (placedCount / totalChunks) * 100;
-    }, [cloudWords, placedChunks]);
+        // This is a rough estimate since placedChunks might contain wrong placements, but good enough for progress bar
+        return (placedCount / totalChunksAll) * 100;
+    }, [stages, placedChunks]);
 
     // Click-to-Place Handlers
     const handleChunkClick = (chunk, source, slotId = null) => {
         if (source === 'slot') {
-            // If already filled, return to pool
             setPlacedChunks(prev => { const next = { ...prev }; delete next[slotId]; return next; });
-            setPoolChunks(prev => [...prev, chunk]);
             setSelectedChunk(null);
             return;
         }
-
-        if (selectedChunk?.id === chunk.id) {
-            setSelectedChunk(null);
-        } else {
-            setSelectedChunk(chunk);
-        }
+        if (selectedChunk?.id === chunk.id) setSelectedChunk(null);
+        else setSelectedChunk(chunk);
     };
 
     const handleSlotClick = (targetWordId, targetChunkId) => {
         if (!selectedChunk) return;
-        if (selectedChunk.wordId !== targetWordId) {
-            setSelectedChunk(null);
-            return;
-        }
-
-        const chunkToPlace = selectedChunk;
-        const existingChunk = placedChunks[targetChunkId];
-
-        setPlacedChunks(prev => ({ ...prev, [targetChunkId]: chunkToPlace }));
-        setPoolChunks(prev => {
-            let next = prev.filter(c => c.id !== chunkToPlace.id);
-            if (existingChunk) next = [...next, existingChunk];
-            return next;
-        });
+        if (selectedChunk.wordId !== targetWordId) { setSelectedChunk(null); return; }
+        setPlacedChunks(prev => ({ ...prev, [targetChunkId]: selectedChunk }));
         setSelectedChunk(null);
     };
 
-    const speakWord = (text) => {
-        speak(text);
+    const speakWord = (text) => { speak(text); };
+
+    // Stage Navigation
+    const isStageComplete = stageWords.every(w => {
+        // A word is complete if every chunk slot is filled with the CORRECT chunk text
+        return w.allChunks.every(c => placedChunks[c.id]?.text === c.text);
+    });
+
+    const handleNextStage = () => {
+        if (currentStageIndex < stages.length - 1) {
+            setCurrentStageIndex(prev => prev + 1);
+        } else {
+            setShowReward(true);
+        }
     };
 
     const cloudSVGPath = "M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z";
@@ -122,8 +182,6 @@ export const WordCloudView = ({ words, settings, setSettings, onClose, title }) 
                             </button>
                         </div>
                     </div>
-
-                    {/* Confetti */}
                     <div className="fixed inset-0 pointer-events-none z-[160]">
                         {Array.from({ length: 40 }).map((_, i) => (
                             <div key={i} className="confetti" style={{
@@ -136,49 +194,64 @@ export const WordCloudView = ({ words, settings, setSettings, onClose, title }) 
                     </div>
                 </div>
             )}
-            <div className="bg-white px-2 py-3 shadow-sm z-10 shrink-0 border-b border-slate-100">
-                <div className="flex justify-between items-center flex-wrap gap-4 px-4">
-                    <div className="flex items-center gap-4">
-                        <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2"><Icons.Cloud className="text-blue-500" /> {title || "Schüttelwörter"}</h2>
-                        <span className="bg-slate-100 px-3 py-1 rounded-full text-slate-500 font-medium text-sm">{poolChunks.length} Teile übrig</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <button
-                            onClick={() => setShowVowels(!showVowels)}
-                            className={`px-4 py-2 rounded-xl font-bold text-lg border transition-all min-touch-target ${showVowels ? 'bg-yellow-400 text-yellow-900 border-yellow-500 shadow-[0_2px_0_0_#eab308]' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}
-                        >
-                            Vokale
-                        </button>
-                        <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-4 h-10 rounded-lg ml-2">
-                            <span className="text-xs font-bold text-slate-500">A</span>
-                            <input type="range" min="24" max="80" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-32 accent-blue-600 rounded-lg cursor-pointer" />
-                            <span className="text-xl font-bold text-slate-500">A</span>
-                        </div>
-                        <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 shadow-sm transition-transform hover:scale-105 flex items-center justify-center min-touch-target">
-                            <Icons.X size={24} />
-                        </button>
-                    </div>
-                </div>
-                {/* Progress Bar */}
-                <div className="w-full mt-2">
-                    <ProgressBar progress={progressPercentage} />
-                </div>
-            </div>
+
+            <ExerciseHeader
+                title="Schüttelwörter"
+                icon={Icons.Cloud}
+                current={currentStageIndex + 1}
+                total={stages.length}
+                progressPercentage={progressPercentage}
+                settings={settings}
+                setSettings={setSettings}
+                onClose={onClose}
+                sliderMin={24}
+                sliderMax={80}
+                customControls={
+                    <button
+                        onClick={() => setShowVowels(!showVowels)}
+                        className={`px-4 py-2 rounded-xl font-bold text-lg border transition-all min-touch-target ${showVowels ? 'bg-yellow-400 text-yellow-900 border-yellow-500 shadow-[0_2px_0_0_#eab308]' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}
+                    >
+                        Vokale
+                    </button>
+                }
+            />
+
             <div className="flex-1 overflow-y-auto custom-scroll p-6 pb-32">
-                <div className="max-w-4xl mx-auto flex flex-col gap-12">
-                    {cloudWords.map((word) => {
-                        const activePool = poolChunks.filter(c => c.wordId === word.id); const isCorrect = word.allChunks.every(c => placedChunks[c.id]?.text === c.text); return (
-                            <div key={word.id} onDragOver={(e) => e.preventDefault()} onDrop={(e) => handleCloudReturnDrop(e, word.id)} className={`bg-white rounded-2xl border-2 p-6 flex flex-col items-center gap-6 shadow-sm transition-all w-fit max-w-full mx-auto ${isCorrect ? 'border-slate-200' : 'border-slate-200'}`}>
-                                <div className="relative w-full min-w-[20rem] max-w-full min-h-[16rem] flex items-center justify-center">
+                <div className="w-full flex flex-row flex-wrap items-start justify-center gap-8 max-w-full">
+                    {stageWords.map((word) => {
+                        const activePool = poolChunks.filter(c => c.wordId === word.id);
+
+                        // Check status for this specific word
+                        const totalChunks = word.allChunks.length;
+                        const placedForWord = word.allChunks.filter(c => placedChunks[c.id]).length;
+                        const correctForWord = word.allChunks.every(c => placedChunks[c.id]?.text === c.text);
+
+                        // Error condition: All chunks placed but not correct
+                        const hasError = placedForWord === totalChunks && !correctForWord;
+
+                        // Border logic
+                        let borderClass = 'border-slate-200'; // default thin
+                        if (correctForWord) {
+                            borderClass = 'border-green-500 bg-green-50/30';
+                        } else if (hasError) {
+                            borderClass = 'border-red-400 bg-red-50/10';
+                        }
+
+                        return (
+                            <div key={word.id}
+                                onDragOver={(e) => e.preventDefault()}
+                                onDrop={(e) => handleCloudReturnDrop(e, word.id)}
+                                className={`rounded-xl border-2 p-4 flex flex-col items-start gap-4 shadow-sm transition-all w-fit max-w-full bg-white ${borderClass}`}
+                            >
+                                <div className="relative w-full min-w-[12rem] max-w-full min-h-[12rem] flex items-center justify-center">
                                     <div className="absolute inset-0 text-blue-100/50 drop-shadow-sm flex items-center justify-center">
                                         <svg viewBox="0 0 24 24" className="w-full h-full overflow-visible pointer-events-none" preserveAspectRatio="none">
                                             <path d={cloudSVGPath} fill="currentColor" stroke="#93c5fd" strokeWidth="1" vectorEffect="non-scaling-stroke" />
                                         </svg>
                                     </div>
 
-                                    <div className="relative z-10 w-full h-full flex flex-wrap justify-center items-center content-center gap-3 p-12">
+                                    <div className="relative z-10 w-full h-full flex flex-wrap justify-center items-center content-center gap-3 p-6">
                                         {activePool.map((chunk, idx) => {
-                                            // Pseudo-random rotation
                                             const rotate = (idx % 2 === 0 ? 1 : -1) * ((idx * 3) % 4 + 1);
                                             return (
                                                 <div key={chunk.id} draggable
@@ -203,11 +276,11 @@ export const WordCloudView = ({ words, settings, setSettings, onClose, title }) 
                                                 </div>
                                             );
                                         })}
-                                        {isCorrect && <div className="absolute inset-0 flex items-center justify-center text-green-600 font-bold text-2xl pop-animate z-30 pointer-events-none rounded-full"><Icons.CheckCircle size={settings.fontSize * 1.5} className="drop-shadow-lg" /></div>}
+                                        {correctForWord && <div className="absolute inset-0 flex items-center justify-center text-green-600 font-bold text-2xl pop-animate z-30 pointer-events-none rounded-full"><Icons.CheckCircle size={settings.fontSize * 1.5} className="drop-shadow-lg" /></div>}
                                     </div>
                                 </div>
-                                <div className="flex flex-wrap justify-center items-center gap-6 mt-2 relative">
-                                    <div className="flex flex-wrap justify-center items-center gap-1">
+                                <div className="flex flex-wrap justify-start items-center gap-6 mt-1 ml-4 relative w-full">
+                                    <div className="flex flex-wrap justify-start items-center gap-1">
                                         {word.syllables.map((sylObj, sIdx) => {
                                             const isEven = sIdx % 2 === 0;
                                             return (
@@ -253,6 +326,16 @@ export const WordCloudView = ({ words, settings, setSettings, onClose, title }) 
                         );
                     })}
                 </div>
+                {isStageComplete && (
+                    <div className="flex justify-end mt-8 mr-8">
+                        <button
+                            onClick={handleNextStage}
+                            className="bg-blue-600 hover:bg-blue-700 text-white text-xl font-bold py-3 px-8 rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center gap-2"
+                        >
+                            {currentStageIndex < stages.length - 1 ? "Weiter" : "Abschließen"} <Icons.ArrowRight />
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );

@@ -66,7 +66,7 @@ export const PuzzleTestTwoSyllableView = ({ words, settings, onClose, title, act
         items: validItems,
         leftType: 'left',
         rightType: 'right',
-        initialScale: 0.7,
+        initialScale: 0.9,
         successDelay: 1000,
         manualAdvance: true
     });
@@ -82,7 +82,7 @@ export const PuzzleTestTwoSyllableView = ({ words, settings, onClose, title, act
             {...puzzleState}
             onClose={onClose}
             title={title || "Silbenpuzzle 1"}
-            subtitle="2 Silben"
+            subtitle="WORT BAUEN"
             settings={settings}
             leftType="left"
             rightType="right"

@@ -6,6 +6,7 @@ import { EmptyStateMessage } from './EmptyStateMessage';
 import { speak } from '../utils/speech';
 import { HorizontalLines } from './shared/UIComponents';
 import { usePreventTouchScroll } from '../hooks/usePreventTouchScroll';
+import { ExerciseHeader } from './ExerciseHeader';
 
 export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialSound = false, title, highlightedIndices = new Set(), wordColors = {} }) => {
     const [mode, setMode] = useState('vowels'); // 'vowels', 'consonants', or 'marked'
@@ -543,94 +544,61 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                 </div>
             )}
 
-            <div className="bg-white px-6 py-4 shadow-sm flex flex-wrap gap-4 justify-between items-center z-10 shrink-0">
-                <div className="flex items-center gap-4">
-                    <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                        {isInitialSound ? <Icons.InitialSound className="text-blue-600" /> : <Icons.GapWords className="text-blue-600" />}
-                        {title || (isInitialSound ? 'Anfangsbuchstaben finden' : 'Lückenwörter')}
-                    </h2>
-                    {/* Numeric Progress Indicator */}
-                    <div className="flex items-center gap-1 ml-4 overflow-x-auto max-w-[400px] no-scrollbar">
-                        {groups.map((_, i) => (
-                            <div
-                                key={i}
-                                className={`
-                                    w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-all shrink-0
-                                    ${i === currentGroupIdx
-                                        ? 'bg-blue-600 text-white scale-110 shadow-md'
-                                        : i < currentGroupIdx
-                                            ? 'bg-emerald-500 text-white'
-                                            : 'bg-gray-100 text-gray-300'
-                                    }
-                                `}
-                            >
-                                {i + 1}
+            <ExerciseHeader
+                title={title || (isInitialSound ? 'Anfangsbuchstaben finden' : 'Lückenwörter')}
+                icon={isInitialSound ? Icons.InitialSound : Icons.GapWords}
+                current={currentGroupIdx + 1}
+                total={groups.length}
+                progressPercentage={(groups.length > 0 ? ((currentGroupIdx + 1) / groups.length) * 100 : 0)}
+                settings={settings}
+                setSettings={setSettings}
+                onClose={onClose}
+                sliderMin={24}
+                sliderMax={100}
+                customControls={
+                    <>
+                        {!isInitialSound && (
+                            <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 mr-2">
+                                <button
+                                    onClick={() => setMode('marked')}
+                                    className={`flex items-center gap-2 px-2 py-2 rounded-lg transition-all font-bold text-sm mr-1 ${mode === 'marked' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
+                                >
+                                    <Icons.LetterMarker size={20} />
+                                    <span className="hidden sm:inline">markiert</span>
+                                </button>
+                                <div className="w-px bg-slate-300 my-2 mx-1"></div>
+                                <button
+                                    onClick={() => setMode('vowels')}
+                                    className={`px-2 py-2 rounded-lg font-bold text-base transition-all ${mode === 'vowels' ? 'bg-yellow-400 text-yellow-900 border-yellow-500 shadow-[0_2px_0_0_#eab308]' : 'text-slate-500 hover:bg-slate-50'}`}
+                                >
+                                    Vokale
+                                </button>
+                                <button
+                                    onClick={() => setMode('consonants')}
+                                    className={`px-2 py-2 rounded-lg font-bold text-base transition-all ${mode === 'consonants' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}
+                                >
+                                    Konsonanten
+                                </button>
                             </div>
-                        ))}
-                    </div>
-                </div>
-
-                {!isInitialSound && (
-                    <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
-                        <button
-                            onClick={() => setMode('marked')}
-                            className={`flex items-center gap-2 px-2 py-2 rounded-lg transition-all font-bold text-sm mr-1 ${mode === 'marked' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
-                        >
-                            <Icons.LetterMarker size={20} />
-                            <span className="hidden sm:inline">markiert</span>
-                        </button>
-                        <div className="w-px bg-slate-300 my-2 mx-1"></div>
-                        <button
-                            onClick={() => setMode('vowels')}
-                            className={`px-2 py-2 rounded-lg font-bold text-base transition-all ${mode === 'vowels' ? 'bg-yellow-400 text-yellow-900 border-yellow-500 shadow-[0_2px_0_0_#eab308]' : 'text-slate-500 hover:bg-slate-50'}`}
-                        >
-                            Vokale
-                        </button>
-                        <button
-                            onClick={() => setMode('consonants')}
-                            className={`px-2 py-2 rounded-lg font-bold text-base transition-all ${mode === 'consonants' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}
-                        >
-                            Konsonanten
-                        </button>
-                    </div>
-                )}
-
-                <div className="flex items-center gap-4 ml-auto">
-                    {/* Words Count Control */}
-                    <div className="flex items-center gap-2 bg-slate-50 px-2 py-1 rounded-2xl border border-slate-200 hidden lg:flex">
-                        <HorizontalLines count={2} />
-                        <button onClick={() => handleWordsCountChange(-1)} disabled={pendingWordsCount <= 2} className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 active:scale-90 transition-all shadow-sm disabled:opacity-20 ml-1">
-                            <Minus className="w-4 h-4" />
-                        </button>
-                        <div className="flex flex-col items-center min-w-[24px]">
-                            <span className={`text-xl font-black transition-colors leading-none ${pendingWordsCount !== wordsPerStage ? 'text-orange-500' : 'text-slate-800'}`}>
-                                {pendingWordsCount}
-                            </span>
+                        )}
+                        <div className="flex items-center gap-2 bg-slate-50 px-2 py-1 rounded-2xl border border-slate-200 hidden lg:flex">
+                            <HorizontalLines count={2} />
+                            <button onClick={() => handleWordsCountChange(-1)} disabled={pendingWordsCount <= 2} className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 active:scale-90 transition-all shadow-sm disabled:opacity-20 ml-1">
+                                <Minus className="w-4 h-4" />
+                            </button>
+                            <div className="flex flex-col items-center min-w-[24px]">
+                                <span className={`text-xl font-black transition-colors leading-none ${pendingWordsCount !== wordsPerStage ? 'text-orange-500' : 'text-slate-800'}`}>
+                                    {pendingWordsCount}
+                                </span>
+                            </div>
+                            <button onClick={() => handleWordsCountChange(1)} disabled={pendingWordsCount >= 6} className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 active:scale-90 transition-all shadow-sm disabled:opacity-20 mr-1">
+                                <Plus className="w-4 h-4" />
+                            </button>
+                            <HorizontalLines count={5} />
                         </div>
-                        <button onClick={() => handleWordsCountChange(1)} disabled={pendingWordsCount >= 6} className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 active:scale-90 transition-all shadow-sm disabled:opacity-20 mr-1">
-                            <Plus className="w-4 h-4" />
-                        </button>
-                        <HorizontalLines count={5} />
-                    </div>
-
-                    <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 h-10 rounded-lg">
-                        <span className="text-xs font-bold text-slate-500">A</span>
-                        <input type="range" min="24" max="100" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-32 accent-blue-600 rounded-lg cursor-pointer" />
-                        <span className="text-xl font-bold text-slate-500">A</span>
-                    </div>
-                    <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 shadow-sm transition-transform hover:scale-105 flex items-center justify-center min-touch-target sticky right-0"><Icons.X size={24} /></button>
-                </div>
-            </div>
-
-            {/* Progress Bar */}
-            <div className="px-6 py-2 bg-white border-b border-slate-200">
-                <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                    <div
-                        className="bg-gradient-to-r from-blue-500 to-cyan-500 h-full rounded-full transition-all duration-500"
-                        style={{ width: `${(groups.length > 0 ? ((currentGroupIdx + 1) / groups.length) * 100 : 0)}%` }}
-                    ></div>
-                </div>
-            </div>
+                    </>
+                }
+            />
 
             <div className={`flex-1 flex overflow-hidden bg-white/50 ${isInitialSound ? 'flex flex-row-reverse' : ''}`}>
                 {/* Fixed Layout: Centering wrapper that allows proper scrolling without top-clipping - CHANGED: justify-start and more padding */}
@@ -744,7 +712,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
 
                     {groupSolved && currentGroupIdx < groups.length - 1 && (
                         <div className="mt-4 flex flex-col items-center">
-                            <button onClick={() => { setCurrentGroupIdx(prev => prev + 1); setGroupSolved(false); }} className="px-8 py-4 bg-green-500 text-white rounded-2xl font-bold shadow-lg hover:bg-green-600 hover:scale-105 transition-all flex items-center gap-2 text-lg">
+                            <button onClick={() => { setCurrentGroupIdx(prev => prev + 1); setGroupSolved(false); }} className="px-8 py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg hover:bg-blue-700 hover:scale-105 transition-all flex items-center gap-2 text-lg">
                                 weiter <Icons.ArrowRight size={20} />
                             </button>
                         </div>

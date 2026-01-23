@@ -514,7 +514,7 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                 <div className="flex items-center gap-6 w-full md:w-auto justify-between md:justify-start">
                     <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
                         <Icons.Table className="text-blue-600" size={32} />
-                        {title || "Wörterliste/Tabelle"}
+                        {title || "Tabelle"}
                     </h2>
 
                     {/* Column Controls */}
@@ -568,11 +568,11 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                                 }
                                 setSortByColor(!sortByColor);
                             }}
-                            className={`flex items-center gap-2 px-4 h-12 rounded-xl font-bold transition-all text-sm min-touch-target ${sortByColor ? 'bg-indigo-100 text-indigo-700 shadow-inner' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                            className={`flex items-center gap-2 px-4 h-12 rounded-xl font-bold transition-all text-sm min-touch-target leading-[1.1] text-center ${sortByColor ? 'bg-indigo-100 text-indigo-700 shadow-inner' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
                             title="für jede Farbe eine Spalte erzeugen"
                         >
                             <Icons.Palette size={20} />
-                            nach Farben sortieren
+                            nach Farbe sortieren
                         </button>
 
                         {showSortAlert && (

@@ -1,6 +1,6 @@
 import React from 'react';
 
-export const Space = React.memo(({ id, content, index, color, onMouseDown, onMouseEnter, isTextMarkerMode, isReadingMode, wordSpacing = 0, fontSize, colorPalette, letterSpacing = 0, lineHeight = 1.3 }) => {
+export const Space = React.memo(({ id, content, index, color, onMouseDown, onMouseEnter, isTextMarkerMode, isReadingMode, wordSpacing = 0, fontSize, colorPalette, letterSpacing = 0, lineHeight = 1.4 }) => {
     // Helper to resolve color palette indices
     const resolveColor = (colorCode) => {
         if (!colorCode) return 'transparent';

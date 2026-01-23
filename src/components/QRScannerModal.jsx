@@ -35,23 +35,9 @@ export const QRScannerModal = ({ onClose, onScanSuccess }) => {
             try {
                 const devices = await Html5Qrcode.getCameras();
                 if (devices && devices.length) {
-                    // Filter for back cameras if possible
-                    const backCameras = devices.filter(d =>
-                        d.label.toLowerCase().includes('back') ||
-                        d.label.toLowerCase().includes('rear') ||
-                        d.label.toLowerCase().includes('environment')
-                    );
-
-                    // If we found back cameras, use those. Otherwise use all.
-                    // The user prefers to NOT see front cameras if possible.
-                    const targetCameras = backCameras.length > 0 ? backCameras : devices;
-                    setCameras(targetCameras);
-
-                    // Select the first one by default
-                    if (targetCameras.length > 0) {
-                        setSelectedCameraId(targetCameras[0].id);
-                        setCameraLabel(targetCameras[0].label);
-                    }
+                    setCameras(devices);
+                    // Do NOT auto-select a specific ID. Let the scanner use 'environment' preference by default.
+                    // Only if the user manually switches do we lock to an ID.
                 }
             } catch (e) {
                 console.error("Error enumerating cameras:", e);
@@ -63,8 +49,22 @@ export const QRScannerModal = ({ onClose, onScanSuccess }) => {
     const handleSwitchCamera = () => {
         if (cameras.length <= 1) return;
 
-        const currentIndex = cameras.findIndex(c => c.id === selectedCameraId);
-        const nextIndex = (currentIndex + 1) % cameras.length;
+        // If we were using default (null), find which one is likely active or just start from 0?
+        // It's hard to know which one 'environment' picked without querying the running track, 
+        // but for simplicity, if we are null, we start toggling from index 0.
+
+        let nextIndex = 0;
+        if (selectedCameraId) {
+            const currentIndex = cameras.findIndex(c => c.id === selectedCameraId);
+            nextIndex = (currentIndex + 1) % cameras.length;
+        } else {
+            // If currently default/environment, user wants to switch. 
+            // Ideally we switch to the "User" (Front) camera if we were on Back. 
+            // typically device 0 is back? device 1 is front? It varies.
+            // Let's just cycle through available list.
+            nextIndex = 0;
+        }
+
         const nextCamera = cameras[nextIndex];
 
         setSelectedCameraId(nextCamera.id);
@@ -93,7 +93,11 @@ export const QRScannerModal = ({ onClose, onScanSuccess }) => {
         return null;
     };
 
+    const hasScannedRef = useRef(false);
+
     const handleScanResult = (decodedText, html5QrCode) => {
+        if (hasScannedRef.current) return;
+
         const multiPart = parseMultiPart(decodedText);
 
         const killCameraTracks = () => {
@@ -149,18 +153,24 @@ export const QRScannerModal = ({ onClose, onScanSuccess }) => {
                     for (let i = 1; i <= newState.total; i++) {
                         combined += newState.parts[i] || '';
                     }
-                    setIsScanning(false);
-                    killCameraTracks(); // Nuclear hardware stop
-                    // Heavy delay (800ms) for Surface hardware to register shutdown before unmount
-                    setTimeout(() => onScanSuccess(combined), 800);
+                    if (!hasScannedRef.current) {
+                        hasScannedRef.current = true;
+                        setIsScanning(false);
+                        killCameraTracks(); // Nuclear hardware stop
+                        // Heavy delay (800ms) for Surface hardware to register shutdown before unmount
+                        setTimeout(() => onScanSuccess(combined), 800);
+                    }
                     return null;
                 }
                 return newState;
             });
         } else {
-            setIsScanning(false);
-            killCameraTracks();
-            setTimeout(() => onScanSuccess(decodedText), 800);
+            if (!hasScannedRef.current) {
+                hasScannedRef.current = true;
+                setIsScanning(false);
+                killCameraTracks();
+                setTimeout(() => onScanSuccess(decodedText), 800);
+            }
         }
     };
 

@@ -112,7 +112,7 @@ export const CaseExerciseView = ({ text, settings, setSettings, onClose, title }
 
 
     return (
-        <div className="fixed inset-0 z-[100] bg-slate-50 flex flex-col modal-animate font-sans select-none">
+        <div className="fixed inset-0 z-[100] bg-slate-50 flex flex-col modal-animate font-sans">
             {showReward && (
                 <div className="fixed inset-0 z-[200] pointer-events-none flex items-center justify-center">
                     <div className="fixed inset-0 bg-white/60 backdrop-blur-[2px]"></div>
@@ -161,45 +161,45 @@ export const CaseExerciseView = ({ text, settings, setSettings, onClose, title }
                 </div>
             </div>
 
-            <div className={`flex-1 overflow-y-auto custom-scroll p-4 md:p-8 flex flex-col items-center min-h-0 ${isShaking ? 'shake' : ''}`}>
-                <div className="w-full max-w-5xl bg-white rounded-[2.5rem] shadow-xl border border-slate-100 p-12 md:p-16 mb-24 relative overflow-hidden min-h-[60vh]">
-                    {/* Background indicator for success */}
-                    {checkResults?.allCorrect && (
-                        <div className="absolute inset-0 bg-green-50/50 pointer-events-none animate-fadeIn" />
-                    )}
+            <div className="flex-1 overflow-y-auto custom-scroll relative">
+                <div className={`min-h-full flex flex-col items-center p-4 md:p-8 ${isShaking ? 'shake' : ''}`}>
+                    <div className="w-full max-w-5xl bg-white rounded-[2.5rem] shadow-xl border border-slate-100 p-12 md:p-16 mb-24 relative overflow-hidden min-h-[60vh]">
+                        {/* Background indicator for success */}
+                        {checkResults?.allCorrect && (
+                            <div className="absolute inset-0 bg-green-50/50 pointer-events-none animate-fadeIn" />
+                        )}
 
-                    <div className="flex flex-wrap items-baseline gap-x-1 gap-y-4 relative z-10" style={{ fontSize: `${settings.fontSize}px`, fontFamily: settings.fontFamily, lineHeight: 1.8 }}>
-                        {segments.map((seg) => {
-                            if (!seg.isWord) {
-                                return <span key={seg.idx} className="text-slate-400 whitespace-pre-wrap">{seg.content}</span>;
-                            }
+                        <div className="flex flex-wrap items-baseline gap-x-1 gap-y-4 relative z-10 select-none" style={{ fontSize: `${settings.fontSize}px`, fontFamily: settings.fontFamily, lineHeight: 1.8 }}>
+                            {segments.map((seg) => {
+                                if (!seg.isWord) {
+                                    return <span key={seg.idx} className="text-slate-400 whitespace-pre-wrap">{seg.content}</span>;
+                                }
 
-                            const state = wordStates[seg.idx];
-                            const display = getDisplayWord(seg.content, state);
-                            const isCorrect = checkResults?.correctIndices.has(seg.idx);
-                            const hasChecked = checkResults !== null;
+                                const state = wordStates[seg.idx];
+                                const display = getDisplayWord(seg.content, state);
+                                const isCorrect = checkResults?.correctIndices.has(seg.idx);
+                                const hasChecked = checkResults !== null;
 
-                            return (
-                                <span
-                                    key={seg.idx}
-                                    onClick={() => handleWordClick(seg.idx)}
-                                    className={`inline-flex items-center rounded-xl transition-all duration-300 cursor-pointer px-1 ${hasChecked ? (isCorrect ? 'bg-green-100 text-green-900 border-green-200 ring-2 ring-green-400/20' : 'bg-slate-50 border-slate-200') : 'hover:bg-slate-50'}`}
-                                >
-                                    {display.split('').map((char, cIdx) => (
-                                        <span
-                                            key={cIdx}
-                                            className={`px-px rounded-md transition-all font-bold ${cIdx === 0 ? 'text-blue-600' : 'text-slate-800'}`}
-                                        >
-                                            {char}
-                                        </span>
-                                    ))}
-                                </span>
-                            );
-                        })}
+                                return (
+                                    <span
+                                        key={seg.idx}
+                                        onClick={() => handleWordClick(seg.idx)}
+                                        className={`inline-flex items-center rounded-xl transition-all duration-300 cursor-pointer px-1 ${hasChecked ? (isCorrect ? 'bg-green-100 text-green-900 border-green-200 ring-2 ring-green-400/20' : 'bg-slate-50 border-slate-200') : 'hover:bg-slate-50'}`}
+                                    >
+                                        {display.split('').map((char, cIdx) => (
+                                            <span
+                                                key={cIdx}
+                                                className={`px-px rounded-md transition-all font-bold ${cIdx === 0 ? 'text-blue-600' : 'text-slate-800'}`}
+                                            >
+                                                {char}
+                                            </span>
+                                        ))}
+                                    </span>
+                                );
+                            })}
+                        </div>
                     </div>
                 </div>
-
-                {/* Footer for Check Button */}
             </div>
             <div className="p-6 bg-white border-t border-slate-200 flex justify-center gap-4 shrink-0">
                 <button

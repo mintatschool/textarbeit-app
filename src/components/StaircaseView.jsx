@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Icons } from './Icons';
 import { EmptyStateMessage } from './EmptyStateMessage';
 import { speak } from '../utils/speech';
+import { ExerciseHeader } from './ExerciseHeader';
 
 // German letter clusters that should not be split
 const LETTER_CLUSTERS = [
@@ -104,76 +105,47 @@ export const StaircaseView = ({ words, settings, setSettings, onClose, title }) 
 
     return (
         <div className="fixed inset-0 z-[100] bg-gradient-to-br from-indigo-50 to-purple-50 flex flex-col modal-animate font-sans">
-            {/* Header */}
-            <div className="bg-white px-6 py-4 shadow-sm flex justify-between items-center z-10 shrink-0 flex-wrap gap-4">
-                <div className="flex items-center gap-4">
-                    <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                        <Icons.Stairs className="text-blue-600" /> {title || "Treppenwörter"}
-                    </h2>
-                    <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-bold text-sm">
-                        {currentIndex + 1} / {highlightedWords.length}
-                    </span>
-                </div>
-
-                <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-4 h-10 rounded-lg">
-                        <span className="text-xs font-bold text-slate-500">A</span>
-                        <input
-                            type="range"
-                            min="32"
-                            max="120"
-                            value={settings.fontSize}
-                            onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })}
-                            className="w-32 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer"
-                        />
-                        <span className="text-xl font-bold text-slate-500">A</span>
-                    </div>
-                    <button
-                        onClick={onClose}
-                        className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 shadow-sm transition-transform hover:scale-105 flex items-center justify-center min-touch-target sticky right-0"
-                    >
-                        <Icons.X size={24} />
-                    </button>
-                </div>
-            </div>
-
-            {/* Progress Bar */}
-            <div className="px-6 py-2 bg-white border-b border-slate-200">
-                <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                    <div
-                        className="bg-gradient-to-r from-blue-500 to-cyan-500 h-full rounded-full transition-all duration-500"
-                        style={{ width: `${progress}%` }}
-                    ></div>
-                </div>
-            </div>
+            <ExerciseHeader
+                title={title || "Treppenwörter"}
+                icon={Icons.Stairs}
+                current={currentIndex + 1}
+                total={highlightedWords.length}
+                progressPercentage={progress}
+                settings={settings}
+                setSettings={setSettings}
+                onClose={onClose}
+                sliderMin={32}
+                sliderMax={120}
+            />
 
             {/* Main Content */}
             <div className="flex-1 overflow-y-auto custom-scroll bg-white/50">
                 <div className="min-h-full flex flex-col items-center justify-center p-8">
-                    <div className="mb-8">
-                        <button
-                            onClick={() => speak(currentWord.word)}
-                            className="w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all ring-4 ring-white/50 shrink-0"
-                            title="Wort anhören"
-                        >
-                            <Icons.Volume2 size={24} />
-                        </button>
-                    </div>
                     <div className="bg-white rounded-2xl shadow-xl p-8 max-w-2xl w-full">
                         <div className="flex flex-col items-start gap-1">
                             {staircaseLines.map((line, idx) => (
-                                <div
-                                    key={idx}
-                                    className="text-slate-800 font-bold transition-all duration-300 animate-[fadeInUp_0.3s_ease-out]"
-                                    style={{
-                                        fontFamily: settings.fontFamily,
-                                        fontSize: `${settings.fontSize}px`,
-                                        letterSpacing: '0.3em',
-                                        animationDelay: `${idx * 0.05}s`,
-                                        animationFillMode: 'backwards'
-                                    }}
-                                >
-                                    {line}
+                                <div key={idx} className="w-full flex justify-between items-center group">
+                                    <div
+                                        className="text-slate-800 font-bold transition-all duration-300 animate-[fadeInUp_0.3s_ease-out]"
+                                        style={{
+                                            fontFamily: settings.fontFamily,
+                                            fontSize: `${settings.fontSize}px`,
+                                            letterSpacing: '0.3em',
+                                            animationDelay: `${idx * 0.05}s`,
+                                            animationFillMode: 'backwards'
+                                        }}
+                                    >
+                                        {line}
+                                    </div>
+                                    {idx === staircaseLines.length - 1 && (
+                                        <button
+                                            onClick={() => speak(currentWord.word)}
+                                            className="w-12 h-12 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all ring-4 ring-white/50 shrink-0"
+                                            title="Wort anhören"
+                                        >
+                                            <Icons.Volume2 size={24} />
+                                        </button>
+                                    )}
                                 </div>
                             ))}
                         </div>
@@ -182,18 +154,18 @@ export const StaircaseView = ({ words, settings, setSettings, onClose, title }) 
             </div>
 
             {/* Navigation */}
-            <div className="p-6 bg-white border-t border-slate-200 flex justify-center gap-4">
+            <div className="p-3 bg-white border-t border-slate-200 flex justify-center gap-4">
                 <button
                     onClick={prevWord}
                     disabled={currentIndex === 0}
-                    className="px-6 py-3 bg-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-2 min-touch-target"
+                    className="px-6 py-2 bg-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-2 min-touch-target"
                 >
                     <Icons.ArrowRight size={20} className="rotate-180" /> Zurück
                 </button>
                 <button
                     onClick={nextWord}
                     disabled={currentIndex === highlightedWords.length - 1}
-                    className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-2 min-touch-target"
+                    className="px-6 py-2 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-2 min-touch-target"
                 >
                     Weiter <Icons.ArrowRight size={20} />
                 </button>

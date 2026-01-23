@@ -67,17 +67,51 @@ export const speak = (text) => {
 const speakSynthesis = (text) => {
     if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
-        const u = new SpeechSynthesisUtterance(text);
-        u.lang = 'de-DE';
-        u.rate = 0.8;
 
-        // Try to find a good German voice
-        const voices = window.speechSynthesis.getVoices();
-        const preferredVoice = voices.find(v =>
-            v.lang.includes('de') && (v.name.includes('Google') || v.name.includes('Female'))
-        ) || voices.find(v => v.lang.includes('de')) || null;
+        // Ensure voices are loaded (Chrome/Safari sometimes need a moment or an event)
+        let voices = window.speechSynthesis.getVoices();
 
-        u.voice = preferredVoice;
-        window.speechSynthesis.speak(u);
+        // Retry getting voices if empty (sometimes happens on first load)
+        if (voices.length === 0) {
+            window.speechSynthesis.onvoiceschanged = () => {
+                voices = window.speechSynthesis.getVoices();
+                doSpeak(text, voices);
+            };
+            return;
+        }
+
+        doSpeak(text, voices);
     }
+};
+
+const doSpeak = (text, voices) => {
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'de-DE';
+    u.rate = 0.8; // Default rate
+
+    // Filter for German voices
+    const germanVoices = voices.filter(v => v.lang.startsWith('de'));
+
+    if (germanVoices.length > 0) {
+        // defined priority via keywords
+        // 1. "Google" often sounds good on Android/Desktop Chrome
+        // 2. "Siri" or "Enhanced" or "Premium" are usually high quality on iOS/macOS
+        // 3. Avoid "Compact" if possible
+
+        const highQualityVoice = germanVoices.find(v =>
+            (v.name.includes('Google') || v.name.includes('Anna') || v.name.includes('Siri') || v.name.includes('Premium') || v.name.includes('Enhanced'))
+            && !v.name.includes('Compact')
+        );
+
+        const standardVoice = germanVoices.find(v => !v.name.includes('Compact'));
+
+        // Fallback to any German voice
+        u.voice = highQualityVoice || standardVoice || germanVoices[0];
+
+        // Slight rate adjustment if we are forced to use a compact voice or if on iOS to be safe?
+        // Actually, keeping 0.8 is fine if the voice is good. 
+        // If we only found a compact voice, maybe 0.9 is safer to avoid artifacts, but let's stick to the better selection first.
+    }
+
+    window.speechSynthesis.speak(u);
 };

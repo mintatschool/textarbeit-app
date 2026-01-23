@@ -5,6 +5,8 @@ import { shuffleArray } from '../utils/arrayUtils';
 import { ProgressBar } from './ProgressBar';
 import { EmptyStateMessage } from './EmptyStateMessage';
 
+import { ExerciseHeader } from './ExerciseHeader';
+
 // Pastel colors for words
 const WORD_COLORS = [
     'bg-red-100',
@@ -214,52 +216,18 @@ export const SentenceShuffleView = ({ text, settings, setSettings, onClose, titl
                 </div>
             )}
 
-            {/* Header */}
-            <div className="bg-white px-6 py-4 shadow-sm flex justify-between items-center z-10 shrink-0 flex-wrap gap-4">
-                <div className="flex items-center gap-4">
-                    <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                        <Icons.Shuffle className="text-blue-600" /> {title || "Schüttelsätze"}
-                    </h2>
-                    <div className="flex items-center gap-2">
-                        {sentences.map((_, idx) => (
-                            <div
-                                key={idx}
-                                className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-all ${completedSentences.has(idx)
-                                    ? 'bg-green-500 text-white'
-                                    : idx === currentIndex
-                                        ? 'bg-blue-600 text-white scale-110 shadow-md'
-                                        : 'bg-gray-100 text-gray-300'
-                                    }`}
-                            >
-                                {completedSentences.has(idx) ? <Icons.Check size={16} /> : idx + 1}
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-4 h-10 rounded-lg">
-                        <span className="text-xs font-bold text-slate-500">A</span>
-                        <input
-                            type="range"
-                            min="20"
-                            max="128"
-                            value={settings.fontSize}
-                            onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })}
-                            className="w-32 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer"
-                        />
-                        <span className="text-xl font-bold text-slate-500">A</span>
-                    </div>
-                    <button
-                        onClick={onClose}
-                        className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 shadow-sm transition-transform hover:scale-105 flex items-center justify-center min-touch-target sticky right-0"
-                    >
-                        <Icons.X size={24} />
-                    </button>
-                </div>
-            </div>
-
-            <ProgressBar progress={progress} />
+            <ExerciseHeader
+                title={title || "Schüttelsätze"}
+                icon={Icons.Shuffle}
+                current={currentIndex + 1}
+                total={sentences.length}
+                progressPercentage={progress}
+                settings={settings}
+                setSettings={setSettings}
+                onClose={onClose}
+                sliderMin={20}
+                sliderMax={128}
+            />
 
             {/* Main Content */}
             <div className="flex-1 flex flex-col items-center justify-center p-6 overflow-y-auto custom-scroll">
@@ -324,7 +292,7 @@ export const SentenceShuffleView = ({ text, settings, setSettings, onClose, titl
                 ) : (
                     <button
                         onClick={nextSentence}
-                        className="px-10 py-4 bg-green-500 text-white rounded-xl font-bold text-lg shadow-lg hover:bg-green-600 active:scale-95 transition-all flex items-center gap-2 pop-animate min-touch-target"
+                        className="px-10 py-4 bg-blue-600 text-white rounded-xl font-bold text-lg shadow-lg hover:bg-blue-700 active:scale-95 transition-all flex items-center gap-2 pop-animate min-touch-target"
                     >
                         {currentIndex < sentences.length - 1 ? 'Nächster Satz' : 'Fertig!'}
                         <Icons.ArrowRight size={24} />

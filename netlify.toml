@@ -12,6 +12,11 @@
   [headers.values]
     X-Robots-Tag = "noindex"
 
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
 [[edge_functions]]
   function = "auth"
   path = "/*"

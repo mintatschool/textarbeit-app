@@ -3,6 +3,7 @@ import { Icons } from './Icons';
 import { EmptyStateMessage } from './EmptyStateMessage';
 
 import { shuffleArray } from '../utils/arrayUtils';
+import { ExerciseHeader } from './ExerciseHeader';
 
 export const SyllablePuzzleView = ({ words, settings, setSettings, onClose, title }) => {
     if (!words || words.length === 0) return (<div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col items-center justify-center p-6"><EmptyStateMessage onClose={onClose} secondStepText="Wörter zum Puzzeln markieren." /></div>);
@@ -113,20 +114,18 @@ export const SyllablePuzzleView = ({ words, settings, setSettings, onClose, titl
                     </div>
                 </div>
             )}
-            <div className="bg-white px-6 py-4 shadow-sm flex justify-between items-center z-10 shrink-0 flex-wrap gap-4">
-                <div className="flex items-center gap-4">
-                    <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2"><Icons.Puzzle className="text-purple-600" /> {title || "Silben-Puzzle"}</h2>
-                    <span className="bg-slate-100 px-3 py-1 rounded-full text-slate-500 font-medium text-sm">{poolPieces.length} Teile übrig</span>
-                </div>
-                <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 h-10 rounded-lg">
-                        <span className="text-xs font-bold text-slate-500">A</span>
-                        <input type="range" min="16" max="120" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-32 accent-blue-600 rounded-lg cursor-pointer" />
-                        <span className="text-xl font-bold text-slate-500">A</span>
-                    </div>
-                    <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 shadow-sm transition-transform hover:scale-105 flex items-center justify-center min-touch-target sticky right-0"><Icons.X size={24} /></button>
-                </div>
-            </div>
+            <ExerciseHeader
+                title={title || "Silben-Puzzle"}
+                icon={Icons.Puzzle}
+                current={Object.keys(placedPieces).length}
+                total={poolPieces.length + Object.keys(placedPieces).length}
+                progressPercentage={(Object.keys(placedPieces).length / (poolPieces.length + Object.keys(placedPieces).length)) * 100}
+                settings={settings}
+                setSettings={setSettings}
+                onClose={onClose}
+                sliderMin={16}
+                sliderMax={120}
+            />
             <div className="flex-1 overflow-y-auto custom-scroll p-6 bg-slate-50/50">
                 <div className="max-w-6xl mx-auto grid gap-6 pb-12" style={{ gridTemplateColumns: settings.fontSize > 50 ? '1fr' : 'repeat(auto-fit, minmax(350px, 1fr))' }}>
                     {puzzleWords.map((word) => {
