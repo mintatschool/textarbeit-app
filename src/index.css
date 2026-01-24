@@ -555,3 +555,36 @@
         display: block !important;
     }
 }
+
+/* WordSortingView Animations */
+@keyframes conveyor-belt {
+    0% {
+        transform: translateX(0);
+    }
+
+    100% {
+        transform: translateX(-88px);
+    }
+}
+
+.animate-conveyor-belt {
+    animation: conveyor-belt linear infinite;
+}
+
+@keyframes spin-centered {
+    from {
+        transform: translateY(-50%) rotate(0deg);
+    }
+
+    to {
+        transform: translateY(-50%) rotate(360deg);
+    }
+}
+
+.animate-spin-slow {
+    animation: spin-centered 3s linear infinite;
+}
+
+.animate-spin-slow-reverse {
+    animation: spin-centered 3s linear infinite reverse;
+}

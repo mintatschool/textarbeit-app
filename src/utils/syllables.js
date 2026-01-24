@@ -17,6 +17,10 @@ export const syllabifyImproved = (word) => {
     // if (word.length <= 3) return [word];
     const result = [];
     let buffer = "";
+
+    // Helper to identify letters vs separators
+    const isLetter = (c) => /[a-zA-ZäöüÄÖÜß]/.test(c);
+
     for (let i = 0; i < word.length; i++) {
         buffer += word[i];
         if (i >= word.length - 1) break;
@@ -24,6 +28,13 @@ export const syllabifyImproved = (word) => {
         const c0 = word[i];
         const c1 = word[i + 1];
         const c2 = word[i + 2] || "";
+
+        // Strict split on non-letter boundaries (e.g. hyphen)
+        if (!isLetter(c0) || !isLetter(c1)) {
+            result.push(buffer);
+            buffer = "";
+            continue;
+        }
 
         const v0 = isVowel(c0);
         const v1 = isVowel(c1);
@@ -78,6 +89,8 @@ export const enforceVowelRule = (word, generatedSyllables) => {
     return corrected.filter(s => s.length > 0);
 };
 
+export const COMMON_PREFIXES = ['be', 'ge', 'er', 'ver', 'zer', 'ent', 'emp', 'um', 'an', 'auf', 'aus', 'ein', 'vor', 'zu'];
+
 export const getCachedSyllables = (word, hyphenator) => {
     const cacheKey = word + (hyphenator ? '_hypher' : '_heuristic');
     if (SYLLABLE_CACHE.has(cacheKey)) return SYLLABLE_CACHE.get(cacheKey);
@@ -117,13 +130,15 @@ export const getCachedSyllables = (word, hyphenator) => {
                 heuristicParts[0].length === 1 &&
                 isVowel(heuristicParts[0])) {
 
-                // If standard doesn't have it, we might want to use heuristic or force the split.
-                // Simple approach: If heuristic suggests a single vowel start, trust it for that split.
+                // CHECK FOR PREFIX CONFLICT
+                // If the word starts with a common prefix, and the heuristic breaks it (e.g. u-mar-men vs um-ar-men),
+                // we should trust the standard hyphenation (which usually gets prefixes right) or at least reject the heuristic here.
+                const matchingPrefix = COMMON_PREFIXES.find(p => word.toLowerCase().startsWith(p));
+                const heuristicConflictsWithPrefix = matchingPrefix && heuristicParts[0].length < matchingPrefix.length;
 
-                // Let's reconstruct standard to see if we can inject the split.
-                // Or: simpler, if standard yields 1 part (Oma) and heuristic yields O-ma, use heuristic.
-
-                if (standardParts.length === 1 && heuristicParts.length > 1) {
+                if (heuristicConflictsWithPrefix) {
+                    s = standardParts;
+                } else if (standardParts.length === 1 && heuristicParts.length > 1) {
                     s = heuristicParts;
                 } else if (standardParts.length > 1 && standardParts[0].toLowerCase() !== heuristicParts[0].toLowerCase()) {
                     // Standard: O-ran-ge (Wait, Hypher might do O-range or Or-ange?)
@@ -149,6 +164,17 @@ export const getCachedSyllables = (word, hyphenator) => {
     }
     s = enforceVowelRule(word, s);
     s = mergeDiphthongs(s);
+
+    // Final Post-Processing: Strict Hyphen Split
+    // Ensure no syllable contains a hyphen mixed with letters.
+    // Must be done AFTER enforceVowelRule, otherwise the hyphen (having no vowel) gets merged back!
+    s = s.flatMap(part => {
+        if (part === '-') return [part];
+        if (part.includes('-')) {
+            return part.split(/(-)/).filter(p => p.length > 0);
+        }
+        return [part];
+    });
 
     SYLLABLE_CACHE.set(cacheKey, s);
     return s;

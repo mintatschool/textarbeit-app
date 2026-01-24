@@ -619,22 +619,21 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
 
                             return (
                                 <div key={word.id} className={`p-8 bg-white rounded-3xl border shadow-sm flex flex-wrap justify-center items-center gap-x-4 gap-y-4 transition-all duration-500 transform relative ${isSolved ? 'border-green-300 bg-green-50/50 scale-[1.01] shadow-md' : hasErrors ? 'border-red-400 bg-red-50/30' : 'border-slate-100 hover:border-slate-200'}`}>
-                                    <div className="flex flex-wrap justify-center gap-x-1 gap-y-4">
+                                    <div className="flex flex-wrap justify-center gap-x-1 gap-y-12">
                                         {word.syllables.map((syl, sIdx) => {
                                             const isEven = sIdx % 2 === 0;
                                             let styleClass = "";
-                                            let textClass = "";
+                                            // User Request: "Die Schrift soll sich nicht den Silbenbögen anpassen" -> Force Black for text
+                                            let textClass = "text-slate-900";
+
+                                            // Keep Block logic if enabled, but text remains black
                                             if (settings.visualType === 'block') {
                                                 styleClass = isEven ? 'bg-blue-100 border-blue-200/50' : 'bg-blue-200 border-blue-300/50';
-                                                styleClass += " border rounded px-1.5 py-0.5 mx-[1px] shadow-sm";
-                                            } else if (settings.visualType === 'black_gray') {
-                                                textClass = isEven ? "text-slate-800" : "text-slate-400";
-                                            } else {
-                                                textClass = isEven ? "text-blue-700" : "text-red-600";
+                                                styleClass += " border rounded px-1.5 py-0.5 mx-[1px]";
                                             }
 
                                             return (
-                                                <div key={sIdx} className={`relative flex items-center ${styleClass}`} style={{ fontSize: `${settings.fontSize}px`, fontFamily: settings.fontFamily }}>
+                                                <div key={sIdx} className={`relative flex items-baseline ${styleClass}`} style={{ fontSize: `${settings.fontSize}px`, fontFamily: settings.fontFamily }}>
                                                     {syl.chunks.map((chunk) => {
                                                         const isVowelChunk = [...chunk.text.toLowerCase()].some(isVowel);
                                                         const showYellowStatic = (mode === 'consonants' || isInitialSound) && isVowelChunk;
@@ -642,17 +641,35 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                                                         if (!chunk.isTarget) return (
                                                             <span
                                                                 key={chunk.id}
-                                                                className={`font-bold ${textClass} ${showYellowStatic ? 'bg-yellow-100 shadow-border-yellow text-slate-900 mx-px px-0.5 rounded-sm' : ''}`}
+                                                                className={`font-bold ${textClass} ${showYellowStatic ? 'bg-yellow-100 text-slate-900 mx-px px-0.5 rounded-sm' : ''}`}
                                                             >
                                                                 {chunk.text}
                                                             </span>
                                                         );
                                                         const placed = placedLetters[chunk.id];
-                                                        // showYellowStyle logic:
-                                                        // 1. In vowels mode: only when placed (BUT NOT in isInitialSound mode)
-                                                        // 2. In consonants mode: always for vowels as hints
-                                                        // 3. In initial sound mode: if placed and is a vowel
+
+                                                        // showYellowStyle logic (Existing):
                                                         const showYellowStyle = (!isInitialSound && mode === 'vowels' && placed) || (mode === 'consonants' && isVowelChunk) || (isInitialSound && placed && isVowelChunk);
+
+                                                        // New Color Logic for Placed Letters:
+                                                        // 1. Vowels: "so bleiben wie sie sind" -> showYellowStyle handles yellow bg/etc. Text color? 
+                                                        //    If yellow style is active, usually text-slate-900.
+                                                        // 2. Consonants: "dunkelblau".
+
+                                                        let placedTextClass = "text-blue-600"; // Default
+                                                        if (placed) {
+                                                            const isPlacedVowel = [...placed.text.toLowerCase()].some(isVowel);
+                                                            if (isPlacedVowel) {
+                                                                // Vowel -> Keep existing style (usually black on yellow or blue if not yellow)
+                                                                // If "so bleiben wie sie sind", implies assuming current behavior is correct for vowels.
+                                                                // Current behavior uses 'text-slate-900' if yellow, or 'text-blue-600' otherwise?
+                                                                // Let's stick to 'text-slate-900' if yellow.
+                                                                placedTextClass = showYellowStyle ? "text-slate-900" : "text-blue-600";
+                                                            } else {
+                                                                // Consonant -> Dark Blue
+                                                                placedTextClass = "text-blue-900";
+                                                            }
+                                                        }
 
                                                         return (
                                                             <div
@@ -662,7 +679,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                                                                 onDragLeave={(e) => { e.currentTarget.classList.remove('active-target'); }}
                                                                 onDrop={(e) => { e.currentTarget.classList.remove('active-target'); handleDrop(e, chunk.id, chunk.text); }}
                                                                 onClick={() => handleGapClick(chunk.id, chunk.text)}
-                                                                className={`relative flex items-center justify-center transition-all mx-2 rounded-t-xl gap-zone cursor-pointer 
+                                                                className={`relative flex items-center justify-center transition-all mx-2 rounded-t-xl gap-zone cursor-pointer pb-0 
                                                                     ${placed && speicherLetters.length === 0
                                                                         ? (placed.text === chunk.text
                                                                             ? (isInitialSound ? 'border-b-4 border-transparent' : 'border-2 border-green-400 bg-white/50')
@@ -679,7 +696,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                                                                         draggable
                                                                         onDragStart={(e) => handleDragStart(e, placed, 'gap', chunk.id)}
                                                                         onDragEnd={handleDragEnd}
-                                                                        className={`font-bold transition-all px-1 rounded-sm cursor-grab active:cursor-grabbing animate-[popIn_0.3s_ease-out] touch-none touch-manipulation select-none ${showYellowStyle ? 'bg-yellow-100 shadow-border-yellow text-slate-900 mx-px' : 'text-blue-600'}`}
+                                                                        className={`font-bold transition-all px-1 rounded-sm cursor-grab active:cursor-grabbing animate-[popIn_0.3s_ease-out] touch-none touch-manipulation select-none ${showYellowStyle ? 'bg-yellow-100 mx-px' : ''} ${placedTextClass}`}
                                                                     >
                                                                         {placed.text}
                                                                     </div>
@@ -690,7 +707,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                                                         );
                                                     })}
                                                     {settings.visualType === 'arc' && (
-                                                        <svg className="absolute -bottom-1 left-0 w-full h-2 pointer-events-none" viewBox="0 0 100 20" preserveAspectRatio="none"><path d="M 5 5 Q 50 20 95 5" fill="none" stroke={isEven ? '#2563eb' : '#dc2626'} strokeWidth="10" strokeLinecap="round" /></svg>
+                                                        <svg className="absolute -bottom-6 left-0 w-full h-4 pointer-events-none" viewBox="0 0 100 20" preserveAspectRatio="none"><path d="M 5 5 Q 50 20 95 5" fill="none" stroke={isEven ? '#2563eb' : '#dc2626'} strokeWidth="10" strokeLinecap="round" /></svg>
                                                     )}
                                                 </div>
                                             );
@@ -730,6 +747,9 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                     <div className="flex-1 relative overflow-y-auto custom-scroll p-4 flex flex-wrap content-start justify-center gap-3">
                         {speicherLetters.map((l) => {
                             const isVowelTile = [...l.text.toLowerCase()].some(isVowel);
+                            // Consonants dark blue in storage, Vowels keep default (slate-800 usually)
+                            const tileTextColor = isVowelTile ? 'text-slate-800' : 'text-blue-900';
+
                             return (
                                 <div
                                     key={l.poolId}
@@ -738,7 +758,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                                     onDragEnd={handleDragEnd}
                                     onClick={() => handleSpeicherLetterClick(l)}
                                     onContextMenu={(e) => e.preventDefault()}
-                                    className={`border-2 text-slate-800 font-bold rounded-2xl transition-all flex items-center justify-center p-3 cursor-grab active:cursor-grabbing hover:scale-110 bg-white border-slate-300 shadow-[0_4px_0_0_#cbd5e1] hover:shadow-[0_2px_0_0_#cbd5e1] hover:translate-y-[2px] draggable-piece ${isVowelTile ? 'bg-yellow-100 border-yellow-400' : ''} ${selectedLetter?.poolId === l.poolId ? 'selected-piece ring-4 ring-blue-500 !scale-110 z-50' : ''}`}
+                                    className={`border-2 ${tileTextColor} font-bold rounded-2xl transition-all flex items-center justify-center p-3 cursor-grab active:cursor-grabbing hover:scale-110 bg-white border-slate-300 hover:translate-y-[2px] draggable-piece ${isVowelTile ? 'bg-yellow-100 border-yellow-400' : ''} ${selectedLetter?.poolId === l.poolId ? 'selected-piece ring-4 ring-blue-500 !scale-110 z-50' : ''}`}
                                     style={{ fontSize: `${Math.max(20, settings.fontSize * 0.8)}px`, fontFamily: settings.fontFamily, minWidth: '3.5rem' }}
                                 >
                                     {l.text}

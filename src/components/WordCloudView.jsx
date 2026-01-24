@@ -283,17 +283,44 @@ export const WordCloudView = ({ words, settings, setSettings, onClose, title }) 
                                     <div className="flex flex-wrap justify-start items-center gap-1">
                                         {word.syllables.map((sylObj, sIdx) => {
                                             const isEven = sIdx % 2 === 0;
+
+                                            // 1. Determine Container Styles based on settings.visualType
+                                            let containerClasses = "flex gap-1 p-2 rounded-xl border transition-colors relative ";
+                                            let arcColor = isEven ? '#2563eb' : '#dc2626';
+
+                                            if (settings.visualType === 'block') {
+                                                containerClasses += isEven ? 'bg-blue-100 border-blue-200/50' : 'bg-blue-200 border-blue-300/50';
+                                            } else if (settings.visualType === 'arc') {
+                                                containerClasses += 'bg-transparent border-transparent pb-4'; // Extra padding for arc
+                                            } else if (settings.visualType === 'black_gray') {
+                                                containerClasses += 'bg-transparent border-transparent';
+                                            } else {
+                                                // Default fallback (e.g. if 'none') - maybe just transparent? 
+                                                // Or if user wants 'off', we still need structure.
+                                                // Default to 'block' if unsure? Or minimalistic?
+                                                // Let's stick to transparent for 'none' or others
+                                                containerClasses += 'bg-transparent border-transparent';
+                                            }
+
+                                            // 2. Determine Text Color for "Content" (Dropped items)
+                                            let contentTextColor = 'text-blue-900';
+                                            if (settings.visualType === 'black_gray') {
+                                                contentTextColor = isEven ? 'text-black' : 'text-gray-400';
+                                            }
+
                                             return (
-                                                <div key={sIdx} className={`flex gap-1 p-2 rounded-xl border transition-colors ${isEven ? 'bg-blue-100 border-blue-200/50' : 'bg-blue-200 border-blue-300/50'}`}>
+                                                <div key={sIdx} className={containerClasses}>
                                                     {sylObj.chunks.map((chunk) => {
                                                         const placed = placedChunks[chunk.id];
                                                         return (
                                                             <div key={chunk.id} onDragOver={(e) => e.preventDefault()} onDragEnter={(e) => { e.preventDefault(); e.currentTarget.classList.add('active-target') }} onDragLeave={(e) => e.currentTarget.classList.remove('active-target')} onDrop={(e) => handleDrop(e, word.id, chunk.id)} onClick={() => handleSlotClick(word.id, chunk.id)} className={`cloud-drop-target cursor-pointer ${placed ? 'filled' : ''} px-1 flex items-center justify-center transition-all ${selectedChunk && selectedChunk.wordId === word.id ? 'ring-2 ring-blue-300 ring-offset-2 animate-pulse' : ''}`} style={{ minWidth: `${Math.max(2.5, settings.fontSize * 0.08)}rem`, height: `${settings.fontSize * 1.5}px` }}>
                                                                 {placed ? (
-                                                                    <div draggable onDragStart={(e) => handleDragStart(e, placed, 'slot', chunk.id)} onDragEnd={handleDragEnd} onClick={(e) => { e.stopPropagation(); handleChunkClick(placed, 'slot', chunk.id); }} className="cursor-grab active:cursor-grabbing text-blue-900 font-bold animate-[popIn_0.3s_ease-out] touch-action-none touch-manipulation select-none touch-none flex items-stretch h-full overflow-hidden rounded-lg " style={{ fontFamily: settings.fontFamily, fontSize: `${settings.fontSize}px` }}>
+                                                                    <div draggable onDragStart={(e) => handleDragStart(e, placed, 'slot', chunk.id)} onDragEnd={handleDragEnd} onClick={(e) => { e.stopPropagation(); handleChunkClick(placed, 'slot', chunk.id); }} className={`cursor-grab active:cursor-grabbing font-bold animate-[popIn_0.3s_ease-out] touch-action-none touch-manipulation select-none touch-none flex items-stretch h-full overflow-hidden rounded-lg ${contentTextColor}`} style={{ fontFamily: settings.fontFamily, fontSize: `${settings.fontSize}px` }}>
                                                                         {placed.text.split('').map((char, cI) => {
                                                                             const isVowel = /[aeiouyäöüAEIOUYÄÖÜ]/.test(char);
-                                                                            return <span key={cI} className={`flex items-center justify-center px-1.5 min-w-[1.1ch] h-full ${showVowels && isVowel ? "bg-yellow-200 shadow-sm" : ""}`}>{char}</span>
+                                                                            // Ensure background for vowels doesn't conflict with text color mode? 
+                                                                            // User usually wants vowels highlighted if toggled.
+                                                                            return <span key={cI} className={`flex items-center justify-center px-1.5 min-w-[1.1ch] h-full ${showVowels && isVowel ? "bg-yellow-200 shadow-sm text-yellow-900" : ""}`}>{char}</span>
                                                                         })}
                                                                     </div>
                                                                 ) : (
@@ -310,6 +337,12 @@ export const WordCloudView = ({ words, settings, setSettings, onClose, title }) 
                                                             </div>
                                                         );
                                                     })}
+                                                    {/* Render Arc if needed */}
+                                                    {settings.visualType === 'arc' && (
+                                                        <svg className="absolute bottom-0 left-0 w-full h-4 pointer-events-none" viewBox="0 0 100 20" preserveAspectRatio="none">
+                                                            <path d="M 2 2 Q 50 20 98 2" fill="none" stroke={arcColor} strokeWidth="3" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+                                                        </svg>
+                                                    )}
                                                 </div>
                                             );
                                         })}

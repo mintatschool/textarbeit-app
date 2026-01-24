@@ -100,7 +100,9 @@ export const Toolbar = ({
     setShowGapSentences,   // New: Missing words in sentences
     setShowGapText,        // New: Full text with gaps
     setShowFindLetters,    // New: Find letters exercise
+
     setShowSpeedReading,   // New: Speed reading exercise
+    setShowWordSorting,    // New: Word sorting exercise
 
 
     // Color Props
@@ -502,6 +504,9 @@ export const Toolbar = ({
                 </MenuItem>
                 <MenuItem onClick={() => setShowSpeedReading(true)} icon={<Icons.Zap size={20} className="text-purple-600" />}>
                     Blitzlesen
+                </MenuItem>
+                <MenuItem onClick={() => setShowWordSorting(true)} icon={<Icons.WordSorting size={20} className="text-blue-600" />}>
+                    Wörter sortieren
                 </MenuItem>
                 <MenuItem onClick={() => setShowPuzzleTestTwo(true)} icon={<Icons.Silbenpuzzle1 size={28} className="text-blue-600" />}>
                     Silbenpuzzle 1

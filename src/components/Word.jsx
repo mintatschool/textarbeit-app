@@ -500,91 +500,103 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
         >
             {renderPrefix()}
             <span className={`inline-flex items-baseline ${markerClass} ${isSelection && !isNeutralMarked ? 'animate-pulse bg-slate-100 rounded-lg' : ''}`} style={{ backgroundColor: 'transparent', marginLeft: '0', marginRight: '0', boxShadow: boxShadowStyle, ...markerStyle }}>
-                {syllables.map((syl, sIdx) => {
-                    const currentStart = charCounter;
-                    charCounter += syl.length;
-                    const isEven = sIdx % 2 === 0;
-                    let arcColor = isEven ? '#2563eb' : '#dc2626';
-                    let bgClass = isEven ? 'bg-blue-100' : 'bg-blue-200';
+                {(() => {
+                    let visualCounter = 0;
+                    const visualIndices = syllables.map(s => {
+                        const hasLetters = /[a-zA-Z\u00C0-\u017F]/.test(s);
+                        return hasLetters ? visualCounter++ : -1;
+                    });
 
-                    return (
+                    return syllables.map((syl, sIdx) => {
+                        const currentStart = charCounter;
+                        charCounter += syl.length;
 
-                        <span key={sIdx} className={`inline-block relative leading-none ${settings.visualType === 'block' ? ('rounded ' + bgClass + ' border border-blue-200/50 shadow-sm') : ''}`} style={settings.visualType === 'block' ? { marginLeft: '0.02em', marginRight: '0.02em', paddingLeft: '0.02em', paddingRight: '0.02em', minHeight: '1.2em', display: 'inline-flex', alignItems: 'flex-end', paddingBottom: '0.15em' } : { height: '1.1em', marginLeft: '0', marginRight: '0' }}>
-                            <span className={`inline-block relative z-10 ${settings.visualType === 'black_gray' ? (isEven ? 'text-black' : 'text-gray-400') : ''}`}>
-                                {syl.split('').map((char, cIdx) => {
-                                    const globalIndex = startIndex + currentStart + cIdx;
-                                    const isYellow = wordColors && wordColors[globalIndex] === 'yellow';
+                        const vIdx = visualIndices[sIdx];
+                        const isVisualSyllable = vIdx !== -1;
+                        const isEven = isVisualSyllable ? vIdx % 2 === 0 : false;
 
-                                    const glueLeft = highlightedIndices.has(globalIndex - 1) && clusterConnections.has(globalIndex - 1);
-                                    const glueRight = highlightedIndices.has(globalIndex + 1) && clusterConnections.has(globalIndex);
+                        let arcColor = isEven ? '#2563eb' : '#dc2626';
+                        let bgClass = isEven ? 'bg-blue-100' : 'bg-blue-200';
 
-                                    let charStyleClass = 'text-slate-900';
-                                    if (settings.visualType === 'black_gray') charStyleClass = isEven ? 'text-black' : 'text-gray-400';
+                        return (
+                            <span key={sIdx} className={`inline-block relative leading-none ${settings.visualType === 'block' ? ('rounded ' + bgClass + ' border border-blue-200/50 shadow-sm') : ''}`} style={settings.visualType === 'block' ? { marginLeft: '0.02em', marginRight: '0.02em', paddingLeft: '0.02em', paddingRight: '0.02em', minHeight: '1.2em', display: 'inline-flex', alignItems: 'flex-end', paddingBottom: '0.15em' } : { height: '1.1em', marginLeft: '0', marginRight: '0' }}>
+                                <span className={`inline-block relative z-10 ${settings.visualType === 'black_gray' ? (isEven ? 'text-black' : 'text-gray-400') : ''}`}>
+                                    {syl.split('').map((char, cIdx) => {
+                                        const globalIndex = startIndex + currentStart + cIdx;
+                                        const isYellow = wordColors && wordColors[globalIndex] === 'yellow';
 
-                                    let rounded = 'rounded-sm';
-                                    let customClasses = 'cursor-pointer';
-                                    let style = { paddingLeft: '0.02em', paddingRight: '0.02em' };
+                                        const glueLeft = highlightedIndices.has(globalIndex - 1) && clusterConnections.has(globalIndex - 1);
+                                        const glueRight = highlightedIndices.has(globalIndex + 1) && clusterConnections.has(globalIndex);
 
-                                    if (isYellow) {
-                                        style = { backgroundColor: '#feffc7', paddingTop: '0.01em', paddingBottom: '0.04em', marginTop: '-0.01em', marginBottom: '-0.02em' };
-                                        customClasses += ' bg-yellow-100';
+                                        let charStyleClass = 'text-slate-900';
+                                        if (settings.visualType === 'black_gray') charStyleClass = isEven ? 'text-black' : 'text-gray-400';
 
-                                        const simpleLeft = wordColors && wordColors[globalIndex - 1] === 'yellow';
-                                        const simpleRight = wordColors && wordColors[globalIndex + 1] === 'yellow';
+                                        let rounded = 'rounded-sm';
+                                        let customClasses = 'cursor-pointer';
+                                        let style = { paddingLeft: '0.02em', paddingRight: '0.02em' };
 
-                                        if (simpleLeft && simpleRight) {
-                                            rounded = 'rounded-none';
-                                            customClasses += ' shadow-border-yellow-mid';
-                                        } else if (simpleLeft) {
-                                            rounded = 'rounded-r-md rounded-l-none';
-                                            customClasses += ' shadow-border-yellow-right';
-                                        } else if (simpleRight) {
-                                            rounded = 'rounded-l-md rounded-r-none';
-                                            customClasses += ' shadow-border-yellow-left';
-                                        } else {
-                                            rounded = 'rounded-md';
-                                            customClasses += ' shadow-border-yellow';
+                                        if (isYellow) {
+                                            style = { backgroundColor: '#feffc7', paddingTop: '0.01em', paddingBottom: '0.04em', marginTop: '-0.01em', marginBottom: '-0.02em' };
+                                            customClasses += ' bg-yellow-100';
+
+                                            const simpleLeft = wordColors && wordColors[globalIndex - 1] === 'yellow';
+                                            const simpleRight = wordColors && wordColors[globalIndex + 1] === 'yellow';
+
+                                            if (simpleLeft && simpleRight) {
+                                                rounded = 'rounded-none';
+                                                customClasses += ' shadow-border-yellow-mid';
+                                            } else if (simpleLeft) {
+                                                rounded = 'rounded-r-md rounded-l-none';
+                                                customClasses += ' shadow-border-yellow-right';
+                                            } else if (simpleRight) {
+                                                rounded = 'rounded-l-md rounded-r-none';
+                                                customClasses += ' shadow-border-yellow-left';
+                                            } else {
+                                                rounded = 'rounded-md';
+                                                customClasses += ' shadow-border-yellow';
+                                            }
                                         }
-                                    }
 
-                                    const shouldHideLetter = isYellow && hideYellowLetters;
+                                        const shouldHideLetter = isYellow && hideYellowLetters;
 
-                                    return (
-                                        <span
-                                            key={cIdx}
-                                            data-paint-index={globalIndex}
-                                            onMouseDown={(e) => {
-                                                // Removed e.stopPropagation() to allow drag-and-drop bubbling
-                                            }}
-                                            onClick={(e) => {
-                                                // Prevent highlighting in Marker/Pen/Reading modes
-                                                if (isTextMarkerMode || activeTool === 'pen' || isReadingMode) return;
-                                                handleInteraction(e, globalIndex);
-                                            }}
-                                            className={`${customClasses} ${rounded} inline-block leading-none ${shouldHideLetter ? 'blur-letter' : ''}`}
-                                            style={style}
-                                            onMouseEnter={(e) => {
-                                                if ((activeTool === 'pen' || isTextMarkerMode) && onMouseEnter) {
-                                                    onMouseEnter(globalIndex, e);
-                                                }
-                                            }}
-                                            onPointerEnter={(e) => {
-                                                if ((activeTool === 'pen' || isTextMarkerMode) && onMouseEnter && e.buttons === 1) {
-                                                    onMouseEnter(globalIndex, e);
-                                                }
-                                            }}
-                                        >
-                                            <span className={shouldHideLetter ? 'blur-letter-content' : ''}>
-                                                {char}
+                                        return (
+                                            <span
+                                                key={cIdx}
+                                                data-paint-index={globalIndex}
+                                                onMouseDown={(e) => {
+                                                    // Removed e.stopPropagation() to allow drag-and-drop bubbling
+                                                }}
+                                                onClick={(e) => {
+                                                    // Prevent highlighting in Marker/Pen/Reading modes
+                                                    if (isTextMarkerMode || activeTool === 'pen' || isReadingMode) return;
+                                                    handleInteraction(e, globalIndex);
+                                                }}
+                                                className={`${customClasses} ${rounded} inline-block leading-none ${shouldHideLetter ? 'blur-letter' : ''}`}
+                                                style={style}
+                                                onMouseEnter={(e) => {
+                                                    if ((activeTool === 'pen' || isTextMarkerMode) && onMouseEnter) {
+                                                        onMouseEnter(globalIndex, e);
+                                                    }
+                                                }}
+                                                onPointerEnter={(e) => {
+                                                    if ((activeTool === 'pen' || isTextMarkerMode) && onMouseEnter && e.buttons === 1) {
+                                                        onMouseEnter(globalIndex, e);
+                                                    }
+                                                }}
+                                            >
+                                                <span className={shouldHideLetter ? 'blur-letter-content' : ''}>
+                                                    {char}
+                                                </span>
                                             </span>
-                                        </span>
-                                    );
-                                })}
+                                        );
+                                    })}
+                                </span>
+                                {settings.visualType === 'arc' && isVisualSyllable && <svg className="arc-svg pointer-events-none" viewBox="0 0 100 20" preserveAspectRatio="none"><path d="M 2 2 Q 50 20 98 2" fill="none" stroke={arcColor} strokeWidth="3" strokeLinecap="round" /></svg>}
                             </span>
-                            {settings.visualType === 'arc' && <svg className="arc-svg pointer-events-none" viewBox="0 0 100 20" preserveAspectRatio="none"><path d="M 2 2 Q 50 20 98 2" fill="none" stroke={arcColor} strokeWidth="3" strokeLinecap="round" /></svg>}
-                        </span>
-                    );
-                })}
+                        );
+                    });
+                })()}
+
             </span>
             {renderSuffix()}
             {/* Drawing Layer */}

@@ -30,6 +30,7 @@ import { Space } from './components/Space';
 import { getCachedSyllables } from './utils/syllables';
 import { compressIndices, decompressIndices } from './utils/compression';
 import { SpeedReadingView } from './components/SpeedReadingView';
+import { WordSortingView } from './components/WordSortingView';
 import { ConnectionOverlay } from './components/ConnectionOverlay';
 
 import "mobile-drag-drop/default.css";
@@ -958,6 +959,7 @@ const App = () => {
                     setShowCaseExercise={() => setActiveView('caseExercise')}
                     setShowFindLetters={() => setActiveView('find_letters')}
                     setShowSpeedReading={() => setActiveView('speed_reading')}
+                    setShowWordSorting={() => setActiveView('wordSorting')}
                     setShowPuzzleTestTwo={(v) => v && setActiveView('puzzletest_two')}
                     setShowPuzzleTestMulti={(v) => v && setActiveView('puzzletest_multi')}
                     setShowSyllableComposition={(v) => v && setActiveView('syllable_composition')}
@@ -1212,7 +1214,9 @@ const App = () => {
                     {activeView === 'puzzletest_multi' && <PuzzleTestMultiSyllableView words={hasMarkings ? uniqueExerciseWords : []} settings={settings} onClose={() => setActiveView('text')} title="Silbenpuzzle 2" activeColor={activeColor} />}
                     {activeView === 'cloud' && <WordCloudView words={hasMarkings ? uniqueExerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Wortwolke" />}
                     {activeView === 'carpet' && <SyllableCarpetView words={hasMarkings ? exerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Silbenteppich" />}
+                    {activeView === 'carpet' && <SyllableCarpetView words={hasMarkings ? exerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Silbenteppich" />}
                     {activeView === 'speed_reading' && <SpeedReadingView words={hasMarkings ? uniqueExerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Blitzlesen" />}
+                    {activeView === 'wordSorting' && <WordSortingView columnsState={columnsState} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Wörter sortieren" wordColors={wordColors} colorPalette={colorPalette} />}
                     {activeView === 'list' && <WordListView
                         words={exerciseWords}
                         columnsState={columnsState}
