@@ -6,7 +6,9 @@ import { ProgressBar } from './ProgressBar';
 import { EmptyStateMessage } from './EmptyStateMessage';
 
 import { ExerciseHeader } from './ExerciseHeader';
-
+import { polyfill } from 'mobile-drag-drop';
+import { scrollBehaviourDragImageTranslateOverride } from 'mobile-drag-drop/scroll-behaviour';
+polyfill({ dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride });
 // Pastel colors for words
 const WORD_COLORS = [
     'bg-red-100',
@@ -53,6 +55,7 @@ export const SentenceShuffleView = ({ text, settings, setSettings, onClose, titl
     const [showReward, setShowReward] = useState(false);
     const [completedSentences, setCompletedSentences] = useState(new Set());
     const [isDragging, setIsDragging] = useState(false);
+    const [isShaking, setIsShaking] = useState(false);
 
     const dragItem = useRef(null);
     const dragOverItem = useRef(null);
@@ -115,6 +118,9 @@ export const SentenceShuffleView = ({ text, settings, setSettings, onClose, titl
             setIsCorrect(true);
             setCompletedSentences(prev => new Set([...prev, currentIndex]));
         } else {
+            setIsShaking(true);
+            setTimeout(() => setIsShaking(false), 500);
+
             // Shake animation
             const container = document.getElementById('word-container');
             if (container) {
@@ -194,7 +200,7 @@ export const SentenceShuffleView = ({ text, settings, setSettings, onClose, titl
                     <div className="bg-white rounded-3xl p-12 shadow-2xl pop-animate pointer-events-auto text-center border-b-8 border-green-100 relative z-10">
                         <div className="flex flex-col items-center">
                             <span className="text-4xl font-black text-green-600 mb-8 flex items-center gap-3">
-                                <Icons.CheckCircle size={64} className="text-green-500" /> Alles richtig sortiert! Super!
+                                <Icons.Check size={64} className="text-green-500" /> Alles richtig sortiert! Super!
                             </span>
                             <button onClick={onClose} className="px-12 py-4 bg-blue-600 text-white rounded-2xl font-bold text-xl hover:bg-blue-700 hover:scale-105 transition-all shadow-lg min-touch-target">
                                 Beenden
@@ -275,27 +281,27 @@ export const SentenceShuffleView = ({ text, settings, setSettings, onClose, titl
                 {/* Success Checkmark */}
                 {isCorrect && (
                     <div className="mt-6 flex items-center gap-2 text-green-600 font-bold text-xl pop-animate">
-                        <Icons.CheckCircle size={32} strokeWidth={3} /> Richtig!
+                        <Icons.Check size={32} strokeWidth={3} /> Richtig!
                     </div>
                 )}
             </div>
 
             {/* Footer Actions */}
-            <div className="p-6 bg-white border-t border-slate-200 flex justify-center gap-4">
+            <div className="px-6 py-3 bg-white border-t border-slate-200 flex justify-end gap-4">
                 {!isCorrect ? (
                     <button
                         onClick={checkOrder}
-                        className="px-10 py-4 bg-blue-600 text-white rounded-xl font-bold text-lg shadow-lg hover:bg-blue-700 active:scale-95 transition-all min-touch-target"
+                        className={`px-8 py-2.5 rounded-xl font-bold text-lg shadow-lg active:scale-95 transition-all min-touch-target flex items-center gap-2 ${isShaking ? 'bg-red-500 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
                     >
-                        Prüfen
+                        <Icons.Check size={20} /> Prüfen
                     </button>
                 ) : (
                     <button
                         onClick={nextSentence}
-                        className="px-10 py-4 bg-blue-600 text-white rounded-xl font-bold text-lg shadow-lg hover:bg-blue-700 active:scale-95 transition-all flex items-center gap-2 pop-animate min-touch-target"
+                        className="px-8 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-lg shadow-lg hover:bg-blue-700 active:scale-95 transition-all flex items-center gap-2 pop-animate min-touch-target"
                     >
                         {currentIndex < sentences.length - 1 ? 'Nächster Satz' : 'Fertig!'}
-                        <Icons.ArrowRight size={24} />
+                        <Icons.ArrowRight size={20} />
                     </button>
                 )}
             </div>

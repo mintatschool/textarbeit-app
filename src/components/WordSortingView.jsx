@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Icons } from './Icons';
 import { Word } from './Word';
+import { EmptyStateMessage } from './EmptyStateMessage';
 import { shuffleArray } from '../utils/arrayUtils';
 import { polyfill } from 'mobile-drag-drop';
 import { scrollBehaviourDragImageTranslateOverride } from 'mobile-drag-drop/scroll-behaviour';
@@ -259,16 +260,24 @@ export const WordSortingView = ({
         }
     };
 
-    // Error state
-    if (errorMsg) {
+    // Check if table is unconfigured: no headers or no items at all
+    const hasAnyHeader = columnsState.order.some(id => columnsState.cols[id]?.title?.trim());
+    const hasAnyItems = columnsState.order.some(id => columnsState.cols[id]?.items?.length > 0);
+
+    if (!hasAnyHeader || !hasAnyItems || validColumns.length < 2) {
         return (
-            <div className="h-full flex flex-col items-center justify-center p-8 text-center bg-slate-50">
-                <Icons.AlertTriangle className="w-16 h-16 text-yellow-500 mb-4" />
-                <h2 className="text-2xl font-bold text-slate-800 mb-2">Einstellungen prüfen</h2>
-                <p className="text-slate-600 max-w-md mb-8">{errorMsg}</p>
-                <button onClick={onClose} className="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700">
-                    Zurück zur Liste
-                </button>
+            <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col items-center justify-center modal-animate font-sans">
+                <EmptyStateMessage
+                    onClose={onClose}
+                    message="Die Tabelle ist noch nicht gefüllt!"
+                    IconComponent={null}
+                    steps={[
+                        { text: "Markiere Wörter!", icon: Icons.GhostHighlight },
+                        { text: "Öffne die Tabelle!", icon: Icons.TableInstruction },
+                        { text: "Erzeuge Spalten und benenne sie!", icon: Icons.TableColumnsInstruction },
+                        { text: "Verschiebe Wörter!" }
+                    ]}
+                />
             </div>
         );
     }
@@ -440,7 +449,7 @@ export const WordSortingView = ({
             {/* Header - Blitzlesen Style */}
             <header className="bg-white border-b border-slate-200 px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4 z-20 shrink-0">
                 <div className="flex items-center gap-3">
-                    <Icons.List className="text-blue-600 w-8 h-8" />
+                    <Icons.WordSorting size={40} className="text-blue-600" />
                     <div className="flex flex-col">
                         <span className="text-2xl font-black text-slate-800 leading-tight">{title}</span>
                         <span className="text-base font-black transition-colors duration-200" style={{ color: getSliderColor(speedLevel) }}>
@@ -763,7 +772,7 @@ export const WordSortingView = ({
                         <div className="absolute left-0 right-0 z-[150] flex justify-center items-center h-full pb-4 pointer-events-none">
                             <button
                                 onClick={handleRestart}
-                                className="bg-blue-600 text-white py-3 px-8 rounded-2xl font-black text-xl hover:bg-blue-700 transition-all flex items-center justify-center gap-3 shadow-lg shadow-blue-200 hover:scale-[1.02] active:scale-[0.98] pop-animate pointer-events-auto"
+                                className="bg-blue-600 text-white py-4 px-12 rounded-2xl font-black text-xl hover:bg-blue-700 transition-all flex items-center justify-center gap-3 shadow-lg shadow-blue-200 hover:scale-[1.02] active:scale-[0.98] pop-animate pointer-events-auto"
                             >
                                 <Icons.RotateCcw size={24} /> Noch einmal
                             </button>

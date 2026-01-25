@@ -154,7 +154,7 @@ export const StaircaseView = ({ words, settings, setSettings, onClose, title }) 
             </div>
 
             {/* Navigation */}
-            <div className="p-3 bg-white border-t border-slate-200 flex justify-center gap-4">
+            <div className="px-6 py-3 bg-white border-t border-slate-200 flex justify-end gap-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
                 <button
                     onClick={prevWord}
                     disabled={currentIndex === 0}

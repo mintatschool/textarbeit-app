@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
-    CheckCircle2,
     AlertCircle,
     RotateCcw,
     Volume2,
@@ -17,7 +16,9 @@ import { HorizontalLines } from './shared/UIComponents';
 import { getPieceColor } from './shared/puzzleUtils';
 import { usePreventTouchScroll } from '../hooks/usePreventTouchScroll';
 import { ExerciseHeader } from './ExerciseHeader';
-
+import { polyfill } from 'mobile-drag-drop';
+import { scrollBehaviourDragImageTranslateOverride } from 'mobile-drag-drop/scroll-behaviour';
+polyfill({ dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride });
 export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, activeColor }) => {
     // Game State
     const [gameState, setGameState] = useState({
@@ -472,7 +473,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
 
     if ((gameState.gameStatus === 'playing' && (!gameState.stages[gameState.currentStageIndex] || gameState.stages.length === 0)) || gameState.gameStatus === 'no_words') {
         return (
-            <div className="fixed inset-0 bg-slate-100 z-[100] flex flex-col items-center justify-center p-6">
+            <div className="fixed inset-0 bg-slate-100 z-[100] flex flex-col items-center justify-center p-6 font-sans">
                 <EmptyStateMessage
                     onClose={onClose}
                     secondStepText="Wörter mit mindestens 2 Silben markieren."
@@ -484,7 +485,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
     if (gameState.gameStatus === 'finished') {
         return (
             <div className="fixed inset-0 bg-blue-50 z-[100] flex flex-col items-center justify-center animate-in fade-in duration-500">
-                <CheckCircle2 className="w-24 h-24 text-green-500 mb-6 animate-bounce" />
+                <Icons.Check className="w-24 h-24 text-green-500 mb-6 animate-bounce" />
                 <h2 className="text-3xl font-black text-slate-800 mb-2">Super!</h2>
                 <p className="text-slate-600 mb-8 text-xl">Alle Wörter gepuzzelt.</p>
                 <div className="flex gap-4 relative z-10">
@@ -759,7 +760,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                                             <div className={`transition-all duration-500 ease-out flex items-center
                                                 ${isComplete ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}
                                             `}>
-                                                <CheckCircle2 className="text-green-500 drop-shadow-2xl" style={{ width: '70px', height: '70px' }} />
+                                                <Icons.Check className="text-green-500 drop-shadow-2xl" style={{ width: '70px', height: '70px' }} />
                                             </div>
                                         </div>
 
@@ -768,9 +769,9 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                                             <div className="animate-in slide-in-from-top-4 duration-300 mt-6">
                                                 <button
                                                     onClick={handleManualAdvance}
-                                                    className="bg-blue-600 hover:bg-blue-700 text-white pl-6 pr-4 py-3 rounded-2xl font-bold shadow-xl text-lg hover:scale-105 transition-all flex items-center gap-2 ring-4 ring-white/50 whitespace-nowrap"
+                                                    className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl font-bold shadow-xl text-xl hover:scale-105 transition-all flex items-center gap-2 ring-4 ring-white/50 whitespace-nowrap"
                                                 >
-                                                    Weiter <CheckCircle2 size={30} />
+                                                    Weiter <Icons.ArrowRight size={30} />
                                                 </button>
                                             </div>
                                         )}

@@ -2,7 +2,9 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Word } from './Word';
 import { Icons } from './Icons';
 import { EmptyStateMessage } from './EmptyStateMessage';
-
+import { polyfill } from 'mobile-drag-drop';
+import { scrollBehaviourDragImageTranslateOverride } from 'mobile-drag-drop/scroll-behaviour';
+polyfill({ dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride });
 // Pastel colors for words
 const WORD_COLORS = [
     'bg-red-100 text-red-700',
@@ -139,10 +141,12 @@ export const GapTextView = ({ text, settings, setSettings, onClose, title, hyphe
         e.dataTransfer.setData('text/plain', word.text);
 
         e.dataTransfer.effectAllowed = 'move';
+        setTimeout(() => e.target.classList.add('opacity-40'), 0);
     };
 
-    const handleDragEnd = () => {
+    const handleDragEnd = (e) => {
         setIsDragging(false);
+        if (e.target && e.target.classList) e.target.classList.remove('opacity-40');
         dragItemRef.current = null;
     };
 
@@ -252,7 +256,7 @@ export const GapTextView = ({ text, settings, setSettings, onClose, title, hyphe
                     <div className="bg-white rounded-3xl p-12 shadow-2xl pop-animate pointer-events-auto text-center border-b-8 border-green-100 relative z-10">
                         <div className="flex flex-col items-center">
                             <span className="text-4xl font-black text-green-600 mb-8 flex items-center gap-3">
-                                <Icons.CheckCircle size={64} className="text-green-500" /> Alles richtig ergänzt! Super!
+                                <Icons.Check size={64} className="text-green-500" /> Alles richtig ergänzt! Super!
                             </span>
                             <button onClick={onClose} className="px-12 py-4 bg-blue-600 text-white rounded-2xl font-bold text-xl hover:bg-blue-700 hover:scale-105 transition-all shadow-lg min-touch-target">
                                 Beenden
@@ -388,7 +392,7 @@ export const GapTextView = ({ text, settings, setSettings, onClose, title, hyphe
                         ))}
                         {poolWords.length === 0 && (
                             <div className="flex-1 flex flex-col items-center justify-center text-center text-slate-300 gap-4 opacity-50">
-                                <Icons.CheckCircle size={48} className="text-green-400" />
+                                <Icons.Check size={48} className="text-green-400" />
                                 <span className="text-sm font-bold">Alles verteilt!</span>
                             </div>
                         )}

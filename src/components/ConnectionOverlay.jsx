@@ -132,7 +132,7 @@ export const ConnectionOverlay = ({ groups, wordRefs, containerRef, currentSelec
     return (
         <svg
             ref={svgRef}
-            className="absolute inset-0 w-full h-full pointer-events-none z-10"
+            className="absolute inset-0 w-full h-full pointer-events-none"
             style={{ overflow: 'visible' }}
         >
             <defs>

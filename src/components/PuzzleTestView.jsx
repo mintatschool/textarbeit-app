@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     Maximize2,
-    CheckCircle2,
+    Maximize2,
     AlertCircle
 } from 'lucide-react';
 import { Icons } from './Icons';
@@ -272,7 +272,7 @@ export const PuzzleTestView = ({ words, onClose }) => {
                                     label={p.text}
                                     type="left"
                                     colorClass={p.color}
-                                    onDragStart={(e) => { e.dataTransfer.setData("application/puzzle-piece-id", p.id); setIsDragging(p.id); }}
+                                    onDragStart={(e) => { e.dataTransfer.setData("application/puzzle-piece-id", p.id); setTimeout(() => setIsDragging(p.id), 0); }}
                                     onDragEnd={() => setIsDragging(null)}
                                     scale={scale}
                                 />
@@ -296,7 +296,7 @@ export const PuzzleTestView = ({ words, onClose }) => {
                                         label={p.text}
                                         type="middle"
                                         colorClass={p.color}
-                                        onDragStart={(e) => { e.dataTransfer.setData("application/puzzle-piece-id", p.id); setIsDragging(p.id); }}
+                                        onDragStart={(e) => { e.dataTransfer.setData("application/puzzle-piece-id", p.id); setTimeout(() => setIsDragging(p.id), 0); }}
                                         onDragEnd={() => setIsDragging(null)}
                                         scale={scale}
                                     />
@@ -373,7 +373,7 @@ export const PuzzleTestView = ({ words, onClose }) => {
                                     {/* Success Validation Icon */}
                                     {isSuccess === len && (
                                         <div className="absolute -right-16 top-1/2 -translate-y-1/2 animate-bounce">
-                                            <CheckCircle2 className="w-12 h-12 text-emerald-500 drop-shadow-lg" />
+                                            <Icons.Check className="w-12 h-12 text-emerald-500 drop-shadow-lg" />
                                         </div>
                                     )}
                                 </div>
@@ -398,7 +398,7 @@ export const PuzzleTestView = ({ words, onClose }) => {
                                     label={p.text}
                                     type="right"
                                     colorClass={p.color}
-                                    onDragStart={(e) => { e.dataTransfer.setData("application/puzzle-piece-id", p.id); setIsDragging(p.id); }}
+                                    onDragStart={(e) => { e.dataTransfer.setData("application/puzzle-piece-id", p.id); setTimeout(() => setIsDragging(p.id), 0); }}
                                     onDragEnd={() => setIsDragging(null)}
                                     scale={scale}
                                 />

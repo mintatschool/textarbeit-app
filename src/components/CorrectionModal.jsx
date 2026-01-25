@@ -49,7 +49,7 @@ export const CorrectionModal = ({ word, currentSyllables, onSave, onClose, font 
                 </div>
                 <div className="mt-6 flex justify-center gap-4 border-t pt-4">
                     <button onClick={onClose} className="px-6 py-3 rounded-xl border border-slate-300 text-slate-600 font-bold hover:bg-slate-50 transition min-touch-target">Abbrechen</button>
-                    <button onClick={handleSave} className="px-8 py-3 rounded-xl bg-blue-600 text-white font-bold shadow-lg hover:bg-blue-700 active:scale-95 transition flex items-center gap-2 min-touch-target"><Icons.Check size={24} /> Übernehmen</button>
+                    <button onClick={handleSave} className="px-8 py-4 rounded-xl bg-blue-600 text-white font-bold shadow-lg hover:bg-blue-700 active:scale-95 transition flex items-center gap-2 min-touch-target"><Icons.Check size={24} /> Übernehmen</button>
                 </div>
             </div>
         </div>

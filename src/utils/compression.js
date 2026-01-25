@@ -40,3 +40,50 @@ export const decompressIndices = (str) => {
     });
     return result;
 };
+// Komprimiert ein Objekt von { index: color } zu einem Range-String
+// Bsp: { 0: "red", 1: "red", 2: "red", 5: "blue" } -> "0-2:red,5:blue"
+export const compressColors = (colorMap) => {
+    if (!colorMap) return "";
+    const indices = Object.keys(colorMap).map(Number).sort((a, b) => a - b);
+    if (indices.length === 0) return "";
+
+    let result = [];
+    let start = indices[0];
+    let end = start;
+    let color = colorMap[start];
+
+    for (let i = 1; i < indices.length; i++) {
+        const idx = indices[i];
+        const nextColor = colorMap[idx];
+        if (idx === end + 1 && nextColor === color) {
+            end = idx;
+        } else {
+            result.push(start === end ? `${start}:${color}` : `${start}-${end}:${color}`);
+            start = idx;
+            end = start;
+            color = nextColor;
+        }
+    }
+    result.push(start === end ? `${start}:${color}` : `${start}-${end}:${color}`);
+    return result.join(",");
+};
+
+export const decompressColors = (str) => {
+    if (!str || typeof str !== 'string') return {};
+    const result = {};
+    const parts = str.split(',');
+
+    parts.forEach(part => {
+        const [range, color] = part.split(':');
+        if (!color) return;
+
+        if (range.includes('-')) {
+            const [start, end] = range.split('-').map(Number);
+            for (let i = start; i <= end; i++) result[i] = color;
+        } else {
+            const idx = parseInt(range, 10);
+            if (!isNaN(idx)) result[idx] = color;
+        }
+    });
+    return result;
+};

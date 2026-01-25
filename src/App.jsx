@@ -28,9 +28,10 @@ import { FindLettersView } from './components/FindLettersView';
 import { Toolbar } from './components/Toolbar';
 import { Space } from './components/Space';
 import { getCachedSyllables } from './utils/syllables';
-import { compressIndices, decompressIndices } from './utils/compression';
+import { compressIndices, decompressIndices, compressColors, decompressColors } from './utils/compression';
 import { SpeedReadingView } from './components/SpeedReadingView';
 import { WordSortingView } from './components/WordSortingView';
+import { AlphabetSortingView } from './components/AlphabetSortingView';
 import { ConnectionOverlay } from './components/ConnectionOverlay';
 
 import "mobile-drag-drop/default.css";
@@ -206,48 +207,63 @@ const App = () => {
         return () => document.removeEventListener('contextmenu', handleContextMenu);
     }, []);
 
+    const shiftHighlights = (indices, diffStart, lengthDiff) => {
+        if (indices.size === 0 || lengthDiff === 0) return indices;
+        const next = new Set();
+        indices.forEach(idx => {
+            if (idx < diffStart) {
+                next.add(idx);
+            } else if (lengthDiff < 0) {
+                // Deletion
+                if (idx >= diffStart - lengthDiff) {
+                    next.add(idx + lengthDiff);
+                }
+            } else {
+                // Insertion
+                next.add(idx + lengthDiff);
+            }
+        });
+        return next;
+    };
+
     // Smart Text Update that shifts highlights
     const handleTextChange = (newText) => {
+        // Junk Removal (ZWSP, BOM etc) - always safe to remove while typing
+        const junkRegex = /[\u200B-\u200D\uFEFF]/g;
+        let diffStart = 0;
+        let lengthDiff = 0;
+
+        if (junkRegex.test(newText)) {
+            // If junk found, we need to sanitize AND shift highlights immediately
+            const oldText = text;
+            const sanitized = newText.replace(junkRegex, '');
+            lengthDiff = sanitized.length - oldText.length;
+
+            const minLen = Math.min(oldText.length, sanitized.length);
+            while (diffStart < minLen && oldText[diffStart] === sanitized[diffStart]) {
+                diffStart++;
+            }
+
+            setHighlightedIndices(prev => shiftHighlights(prev, diffStart, lengthDiff));
+            setText(sanitized);
+            return;
+        }
+
         const oldText = text;
-        const lengthDiff = newText.length - oldText.length;
+        lengthDiff = newText.length - oldText.length;
 
         if (lengthDiff === 0) {
             setText(newText);
             return;
         }
 
-        // Find start of change
-        let diffStart = 0;
-        // Optimization: if simple append, diffStart is oldText.length.
-        // But we need safe bounds.
         const minLen = Math.min(oldText.length, newText.length);
         while (diffStart < minLen && oldText[diffStart] === newText[diffStart]) {
             diffStart++;
         }
 
-        // Shift indices
         if (highlightedIndices.size > 0) {
-            const newHighlights = new Set();
-            highlightedIndices.forEach(idx => {
-                if (idx < diffStart) {
-                    newHighlights.add(idx); // Before change, keep
-                } else {
-                    // After change, shift
-                    if (lengthDiff < 0) {
-                        // Deletion.
-                        // If idx was in the deleted range [diffStart, diffStart + deletedAmount], it is gone.
-                        // deletedAmount = -lengthDiff.
-                        // Deleted range indices: diffStart ... diffStart + (-lengthDiff) - 1.
-                        if (idx >= diffStart - lengthDiff) { // idx >= diffStart + deletedAmount
-                            newHighlights.add(idx + lengthDiff);
-                        }
-                    } else {
-                        // Insertion
-                        newHighlights.add(idx + lengthDiff);
-                    }
-                }
-            });
-            setHighlightedIndices(newHighlights);
+            setHighlightedIndices(prev => shiftHighlights(prev, diffStart, lengthDiff));
         }
         setText(newText);
     };
@@ -394,18 +410,101 @@ const App = () => {
             if (data.logo) setLogo(data.logo);
             setManualCorrections(data.manualCorrections || {});
             setTextCorrections(data.textCorrections || {});
-            setColumnsState(data.columnsState || { cols: {}, order: [] });
-            setWordColors(data.wordColors || {});
-            setWordDrawings(data.wordDrawings || {});
-            setWordGroups(data.wordGroups || []);
 
-            if (data.colorPalette) setColorPalette(data.colorPalette);
+            // Decompress columnsState: supports legacy object or new compact string "colId:title:color;..."
+            const rawCols = data.columnsState;
+            if (typeof rawCols === 'string') {
+                const cols = {};
+                const order = [];
+                rawCols.split(';').filter(Boolean).forEach(part => {
+                    const [key, title, color] = part.split(':');
+                    if (key) {
+                        cols[key] = { id: key, title: title || '', color: color || '', items: [] };
+                        order.push(key);
+                    }
+                });
+                setColumnsState({ cols, order });
+                // Extract colorHeaders from columnsState
+                const headers = {};
+                order.forEach(key => {
+                    if (cols[key].title && cols[key].color) {
+                        headers[cols[key].color] = cols[key].title;
+                    }
+                });
+                if (Object.keys(headers).length > 0) setColorHeaders(headers);
+            } else {
+                setColumnsState(rawCols || { cols: {}, order: [] });
+                if (data.colorHeaders) setColorHeaders(data.colorHeaders);
+            }
+
+            // Auto-decompress wordColors if it's a string
+            const rawColors = data.wordColors || {};
+            if (typeof rawColors === 'string') {
+                setWordColors(decompressColors(rawColors));
+            } else {
+                setWordColors(rawColors);
+            }
+
+            setWordDrawings(data.wordDrawings || {});
+
+            // Decompress wordGroups: supports legacy array or new compact string "idx+idx:paletteIdx;..."
+            const rawGroups = data.wordGroups;
+            if (typeof rawGroups === 'string') {
+                const groups = rawGroups.split(';').filter(Boolean).map(part => {
+                    const [idsPart, colorIdx] = part.split(':');
+                    const ids = idsPart.split('+').map(Number).filter(n => !isNaN(n));
+                    return { ids, color: `palette-${colorIdx || 0}` };
+                });
+                setWordGroups(groups);
+            } else {
+                setWordGroups(rawGroups || []);
+            }
+
+            // Decompress colorPalette: supports legacy array or new compact string "hex,hex,..."
+            const rawPalette = data.colorPalette;
+            if (typeof rawPalette === 'string') {
+                setColorPalette(rawPalette.split(',').map(h => `#${h}`));
+            } else if (rawPalette) {
+                setColorPalette(rawPalette);
+            }
+
+            if (data.wordListSortByColor !== undefined) setWordListSortByColor(data.wordListSortByColor);
 
             setIsViewMode(true);
         } catch (e) { alert("Fehler beim Laden der Datei."); }
     };
     const exportState = () => {
-        const data = { text, settings, highlights: Array.from(highlightedIndices), hidden: Array.from(hiddenIndices), logo, manualCorrections, textCorrections, columnsState, wordColors, colorPalette, wordDrawings, wordGroups };
+        const compressedCols = (() => {
+            const cols = {};
+            // Aggressive Optimization:
+            // If sorted by color, we theoretically only need the Headers (Keys + Titles).
+            // Logic will rebuild items.
+            // If manual, we need IDs.
+            Object.keys(columnsState.cols).forEach(key => {
+                const col = columnsState.cols[key];
+                cols[key] = {
+                    ...col,
+                    items: wordListSortByColor ? [] : col.items.map(i => ({ id: i.id }))
+                };
+            });
+            return { cols, order: columnsState.order };
+        })();
+        const data = {
+            text,
+            settings,
+            highlights: Array.from(highlightedIndices),
+            hidden: Array.from(hiddenIndices),
+            logo,
+            manualCorrections,
+            textCorrections,
+            columnsState: compressedCols,
+            wordColors: compressColors(wordColors), // NOW COMPRESSED
+            colorPalette,
+            wordDrawings,
+            wordGroups,
+            wordListSortByColor,
+            colorHeaders
+        };
         const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a'); a.href = url; a.download = 'textarbeit-export.json'; a.click();
@@ -518,6 +617,8 @@ const App = () => {
 
     }, [isTextMarkerMode, activeColor, processedWords, activeTool]);
 
+    // Touch Logic for App.jsx - Global handlers
+    // We add 'touchmove' and 'touchend' to window to handle "drag painting"
     useEffect(() => {
         const handleUp = () => {
             isPaintActive.current = false;
@@ -530,8 +631,20 @@ const App = () => {
             if (!isPaintActive.current) return;
             if (!isTextMarkerMode && activeTool !== 'pen') return;
 
+            // Handle both Mouse and Touch events
+            let clientX, clientY;
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+                // Prevent scrolling while painting
+                if (e.cancelable) e.preventDefault();
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+
             // Find element under cursor using elementsFromPoint
-            const elements = document.elementsFromPoint(e.clientX, e.clientY);
+            const elements = document.elementsFromPoint(clientX, clientY);
             for (const el of elements) {
                 const paintIndex = el.getAttribute('data-paint-index');
                 if (paintIndex !== null) {
@@ -546,9 +659,18 @@ const App = () => {
 
         window.addEventListener('mouseup', handleUp);
         window.addEventListener('mousemove', handleMove);
+        // Add Touch Listeners
+        window.addEventListener('touchend', handleUp);
+        window.addEventListener('touchcancel', handleUp); // Handle interruptions
+        // Use passive: false to allow preventDefault (stop scrolling)
+        window.addEventListener('touchmove', handleMove, { passive: false });
+
         return () => {
             window.removeEventListener('mouseup', handleUp);
             window.removeEventListener('mousemove', handleMove);
+            window.removeEventListener('touchend', handleUp);
+            window.removeEventListener('touchcancel', handleUp);
+            window.removeEventListener('touchmove', handleMove);
         };
     }, [isTextMarkerMode, activeTool, handlePaint]);
 
@@ -803,6 +925,81 @@ const App = () => {
 
 
 
+    const sanitizeText = (input) => {
+        if (!input) return input;
+        return input
+            .replace(/[\u200B-\u200D\uFEFF]/g, '') // Remove ZWSP, BOM, etc.
+            .replace(/\u00A0/g, ' ')               // Replace NBSP with space
+            .replace(/^[ \t]+$/gm, '');            // Remove spaces from empty lines
+    };
+
+    const handlePaste = (e) => {
+        e.preventDefault();
+        const pastedText = e.clipboardData.getData('text');
+        const cleanPaste = sanitizeText(pastedText);
+
+        const textarea = e.target;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const currentText = text;
+
+        const newText = currentText.substring(0, start) + cleanPaste + currentText.substring(end);
+        const lengthDiff = newText.length - currentText.length;
+
+        // Shift highlights correctly for the paste action
+        if (highlightedIndices.size > 0) {
+            setHighlightedIndices(prev => shiftHighlights(prev, start, lengthDiff));
+        }
+
+        setText(newText);
+
+        setTimeout(() => {
+            if (textAreaRef.current) {
+                textAreaRef.current.selectionStart = textAreaRef.current.selectionEnd = start + cleanPaste.length;
+            }
+        }, 0);
+    };
+
+    // Also sanitize on blur to catch anything else
+    const handleBlur = () => {
+        setText(prev => {
+            const sanitized = sanitizeText(prev);
+            if (sanitized === prev) return prev;
+
+            // If sanitization changed length, we ideally should shift highlights,
+            // but blur-sanitization usually happens at "random" spots (empty lines).
+            // A simple exhaustive diff is safer here if length changed.
+            const lengthDiff = sanitized.length - prev.length;
+            if (lengthDiff !== 0) {
+                // Find where it changed
+                let diffStart = 0;
+                const minLen = Math.min(prev.length, sanitized.length);
+                while (diffStart < minLen && prev[diffStart] === sanitized[diffStart]) {
+                    diffStart++;
+                }
+                setHighlightedIndices(h => shiftHighlights(h, diffStart, lengthDiff));
+            }
+            return sanitized;
+        });
+    };
+
+    const handleFullClear = () => {
+        if (window.confirm('Möchten Sie den Text und alle Markierungen wirklich löschen?')) {
+            setText('');
+            setHighlightedIndices(new Set());
+            setWordColors({});
+            setWordGroups([]);
+            setHiddenIndices(new Set());
+            setWordDrawings({});
+            setManualCorrections({});
+            setTextCorrections({});
+            setColumnsState({ cols: {}, order: [] });
+            setCurrentGroupSelection([]);
+            setIsTextMarkerMode(false);
+            setActiveTool(null);
+        }
+    };
+
     return (
         <div className={`h-screen overflow-hidden flex flex-col bg-slate-50 transition-colors duration-500`}>
 
@@ -915,8 +1112,8 @@ const App = () => {
                     onResetHighlights={() => {
                         setHighlightedIndices(new Set());
                         setWordColors({});
-                        setWordDrawings({}); // FIX: Clear Drawings too
                         setWordGroups([]); // FIX: Clear Groups too
+                        setColumnsState({ cols: {}, order: [] }); // FIX: Clear Table as well
                         setIsTextMarkerMode(false);
                         setActiveTool(null); // FIX: Do not switch to 'read' mode, go to Hand mode
                         setActiveColor('neutral');
@@ -960,6 +1157,7 @@ const App = () => {
                     setShowFindLetters={() => setActiveView('find_letters')}
                     setShowSpeedReading={() => setActiveView('speed_reading')}
                     setShowWordSorting={() => setActiveView('wordSorting')}
+                    setShowAlphabetSorting={() => setActiveView('alphabetSorting')}
                     setShowPuzzleTestTwo={(v) => v && setActiveView('puzzletest_two')}
                     setShowPuzzleTestMulti={(v) => v && setActiveView('puzzletest_multi')}
                     setShowSyllableComposition={(v) => v && setActiveView('syllable_composition')}
@@ -989,7 +1187,18 @@ const App = () => {
                                 </button>
                             </div>
                         </div>
-                        <textarea ref={textAreaRef} className="flex-1 w-full p-6 text-xl border-2 border-slate-200 rounded-2xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all resize-none shadow-inner bg-slate-50 leading-relaxed font-medium text-slate-700 placeholder:text-slate-400 custom-scroll" placeholder="Füge hier deinen Text ein..." value={text} onChange={(e) => handleTextChange(e.target.value)} spellCheck={true} lang="de" inputMode="text"></textarea>
+                        <textarea
+                            ref={textAreaRef}
+                            className="flex-1 w-full p-6 text-xl border-2 border-slate-200 rounded-2xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all resize-none shadow-inner bg-slate-50 leading-relaxed font-medium text-slate-700 placeholder:text-slate-400 custom-scroll"
+                            placeholder="Füge hier deinen Text ein..."
+                            value={text}
+                            onChange={(e) => handleTextChange(e.target.value)}
+                            onPaste={handlePaste}
+                            onBlur={handleBlur}
+                            spellCheck={true}
+                            lang="de"
+                            inputMode="text"
+                        ></textarea>
 
                         <div className="mt-6 flex flex-wrap gap-4 justify-between items-center">
                             <div className="flex gap-2">
@@ -997,6 +1206,9 @@ const App = () => {
                                 <label className="px-4 py-2 text-sm text-slate-500 hover:text-blue-600 font-bold cursor-pointer transition-colors flex items-center min-touch-target">
                                     Importieren <input type="file" accept=".json" className="hidden" onChange={(e) => { const file = e.target.files[0]; if (file) { const r = new FileReader(); r.onload = (ev) => loadState(ev.target.result); r.readAsText(file); } }} />
                                 </label>
+                                <button onClick={handleFullClear} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all min-touch-target" title="Alles löschen">
+                                    <Icons.Trash2 size={20} />
+                                </button>
                             </div>
 
                             <button
@@ -1185,6 +1397,18 @@ const App = () => {
                                                 manualSyllables={item.syllables}
                                                 hyphenator={hyphenator}
                                                 onMouseDown={(idx) => { isPaintActive.current = true; dragStartIndex.current = idx; lastPaintedIndex.current = idx; }}
+                                                onTouchStart={(idx, e) => {
+                                                    // Initiate painting for Touch devices
+                                                    if (isTextMarkerMode || activeTool === 'pen') {
+                                                        // Prevent default to stop scrolling/selection immediately
+                                                        if (e.cancelable) e.preventDefault();
+                                                        isPaintActive.current = true;
+                                                        dragStartIndex.current = idx;
+                                                        lastPaintedIndex.current = idx;
+                                                        // We might want to paint immediately on start too
+                                                        handlePaint(idx);
+                                                    }
+                                                }}
                                                 onMouseEnter={(idx, e) => { if (isPaintActive.current || (e && e.buttons === 1)) handlePaint(idx); }}
                                                 onEditMode={(word, key, syls) => { setCorrectionData({ word, key, syllables: syls }); setShowCorrectionModal(true); }}
                                                 startIndex={item.index}
@@ -1217,6 +1441,7 @@ const App = () => {
                     {activeView === 'carpet' && <SyllableCarpetView words={hasMarkings ? exerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Silbenteppich" />}
                     {activeView === 'speed_reading' && <SpeedReadingView words={hasMarkings ? uniqueExerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Blitzlesen" />}
                     {activeView === 'wordSorting' && <WordSortingView columnsState={columnsState} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Wörter sortieren" wordColors={wordColors} colorPalette={colorPalette} />}
+                    {activeView === 'alphabetSorting' && <AlphabetSortingView words={hasMarkings ? uniqueExerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Alphabetisch sortieren" />}
                     {activeView === 'list' && <WordListView
                         words={exerciseWords}
                         columnsState={columnsState}
@@ -1358,10 +1583,28 @@ const App = () => {
                 hidden: hiddenIndices.size > 0 ? compressIndices(hiddenIndices) : undefined,
                 manualCorrections: Object.keys(manualCorrections).length > 0 ? manualCorrections : undefined,
                 textCorrections: Object.keys(textCorrections).length > 0 ? textCorrections : undefined,
-                columnsState: Object.keys(columnsState.cols).length > 0 ? columnsState : undefined,
-                wordColors: Object.keys(wordColors).length > 0 ? wordColors : undefined,
-                colorPalette: JSON.stringify(colorPalette) !== JSON.stringify(['#3b82f6', '#a855f7', '#ef4444', '#f97316', '#22c55e']) ? colorPalette : undefined,
-                wordGroups: wordGroups.length > 0 ? wordGroups : undefined
+                // Compact columnsState: "colId:title:color;..." (items derived from wordColors)
+                columnsState: Object.keys(columnsState.cols).length > 0 ? (() => {
+                    // If sorting by color, only store column order and titles
+                    const parts = columnsState.order.map(key => {
+                        const col = columnsState.cols[key];
+                        const title = (col.title || '').replace(/[;:|]/g, ''); // Sanitize delimiters
+                        const color = col.color || '';
+                        return `${key}:${title}:${color}`;
+                    });
+                    return parts.join(';');
+                })() : undefined,
+                wordColors: Object.keys(wordColors).length > 0 ? compressColors(wordColors) : undefined,
+                // Compact colorPalette: "hex,hex,..." without #
+                colorPalette: JSON.stringify(colorPalette) !== JSON.stringify(['#3b82f6', '#a855f7', '#ef4444', '#f97316', '#22c55e'])
+                    ? colorPalette.map(c => c.replace('#', '')).join(',')
+                    : undefined,
+                // Compact wordGroups: "idx+idx+idx:paletteIdx;..."
+                wordGroups: wordGroups.length > 0
+                    ? wordGroups.map(g => `${g.ids.join('+')}:${g.color?.replace('palette-', '') || 0}`).join(';')
+                    : undefined,
+                wordListSortByColor: wordListSortByColor ? true : undefined,
+                // colorHeaders integrated into columnsState above
             })} onClose={() => setShowQR(false)} />}
             {showScanner && <QRScannerModal onClose={() => setShowScanner(false)} onScanSuccess={(decodedText) => {
                 setShowScanner(false);
@@ -1416,6 +1659,11 @@ const App = () => {
                         }
                     } catch (e) {
                         // FALL C: Reiner Text (kein JSON)
+                        // Prüfe ob es ein unvollständiger Multi-Part QR-Code ist
+                        if (trimmed.startsWith('qrp|')) {
+                            alert('Unvollständiger Multi-Part QR-Code erkannt. Bitte alle QR-Codes der Reihe nach scannen, ohne den Scanner zu schließen.');
+                            return;
+                        }
                         if (trimmed.length > 0) {
                             confirmIfNeeded(() => applyImport(trimmed));
                         }

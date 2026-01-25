@@ -18,6 +18,7 @@ export const FindLettersView = ({ text, settings, setSettings, onClose, title })
     const [missedIndices, setMissedIndices] = useState(new Set());
     const [showSelection, setShowSelection] = useState(true);
     const [flashMode, setFlashMode] = useState(null); // null | 'correct' | 'wrong'
+    const [isShaking, setIsShaking] = useState(false);
 
     const hyphenator = useMemo(() => new Hypher(german), []);
 
@@ -366,8 +367,10 @@ export const FindLettersView = ({ text, settings, setSettings, onClose, title })
             setMissedIndices(new Set(missed));
             setWrongIndices(new Set(wrong));
             setShowCorrection(true);
+            setIsShaking(true);
             setTimeout(() => {
                 setShowCorrection(false);
+                setIsShaking(false);
                 setMissedIndices(new Set());
                 setWrongIndices(new Set());
             }, 2500);
@@ -582,13 +585,13 @@ export const FindLettersView = ({ text, settings, setSettings, onClose, title })
                         </div>
                     </div>
 
-                    <div className="p-6 bg-white border-t border-slate-200 flex justify-center shrink-0 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]">
+                    <div className="px-6 py-3 bg-white border-t border-slate-200 flex justify-end shrink-0 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]">
                         <button
                             onClick={handleCheck}
                             disabled={markedIndices.size === 0 || success}
-                            className="px-16 py-4 bg-blue-600 text-white rounded-2xl font-bold text-2xl shadow-xl hover:bg-blue-700 hover:scale-105 active:scale-95 transition-all flex items-center gap-3 disabled:opacity-50 disabled:grayscale"
+                            className={`px-8 py-2.5 text-white rounded-xl font-bold text-lg shadow-xl transition-all flex items-center gap-2 disabled:opacity-50 disabled:grayscale ${isShaking ? 'bg-red-500' : 'bg-blue-600 hover:bg-blue-700 hover:scale-105 active:scale-95'}`}
                         >
-                            <Icons.Check size={32} /> Prüfen
+                            <Icons.Check size={20} /> Prüfen
                         </button>
                     </div>
                 </div>
@@ -600,7 +603,7 @@ export const FindLettersView = ({ text, settings, setSettings, onClose, title })
                     <div className="bg-white rounded-3xl p-12 shadow-2xl pop-animate pointer-events-auto text-center border-b-8 border-green-100 relative z-10">
                         <div className="flex flex-col items-center">
                             <span className="text-4xl font-black text-green-600 mb-8 flex items-center gap-3">
-                                <Icons.CheckCircle size={64} className="text-green-500" /> Alles gefunden! Super!
+                                <Icons.Check size={64} className="text-green-500" /> Alles gefunden! Super!
                             </span>
                             <button onClick={onClose} className="px-12 py-4 bg-blue-600 text-white rounded-2xl font-bold text-xl hover:bg-blue-700 hover:scale-105 transition-all shadow-lg min-touch-target">
                                 Beenden

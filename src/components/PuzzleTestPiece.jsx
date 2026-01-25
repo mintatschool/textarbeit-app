@@ -1,6 +1,8 @@
 import React from 'react';
 import { PUZZLE_PATH_LEFT, PUZZLE_PATH_RIGHT, PUZZLE_PATH_MIDDLE, PUZZLE_PATH_ZIGZAG_LEFT, PUZZLE_PATH_ZIGZAG_RIGHT, PUZZLE_PATH_ZIGZAG_MIDDLE } from './puzzleConstants';
-
+import { polyfill } from 'mobile-drag-drop';
+import { scrollBehaviourDragImageTranslateOverride } from 'mobile-drag-drop/scroll-behaviour';
+polyfill({ dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride });
 const PuzzleTestPiece = ({
     id,
     label,

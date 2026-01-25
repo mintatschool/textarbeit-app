@@ -86,8 +86,8 @@ export const QRCodeModal = ({ text, onClose }) => {
         const finalContent = toUtf8Bytes(contentToEncode);
 
         // Konstanten für Chunking
-        // Wir nutzen etwas kleinere Chunks für bessere Scanbarkeit bei Slideshow
-        const MAX_CHUNK_SIZE = 600;
+        // Erhöhte Chunk-Größe für weniger QR-Codes (900 ist noch gut scannbar)
+        const MAX_CHUNK_SIZE = 900;
 
         if (finalContent.length > MAX_CHUNK_SIZE) {
             const totalParts = Math.ceil(finalContent.length / MAX_CHUNK_SIZE);
@@ -110,19 +110,14 @@ export const QRCodeModal = ({ text, onClose }) => {
                 const end = Math.min(start + balancedChunkSize, finalContent.length);
                 const chunkData = finalContent.substring(start, end);
 
-                // Format: { i: id, p: partNumber, t: total, d: data }
-                parts.push(JSON.stringify({
-                    i: transferId,
-                    p: i + 1,
-                    t: totalParts,
-                    d: chunkData
-                }));
+                // Delimiter-Format: qrp|ID|PART|TOTAL|DATA (vermeidet JSON-Doppelkodierung)
+                parts.push(`qrp|${transferId}|${i + 1}|${totalParts}|${chunkData}`);
             }
 
             return {
                 qrValues: parts,
                 isMultiPart: true,
-                errorLevel: 'M'
+                errorLevel: 'L'
             };
         }
 
@@ -143,7 +138,7 @@ export const QRCodeModal = ({ text, onClose }) => {
         if (isPlaying && isMultiPart && qrValues.length > 1) {
             timerRef.current = setInterval(() => {
                 setCurrentPart(prev => (prev + 1) % qrValues.length);
-            }, 2500); // 2.5 Sekunden pro Code
+            }, 3000); // 3 Sekunden pro Code
         } else {
             if (timerRef.current) clearInterval(timerRef.current);
         }

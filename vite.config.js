@@ -83,10 +83,15 @@ export default defineConfig({
     host: true, // Listen on all local IP addresses
     https: !isNoHttps,
     port: port,
+    allowedHosts: true, // Allow tunnel hosts like .trycloudflare.com
+    hmr: {
+      clientPort: 443, // Standard port for the tunnel's HTTPS interface
+    },
   },
   preview: {
     host: true, // Listen on all local IP addresses for preview as well
     https: !isNoHttps,
     port: port,
+    allowedHosts: true,
   },
 })

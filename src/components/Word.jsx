@@ -2,7 +2,7 @@ import React, { useMemo, useCallback, useState, useRef, useEffect } from 'react'
 import { Icons } from './Icons';
 import { getCachedSyllables, CLUSTERS } from '../utils/syllables';
 
-const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, highlightedIndices = new Set(), isHidden, toggleHighlights, toggleHidden, hideYellowLetters, activeTool, activeColor, onEditMode, manualSyllables, hyphenator, settings, isReadingMode, wordColors = {}, colorPalette, domRef, isGrouped, isSelection, hidePunctuation, onMouseEnter, onMouseDown, isTextMarkerMode, drawings = [], onUpdateDrawings, forceNoMargin, forceShowSyllables }) => {
+const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, highlightedIndices = new Set(), isHidden, toggleHighlights, toggleHidden, hideYellowLetters, activeTool, activeColor, onEditMode, manualSyllables, hyphenator, settings, isReadingMode, wordColors = {}, colorPalette, domRef, isGrouped, isSelection, hidePunctuation, onMouseEnter, onMouseDown, onTouchStart, isTextMarkerMode, drawings = [], onUpdateDrawings, forceNoMargin, forceShowSyllables }) => {
     const wordKey = `${word}_${startIndex}`;
     const syllables = useMemo(() => manualSyllables || getCachedSyllables(word, hyphenator), [word, manualSyllables, hyphenator]);
 
@@ -374,6 +374,9 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                         if (onMouseDown) onMouseDown(startIndex, e);
                     }
                 }}
+                onTouchStart={(e) => {
+                    if (onTouchStart) onTouchStart(startIndex, e);
+                }}
                 onClick={(e) => !isReadingMode && !isTextMarkerMode && activeTool !== 'pen' && (activeTool === 'split' || activeTool === 'blur' || activeColor !== 'yellow') ? handleInteraction(e) : null}
             >
                 <span
@@ -495,6 +498,9 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                     e.preventDefault();
                     if (onMouseDown) onMouseDown(startIndex, e);
                 }
+            }}
+            onTouchStart={(e) => {
+                if (onTouchStart) onTouchStart(startIndex, e);
             }}
             onClick={(e) => !isReadingMode && !isTextMarkerMode && activeTool !== 'pen' && (activeTool === 'split' || activeTool === 'blur' || activeColor !== 'yellow') ? handleInteraction(e) : null}
         >

@@ -7,7 +7,9 @@ import { speak } from '../utils/speech';
 import { HorizontalLines } from './shared/UIComponents';
 import { usePreventTouchScroll } from '../hooks/usePreventTouchScroll';
 import { ExerciseHeader } from './ExerciseHeader';
-
+import { polyfill } from 'mobile-drag-drop';
+import { scrollBehaviourDragImageTranslateOverride } from 'mobile-drag-drop/scroll-behaviour';
+polyfill({ dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride });
 export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialSound = false, title, highlightedIndices = new Set(), wordColors = {} }) => {
     const [mode, setMode] = useState('vowels'); // 'vowels', 'consonants', or 'marked'
     const [currentGroupIdx, setCurrentGroupIdx] = useState(0);
@@ -347,6 +349,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
         dragItemRef.current = { letter, source, gapId };
         e.dataTransfer.setData('application/json', JSON.stringify(letter));
         e.dataTransfer.effectAllowed = 'move';
+        setTimeout(() => e.target.classList.add('opacity-40'), 0);
     };
 
     const handleDragEnd = (e) => {
@@ -505,10 +508,10 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
 
             {/* Empty State for Marked Mode */}
             {mode === 'marked' && groups.every(g => g.length === 0) && (
-                <div className="absolute inset-0 z-[110] bg-slate-100 flex flex-col items-center justify-center p-6 bg-opacity-95">
+                <div className="absolute inset-0 z-[110] bg-slate-100 flex flex-col items-center justify-center p-6 bg-opacity-95 font-sans">
                     <EmptyStateMessage
                         onClose={() => setMode('vowels')}
-                        IconComponent={Icons.LetterMarkerInstruction}
+                        // IconComponent removed to use default SelectionHint
                         title="Bitte markiere zuerst Buchstaben im Text!"
                         firstStepText="Buchstaben-Symbol anklicken!"
                         secondStepText="Buchstaben markieren."
@@ -522,7 +525,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                     <div className="bg-white rounded-3xl p-12 shadow-2xl pop-animate pointer-events-auto text-center border-b-8 border-green-100 relative z-10">
                         <div className="flex flex-col items-center">
                             <span className="text-4xl font-black text-green-600 mb-8 flex items-center gap-3">
-                                <Icons.CheckCircle size={64} className="text-green-500" /> Alle Lücken gefüllt! Toll!
+                                <Icons.Check size={64} className="text-green-500" /> Alle Lücken gefüllt! Toll!
                             </span>
                             <button onClick={onClose} className="px-12 py-4 bg-blue-600 text-white rounded-2xl font-bold text-xl hover:bg-blue-700 hover:scale-105 transition-all shadow-lg min-touch-target">
                                 Beenden
@@ -728,9 +731,12 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                     </div>
 
                     {groupSolved && currentGroupIdx < groups.length - 1 && (
-                        <div className="mt-4 flex flex-col items-center">
-                            <button onClick={() => { setCurrentGroupIdx(prev => prev + 1); setGroupSolved(false); }} className="px-8 py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg hover:bg-blue-700 hover:scale-105 transition-all flex items-center gap-2 text-lg">
-                                weiter <Icons.ArrowRight size={20} />
+                        <div className="mt-12 w-full max-w-4xl flex justify-end">
+                            <button
+                                onClick={() => { setCurrentGroupIdx(prev => prev + 1); setGroupSolved(false); }}
+                                className="px-10 py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-xl hover:bg-blue-700 hover:scale-105 transition-all flex items-center gap-3 text-xl ring-4 ring-white/50 transition-all"
+                            >
+                                Weiter <Icons.ArrowRight size={24} />
                             </button>
                         </div>
                     )}

@@ -4,7 +4,9 @@ import { EmptyStateMessage } from './EmptyStateMessage';
 
 import { shuffleArray } from '../utils/arrayUtils';
 import { ExerciseHeader } from './ExerciseHeader';
-
+import { polyfill } from 'mobile-drag-drop';
+import { scrollBehaviourDragImageTranslateOverride } from 'mobile-drag-drop/scroll-behaviour';
+polyfill({ dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride });
 export const SyllablePuzzleView = ({ words, settings, setSettings, onClose, title }) => {
     if (!words || words.length === 0) return (<div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col items-center justify-center p-6"><EmptyStateMessage onClose={onClose} secondStepText="Wörter zum Puzzeln markieren." /></div>);
     const [puzzleWords, setPuzzleWords] = useState([]);
@@ -93,7 +95,7 @@ export const SyllablePuzzleView = ({ words, settings, setSettings, onClose, titl
                     <div className="bg-white rounded-3xl p-12 shadow-2xl pop-animate pointer-events-auto text-center border-b-8 border-green-100 relative z-10">
                         <div className="flex flex-col items-center">
                             <span className="text-4xl font-black text-green-600 mb-8 flex items-center gap-3">
-                                <Icons.CheckCircle size={64} className="text-green-500" /> Alle Silben sortiert! Super!
+                                <Icons.Check size={64} className="text-green-500" /> Alle Silben sortiert! Super!
                             </span>
                             <button onClick={onClose} className="px-12 py-4 bg-blue-600 text-white rounded-2xl font-bold text-xl hover:bg-blue-700 hover:scale-105 transition-all shadow-lg min-touch-target">
                                 Beenden
@@ -139,7 +141,7 @@ export const SyllablePuzzleView = ({ words, settings, setSettings, onClose, titl
                                     <Icons.Volume2 size={20} />
                                 </button>
                                 <div className="flex flex-wrap gap-2 items-center justify-center">{word.pieces.map((originalPiece) => { const slotId = `${word.id}_${originalPiece.index}`; const placedPiece = placedPieces[slotId]; return (<div key={slotId} onClick={() => handleSlotClick(word.id, originalPiece.index)} className={`puzzle-drop-target relative flex items-center justify-center rounded-lg cursor-pointer ${!placedPiece ? 'border-2 border-dashed border-slate-300' : ''} ${selectedPiece ? 'ring-2 ring-blue-300 ring-offset-2 animate-pulse' : ''}`} style={{ fontSize: `${settings.fontSize}px`, minHeight: `${dynamicHeight}px`, minWidth: '7rem', zIndex: 1 }} onDragOver={(e) => e.preventDefault()} onDragEnter={(e) => { e.preventDefault(); e.currentTarget.classList.add('active-target'); }} onDragLeave={(e) => { e.currentTarget.classList.remove('active-target'); }} onDrop={(e) => handleSlotDrop(e, word.id, originalPiece.index)}>{placedPiece ? (<div draggable onDragStart={(e) => handleDragStart(e, placedPiece, 'slot', slotId)} onDragEnd={handleDragEnd} onContextMenu={(e) => e.preventDefault()} className={`${getPieceStyle(placedPiece, true)} cursor-grab active:cursor-grabbing hover:scale-105 transition-transform touch-action-none`} style={{ fontFamily: settings.fontFamily, fontSize: `${settings.fontSize}px`, minHeight: `${dynamicHeight}px`, width: '100%', height: '100%' }}>{(!placedPiece.isEnd && !placedPiece.isSolo) && <div className="absolute right-[-8px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-blue-200 z-10"></div>}{(!placedPiece.isStart && !placedPiece.isSolo) && <div className="absolute left-[-8px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white z-20"></div>}{placedPiece.text}</div>) : <span className="text-slate-300 font-bold select-none">?</span>}</div>); })}</div>
-                                {isWordComplete && <div className="ml-4 text-green-500 animate-[popIn_0.4s_ease-out]"><Icons.CheckCircle size={40} strokeWidth={3} /></div>}
+                                {isWordComplete && <div className="ml-4 text-green-500 animate-[popIn_0.4s_ease-out]"><Icons.Check size={40} strokeWidth={3} /></div>}
                             </div>
                         )
                     })}

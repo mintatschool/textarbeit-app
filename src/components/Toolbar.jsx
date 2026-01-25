@@ -103,6 +103,7 @@ export const Toolbar = ({
 
     setShowSpeedReading,   // New: Speed reading exercise
     setShowWordSorting,    // New: Word sorting exercise
+    setShowAlphabetSorting, // New: Alphabet sorting exercise
 
 
     // Color Props
@@ -505,8 +506,11 @@ export const Toolbar = ({
                 <MenuItem onClick={() => setShowSpeedReading(true)} icon={<Icons.Zap size={20} className="text-purple-600" />}>
                     Blitzlesen
                 </MenuItem>
-                <MenuItem onClick={() => setShowWordSorting(true)} icon={<Icons.WordSorting size={20} className="text-blue-600" />}>
+                <MenuItem onClick={() => setShowWordSorting(true)} icon={<Icons.WordSorting size={28} className="text-blue-600" />}>
                     Wörter sortieren
+                </MenuItem>
+                <MenuItem onClick={() => setShowAlphabetSorting(true)} icon={<Icons.SortAsc size={28} className="text-blue-600" />}>
+                    Alphabetisch sortieren
                 </MenuItem>
                 <MenuItem onClick={() => setShowPuzzleTestTwo(true)} icon={<Icons.Silbenpuzzle1 size={28} className="text-blue-600" />}>
                     Silbenpuzzle 1

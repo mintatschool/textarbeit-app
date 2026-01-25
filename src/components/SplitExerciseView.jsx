@@ -58,7 +58,7 @@ export const SplitExerciseView = ({ words, onClose, settings, setSettings, title
                     <div className="bg-white rounded-3xl p-12 shadow-2xl pop-animate pointer-events-auto text-center border-b-8 border-green-100 relative z-10">
                         <div className="flex flex-col items-center">
                             <span className="text-4xl font-black text-green-600 mb-8 flex items-center gap-3">
-                                <Icons.CheckCircle size={64} className="text-green-500" /> Alle Wörter richtig getrennt! Toll!
+                                <Icons.Check size={64} className="text-green-500" /> Alle Wörter richtig getrennt! Toll!
                             </span>
                             <button onClick={onClose} className="px-12 py-4 bg-blue-600 text-white rounded-2xl font-bold text-xl hover:bg-blue-700 hover:scale-105 transition-all shadow-lg min-touch-target">
                                 Beenden
@@ -166,7 +166,7 @@ export const SplitExerciseView = ({ words, onClose, settings, setSettings, title
                     {/* Removed text feedback 'Das stimmt noch nicht ganz.' */}
                     {status === 'correct' && (
                         <>
-                            <p className="text-green-600 font-bold text-2xl pop-animate flex items-center gap-2"><Icons.CheckCircle size={28} /> Richtig!</p>
+                            <p className="text-green-600 font-bold text-2xl pop-animate flex items-center gap-2"><Icons.Check size={28} /> Richtig!</p>
 
                             {/* Syllable Feedback Display */}
 
@@ -175,12 +175,12 @@ export const SplitExerciseView = ({ words, onClose, settings, setSettings, title
                 </div>
             </div>
 
-            <div className="p-6 bg-white border-t flex flex-wrap gap-4 justify-center items-center shrink-0">
+            <div className="px-6 py-3 bg-white border-t flex flex-wrap gap-4 justify-end items-center shrink-0">
                 <div className="flex-1"></div>
                 {status !== 'correct' ? (
-                    <button onClick={checkAnswer} className="px-8 py-3 bg-blue-600 text-white text-lg font-bold rounded-xl hover:bg-blue-700 shadow-lg active:scale-95 transition min-touch-target">Prüfen</button>
+                    <button onClick={checkAnswer} className={`px-8 py-2.5 text-white text-lg font-bold rounded-xl shadow-lg active:scale-95 transition min-touch-target flex items-center gap-2 ${isShaking ? 'bg-red-500' : 'bg-blue-600 hover:bg-blue-700'}`}><Icons.Check size={20} /> Prüfen</button>
                 ) : (
-                    <button onClick={nextWord} className="px-8 py-3 bg-blue-600 text-white text-lg font-bold rounded-xl hover:bg-blue-700 shadow-lg active:scale-95 transition flex items-center gap-2 pop-animate min-touch-target">
+                    <button onClick={nextWord} className="px-8 py-2.5 bg-blue-600 text-white text-lg font-bold rounded-xl hover:bg-blue-700 shadow-lg active:scale-95 transition flex items-center gap-2 pop-animate min-touch-target">
                         {currentIndex < words.length - 1 ? 'Nächstes Wort' : 'Fertig'} <Icons.ArrowRight />
                     </button>
                 )}

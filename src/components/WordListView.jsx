@@ -3,7 +3,9 @@ import { Icons } from './Icons';
 import { EmptyStateMessage } from './EmptyStateMessage';
 import { WordListCell } from './WordListCell';
 import { usePreventTouchScroll } from '../hooks/usePreventTouchScroll';
-
+import { polyfill } from 'mobile-drag-drop';
+import { scrollBehaviourDragImageTranslateOverride } from 'mobile-drag-drop/scroll-behaviour';
+polyfill({ dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride });
 export const WordListView = ({ words, columnsState, setColumnsState, onClose, settings, setSettings, onRemoveWord, onWordUpdate, onUpdateWordColor, wordColors = {}, colorHeaders = {}, setColorHeaders, colorPalette = [], title, groups = [], sortByColor, setSortByColor, columnCount, setColumnCount, updateTimestamp, activeColor, isTextMarkerMode, onToggleLetterMarker, toggleHighlights, highlightedIndices }) => {
     if (!words || words.length === 0) return (<div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col items-center justify-center modal-animate font-sans"><EmptyStateMessage onClose={onClose} /></div>);
     const [isDragging, setIsDragging] = useState(false);
@@ -653,7 +655,7 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                                 )}
 
                                 <div className="p-3 space-y-2">
-                                    {col.items.map((word, idx) => (
+                                    {col.items.filter(w => w.word).map((word, idx) => (
                                         <WordListCell
                                             key={word.id}
                                             word={word}

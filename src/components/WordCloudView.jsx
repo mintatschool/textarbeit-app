@@ -5,9 +5,12 @@ import { getChunks } from '../utils/syllables';
 import { speak } from '../utils/speech';
 import { ProgressBar } from './ProgressBar';
 import { ExerciseHeader } from './ExerciseHeader';
-
+import { shuffleArray } from '../utils/arrayUtils';
+import { polyfill } from 'mobile-drag-drop';
+import { scrollBehaviourDragImageTranslateOverride } from 'mobile-drag-drop/scroll-behaviour';
+polyfill({ dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride });
 export const WordCloudView = ({ words, settings, setSettings, onClose, title }) => {
-    if (!words || words.length === 0) return (<div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col items-center justify-center modal-animate font-sans"><EmptyStateMessage onClose={onClose} /></div>);
+    if (!words || words.length === 0) return (<div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col items-center justify-center modal-animate font-sans"><EmptyStateMessage onClose={onClose} IconComponent={Icons.GhostHighlight} /></div>);
 
     // Stage State
     const [stages, setStages] = useState([]);
@@ -52,10 +55,12 @@ export const WordCloudView = ({ words, settings, setSettings, onClose, title }) 
             return { id: w.id, fullWord: w.word, syllables: syllables, allChunks: shuffledChunks };
         });
 
+        const shuffledWords = shuffleArray(cWords);
+
         // Group into pairs
         const newStages = [];
-        for (let i = 0; i < cWords.length; i += 2) {
-            newStages.push(cWords.slice(i, i + 2));
+        for (let i = 0; i < shuffledWords.length; i += 2) {
+            newStages.push(shuffledWords.slice(i, i + 2));
         }
         setStages(newStages);
         setCurrentStageIndex(0);
@@ -175,7 +180,7 @@ export const WordCloudView = ({ words, settings, setSettings, onClose, title }) 
                     <div className="bg-white rounded-3xl p-12 shadow-2xl pop-animate pointer-events-auto text-center border-b-8 border-green-100 relative z-10">
                         <div className="flex flex-col items-center">
                             <span className="text-4xl font-black text-green-600 mb-8 flex items-center gap-3">
-                                <Icons.CheckCircle size={64} className="text-green-500" /> Alle Wörter richtig gebaut! Super!
+                                <Icons.Check size={64} className="text-green-500" /> Alle Wörter richtig gebaut! Super!
                             </span>
                             <button onClick={onClose} className="px-12 py-4 bg-blue-600 text-white rounded-2xl font-bold text-xl hover:bg-blue-700 hover:scale-105 transition-all shadow-lg min-touch-target">
                                 Beenden
@@ -276,7 +281,7 @@ export const WordCloudView = ({ words, settings, setSettings, onClose, title }) 
                                                 </div>
                                             );
                                         })}
-                                        {correctForWord && <div className="absolute inset-0 flex items-center justify-center text-green-600 font-bold text-2xl pop-animate z-30 pointer-events-none rounded-full"><Icons.CheckCircle size={settings.fontSize * 1.5} className="drop-shadow-lg" /></div>}
+                                        {correctForWord && <div className="absolute inset-0 flex items-center justify-center text-green-600 font-bold text-2xl pop-animate z-30 pointer-events-none rounded-full"><Icons.Check size={settings.fontSize * 1.5} strokeWidth={3} className="drop-shadow-lg" /></div>}
                                     </div>
                                 </div>
                                 <div className="flex flex-wrap justify-start items-center gap-6 mt-1 ml-4 relative w-full">
@@ -363,7 +368,7 @@ export const WordCloudView = ({ words, settings, setSettings, onClose, title }) 
                     <div className="flex justify-end mt-8 mr-8">
                         <button
                             onClick={handleNextStage}
-                            className="bg-blue-600 hover:bg-blue-700 text-white text-xl font-bold py-3 px-8 rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center gap-2"
+                            className="bg-blue-600 hover:bg-blue-700 text-white text-xl font-bold py-4 px-8 rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center gap-2"
                         >
                             {currentStageIndex < stages.length - 1 ? "Weiter" : "Abschließen"} <Icons.ArrowRight />
                         </button>

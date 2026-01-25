@@ -80,8 +80,24 @@ export const QRScannerModal = ({ onClose, onScanSuccess }) => {
 
     // --- QR Code Logic ---
 
-    // Parse Multi-Part QR Code
+    // Parse Multi-Part QR Code (supports both new delimiter and legacy JSON format)
     const parseMultiPart = (text) => {
+        // New Delimiter Format: qrp|ID|PART|TOTAL|DATA
+        if (text.startsWith('qrp|')) {
+            const parts = text.split('|');
+            if (parts.length >= 5) {
+                const id = parts[1];
+                const part = parseInt(parts[2], 10);
+                const total = parseInt(parts[3], 10);
+                // Data may contain | characters, so rejoin everything after index 4
+                const data = parts.slice(4).join('|');
+                if (!isNaN(part) && !isNaN(total)) {
+                    return { id, part, total, data };
+                }
+            }
+        }
+
+        // Legacy JSON Format: { i: id, p: part, t: total, d: data }
         try {
             const data = JSON.parse(text);
             if (data && typeof data.p === 'number' && typeof data.t === 'number' && typeof data.d === 'string') {
@@ -94,6 +110,12 @@ export const QRScannerModal = ({ onClose, onScanSuccess }) => {
     };
 
     const hasScannedRef = useRef(false);
+
+    // Reset scan state when mode changes
+    useEffect(() => {
+        hasScannedRef.current = false;
+        setMultiPartState(null);
+    }, [mode]);
 
     const handleScanResult = (decodedText, html5QrCode) => {
         if (hasScannedRef.current) return;

@@ -46,7 +46,7 @@ export const SyllableCarpetView = ({ words, settings, setSettings, onClose, titl
                     <div className="bg-white rounded-3xl p-12 shadow-2xl pop-animate pointer-events-auto text-center border-b-8 border-green-100 relative z-10">
                         <div className="flex flex-col items-center">
                             <span className="text-4xl font-black text-green-600 mb-2 flex items-center gap-3">
-                                <Icons.CheckCircle size={64} className="text-green-500" /> Alle Silben gefunden!
+                                <Icons.Check size={64} className="text-green-500" /> Alle Silben gefunden!
                             </span>
                             <p className="text-2xl text-slate-600 mb-8 font-bold">Zeit: {timer} Sekunden</p>
                             <button onClick={() => { setShowReward(false); setIsGameMode(false); }} className="px-12 py-4 bg-blue-600 text-white rounded-2xl font-bold text-xl hover:bg-blue-700 hover:scale-105 transition-all shadow-lg min-touch-target">
@@ -149,7 +149,7 @@ export const SyllableCarpetView = ({ words, settings, setSettings, onClose, titl
                                 style={{ fontFamily: settings.fontFamily, fontSize: `${settings.fontSize}px`, minHeight: `${settings.fontSize * 1.5}px` }}
                             >
                                 {syl}
-                                {isCompleted && <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-green-500/80 pointer-events-none"><Icons.CheckCircle size={48} strokeWidth={4} /></div>}
+                                {isCompleted && <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-green-500/80 pointer-events-none"><Icons.Check size={48} strokeWidth={4} /></div>}
                             </div>
                         );
                     })}

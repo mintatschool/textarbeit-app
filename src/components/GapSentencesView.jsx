@@ -7,7 +7,9 @@ import { EmptyStateMessage } from './EmptyStateMessage';
 import { HorizontalLines } from './shared/UIComponents';
 import { usePreventTouchScroll } from '../hooks/usePreventTouchScroll';
 import { ExerciseHeader } from './ExerciseHeader';
-
+import { polyfill } from 'mobile-drag-drop';
+import { scrollBehaviourDragImageTranslateOverride } from 'mobile-drag-drop/scroll-behaviour';
+polyfill({ dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride });
 // Pastel colors for words
 const WORD_COLORS = [
     'bg-red-100 text-red-700',
@@ -349,13 +351,13 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
     if (groups.length === 0) {
         if (mode === 'marked' && Object.keys(wordColors).length === 0) {
             return (
-                <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col items-center justify-center p-6">
+                <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col items-center justify-center p-6 font-sans">
                     <EmptyStateMessage onClose={onClose} />
                 </div>
             );
         }
         return (
-            <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col items-center justify-center p-6">
+            <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col items-center justify-center p-6 font-sans">
                 <EmptyStateMessage onClose={onClose} firstStepText="Grauen Kasten anklicken!" />
             </div>
         );
@@ -369,7 +371,7 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
                     <div className="bg-white rounded-3xl p-12 shadow-2xl pop-animate pointer-events-auto text-center border-b-8 border-green-100 relative z-10">
                         <div className="flex flex-col items-center">
                             <span className="text-4xl font-black text-green-600 mb-8 flex items-center gap-3">
-                                <Icons.CheckCircle size={64} className="text-green-500" /> Alles richtig ergänzt! Super!
+                                <Icons.Check size={64} className="text-green-500" /> Alles richtig ergänzt! Super!
                             </span>
                             <button onClick={onClose} className="px-12 py-4 bg-blue-600 text-white rounded-2xl font-bold text-xl hover:bg-blue-700 hover:scale-105 transition-all shadow-lg min-touch-target">
                                 Beenden
@@ -510,10 +512,13 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
                     </div>
 
                     {groupSolved && currentGroupIdx < groups.length - 1 && (
-                        <div className="mt-8 flex flex-col items-center pb-20">
-                            <span className="text-green-600 font-bold mb-3 flex items-center gap-2 text-xl"><Icons.CheckCircle size={28} /> Richtig!</span>
-                            <button onClick={() => { setCurrentGroupIdx(prev => prev + 1); setGroupSolved(false); }} className="px-8 py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg hover:bg-blue-700 hover:scale-105 transition-all flex items-center gap-2 text-lg">
-                                weiter <Icons.ArrowRight size={20} />
+                        <div className="mt-12 w-full max-w-7xl flex flex-col items-end pb-20">
+                            <span className="text-green-600 font-bold mb-4 flex items-center gap-2 text-xl animate-bounce"><Icons.Check size={28} /> Richtig!</span>
+                            <button
+                                onClick={() => { setCurrentGroupIdx(prev => prev + 1); setGroupSolved(false); }}
+                                className="px-10 py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-xl hover:bg-blue-700 hover:scale-105 transition-all flex items-center gap-3 text-xl ring-4 ring-white/50"
+                            >
+                                Weiter <Icons.ArrowRight size={24} />
                             </button>
                         </div>
                     )}
@@ -550,7 +555,7 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
                         ))}
                         {poolWords.length === 0 && (
                             <div className="flex-1 flex flex-col items-center justify-center text-center text-slate-300 gap-4 opacity-50">
-                                <Icons.CheckCircle size={48} className="text-green-400" />
+                                <Icons.Check size={48} className="text-green-400" />
                                 <span className="text-sm font-bold">Alles verteilt!</span>
                             </div>
                         )}

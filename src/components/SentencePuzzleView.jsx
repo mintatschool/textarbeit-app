@@ -3,7 +3,9 @@ import { Word } from './Word';
 import { Icons } from './Icons';
 import { ProgressBar } from './ProgressBar';
 import { EmptyStateMessage } from './EmptyStateMessage';
-
+import { polyfill } from 'mobile-drag-drop';
+import { scrollBehaviourDragImageTranslateOverride } from 'mobile-drag-drop/scroll-behaviour';
+polyfill({ dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride });
 // --- UTILS ---
 const splitText = (text, mode) => {
     if (mode === 'sentence') {
@@ -40,6 +42,7 @@ export const SentencePuzzleView = ({ text, mode = 'sentence', onClose, settings,
 
     const [pieces, setPieces] = useState([]);
     const [status, setStatus] = useState('idle'); // idle, correct, wrong
+    const [isShaking, setIsShaking] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
 
     // iPad Fix: Prevent touch scrolling during drag
@@ -132,7 +135,9 @@ export const SentencePuzzleView = ({ text, mode = 'sentence', onClose, settings,
         if (isCorrect) {
             setStatus('correct');
         } else {
-            setStatus('wrong');
+            setIsShaking(true);
+            setTimeout(() => setIsShaking(false), 500);
+
             // Trigger shake
             const container = document.getElementById('puzzle-container');
             if (container) {
@@ -156,7 +161,7 @@ export const SentencePuzzleView = ({ text, mode = 'sentence', onClose, settings,
                     <div className="bg-white rounded-3xl p-12 shadow-2xl pop-animate pointer-events-auto text-center border-b-8 border-green-100 relative z-10">
                         <div className="flex flex-col items-center">
                             <span className="text-4xl font-black text-green-600 mb-8 flex items-center gap-3">
-                                <Icons.CheckCircle size={64} className="text-green-500" /> Alles richtig sortiert! Super!
+                                <Icons.Check size={64} className="text-green-500" /> Alles richtig sortiert! Super!
                             </span>
                             <button onClick={onClose} className="px-12 py-4 bg-blue-600 text-white rounded-2xl font-bold text-xl hover:bg-blue-700 hover:scale-105 transition-all shadow-lg min-touch-target">
                                 Beenden
@@ -210,8 +215,8 @@ export const SentencePuzzleView = ({ text, mode = 'sentence', onClose, settings,
                             onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; return false; }}
                             className={`${piece.color} p-6 rounded-xl border-l-4 shadow-sm hover:shadow-md hover:scale-[1.01] transition-all cursor-grab active:cursor-grabbing flex gap-4 items-start bg-opacity-50 touch-action-none touch-manipulation select-none touch-none`}
                         >
-                            <div className="mt-1 text-slate-400 font-bold select-none opacity-50 flex flex-col items-center gap-1">
-                                <Icons.Move size={20} />
+                            <div className="text-slate-300 cursor-grab active:cursor-grabbing shrink-0 flex items-center justify-center w-8">
+                                <Icons.MoveVertical size={28} />
                             </div>
                             <div
                                 className="flex-1 text-slate-800 whitespace-pre-wrap leading-relaxed"
@@ -245,12 +250,12 @@ export const SentencePuzzleView = ({ text, mode = 'sentence', onClose, settings,
             </div>
 
             {/* Footer Actions */}
-            <div className="p-6 bg-white border-t border-slate-200 flex justify-center gap-4 shrink-0">
+            <div className="px-6 py-3 bg-white border-t border-slate-200 flex justify-end gap-4 shrink-0">
                 <button
                     onClick={checkOrder}
-                    className={`px-12 py-4 rounded-xl font-bold text-xl shadow-lg transition-all hover:scale-105 active:scale-95 flex items-center gap-3 min-touch-target ${status === 'wrong' ? 'bg-red-500 text-white animate-pulse' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                    className={`px-8 py-2.5 rounded-xl font-bold text-lg shadow-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-2 min-touch-target ${isShaking ? 'bg-red-500 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
                 >
-                    {status === 'wrong' ? <><Icons.AlertTriangle /> Stimmt nicht ganz!</> : 'Prüfen'}
+                    <Icons.Check size={20} /> Prüfen
                 </button>
             </div>
 

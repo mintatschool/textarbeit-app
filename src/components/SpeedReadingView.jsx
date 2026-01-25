@@ -300,7 +300,7 @@ export const SpeedReadingView = ({ words, settings, setSettings, onClose, title 
 
                                         <div className="flex items-center gap-4">
                                             <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-sm border-2 ${res.success ? 'bg-emerald-100 border-emerald-200 text-emerald-600' : 'bg-rose-100 border-red-200 text-rose-500'}`}>
-                                                {res.success ? <Icons.CheckCircle size={24} strokeWidth={3} /> : <Icons.X size={20} strokeWidth={3} />}
+                                                {res.success ? <Icons.Check size={24} strokeWidth={3} /> : <Icons.X size={20} strokeWidth={3} />}
                                             </div>
                                         </div>
                                     </div>
