@@ -567,7 +567,6 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                                     className={`flex items-center gap-2 px-2 py-2 rounded-lg transition-all font-bold text-sm mr-1 ${mode === 'marked' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
                                 >
                                     <Icons.LetterMarker size={20} />
-                                    <span className="hidden sm:inline">markiert</span>
                                 </button>
                                 <div className="w-px bg-slate-300 my-2 mx-1"></div>
                                 <button
@@ -607,11 +606,11 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                 {/* Fixed Layout: Centering wrapper that allows proper scrolling without top-clipping - CHANGED: justify-start and more padding */}
                 {/* Content Column - Scrolls independently - Added background drop handler */}
                 <div
-                    className="flex-1 overflow-y-auto custom-scroll min-h-full pt-24 pb-48 px-8 flex flex-col items-center justify-start gap-12 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent"
+                    className="flex-1 overflow-y-auto custom-scroll min-h-full pt-12 pb-48 px-8 flex flex-col items-center justify-start gap-12 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent"
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={handleBackgroundDrop}
                 >
-                    <div className="w-full max-w-4xl space-y-8">
+                    <div className="w-full max-w-4xl space-y-4">
                         {currentWords.map((word) => {
                             const isSolved = solvedWordIds.has(word.id);
                             // Check for errors in Initial Sound mode when all letters are placed
@@ -699,7 +698,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                                                                         draggable
                                                                         onDragStart={(e) => handleDragStart(e, placed, 'gap', chunk.id)}
                                                                         onDragEnd={handleDragEnd}
-                                                                        className={`font-bold transition-all px-1 rounded-sm cursor-grab active:cursor-grabbing animate-[popIn_0.3s_ease-out] touch-none touch-manipulation select-none ${showYellowStyle ? 'bg-yellow-100 mx-px' : ''} ${placedTextClass}`}
+                                                                        className={`font-bold transition-all px-1 rounded-sm cursor-grab active:cursor-grabbing animate-[popIn_0.3s_ease-out] select-none ${showYellowStyle ? 'bg-yellow-100 mx-px' : ''} ${placedTextClass}`}
                                                                     >
                                                                         {placed.text}
                                                                     </div>

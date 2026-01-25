@@ -37,7 +37,8 @@ export const WordSortingView = ({
     onClose,
     title = "Wörter sortieren",
     wordColors,
-    colorPalette = []
+    colorPalette = [],
+    textCorrections = {}
 }) => {
     const [speedLevel, setSpeedLevel] = useState(5);
     const [score, setScore] = useState(0);
@@ -81,7 +82,18 @@ export const WordSortingView = ({
 
         // Prepare queue - all words from all columns, shuffled
         const allWords = cols.flatMap(col =>
-            col.items.map(w => ({ ...w, correctColId: col.id }))
+            col.items.map(w => {
+                const lookupKey = `${w.word}_${w.index}`;
+                if (textCorrections[lookupKey]) {
+                    const newText = textCorrections[lookupKey];
+                    // Note: getCachedSyllables is not available here easily, 
+                    // but Word component used in render will handle syllables if word changes.
+                    // Actually we should ideally update syllables if word changed significantly,
+                    // but for casing it's same syllables.
+                    return { ...w, word: newText, correctColId: col.id };
+                }
+                return { ...w, correctColId: col.id };
+            })
         );
         const shuffled = shuffleArray(allWords);
         setTotalWords(shuffled.length);

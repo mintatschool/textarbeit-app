@@ -213,7 +213,7 @@ export const SentencePuzzleView = ({ text, mode = 'sentence', onClose, settings,
                             onDragEnter={(e) => handleDragEnter(e, idx)}
                             onDragEnd={handleDragEnd}
                             onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; return false; }}
-                            className={`${piece.color} p-6 rounded-xl border-l-4 shadow-sm hover:shadow-md hover:scale-[1.01] transition-all cursor-grab active:cursor-grabbing flex gap-4 items-start bg-opacity-50 touch-action-none touch-manipulation select-none touch-none`}
+                            className={`${piece.color} p-6 rounded-xl border-l-4 shadow-sm hover:shadow-md hover:scale-[1.01] transition-all cursor-grab active:cursor-grabbing flex gap-4 items-start bg-opacity-50 select-none`}
                         >
                             <div className="text-slate-300 cursor-grab active:cursor-grabbing shrink-0 flex items-center justify-center w-8">
                                 <Icons.MoveVertical size={28} />

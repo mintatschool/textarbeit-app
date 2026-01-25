@@ -427,7 +427,9 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
     const containerRef = useRef(null);
     const panningRef = useRef({ isPanning: false, startX: 0, startY: 0, scrollLeft: 0, scrollTop: 0 });
 
-    // Check if touch/click is on interactive element
+    // Check if touch/click is on interactive element that should block panning
+    // For mouse: block panning on draggable elements to avoid conflict with drag-and-drop
+    // For touch: native scrolling via overflow-auto handles this
     const isInteractiveTarget = (target) => {
         return target.closest('[draggable="true"]') || target.closest('button') || target.closest('input');
     };
@@ -604,16 +606,13 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                 onMouseDown={handlePanMouseDown}
                 onMouseMove={handlePanMouseMove}
                 onMouseLeave={handlePanMouseUp}
-                onTouchStart={handleTouchStart}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleTouchEnd}
             >
                 <div className={`flex gap-6 min-h-full transition-all duration-300 ${!sortByColor && columnCount === 1 ? 'w-1/2 min-w-[350px] mr-auto' : 'min-w-full'}`} style={{ width: (!sortByColor && columnCount === 1) ? undefined : `${Math.max(100, columnsState.order.length * 300)}px` }}>
                     {columnsState.order.map(colId => {
                         const col = columnsState.cols[colId];
                         const resolvedBg = resolveColor(col.color);
                         const headerStyle = sortByColor && col.color ? { backgroundColor: resolvedBg, color: 'white', fontFamily: settings.fontFamily, fontSize: `${settings.fontSize * 1.1}px` } : {};
-                        const headerClass = sortByColor && col.color ? "p-3 rounded-t-xl shadow-sm text-center font-bold touch-none" : "p-3 border-b border-slate-100 bg-slate-50 rounded-t-xl cursor-grab active:cursor-grabbing hover:bg-slate-100 transition-colors touch-none";
+                        const headerClass = sortByColor && col.color ? "p-3 rounded-t-xl shadow-sm text-center font-bold" : "p-3 border-b border-slate-100 bg-slate-50 rounded-t-xl cursor-grab active:cursor-grabbing hover:bg-slate-100 transition-colors";
 
                         return (
                             <div key={colId} onDragOver={handleDragOver} onDragLeave={handleDragLeaveCol} onDragEnter={handleDragEnterCol} onDrop={(e) => handleDropOnColumn(e, colId)} className="flex-1 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col min-w-[280px] transition-colors group/col">

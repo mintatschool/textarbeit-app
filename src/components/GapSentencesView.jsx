@@ -488,7 +488,7 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
                                                     draggable
                                                     onDragStart={(e) => handleDragStart(e, placed, 'gap', p.id)}
                                                     onDragEnd={handleDragEnd}
-                                                    className={`px-1 py-0 rounded font-bold cursor-grab active:cursor-grabbing animate-[popIn_0.3s_ease-out] whitespace-nowrap leading-none touch-none touch-manipulation select-none text-blue-600`}
+                                                    className={`px-1 py-0 rounded font-bold cursor-grab active:cursor-grabbing animate-[popIn_0.3s_ease-out] whitespace-nowrap leading-none select-none text-blue-600`}
                                                     style={{ fontSize: '1.2em' }}
                                                 >
                                                     <Word
@@ -536,7 +536,7 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
                                 onDragStart={(e) => handleDragStart(e, w, 'pool')}
                                 onDragEnd={handleDragEnd}
                                 onClick={() => handlePoolWordClick(w)}
-                                className={`w-full p-4 font-bold rounded-2xl transition-all flex items-center justify-center cursor-grab active:cursor-grabbing hover:scale-[1.02] touch-none touch-manipulation select-none bg-white border border-blue-600 text-slate-800 ${selectedWord?.poolId === w.poolId ? 'scale-105 ring-4 ring-blue-500/20' : ''}`}
+                                className={`w-full p-4 font-bold rounded-2xl transition-all flex items-center justify-center cursor-grab active:cursor-grabbing hover:scale-[1.02] select-none bg-white border border-blue-600 text-slate-800 ${selectedWord?.poolId === w.poolId ? 'scale-105 ring-4 ring-blue-500/20' : ''}`}
                                 style={{
                                     fontFamily: settings.fontFamily,
                                     fontSize: `${Math.max(20, settings.fontSize * 0.8)}px`,

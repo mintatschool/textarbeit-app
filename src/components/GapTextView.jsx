@@ -332,7 +332,7 @@ export const GapTextView = ({ text, settings, setSettings, onClose, title, hyphe
                                                     draggable
                                                     onDragStart={(e) => handleDragStart(e, placed, 'gap', p.id)}
                                                     onDragEnd={handleDragEnd}
-                                                    className={`px-1 py-0 rounded font-bold cursor-grab active:cursor-grabbing animate-[popIn_0.3s_ease-out] whitespace-nowrap leading-none touch-none touch-manipulation select-none ${placed.color}`}
+                                                    className={`px-1 py-0 rounded font-bold cursor-grab active:cursor-grabbing animate-[popIn_0.3s_ease-out] whitespace-nowrap leading-none select-none ${placed.color}`}
                                                     style={{ fontSize: '1.2em' }}
                                                 >
                                                     <Word
@@ -376,7 +376,7 @@ export const GapTextView = ({ text, settings, setSettings, onClose, title, hyphe
                                 onDragStart={(e) => handleDragStart(e, w, 'pool')}
                                 onDragEnd={handleDragEnd}
                                 onClick={() => handlePoolWordClick(w)}
-                                className={`w-full p-5 font-bold rounded-2xl transition-all flex items-center justify-center cursor-grab active:cursor-grabbing hover:scale-[1.02] draggable-piece touch-none border-b-4 border-black/5 ${w.color} ${selectedWord?.poolId === w.poolId ? 'selected-piece ring-4 ring-blue-500 shadow-xl z-50 scale-105' : 'shadow-md shadow-black/5 hover:shadow-lg'}`}
+                                className={`w-full p-5 font-bold rounded-2xl transition-all flex items-center justify-center cursor-grab active:cursor-grabbing hover:scale-[1.02] draggable-piece border-b-4 border-black/5 select-none ${w.color} ${selectedWord?.poolId === w.poolId ? 'selected-piece ring-4 ring-blue-500 shadow-xl z-50 scale-105' : 'shadow-md shadow-black/5 hover:shadow-lg'}`}
                                 style={{ fontFamily: settings.fontFamily, fontSize: `${Math.max(20, settings.fontSize * 0.8)}px` }}
                             >
                                 <Word

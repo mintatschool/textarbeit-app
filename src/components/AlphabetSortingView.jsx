@@ -310,7 +310,7 @@ export const AlphabetSortingView = ({ words, onClose, settings, setSettings, tit
                                     onDragEnter={(e) => handleDragEnter(e, idx)}
                                     onDragEnd={handleDragEnd}
                                     onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; return false; }}
-                                    className={`p-4 pl-3 rounded-xl border-2 shadow-sm transition-all cursor-grab active:cursor-grabbing flex gap-4 items-center select-none bg-white border-slate-200 touch-action-none touch-manipulation touch-none ${!isDragging ? 'hover:shadow-md hover:bg-blue-50/50' : ''}`}
+                                    className={`p-4 pl-3 rounded-xl border-2 shadow-sm transition-all cursor-grab active:cursor-grabbing flex gap-4 items-center select-none bg-white border-slate-200 ${!isDragging ? 'hover:shadow-md hover:bg-blue-50/50' : ''}`}
                                 >
                                     {/* Drag Handle */}
                                     <div className="text-slate-300 cursor-grab active:cursor-grabbing shrink-0">

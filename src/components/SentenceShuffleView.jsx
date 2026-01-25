@@ -256,7 +256,7 @@ export const SentenceShuffleView = ({ text, settings, setSettings, onClose, titl
                             onDragEnd={handleDragEnd}
                             onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; return false; }}
                             onContextMenu={(e) => e.preventDefault()}
-                            className={`word-card px-4 py-2 rounded-xl shadow-sm select-none transition-all duration-200 touch-action-none touch-manipulation touch-none ${word.color} ${isCorrect
+                            className={`word-card px-4 py-2 rounded-xl shadow-sm select-none transition-all duration-200 ${word.color} ${isCorrect
                                 ? 'cursor-default'
                                 : 'cursor-grab active:cursor-grabbing hover:scale-105 hover:shadow-md'
                                 }`}

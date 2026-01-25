@@ -10,7 +10,7 @@ export const QRCodeModal = ({ text, onClose }) => {
     const fullQrRef = useRef(null);
     const [linkInput, setLinkInput] = useState("");
     const [isMaximized, setIsMaximized] = useState(false);
-    const [mode, setMode] = useState('raw'); // 'raw' | 'text' | 'link'
+    const [mode, setMode] = useState('text'); // 'raw' | 'text' | 'link'
     const [showHashes, setShowHashes] = useState(false);
 
     // Slideshow State
