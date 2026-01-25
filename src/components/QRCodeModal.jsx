@@ -98,8 +98,8 @@ export const QRCodeModal = ({ text, onClose }) => {
             }
 
             // ID für diese Übertragung generieren, damit der Scanner weiß, welche Teile zusammengehören
-            // Einfacher Hash aus Textlänge und ersten/letzten Zeichen reicht hier für Kollisionsvermeidung
-            const transferId = (finalContent.length + finalContent.substring(0, 5) + finalContent.slice(-5)).replace(/[^a-zA-Z0-9]/g, '').substr(0, 8);
+            // Robuste ID mit Timestamp + Zufallselement für eindeutige Identifikation
+            const transferId = Date.now().toString(36).slice(-4) + Math.random().toString(36).substr(2, 4);
 
             // Neu: Daten gleichmäßig verteilen, damit alle QR-Codes ähnlich dicht sind
             const balancedChunkSize = Math.ceil(finalContent.length / totalParts);

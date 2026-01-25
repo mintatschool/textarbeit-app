@@ -474,40 +474,67 @@ const App = () => {
         } catch (e) { alert("Fehler beim Laden der Datei."); }
     };
     const exportState = () => {
-        const compressedCols = (() => {
-            const cols = {};
-            // Aggressive Optimization:
-            // If sorted by color, we theoretically only need the Headers (Keys + Titles).
-            // Logic will rebuild items.
-            // If manual, we need IDs.
-            Object.keys(columnsState.cols).forEach(key => {
-                const col = columnsState.cols[key];
-                cols[key] = {
-                    ...col,
-                    items: wordListSortByColor ? [] : col.items.map(i => ({ id: i.id }))
-                };
-            });
-            return { cols, order: columnsState.order };
-        })();
+        // Build data-sparse export (same format as QR code export)
         const data = {
             text,
-            settings,
-            highlights: Array.from(highlightedIndices),
-            hidden: Array.from(hiddenIndices),
-            logo,
-            manualCorrections,
-            textCorrections,
-            columnsState: compressedCols,
-            wordColors: compressColors(wordColors), // NOW COMPRESSED
-            colorPalette,
-            wordDrawings,
-            wordGroups,
-            wordListSortByColor,
-            colorHeaders
+            // Settings: Only save differences from default
+            settings: (() => {
+                const diff = {};
+                let hasDiff = false;
+                Object.keys(settings).forEach(key => {
+                    if (JSON.stringify(settings[key]) !== JSON.stringify(DEFAULT_SETTINGS[key])) {
+                        diff[key] = settings[key];
+                        hasDiff = true;
+                    }
+                });
+                return hasDiff ? diff : undefined;
+            })(),
+            // Highlights & Hidden: Use compressed indices
+            highlights: highlightedIndices.size > 0 ? compressIndices(highlightedIndices) : undefined,
+            hidden: hiddenIndices.size > 0 ? compressIndices(hiddenIndices) : undefined,
+            // Logo: Keep as-is (only relevant for local files)
+            logo: logo || undefined,
+            // Corrections: Only if present
+            manualCorrections: Object.keys(manualCorrections).length > 0 ? manualCorrections : undefined,
+            textCorrections: Object.keys(textCorrections).length > 0 ? textCorrections : undefined,
+            // ColumnsState: Compact string format "colId:title:color;..."
+            columnsState: Object.keys(columnsState.cols).length > 0 ? (() => {
+                const parts = columnsState.order.map(key => {
+                    const col = columnsState.cols[key];
+                    const title = (col.title || '').replace(/[;:|]/g, '');
+                    const color = col.color || '';
+                    return `${key}:${title}:${color}`;
+                });
+                return parts.join(';');
+            })() : undefined,
+            // WordColors: Compressed format
+            wordColors: Object.keys(wordColors).length > 0 ? compressColors(wordColors) : undefined,
+            // ColorPalette: Only if different from default
+            colorPalette: JSON.stringify(colorPalette) !== JSON.stringify(['#3b82f6', '#a855f7', '#ef4444', '#f97316', '#22c55e'])
+                ? colorPalette.map(c => c.replace('#', '')).join(',')
+                : undefined,
+            // WordDrawings: Only if present
+            wordDrawings: Object.keys(wordDrawings).length > 0 ? wordDrawings : undefined,
+            // WordGroups: Compact format "idx+idx+idx:paletteIdx;..."
+            wordGroups: wordGroups.length > 0
+                ? wordGroups.map(g => `${g.ids.join('+')}:${g.color?.replace('palette-', '') || 0}`).join(';')
+                : undefined,
+            // Flags
+            wordListSortByColor: wordListSortByColor ? true : undefined,
+            colorHeaders: Object.keys(colorHeaders).length > 0 ? colorHeaders : undefined
         };
-        const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+        // Remove undefined keys for cleaner JSON
+        const cleanData = Object.fromEntries(Object.entries(data).filter(([_, v]) => v !== undefined));
+
+        // Ask for filename
+        let filename = prompt('Bitte Dateinamen eingeben:', 'textarbeit-export');
+        if (filename === null) return; // Cancelled
+        if (!filename.trim()) filename = 'textarbeit-export';
+        if (!filename.toLowerCase().endsWith('.json')) filename += '.json';
+
+        const blob = new Blob([JSON.stringify(cleanData)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url; a.download = 'textarbeit-export.json'; a.click();
+        const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
     };
 
     const wordColorsRef = useRef(wordColors);
@@ -1204,7 +1231,7 @@ const App = () => {
                             <div className="flex gap-2">
                                 <button onClick={() => { setText("Der kleine Fuchs läuft durch den Wald.\nEr sucht nach einer Maus.\n\nDie Sonne scheint hell am Himmel.\nDie Vögel singen ein Lied."); }} className="px-4 py-2 text-sm text-slate-500 hover:text-blue-600 font-bold transition-colors min-touch-target">Beispiel laden</button>
                                 <label className="px-4 py-2 text-sm text-slate-500 hover:text-blue-600 font-bold cursor-pointer transition-colors flex items-center min-touch-target">
-                                    Importieren <input type="file" accept=".json" className="hidden" onChange={(e) => { const file = e.target.files[0]; if (file) { const r = new FileReader(); r.onload = (ev) => loadState(ev.target.result); r.readAsText(file); } }} />
+                                    Datei öffnen <input type="file" accept=".json" className="hidden" onChange={(e) => { const file = e.target.files[0]; if (file) { const r = new FileReader(); r.onload = (ev) => loadState(ev.target.result); r.readAsText(file); } }} />
                                 </label>
                                 <button onClick={handleFullClear} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all min-touch-target" title="Alles löschen">
                                     <Icons.Trash2 size={20} />
@@ -1438,7 +1465,6 @@ const App = () => {
                     {activeView === 'puzzletest_multi' && <PuzzleTestMultiSyllableView words={hasMarkings ? uniqueExerciseWords : []} settings={settings} onClose={() => setActiveView('text')} title="Silbenpuzzle 2" activeColor={activeColor} />}
                     {activeView === 'cloud' && <WordCloudView words={hasMarkings ? uniqueExerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Wortwolke" />}
                     {activeView === 'carpet' && <SyllableCarpetView words={hasMarkings ? exerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Silbenteppich" />}
-                    {activeView === 'carpet' && <SyllableCarpetView words={hasMarkings ? exerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Silbenteppich" />}
                     {activeView === 'speed_reading' && <SpeedReadingView words={hasMarkings ? uniqueExerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Blitzlesen" />}
                     {activeView === 'wordSorting' && <WordSortingView columnsState={columnsState} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Wörter sortieren" wordColors={wordColors} colorPalette={colorPalette} />}
                     {activeView === 'alphabetSorting' && <AlphabetSortingView words={hasMarkings ? uniqueExerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Alphabetisch sortieren" />}
@@ -1561,7 +1587,14 @@ const App = () => {
                 </>
             )}
 
-            {showSettings && <SettingsModal settings={settings} setSettings={setSettings} onClose={() => setShowSettings(false)} onExport={exportState} onImport={loadState} onPrint={handlePrint} logo={logo} setLogo={setLogo} onClearHighlights={() => { setHighlightedIndices(new Set()); setWordColors({}); }} onShowQR={() => { setShowSettings(false); setShowQR(true); }} onReset={handleResetSettings} />}
+            {showSettings && <SettingsModal settings={settings} setSettings={setSettings} onClose={() => setShowSettings(false)} onExport={exportState} onImport={loadState} onPrint={handlePrint} logo={logo} setLogo={setLogo} onClearHighlights={() => { setHighlightedIndices(new Set()); setWordColors({}); }} onShowQR={() => {
+                if (!text || text.trim().length === 0) {
+                    alert("Kein Text vorhanden");
+                    return;
+                }
+                setShowSettings(false);
+                setShowQR(true);
+            }} onReset={handleResetSettings} activeView={activeView} />}
             {showCorrectionModal && correctionData && <CorrectionModal word={correctionData.word} currentSyllables={correctionData.syllables} font={settings.fontFamily} onSave={handleCorrectionSave} onClose={() => setShowCorrectionModal(false)} />}
             {showQR && <QRCodeModal text={JSON.stringify({
                 text,

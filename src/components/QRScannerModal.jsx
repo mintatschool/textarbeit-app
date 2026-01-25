@@ -515,7 +515,7 @@ export const QRScannerModal = ({ onClose, onScanSuccess }) => {
                         <div className="flex items-center gap-2">
                             <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
                                 {mode === 'qr' ? <Icons.Camera className="text-blue-600" /> : <Icons.Type className="text-blue-600" />}
-                                {mode === 'qr' ? 'Code scannen' : 'Text scannen'}
+                                {mode === 'qr' ? 'Code scannen' : 'Text scannen (fehleranfällig)'}
                             </h2>
                             {/* Camera Switcher (only if multiple cameras) */}
                             {cameras.length > 1 && (

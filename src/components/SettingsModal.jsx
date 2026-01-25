@@ -1,9 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Icons } from './Icons';
 
-export const SettingsModal = ({ settings, setSettings, onExport, onImport, logo, setLogo, onClose, onClearHighlights, onPrint, onShowQR, onReset }) => {
+export const SettingsModal = ({ settings, setSettings, onExport, onImport, logo, setLogo, onClose, onClearHighlights, onPrint, onShowQR, onReset, activeView }) => {
     const fileInputRef = useRef(null);
-    const [printType, setPrintType] = useState('text');
+    const [printType, setPrintType] = useState(() => {
+        if (activeView === 'carpet') return 'carpet';
+        if (activeView === 'list') return 'list';
+        return 'text';
+    });
     const [tableOrientation, setTableOrientation] = useState('landscape');
     const [showClusterManager, setShowClusterManager] = useState(false);
     const [newCluster, setNewCluster] = useState('');
@@ -58,9 +62,14 @@ export const SettingsModal = ({ settings, setSettings, onExport, onImport, logo,
                     <h2 className="text-2xl font-black text-slate-800 flex items-center gap-2">
                         <Icons.Settings className="text-slate-500" /> Einstellungen
                     </h2>
-                    <button onClick={onClose} className="p-3 hover:bg-slate-100 rounded-full transition-colors min-touch-target" title="Schließen (Esc)">
-                        <Icons.X size={24} />
-                    </button>
+                    <div className="flex gap-1">
+                        <button onClick={onShowQR} className="p-3 hover:bg-slate-100 rounded-full transition-colors min-touch-target text-slate-500" title="QR-Code / Link generieren">
+                            <Icons.Share size={24} />
+                        </button>
+                        <button onClick={onClose} className="p-3 hover:bg-slate-100 rounded-full transition-colors min-touch-target" title="Schließen (Esc)">
+                            <Icons.X size={24} />
+                        </button>
+                    </div>
                 </div>
 
                 {/* Content */}
@@ -311,7 +320,7 @@ export const SettingsModal = ({ settings, setSettings, onExport, onImport, logo,
                                         <Icons.Download size={20} /> Speichern
                                     </button>
                                     <button onClick={handleImportClick} className="flex-1 py-4 bg-slate-100 hover:bg-slate-200 rounded-2xl text-slate-700 font-bold flex items-center justify-center gap-2 transition-all min-touch-target">
-                                        <Icons.Upload size={20} /> Laden
+                                        <Icons.Upload size={20} /> Datei öffnen
                                     </button>
                                 </div>
                             </div>
