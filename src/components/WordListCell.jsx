@@ -147,8 +147,8 @@ export const WordListCell = React.memo(({
 
                                             if (isCharHighlighted) {
                                                 // Exact styling match from Word.jsx
-                                                style = { backgroundColor: '#feffc7', paddingTop: '0.02em', paddingBottom: '0.04em', marginTop: '-0.02em', marginBottom: '-0.02em' };
-                                                customClasses = 'cursor-pointer bg-yellow-100'; // Remove transition-colors to fix "dimming"
+                                                style = { backgroundColor: '#fef08a', paddingTop: '0.02em', paddingBottom: '0.04em', marginTop: '-0.02em', marginBottom: '-0.02em' };
+                                                customClasses = 'cursor-pointer bg-yellow-200'; // Remove transition-colors to fix "dimming"
 
                                                 // Neighbor Check for Continuous Blocks
                                                 const simpleLeft = wordColors && wordColors[absCharIndex - 1] === 'yellow';

@@ -314,8 +314,8 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
     const markerStyle = showFrame
         ? frameStyle
         : (isColorMarked
-            // Textmarker: Use same vertical dimensions as frameStyle for consistent height
-            ? { paddingTop: '0.01em', paddingBottom: '0.05em', paddingLeft: '0', paddingRight: '0', marginBottom: '-0.05em', marginTop: '-0.01em', marginLeft: '0', marginRight: '0' }
+            // Textmarker: Use same zero-impact padding/margin as frameStyle for consistent layout
+            ? { paddingTop: '0.01em', paddingBottom: '0.05em', paddingLeft: '0.20em', paddingRight: '0.20em', marginBottom: '-0.05em', marginTop: '-0.01em', marginLeft: '-0.20em', marginRight: '-0.20em' }
             : frameStyle
         );
 
@@ -409,7 +409,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                         let charStyle = { paddingLeft: '0.02em', paddingRight: '0.02em', paddingTop: '0.01em', paddingBottom: '0.18em', marginLeft: '-0.02em', marginRight: '-0.02em', marginTop: '-0.01em', marginBottom: '-0.18em' };
 
                         if (isYellow) {
-                            charClassName += ' bg-yellow-100';
+                            charClassName += ' bg-yellow-200';
 
                             // Check visual adjacency regardless of smartSelection setting for cohesive look
                             const simpleLeft = wordColors && wordColors[globalIndex - 1] === 'yellow';
@@ -545,8 +545,8 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                                         let style = { paddingLeft: '0.02em', paddingRight: '0.02em', marginLeft: '-0.02em', marginRight: '-0.02em' };
 
                                         if (isYellow) {
-                                            style = { backgroundColor: '#feffc7', paddingLeft: '0.02em', paddingRight: '0.02em', paddingTop: '0.01em', paddingBottom: '0.04em', marginLeft: '-0.02em', marginRight: '-0.02em', marginTop: '-0.01em', marginBottom: '-0.04em' };
-                                            customClasses += ' bg-yellow-100';
+                                            style = { backgroundColor: '#fef08a', paddingLeft: '0.02em', paddingRight: '0.02em', paddingTop: '0.01em', paddingBottom: '0.04em', marginLeft: '-0.02em', marginRight: '-0.02em', marginTop: '-0.01em', marginBottom: '-0.04em' };
+                                            customClasses += ' bg-yellow-200';
 
                                             const simpleLeft = wordColors && wordColors[globalIndex - 1] === 'yellow';
                                             const simpleRight = wordColors && wordColors[globalIndex + 1] === 'yellow';

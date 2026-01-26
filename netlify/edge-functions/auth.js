@@ -1,4 +1,19 @@
 export default async (request, context) => {
+    const url = new URL(request.url);
+
+    // PWA-critical files must bypass auth for offline support on iOS/Android
+    // These files contain no sensitive data and are required for Service Worker registration
+    const pwaBypassPaths = [
+        '/sw.js',
+        '/manifest.webmanifest',
+    ];
+    const isPwaPath = pwaBypassPaths.some(path => url.pathname === path) ||
+        url.pathname.startsWith('/workbox-');
+
+    if (isPwaPath) {
+        return context.next();  // Allow PWA files without authentication
+    }
+
     // 1. Check for Authorization header
     const authorization = request.headers.get("Authorization");
 

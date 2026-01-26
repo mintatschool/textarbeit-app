@@ -824,7 +824,11 @@ const App = () => {
                     if (currentActiveColor === 'neutral') {
                         delete next[i];
                     } else if (currentActiveColor) {
-                        next[i] = currentActiveColor;
+                        // Preserve existing yellow letter markings when applying word color
+                        // Only apply the new color if the letter is NOT already yellow-marked
+                        if (next[i] !== 'yellow') {
+                            next[i] = currentActiveColor;
+                        }
                     }
                 });
             }
