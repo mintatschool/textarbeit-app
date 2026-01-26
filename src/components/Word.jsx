@@ -283,12 +283,12 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
         ? 'rounded-lg' // removed border-2
         : (isColorMarked ? 'rounded-none' : 'rounded-lg');
 
-    // Box Shadow Logic
-    // If showFrame: Inner Ring (Slate)
+    // Outline Logic (Layout-neutral, unlike box-shadow with spread)
+    // If showFrame: Outline Ring (Slate)
     // If Textmarker: No Ring (or specific marker ring if designed)
     // Neutral: No Ring
-    const boxShadowStyle = showFrame
-        ? '0 0 0 2px rgba(203, 213, 225, 0.8)' // slate-300/80
+    const outlineStyle = showFrame
+        ? '3px solid rgba(203, 213, 225, 0.8)' // slate-300/80
         : 'none';
 
     const markerClass = `${markerBase}`;
@@ -314,8 +314,8 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
     const markerStyle = showFrame
         ? frameStyle
         : (isColorMarked
-            // Textmarker: Also use zero-impact Logic to match Frame geometry (Net 0 width)
-            ? { paddingTop: '0.01em', paddingBottom: '0.15em', paddingLeft: '0', paddingRight: '0', marginBottom: '-0.15em', marginTop: '-0.01em', marginLeft: '0', marginRight: '0' }
+            // Textmarker: Use same vertical dimensions as frameStyle for consistent height
+            ? { paddingTop: '0.01em', paddingBottom: '0.05em', paddingLeft: '0', paddingRight: '0', marginBottom: '-0.05em', marginTop: '-0.01em', marginLeft: '0', marginRight: '0' }
             : frameStyle
         );
 
@@ -332,7 +332,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                         marginRight: '0',
                         marginLeft: '0',
                         ...markerStyle,
-                        boxShadow: boxShadowStyle,
+                        outline: outlineStyle,
                         backgroundColor: 'transparent'
                     }}
                 >
@@ -344,8 +344,10 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
 
     const backgroundColor = isColorMarked ? firstCharColor : 'transparent';
 
-    // Unified Rendering - use when syllables shouldn't be shown OR when color marked (but NOT when neutral marked)
-    if (!showSyllables || (isColorMarked && !isNeutralMarked)) {
+    // Unified Rendering - use when syllables shouldn't be shown OR when color marked with block style
+    // Exception: For black_gray and arc visualTypes, we CAN show syllables even with color marking
+    const skipSyllablesForColor = isColorMarked && !isNeutralMarked && settings.visualType === 'block';
+    if (!showSyllables || skipSyllablesForColor) {
         return (
             <span
                 ref={refForWord}
@@ -384,9 +386,10 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                     style={{
                         marginRight: '0', // Fixed 0 to use word spacing only
                         marginLeft: '0',
-                        boxShadow: isNeutralMarked ? 'none' : boxShadowStyle,
+                        outline: isNeutralMarked ? 'none' : outlineStyle,
                         backgroundColor: isNeutralMarked ? 'transparent' : (isSelection ? '#e2e8f0' : backgroundColor),
                         color: isColorMarked ? 'black' : undefined,
+                        lineHeight: isColorMarked ? 1 : undefined, // Limit colored marker height to match frame height
                         ...markerStyle
                     }}
                 >
@@ -402,8 +405,8 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
 
                         let charClassName = `inline-block leading-none transition-transform ${isColorMarked ? '' : 'hover:bg-slate-100'} cursor-pointer`;
 
-                        // Default char padding in em - Adjusted for better coverage (descenders)
-                        let charStyle = { paddingLeft: '0.02em', paddingRight: '0.02em', paddingTop: '0.01em', paddingBottom: '0.18em', marginTop: '-0.01em', marginBottom: '-0.16em' };
+                        // Default char padding in em - Perfectly balanced (padding = -margin) for zero layout shift
+                        let charStyle = { paddingLeft: '0.02em', paddingRight: '0.02em', paddingTop: '0.01em', paddingBottom: '0.18em', marginLeft: '-0.02em', marginRight: '-0.02em', marginTop: '-0.01em', marginBottom: '-0.18em' };
 
                         if (isYellow) {
                             charClassName += ' bg-yellow-100';
@@ -505,7 +508,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
             onClick={(e) => !isReadingMode && !isTextMarkerMode && activeTool !== 'pen' && (activeTool === 'split' || activeTool === 'blur' || activeColor !== 'yellow') ? handleInteraction(e) : null}
         >
             {renderPrefix()}
-            <span className={`inline-flex items-baseline ${markerClass} ${isSelection && !isNeutralMarked ? 'animate-pulse bg-slate-100 rounded-lg' : ''}`} style={{ backgroundColor: 'transparent', marginLeft: '0', marginRight: '0', boxShadow: boxShadowStyle, ...markerStyle }}>
+            <span className={`inline-flex items-baseline ${markerClass} ${isSelection && !isNeutralMarked ? 'animate-pulse bg-slate-100 rounded-lg' : ''} ${isColorMarked ? 'rounded-lg' : ''}`} style={{ backgroundColor: isColorMarked ? backgroundColor : 'transparent', marginLeft: '0', marginRight: '0', outline: outlineStyle, lineHeight: isColorMarked ? 1 : undefined, ...markerStyle }}>
                 {(() => {
                     let visualCounter = 0;
                     const visualIndices = syllables.map(s => {
@@ -539,10 +542,10 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
 
                                         let rounded = 'rounded-sm';
                                         let customClasses = 'cursor-pointer';
-                                        let style = { paddingLeft: '0.02em', paddingRight: '0.02em' };
+                                        let style = { paddingLeft: '0.02em', paddingRight: '0.02em', marginLeft: '-0.02em', marginRight: '-0.02em' };
 
                                         if (isYellow) {
-                                            style = { backgroundColor: '#feffc7', paddingTop: '0.01em', paddingBottom: '0.04em', marginTop: '-0.01em', marginBottom: '-0.02em' };
+                                            style = { backgroundColor: '#feffc7', paddingLeft: '0.02em', paddingRight: '0.02em', paddingTop: '0.01em', paddingBottom: '0.04em', marginLeft: '-0.02em', marginRight: '-0.02em', marginTop: '-0.01em', marginBottom: '-0.04em' };
                                             customClasses += ' bg-yellow-100';
 
                                             const simpleLeft = wordColors && wordColors[globalIndex - 1] === 'yellow';

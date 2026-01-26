@@ -16,7 +16,7 @@ export default defineConfig({
     VitePWA({
       disable: isNoHttps,
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'logo.png', 'available_syllables.json'],
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'logo.png', 'available_syllables.json', 'audio/**/*.mp3'],
       manifest: {
         name: 'Textarbeit',
         short_name: 'Textarbeit',
@@ -25,8 +25,11 @@ export default defineConfig({
         background_color: '#ffffff',
         display: 'standalone',
         orientation: 'landscape',
-        scope: '.',
-        start_url: 'index.html',
+        // iOS-compatible scope and start_url
+        scope: '/',
+        start_url: './',
+        // iOS-specific settings
+        id: 'textarbeit-app',
         icons: [
           {
             src: 'logo.png',
@@ -43,7 +46,10 @@ export default defineConfig({
         ]
       },
       devOptions: {
-        enabled: !isNoHttps
+        enabled: !isNoHttps,
+        // Use 'module' type for better dev experience with proper caching
+        type: 'module',
+        navigateFallback: 'index.html'
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,json,mp3,wav,woff2,ttf}'],
@@ -51,7 +57,21 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
         skipWaiting: true,
         clientsClaim: true,
+        // Maximum file size to precache (default is 2MB, increase for audio files)
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         runtimeCaching: [
+          {
+            // Cache all local assets with NetworkFirst strategy for offline support
+            urlPattern: ({ request, sameOrigin }) => sameOrigin && request.destination !== 'document',
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'local-assets-cache',
+              expiration: {
+                maxEntries: 500,
+                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+              },
+            },
+          },
           {
             urlPattern: ({ url }) => url.pathname.includes('/audio/'),
             handler: 'CacheFirst',

@@ -626,7 +626,11 @@ const App = () => {
                                 highlightsChanged = true;
                             }
                         } else {
-                            next[idx] = paintColor;
+                            // Preserve existing yellow letter markings when applying word color
+                            // Only apply word color if the letter is NOT already yellow-marked
+                            if (next[idx] !== 'yellow') {
+                                next[idx] = paintColor;
+                            }
                         }
                         changed = true;
                     }
