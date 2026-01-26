@@ -284,12 +284,12 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
         : (isColorMarked ? 'rounded-none' : 'rounded-lg');
 
     // Outline Logic (Layout-neutral, unlike box-shadow with spread)
-    // If showFrame: Outline Ring (Slate)
+    // If showFrame: Outline Ring (Slate) - use negative offset to draw INWARD
     // If Textmarker: No Ring (or specific marker ring if designed)
     // Neutral: No Ring
     const outlineStyle = showFrame
-        ? '3px solid rgba(203, 213, 225, 0.8)' // slate-300/80
-        : 'none';
+        ? { outline: '3px solid rgba(203, 213, 225, 0.8)', outlineOffset: '-3px' } // slate-300/80, inward
+        : { outline: 'none' };
 
     const markerClass = `${markerBase}`;
 
@@ -332,7 +332,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                         marginRight: '0',
                         marginLeft: '0',
                         ...markerStyle,
-                        outline: outlineStyle,
+                        ...outlineStyle,
                         backgroundColor: 'transparent'
                     }}
                 >
@@ -386,7 +386,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                     style={{
                         marginRight: '0', // Fixed 0 to use word spacing only
                         marginLeft: '0',
-                        outline: isNeutralMarked ? 'none' : outlineStyle,
+                        ...(isNeutralMarked ? {} : outlineStyle),
                         backgroundColor: isNeutralMarked ? 'transparent' : (isSelection ? '#e2e8f0' : backgroundColor),
                         color: isColorMarked ? 'black' : undefined,
                         lineHeight: isColorMarked ? 1 : undefined, // Limit colored marker height to match frame height
@@ -508,7 +508,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
             onClick={(e) => !isReadingMode && !isTextMarkerMode && activeTool !== 'pen' && (activeTool === 'split' || activeTool === 'blur' || activeColor !== 'yellow') ? handleInteraction(e) : null}
         >
             {renderPrefix()}
-            <span className={`inline-flex items-baseline ${markerClass} ${isSelection && !isNeutralMarked ? 'animate-pulse bg-slate-100 rounded-lg' : ''} ${isColorMarked ? 'rounded-lg' : ''}`} style={{ backgroundColor: isColorMarked ? backgroundColor : 'transparent', marginLeft: '0', marginRight: '0', outline: outlineStyle, lineHeight: isColorMarked ? 1 : undefined, ...markerStyle }}>
+            <span className={`inline-flex items-baseline ${markerClass} ${isSelection && !isNeutralMarked ? 'animate-pulse bg-slate-100 rounded-lg' : ''} ${isColorMarked ? 'rounded-lg' : ''}`} style={{ backgroundColor: isColorMarked ? backgroundColor : 'transparent', marginLeft: '0', marginRight: '0', ...outlineStyle, lineHeight: isColorMarked ? 1 : undefined, ...markerStyle }}>
                 {(() => {
                     let visualCounter = 0;
                     const visualIndices = syllables.map(s => {

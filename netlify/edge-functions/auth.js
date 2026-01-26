@@ -1,17 +1,32 @@
 export default async (request, context) => {
     const url = new URL(request.url);
 
-    // PWA-critical files must bypass auth for offline support on iOS/Android
-    // These files contain no sensitive data and are required for Service Worker registration
+    // PWA and static assets must bypass auth for offline support on iOS/Android
+    // The Service Worker needs to cache these files without authentication headers
+    // Only the main HTML page and API endpoints should require authentication
+
     const pwaBypassPaths = [
         '/sw.js',
         '/manifest.webmanifest',
     ];
-    const isPwaPath = pwaBypassPaths.some(path => url.pathname === path) ||
-        url.pathname.startsWith('/workbox-');
 
-    if (isPwaPath) {
-        return context.next();  // Allow PWA files without authentication
+    // Check if this is a static asset that should bypass auth
+    const staticAssetExtensions = [
+        '.js', '.css', '.woff2', '.woff', '.ttf', '.eot',  // Code and fonts
+        '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.webp',  // Images
+        '.mp3', '.wav', '.ogg', '.m4a',  // Audio
+        '.json',  // Data files
+    ];
+
+    const isPwaPath = pwaBypassPaths.some(path => url.pathname === path) ||
+        url.pathname.startsWith('/workbox-') ||
+        url.pathname.startsWith('/assets/');  // Vite build assets folder
+
+    const isStaticAsset = staticAssetExtensions.some(ext => url.pathname.endsWith(ext));
+
+    // Allow PWA files and static assets without authentication
+    if (isPwaPath || isStaticAsset) {
+        return context.next();
     }
 
     // 1. Check for Authorization header
