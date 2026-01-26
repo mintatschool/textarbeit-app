@@ -65,6 +65,9 @@ export const TwoPartPuzzleLayout = ({
     currentTargetIdx,
     currentTargetItem,
     selectedPiece,
+    maxScale = 1.3,      // Dynamic max zoom (from hook)
+    sidebarWidth = 208,  // Dynamic sidebar width (from hook)
+
 
     // Actions from hook
     startNewGame,
@@ -289,11 +292,11 @@ export const TwoPartPuzzleLayout = ({
                         <input
                             type="range"
                             min="0.7"
-                            max="1.3"
-                            step="0.1"
+                            max={maxScale}
+                            step="0.05"
                             value={scale}
                             onChange={(e) => setScale(parseFloat(e.target.value))}
-                            className="w-32 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer"
+                            className="w-32 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer transition-all"
                         />
                         <span className="text-xl font-bold text-slate-500">A</span>
                     </div>
@@ -313,7 +316,8 @@ export const TwoPartPuzzleLayout = ({
             {/* Main Content */}
             <main className="flex-1 relative flex overflow-hidden">
                 {/* Left Pieces */}
-                <div className="w-52 relative border-r border-blue-50 bg-white/20 shrink-0 overflow-y-auto overflow-x-hidden custom-scroll py-6 px-4 space-y-8 flex flex-col items-start"
+                <div className="relative border-r border-blue-50 bg-white/20 shrink-0 overflow-y-auto overflow-x-hidden custom-scroll py-6 px-4 space-y-8 flex flex-col items-start transition-all duration-300"
+                    style={{ width: sidebarWidth }}
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={(e) => {
                         e.preventDefault();
@@ -497,8 +501,9 @@ export const TwoPartPuzzleLayout = ({
                     </div>
                 </div>
 
-                {/* Right Pieces - Fixed Width for "Ende" */}
-                <div className="w-52 shrink-0 relative border-l border-blue-50 bg-white/20 overflow-y-auto overflow-x-hidden custom-scroll py-6 px-4 space-y-8 flex flex-col items-end"
+                {/* Right Pieces - Dynamic Width for "Ende" */}
+                <div className="shrink-0 relative border-l border-blue-50 bg-white/20 overflow-y-auto overflow-x-hidden custom-scroll py-6 px-4 space-y-8 flex flex-col items-end transition-all duration-300"
+                    style={{ width: sidebarWidth }}
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={(e) => {
                         e.preventDefault();

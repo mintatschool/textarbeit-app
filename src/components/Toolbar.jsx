@@ -22,7 +22,7 @@ const AVAILABLE_COLORS = [
     '#84cc16'  // lime
 ];
 
-const ToolbarButton = ({ onClick, icon: IconComponent, title, active, activeColor = "blue", disabled, className = "" }) => {
+const ToolbarButton = ({ onClick, icon: IconComponent, title, active, activeColor = "blue", hoverColor = "blue", disabled, className = "" }) => {
     let baseClass = "p-3 rounded-xl transition flex-shrink-0 min-touch-target";
     if (className) {
         if (!className.includes('rounded-')) {
@@ -42,7 +42,8 @@ const ToolbarButton = ({ onClick, icon: IconComponent, title, active, activeColo
         else activeClass = "bg-blue-600 text-white shadow-md"; // Default Edit Mode Button
     } else {
         // Einheitliche Hover-Farbe für alle Buttons (außer active)
-        activeClass = "text-slate-600 hover:text-blue-600 hover:bg-slate-100";
+        const hoverTextClass = hoverColor === "red" ? "hover:text-red-600" : (hoverColor === "orange" ? "hover:text-orange-600" : "hover:text-blue-600");
+        activeClass = `text-slate-600 ${hoverTextClass} hover:bg-slate-100`;
     }
 
     // Special Case: Grüner Button im Edit-Mode für View-Switch
@@ -155,7 +156,7 @@ export const Toolbar = ({
     };
 
     // Layout-Klasse: Feste Sidebar rechts (Docked)
-    const containerClasses = "fixed right-0 top-0 h-full w-24 flex-col items-center py-4 gap-4 overflow-y-auto custom-scroll no-scrollbar border-l rounded-none";
+    const containerClasses = "fixed right-0 top-0 h-full w-24 flex-col items-center py-4 gap-3 overflow-y-auto custom-scroll no-scrollbar border-l rounded-none";
 
     // Show nothing in Edit Mode
     if (!isViewMode) return null;
@@ -187,6 +188,7 @@ export const Toolbar = ({
                     disabled={isReadingMode}
                     active={showResetConfirm}
                     activeColor="red"
+                    hoverColor="red"
                     className="w-14 h-10 rounded-2xl"
                 />
 
@@ -206,6 +208,7 @@ export const Toolbar = ({
                         disabled={isReadingMode}
                         active={showMarkAllConfirm}
                         activeColor="red"
+                        hoverColor="red"
                         className="w-14 h-10 rounded-2xl"
                     />
                 )}
@@ -605,7 +608,7 @@ export const Toolbar = ({
                 document.body
             )}
 
-            <div className="mt-auto flex flex-col gap-4 w-full items-center">
+            <div className="mt-auto flex flex-col gap-3 w-full items-center">
                 <Separator horizontal={false} />
 
                 <ToolbarButton
@@ -614,6 +617,7 @@ export const Toolbar = ({
                     onClick={onToggleReadingMode}
                     active={isReadingMode}
                     activeColor="orange"
+                    hoverColor="orange"
                 />
 
                 {!settings?.reduceMenu && (

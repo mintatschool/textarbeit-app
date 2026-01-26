@@ -118,8 +118,6 @@ export const QRScannerModal = ({ onClose, onScanSuccess }) => {
     }, [mode]);
 
     const handleScanResult = (decodedText, html5QrCode) => {
-        if (hasScannedRef.current) return;
-
         const multiPart = parseMultiPart(decodedText);
 
         const killCameraTracks = () => {
@@ -158,7 +156,11 @@ export const QRScannerModal = ({ onClose, onScanSuccess }) => {
         };
 
         if (multiPart) {
+            // For multi-part QR: Only block if we already completed a full scan
+            if (hasScannedRef.current) return;
+
             setMultiPartState(prev => {
+                // If this is a new transfer (different ID), start fresh
                 if (!prev || prev.id !== multiPart.id) {
                     return {
                         id: multiPart.id,
@@ -166,6 +168,12 @@ export const QRScannerModal = ({ onClose, onScanSuccess }) => {
                         parts: { [multiPart.part]: multiPart.data }
                     };
                 }
+
+                // Skip if we already have this part (duplicate scan)
+                if (prev.parts[multiPart.part]) {
+                    return prev;
+                }
+
                 const newState = { ...prev };
                 newState.parts[multiPart.part] = multiPart.data;
 
@@ -175,24 +183,22 @@ export const QRScannerModal = ({ onClose, onScanSuccess }) => {
                     for (let i = 1; i <= newState.total; i++) {
                         combined += newState.parts[i] || '';
                     }
-                    if (!hasScannedRef.current) {
-                        hasScannedRef.current = true;
-                        setIsScanning(false);
-                        killCameraTracks(); // Nuclear hardware stop
-                        // Heavy delay (800ms) for Surface hardware to register shutdown before unmount
-                        setTimeout(() => onScanSuccess(combined), 800);
-                    }
+                    hasScannedRef.current = true;
+                    setIsScanning(false);
+                    killCameraTracks(); // Nuclear hardware stop
+                    // Heavy delay (800ms) for Surface hardware to register shutdown before unmount
+                    setTimeout(() => onScanSuccess(combined), 800);
                     return null;
                 }
                 return newState;
             });
         } else {
-            if (!hasScannedRef.current) {
-                hasScannedRef.current = true;
-                setIsScanning(false);
-                killCameraTracks();
-                setTimeout(() => onScanSuccess(decodedText), 800);
-            }
+            // For single QR: Standard guard against double-scanning
+            if (hasScannedRef.current) return;
+            hasScannedRef.current = true;
+            setIsScanning(false);
+            killCameraTracks();
+            setTimeout(() => onScanSuccess(decodedText), 800);
         }
     };
 
@@ -250,6 +256,10 @@ export const QRScannerModal = ({ onClose, onScanSuccess }) => {
         let scannerInstance = null;
 
         const startScanner = async () => {
+            // Reset state for fresh scan session
+            hasScannedRef.current = false;
+            setMultiPartState(null);
+
             // 1. Wait for DOM
             await new Promise(r => setTimeout(r, 100));
             if (!isMounted || !document.getElementById(elementId)) return;

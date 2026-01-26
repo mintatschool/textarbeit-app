@@ -53,6 +53,64 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
 
     const allowedClusters = useMemo(() => new Set(settings.clusters || []), [settings.clusters]);
 
+    // --------------------------------------------------------------------------------
+    // DYNAMIC ZOOM & SIDEBAR WIDTH CALCULATION
+    // --------------------------------------------------------------------------------
+
+    // Calculate longest target width in current stage (base width before scaling)
+    const longestTargetBaseWidth = useMemo(() => {
+        const currentStage = gameState.stages[gameState.currentStageIndex];
+        if (!currentStage?.items) return 400; // Fallback
+
+        let maxWidth = 0;
+        currentStage.items.forEach(target => {
+            if (!target.parts) return;
+            // Each piece is ~200px base, with overlaps between pieces
+            const numParts = target.parts.length;
+            let targetWidth = numParts * 200;
+            if (numParts > 1) targetWidth -= 90; // First overlap
+            if (numParts > 2) targetWidth -= (numParts - 2) * 60; // Subsequent overlaps
+            if (targetWidth > maxWidth) maxWidth = targetWidth;
+        });
+
+        return Math.max(300, maxWidth); // Minimum 300px
+    }, [gameState.stages, gameState.currentStageIndex]);
+
+    // Calculate max allowed scale based on viewport and longest target
+    const maxScale = useMemo(() => {
+        const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
+        const maxSidebarWidth = 220;
+        const uiElementsWidth = 180; // Speaker + Check + padding
+
+        // Available middle space with max sidebar width
+        const availableMiddle = viewportWidth - (2 * maxSidebarWidth);
+
+        // Scale at which longest target + UI fits in available middle
+        // Target is rendered at scale * 0.85 in the target area
+        const maxByMiddle = (availableMiddle - uiElementsWidth) / (longestTargetBaseWidth * 0.85);
+
+        // Scale at which pieces fit in sidebar (piece base 200px * scale * 0.8)
+        const maxBySidebar = maxSidebarWidth / (200 * 0.8);
+
+        // Return the smaller constraint, clamped between 0.7 and 1.4
+        return Math.max(0.7, Math.min(1.4, maxByMiddle, maxBySidebar));
+    }, [longestTargetBaseWidth]);
+
+    // Dynamic sidebar width based on current scale
+    const sidebarWidth = useMemo(() => {
+        const baseWidth = 150;
+        const width = Math.round(200 * gameState.pieceScale);
+        return Math.max(baseWidth, Math.min(220, width));
+    }, [gameState.pieceScale]);
+
+    // Auto-reduce scale if it exceeds maxScale (e.g., when stage changes to longer targets)
+    useEffect(() => {
+        if (gameState.pieceScale > maxScale) {
+            setGameState(prev => ({ ...prev, pieceScale: maxScale }));
+        }
+    }, [maxScale, gameState.currentStageIndex]);
+
+
     const totalWords = useMemo(() => gameState.stages.reduce((acc, stage) => acc + stage.items.length, 0), [gameState.stages]);
     const progress = useMemo(() => {
         if (totalWords === 0) return 0;
@@ -528,11 +586,11 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                             <input
                                 type="range"
                                 min="0.7"
-                                max="1.4"
-                                step="0.1"
+                                max={maxScale}
+                                step="0.05"
                                 value={gameState.pieceScale}
                                 onChange={(e) => setGameState(prev => ({ ...prev, pieceScale: parseFloat(e.target.value) }))}
-                                className="w-32 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer"
+                                className="w-32 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer transition-all"
                             />
                             <span className="text-xl font-bold text-slate-500">A</span>
                         </div>
@@ -542,7 +600,8 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
 
             <div className="flex-1 relative flex overflow-hidden">
                 {/* LEFT SIDEBAR (Start Pieces) */}
-                <div className="w-[150px] bg-slate-100/50 border-r border-slate-200 flex flex-col shrink-0"
+                <div className="bg-slate-100/50 border-r border-slate-200 flex flex-col shrink-0 transition-all duration-300"
+                    style={{ width: sidebarWidth }}
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={(e) => {
                         e.preventDefault();
@@ -570,32 +629,34 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
 
                 {/* MAIN AREA */}
                 <div className="flex-1 flex flex-col relative bg-white">
-                    {/* Middle Pieces Pool (Top Strip) */}
-                    <div className="h-[28%] bg-blue-50/30 border-b border-blue-100 relative w-full overflow-hidden shrink-0"
-                        onDragOver={(e) => e.preventDefault()}
-                        onDrop={(e) => {
-                            e.preventDefault();
-                            const pid = e.dataTransfer.getData("pieceId");
-                            if (pid) handleReturnToPool(pid);
-                        }}
-                    >
-                        <div className="absolute top-1 left-2 text-[10px] font-bold text-slate-400 uppercase">Mitte</div>
-                        <div className="w-full h-full relative pt-6 px-4 pb-4 flex flex-wrap items-center justify-center gap-4 content-center overflow-y-auto custom-scroll">
-                            {middleVisible.map(p => {
-                                const isSelected = selectedPiece?.id === p.id;
-                                return (
-                                    <div key={p.id}
-                                        className={`transition-all duration-200 cursor-pointer ${isSelected ? 'scale-110 z-50' : 'hover:z-50 hover:scale-105 active:scale-95'}`}
-                                        style={{ transform: `rotate(${p.rotation}deg)`, filter: isSelected ? 'drop-shadow(0 0 12px rgba(59, 130, 246, 0.8))' : 'none' }}
-                                        onClick={() => handlePieceSelect(p)}
-                                        draggable onDragStart={(e) => { e.dataTransfer.setData("pieceId", p.id); setIsDragging(p.id); }} onDragEnd={() => setIsDragging(null)}
-                                    >
-                                        <PuzzleTestPiece label={p.text} type="zigzag-middle" colorClass={getPieceColor(p.color, activeColor)} scale={gameState.pieceScale * 0.8} fontFamily={settings.fontFamily} onDragStart={() => { }} />
-                                    </div>
-                                );
-                            })}
+                    {/* Middle Pieces Pool (Top Strip) - Conditional Rendering & Dynamic Height */}
+                    {scrambledPieces.middle.length > 0 && (
+                        <div className="bg-blue-50/30 border-b border-blue-100 relative w-full overflow-hidden shrink-0 min-h-0 h-auto max-h-[35%]"
+                            onDragOver={(e) => e.preventDefault()}
+                            onDrop={(e) => {
+                                e.preventDefault();
+                                const pid = e.dataTransfer.getData("pieceId");
+                                if (pid) handleReturnToPool(pid);
+                            }}
+                        >
+                            <div className="absolute top-1 left-2 text-[10px] font-bold text-slate-400 uppercase">Mitte</div>
+                            <div className="w-full relative pt-6 px-4 pb-4 flex flex-wrap items-center justify-center gap-4 content-center overflow-y-auto custom-scroll">
+                                {middleVisible.map(p => {
+                                    const isSelected = selectedPiece?.id === p.id;
+                                    return (
+                                        <div key={p.id}
+                                            className={`transition-all duration-200 cursor-pointer ${isSelected ? 'scale-110 z-50' : 'hover:z-50 hover:scale-105 active:scale-95'}`}
+                                            style={{ transform: `rotate(${p.rotation}deg)`, filter: isSelected ? 'drop-shadow(0 0 12px rgba(59, 130, 246, 0.8))' : 'none' }}
+                                            onClick={() => handlePieceSelect(p)}
+                                            draggable onDragStart={(e) => { e.dataTransfer.setData("pieceId", p.id); setIsDragging(p.id); }} onDragEnd={() => setIsDragging(null)}
+                                        >
+                                            <PuzzleTestPiece label={p.text} type="zigzag-middle" colorClass={getPieceColor(p.color, activeColor)} scale={gameState.pieceScale * 0.8} fontFamily={settings.fontFamily} onDragStart={() => { }} />
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     {/* TARGETS LIST */}
                     <div className="flex-1 overflow-y-auto custom-scroll p-2 pt-12 flex flex-col items-center gap-8 bg-slate-50/30">
@@ -744,7 +805,8 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                 </div>
 
                 {/* RIGHT SIDEBAR (End Pieces) */}
-                <div className="w-[150px] bg-slate-100/50 border-l border-slate-200 flex flex-col shrink-0"
+                <div className="bg-slate-100/50 border-l border-slate-200 flex flex-col shrink-0 transition-all duration-300"
+                    style={{ width: sidebarWidth }}
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={(e) => {
                         e.preventDefault();

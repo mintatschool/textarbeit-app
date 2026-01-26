@@ -47,6 +47,67 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
     // iPad Fix: Prevent touch scrolling during drag
     usePreventTouchScroll(isDragging);
 
+    // --------------------------------------------------------------------------------
+    // DYNAMIC ZOOM & SIDEBAR WIDTH CALCULATION
+    // --------------------------------------------------------------------------------
+
+    // Calculate longest word width in current stage (base width before scaling)
+    const longestWordBaseWidth = useMemo(() => {
+        const currentStage = gameState.stages[gameState.currentStageIndex];
+        if (!currentStage?.items) return 400; // Fallback for 2-syllable word
+
+        let maxWidth = 0;
+        currentStage.items.forEach(word => {
+            if (!word.syllables) return;
+            // Each piece is ~200px base, with overlaps between pieces
+            // Overlap: ~90px for first connection, ~60px for subsequent
+            const numSyllables = word.syllables.length;
+            let wordWidth = numSyllables * 200;
+            if (numSyllables > 1) wordWidth -= 90; // First overlap
+            if (numSyllables > 2) wordWidth -= (numSyllables - 2) * 60; // Subsequent overlaps
+            if (wordWidth > maxWidth) maxWidth = wordWidth;
+        });
+
+        return Math.max(300, maxWidth); // Minimum 300px
+    }, [gameState.stages, gameState.currentStageIndex]);
+
+    // Calculate max allowed scale based on viewport and longest word
+    const maxScale = useMemo(() => {
+        const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
+        const minSidebarWidth = 150;
+        const maxSidebarWidth = 220;
+        const uiElementsWidth = 180; // Speaker + Check + padding
+
+        // Available middle space with max sidebar width
+        const availableMiddle = viewportWidth - (2 * maxSidebarWidth);
+
+        // Scale at which longest word + UI fits in available middle
+        // Word is rendered at scale * 0.85 in the target area
+        const maxByMiddle = (availableMiddle - uiElementsWidth) / (longestWordBaseWidth * 0.85);
+
+        // Scale at which pieces fit in sidebar (piece base 200px * scale * 0.8)
+        const maxBySidebar = maxSidebarWidth / (200 * 0.8);
+
+        // Return the smaller constraint, clamped between 0.6 and 1.3
+        return Math.max(0.6, Math.min(1.3, maxByMiddle, maxBySidebar));
+    }, [longestWordBaseWidth]);
+
+    // Dynamic sidebar width based on current scale
+    const sidebarWidth = useMemo(() => {
+        // Sidebar grows with scale, from 150px at 0.6 to ~220px at max scale
+        const baseWidth = 150;
+        const width = Math.round(200 * gameState.pieceScale);
+        return Math.max(baseWidth, Math.min(220, width));
+    }, [gameState.pieceScale]);
+
+    // Auto-reduce scale if it exceeds maxScale (e.g., when stage changes to longer words)
+    useEffect(() => {
+        if (gameState.pieceScale > maxScale) {
+            setGameState(prev => ({ ...prev, pieceScale: maxScale }));
+        }
+    }, [maxScale, gameState.currentStageIndex]);
+
+
 
     // --------------------------------------------------------------------------------
     // 1. GAME LOGIC & INITIALIZATION
@@ -560,11 +621,11 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                             <input
                                 type="range"
                                 min="0.6"
-                                max="1.3"
-                                step="0.1"
+                                max={maxScale}
+                                step="0.05"
                                 value={gameState.pieceScale}
                                 onChange={(e) => setGameState(prev => ({ ...prev, pieceScale: parseFloat(e.target.value) }))}
-                                className="w-32 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer"
+                                className="w-32 accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer transition-all"
                             />
                             <span className="text-xl font-bold text-slate-500">A</span>
                         </div>
@@ -577,7 +638,8 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
             <div className="flex-1 relative flex overflow-hidden">
 
                 {/* LEFT ZONE - Anfangsstücke */}
-                <div className="w-[150px] bg-slate-100/50 border-r border-slate-200 flex flex-col shrink-0"
+                <div className="bg-slate-100/50 border-r border-slate-200 flex flex-col shrink-0 transition-all duration-300"
+                    style={{ width: sidebarWidth }}
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={(e) => {
                         e.preventDefault();
@@ -616,46 +678,48 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
 
                 {/* MIDDLE ZONE + CENTER */}
                 <div className="flex-1 flex flex-col relative bg-white">
-                    {/* Top strip for Middle Pieces */}
-                    <div className="h-[28%] bg-blue-50/30 border-b border-blue-100 relative w-full overflow-hidden shrink-0"
-                        onDragOver={(e) => e.preventDefault()}
-                        onDrop={(e) => {
-                            e.preventDefault();
-                            const pid = e.dataTransfer.getData("application/puzzle-piece-id");
-                            if (pid) handleReturnToPool(pid);
-                        }}
-                    >
-                        <div className="absolute top-1 left-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Mitte</div>
-                        <div className="w-full h-full relative pt-6 px-4 pb-4 flex flex-wrap items-center justify-center gap-4 content-center overflow-y-auto custom-scroll">
-                            {getVisiblePieces('middle').map(p => {
-                                const isHighlighted = highlightedWordId === p.wordId;
-                                const isSelected = selectedPiece?.id === p.id;
-                                return (
-                                    <div key={p.id}
-                                        className={`transition-all duration-200 cursor-pointer
-                                            ${isHighlighted ? 'scale-110 z-[100] drop-shadow-xl' : ''}
-                                            ${isSelected ? 'scale-110 z-50' : 'hover:z-50 hover:scale-105 active:scale-95'}
-                                        `}
-                                        style={{
-                                            transform: `rotate(${p.rotation}deg)`,
-                                            filter: isSelected ? 'drop-shadow(0 0 12px rgba(59, 130, 246, 0.8))' : 'none'
-                                        }}
-                                        onClick={() => handlePieceSelect(p)}
-                                        draggable onDragStart={(e) => { e.dataTransfer.setData("application/puzzle-piece-id", p.id); setIsDragging(p.id); }}
-                                        onDragEnd={() => setIsDragging(null)}>
-                                        <PuzzleTestPiece
-                                            label={p.text}
-                                            type="middle"
-                                            colorClass={getPieceColor(p.color, activeColor)}
-                                            dynamicWidth={p.width}
-                                            scale={gameState.pieceScale * 0.8}
-                                            fontFamily={settings.fontFamily}
-                                        />
-                                    </div>
-                                );
-                            })}
+                    {/* Middle Pieces Pool (Top Strip) - Conditional Rendering & Dynamic Height */}
+                    {pieces.middle.length > 0 && (
+                        <div className="bg-blue-50/30 border-b border-blue-100 relative w-full overflow-hidden shrink-0 min-h-0 h-auto max-h-[35%]"
+                            onDragOver={(e) => e.preventDefault()}
+                            onDrop={(e) => {
+                                e.preventDefault();
+                                const pid = e.dataTransfer.getData("application/puzzle-piece-id");
+                                if (pid) handleReturnToPool(pid);
+                            }}
+                        >
+                            <div className="absolute top-1 left-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Mitte</div>
+                            <div className="w-full relative pt-6 px-4 pb-4 flex flex-wrap items-center justify-center gap-4 content-center overflow-y-auto custom-scroll">
+                                {getVisiblePieces('middle').map(p => {
+                                    const isHighlighted = highlightedWordId === p.wordId;
+                                    const isSelected = selectedPiece?.id === p.id;
+                                    return (
+                                        <div key={p.id}
+                                            className={`transition-all duration-200 cursor-pointer
+                                                ${isHighlighted ? 'scale-110 z-[100] drop-shadow-xl' : ''}
+                                                ${isSelected ? 'scale-110 z-50' : 'hover:z-50 hover:scale-105 active:scale-95'}
+                                            `}
+                                            style={{
+                                                transform: `rotate(${p.rotation}deg)`,
+                                                filter: isSelected ? 'drop-shadow(0 0 12px rgba(59, 130, 246, 0.8))' : 'none'
+                                            }}
+                                            onClick={() => handlePieceSelect(p)}
+                                            draggable onDragStart={(e) => { e.dataTransfer.setData("application/puzzle-piece-id", p.id); setIsDragging(p.id); }}
+                                            onDragEnd={() => setIsDragging(null)}>
+                                            <PuzzleTestPiece
+                                                label={p.text}
+                                                type="middle"
+                                                colorClass={getPieceColor(p.color, activeColor)}
+                                                dynamicWidth={p.width}
+                                                scale={gameState.pieceScale * 0.8}
+                                                fontFamily={settings.fontFamily}
+                                            />
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     {/* Word Rows Area */}
                     <div className="flex-1 overflow-y-auto custom-scroll p-2 pt-12 flex flex-col items-center gap-8 bg-slate-50/30">
@@ -785,7 +849,8 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                 </div>
 
                 {/* RIGHT ZONE - Endstücke */}
-                <div className="w-[150px] bg-slate-100/50 border-l border-slate-200 flex flex-col shrink-0"
+                <div className="bg-slate-100/50 border-l border-slate-200 flex flex-col shrink-0 transition-all duration-300"
+                    style={{ width: sidebarWidth }}
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={(e) => {
                         e.preventDefault();

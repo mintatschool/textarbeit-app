@@ -548,6 +548,60 @@ export const useTwoPartPuzzle = ({
         return Math.min(100, ((completedPriorStages + completedInCurrentStage) / totalItems) * 100);
     }, [gameState.stages, gameState.currentStageIndex, totalItems]);
 
+    // --------------------------------------------------------------------------------
+    // DYNAMIC ZOOM & SIDEBAR WIDTH CALCULATION (for two-part puzzles)
+    // --------------------------------------------------------------------------------
+
+    // Calculate longest word width in current stage (base width before scaling)
+    const longestWordBaseWidth = useMemo(() => {
+        const currentStage = gameState.stages[gameState.currentStageIndex];
+        if (!currentStage?.items) return 310; // Fallback for 2-syllable word (200 + 200 - 90 overlap)
+
+        let maxWidth = 0;
+        currentStage.items.forEach(item => {
+            // Two-part puzzles always have 2 pieces
+            // Each piece is ~200px base, with ~90px overlap
+            const wordWidth = 200 + 200 - 90; // = 310px
+            if (wordWidth > maxWidth) maxWidth = wordWidth;
+        });
+
+        return Math.max(300, maxWidth);
+    }, [gameState.stages, gameState.currentStageIndex]);
+
+    // Calculate max allowed scale based on viewport and longest word
+    const maxScale = useMemo(() => {
+        const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
+        const maxSidebarWidth = 220;
+        const uiElementsWidth = 180; // Speaker + Check + padding
+
+        // Available middle space with max sidebar width
+        const availableMiddle = viewportWidth - (2 * maxSidebarWidth);
+
+        // Scale at which longest word + UI fits in available middle
+        const maxByMiddle = (availableMiddle - uiElementsWidth) / longestWordBaseWidth;
+
+        // Scale at which pieces fit in sidebar (piece base 200px * scale)
+        const maxBySidebar = maxSidebarWidth / 200;
+
+        // Return the smaller constraint, clamped between 0.7 and 1.3
+        return Math.max(0.7, Math.min(1.3, maxByMiddle, maxBySidebar));
+    }, [longestWordBaseWidth]);
+
+    // Dynamic sidebar width based on current scale
+    const sidebarWidth = useMemo(() => {
+        const baseWidth = 180; // TwoPartPuzzleLayout uses w-52 = 208px, we use 180 as base
+        const width = Math.round(200 * gameState.pieceScale);
+        return Math.max(baseWidth, Math.min(220, width));
+    }, [gameState.pieceScale]);
+
+    // Auto-reduce scale if it exceeds maxScale (e.g., when stage changes)
+    useEffect(() => {
+        if (gameState.pieceScale > maxScale) {
+            setGameState(prev => ({ ...prev, pieceScale: maxScale }));
+        }
+    }, [maxScale, gameState.currentStageIndex]);
+
+
     const currentStageInfo = gameState.stages[gameState.currentStageIndex];
     const currentTargetIdx = currentStageInfo?.targetIndex ?? 0;
     const currentTargetItem = currentStageInfo?.items?.[currentTargetIdx];
@@ -573,6 +627,8 @@ export const useTwoPartPuzzle = ({
         currentTargetIdx,
         currentTargetItem,
         selectedPiece,
+        maxScale,      // Dynamic max zoom based on viewport and word length
+        sidebarWidth,  // Dynamic sidebar width based on current scale
 
         // Actions
         startNewGame,
