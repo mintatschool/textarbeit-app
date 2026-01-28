@@ -11,7 +11,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
         if (domRef) {
             domRef(startIndex, node);
         }
-    }); // Remove dependency array to update on every render? Or just [domRef]
+    }, [domRef, startIndex]);
     // Actually, if we remove deps, it updates every time.
     // If domRef changes (it does in App.jsx), we need to update.
     // So [domRef, startIndex] is correct IF domRef identity changes.
@@ -284,11 +284,11 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
         : (isColorMarked ? 'rounded-none' : 'rounded-lg');
 
     // Outline Logic (Layout-neutral, unlike box-shadow with spread)
-    // If showFrame: Outline Ring (Slate) - use negative offset to draw INWARD
+    // If showFrame: Outline Ring (Slate)
     // If Textmarker: No Ring (or specific marker ring if designed)
     // Neutral: No Ring
     const outlineStyle = showFrame
-        ? { outline: '3px solid rgba(203, 213, 225, 0.8)', outlineOffset: '-3px' } // slate-300/80, inward
+        ? { outline: '3px solid rgba(203, 213, 225, 0.8)' } // slate-300/80
         : { outline: 'none' };
 
     const markerClass = `${markerBase}`;
@@ -297,16 +297,19 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
     // Frame/Neutral: Visually expand into whitespace using negative margins
     // Old Padding: 0.15em. New Padding: 0.30em. Margin: -0.15em. Net Effect: 0.15em (Same as before)
     // Standardize styling to reserve layout space (prevent jumps)
+    // Frame/Neutral: Visually expand into whitespace using negative margins
+    // Old Padding: 0.15em. New Padding: 0.30em. Margin: -0.15em. Net Effect: 0.15em (Same as before)
+    // Standardize styling to reserve layout space (prevent jumps)
     // Frame/Neutral: Zero Net Width Impact
     // The padding visually expands the background, the negative margin pulls the flow back.
     // Net result: 0em horizontal space consumed. Frame floats over whitespace.
     const frameStyle = {
-        paddingTop: '0.01em',
-        paddingBottom: '0.05em',
+        paddingTop: '0em',
+        paddingBottom: '0.10em',
         paddingLeft: '0.20em',
         paddingRight: '0.20em',
-        marginTop: '-0.01em',
-        marginBottom: '-0.05em',
+        marginTop: '0em',
+        marginBottom: '-0.10em',
         marginLeft: '-0.20em',
         marginRight: '-0.20em'
     };
@@ -314,8 +317,8 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
     const markerStyle = showFrame
         ? frameStyle
         : (isColorMarked
-            // Textmarker: Use same zero-impact padding/margin as frameStyle for consistent layout
-            ? { paddingTop: '0.01em', paddingBottom: '0.05em', paddingLeft: '0.20em', paddingRight: '0.20em', marginBottom: '-0.05em', marginTop: '-0.01em', marginLeft: '-0.20em', marginRight: '-0.20em' }
+            // Textmarker: Same minimal styling (0.10em)
+            ? { paddingTop: '0em', paddingBottom: '0.10em', paddingLeft: '0', paddingRight: '0', marginBottom: '-0.10em', marginTop: '0em', marginLeft: '0', marginRight: '0' }
             : frameStyle
         );
 
@@ -323,7 +326,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
         return (
             <span
                 onClick={() => !isReadingMode && (activeTool === 'blur' || !activeTool) && toggleHidden(wordKey)}
-                className={`blur-container transition-all ${cursorClass}`}
+                className={`blur-container ${cursorClass}`}
                 style={wordSpacingStyle}
             >
                 <span
@@ -352,7 +355,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
             <span
                 ref={refForWord}
                 data-paint-index={startIndex}
-                className={`inline-block relative select-none transition-all origin-center ${wrapperCursorClass} ${isTextMarkerMode || activeTool === 'pen' ? 'touch-none' : ''}`}
+                className={`inline-block relative select-none origin-center ${wrapperCursorClass} ${isTextMarkerMode || activeTool === 'pen' ? 'touch-none' : ''}`}
                 style={{
                     ...wordSpacingStyle,
                     backgroundColor: 'transparent',
@@ -382,14 +385,14 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                 onClick={(e) => !isReadingMode && !isTextMarkerMode && activeTool !== 'pen' && (activeTool === 'split' || activeTool === 'blur' || activeColor !== 'yellow') ? handleInteraction(e) : null}
             >
                 <span
-                    className={`inline-block ${markerClass} ${isNeutralMarked ? '' : ''} ${isSelection && !isNeutralMarked ? 'animate-pulse bg-slate-100 rounded-lg' : ''}`}
+                    className={`inline-block ${markerClass} ${isNeutralMarked ? '' : ''} ${isSelection && !isNeutralMarked ? 'bg-slate-100 rounded-lg' : ''}`}
                     style={{
                         marginRight: '0', // Fixed 0 to use word spacing only
                         marginLeft: '0',
-                        ...(isNeutralMarked ? {} : outlineStyle),
+                        ...outlineStyle,
                         backgroundColor: isNeutralMarked ? 'transparent' : (isSelection ? '#e2e8f0' : backgroundColor),
                         color: isColorMarked ? 'black' : undefined,
-                        lineHeight: isColorMarked ? 1 : undefined, // Limit colored marker height to match frame height
+                        lineHeight: showFrame || isColorMarked ? 1 : undefined, // Consistent height for ALL frames
                         ...markerStyle
                     }}
                 >
@@ -403,10 +406,11 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
 
                         let rounded = 'rounded';
 
-                        let charClassName = `inline-block leading-none transition-transform ${isColorMarked ? '' : 'hover:bg-slate-100'} cursor-pointer`;
+                        let charClassName = `inline-block leading-none ${isColorMarked ? '' : 'hover:bg-slate-100'} cursor-pointer`;
 
                         // Default char padding in em - Perfectly balanced (padding = -margin) for zero layout shift
-                        let charStyle = { paddingLeft: '0.02em', paddingRight: '0.02em', paddingTop: '0.01em', paddingBottom: '0.18em', marginLeft: '-0.02em', marginRight: '-0.02em', marginTop: '-0.01em', marginBottom: '-0.18em' };
+                        // REDUCED paddingBottom to 0.10em (User Request: "Enger heran")
+                        let charStyle = { paddingLeft: '0.02em', paddingRight: '0.02em', paddingTop: '0em', paddingBottom: '0.10em', marginLeft: '-0.02em', marginRight: '-0.02em', marginTop: '0em', marginBottom: '-0.10em' };
 
                         if (isYellow) {
                             charClassName += ' bg-yellow-200';
@@ -447,7 +451,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                                     if (isTextMarkerMode || activeTool === 'pen' || isReadingMode) return;
                                     handleInteraction(e, globalIndex);
                                 }}
-                                className={`${charClassName} ${rounded} ${shouldHideLetter ? 'blur-letter' : ''}`}
+                                className={`${charClassName} ${rounded} ${shouldHideLetter ? 'blur-letter' : ''} transition-none duration-0`}
                                 style={charStyle}
                                 onMouseEnter={(e) => {
                                     if ((activeTool === 'pen' || isTextMarkerMode) && onMouseEnter) {
@@ -481,7 +485,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
         <span
             ref={refForWord}
             data-paint-index={startIndex}
-            className={`inline-flex items-baseline whitespace-nowrap transition-all origin-center relative group leading-none ${wrapperCursorClass} ${isTextMarkerMode || activeTool === 'pen' ? 'touch-none' : ''}`}
+            className={`inline-flex items-baseline whitespace-nowrap origin-center relative group leading-none ${wrapperCursorClass} ${isTextMarkerMode || activeTool === 'pen' ? 'touch-none' : ''}`}
             style={wordSpacingStyle}
             // FIX: Simplified event handlers for reliable paint/erase detection
             onMouseEnter={(e) => {
@@ -508,7 +512,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
             onClick={(e) => !isReadingMode && !isTextMarkerMode && activeTool !== 'pen' && (activeTool === 'split' || activeTool === 'blur' || activeColor !== 'yellow') ? handleInteraction(e) : null}
         >
             {renderPrefix()}
-            <span className={`inline-flex items-baseline ${markerClass} ${isSelection && !isNeutralMarked ? 'animate-pulse bg-slate-100 rounded-lg' : ''} ${isColorMarked ? 'rounded-lg' : ''}`} style={{ backgroundColor: isColorMarked ? backgroundColor : 'transparent', marginLeft: '0', marginRight: '0', ...outlineStyle, lineHeight: isColorMarked ? 1 : undefined, ...markerStyle }}>
+            <span className={`inline-block ${markerClass} ${isSelection && !isNeutralMarked ? 'animate-pulse bg-slate-100 rounded-lg' : ''} ${isColorMarked ? 'rounded-lg' : ''}`} style={{ backgroundColor: isColorMarked ? backgroundColor : 'transparent', marginLeft: '0', marginRight: '0', ...outlineStyle, lineHeight: showFrame || isColorMarked ? 1 : undefined, ...markerStyle }}>
                 {(() => {
                     let visualCounter = 0;
                     const visualIndices = syllables.map(s => {
@@ -545,7 +549,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                                         let style = { paddingLeft: '0.02em', paddingRight: '0.02em', marginLeft: '-0.02em', marginRight: '-0.02em' };
 
                                         if (isYellow) {
-                                            style = { backgroundColor: '#fef08a', paddingLeft: '0.02em', paddingRight: '0.02em', paddingTop: '0.01em', paddingBottom: '0.04em', marginLeft: '-0.02em', marginRight: '-0.02em', marginTop: '-0.01em', marginBottom: '-0.04em' };
+                                            style = { backgroundColor: '#fef08a', paddingLeft: '0.02em', paddingRight: '0.02em', paddingTop: '0em', paddingBottom: '0.10em', marginLeft: '-0.02em', marginRight: '-0.02em', marginTop: '0em', marginBottom: '-0.10em' };
                                             customClasses += ' bg-yellow-200';
 
                                             const simpleLeft = wordColors && wordColors[globalIndex - 1] === 'yellow';
@@ -580,7 +584,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                                                     if (isTextMarkerMode || activeTool === 'pen' || isReadingMode) return;
                                                     handleInteraction(e, globalIndex);
                                                 }}
-                                                className={`${customClasses} ${rounded} inline-block leading-none ${shouldHideLetter ? 'blur-letter' : ''}`}
+                                                className={`${customClasses} ${rounded} inline-block leading-none ${shouldHideLetter ? 'blur-letter' : ''} transition-none duration-0`}
                                                 style={style}
                                                 onMouseEnter={(e) => {
                                                     if ((activeTool === 'pen' || isTextMarkerMode) && onMouseEnter) {
@@ -600,7 +604,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                                         );
                                     })}
                                 </span>
-                                {settings.visualType === 'arc' && isVisualSyllable && <svg className="arc-svg pointer-events-none" viewBox="0 0 100 20" preserveAspectRatio="none"><path d="M 2 2 Q 50 20 98 2" fill="none" stroke={arcColor} strokeWidth="3" strokeLinecap="round" /></svg>}
+                                {settings.visualType === 'arc' && isVisualSyllable && <svg className="arc-svg pointer-events-none" style={{ zIndex: 20 }} viewBox="0 0 100 20" preserveAspectRatio="none"><path d="M 2 2 Q 50 20 98 2" fill="none" stroke={arcColor} strokeWidth="3" strokeLinecap="round" /></svg>}
                             </span>
                         );
                     });
@@ -610,11 +614,58 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
             {renderSuffix()}
             {/* Drawing Layer */}
             {drawingLayer}
-        </span>
+        </span >
     );
 
 }, (prev, next) => {
-    if (prev.highlightedIndices !== next.highlightedIndices || prev.wordColors !== next.wordColors) return false;
+    // OPTIMIZATION: Ignore function props (onMouseEnter, onMouseDown, toggleHighlights, etc.)
+    // Only compare relevant state/data props
+    if (prev.word !== next.word) return false;
+    if (prev.startIndex !== next.startIndex) return false;
+    // Settings check - assuming object identity might change but content matters
+    if (prev.settings.fontSize !== next.settings.fontSize || prev.settings.fontFamily !== next.settings.fontFamily || prev.settings.visualType !== next.settings.visualType || prev.settings.displayTrigger !== next.settings.displayTrigger) return false;
+
+    if (prev.activeTool !== next.activeTool) return false;
+    if (prev.activeColor !== next.activeColor) return false;
+    if (prev.isTextMarkerMode !== next.isTextMarkerMode) return false;
+    if (prev.isReadingMode !== next.isReadingMode) return false;
+    if (prev.isHidden !== next.isHidden) return false;
+    if (prev.isGrouped !== next.isGrouped) return false;
+    if (prev.isSelection !== next.isSelection) return false;
+    if (prev.forceShowSyllables !== next.forceShowSyllables) return false;
+    // Drawings check (reference mostly sufficient as arrays are replaced)
+    if (prev.drawings !== next.drawings) return false;
+
+    // Derived/Complex checks
+    if (prev.highlightedIndices !== next.highlightedIndices) {
+        // Only re-render if indices RELEVANT to this word (plus neighbors for glue/rounding) have changed
+        const start = prev.startIndex - 1;
+        const end = prev.startIndex + prev.word.length; // Inclusive check up to +1 neighbor
+        let changed = false;
+        // Check range [startIndex-1 ... startIndex+length] (Right neighbor is at startIndex+length)
+        for (let i = start; i <= end; i++) {
+            if (prev.highlightedIndices.has(i) !== next.highlightedIndices.has(i)) {
+                changed = true;
+                break;
+            }
+        }
+        if (changed) return false;
+    }
+
+    if (prev.wordColors !== next.wordColors) {
+        // Only re-render if colors RELEVANT to this word (plus neighbors) have changed
+        const start = prev.startIndex - 1;
+        const end = prev.startIndex + prev.word.length;
+        let changed = false;
+        for (let i = start; i <= end; i++) {
+            if (prev.wordColors[i] !== next.wordColors[i]) {
+                changed = true;
+                break;
+            }
+        }
+        if (changed) return false;
+    }
+
     return (
         prev.word === next.word &&
         prev.prefix === next.prefix &&
