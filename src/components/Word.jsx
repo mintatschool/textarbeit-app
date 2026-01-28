@@ -149,7 +149,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
         fontFamily: settings.fontFamily, // Explicitly set for better reliability
         lineHeight: settings.lineHeight || 1.3,
         letterSpacing: `${(settings.letterSpacing ?? 0)}em`,
-        letterSpacing: `${(settings.letterSpacing ?? 0)}em`
+
     };
     const renderPrefix = () => !hidePunctuation && prefix ? <span className="text-slate-900 pointer-events-none">{prefix}</span> : null;
     const renderSuffix = () => !hidePunctuation && suffix ? <span className="text-slate-900 pointer-events-none">{suffix}</span> : null;
