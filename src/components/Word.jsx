@@ -410,7 +410,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
 
                         // Default char padding in em - Perfectly balanced (padding = -margin) for zero layout shift
                         // REDUCED paddingBottom to 0.10em (User Request: "Enger heran")
-                        let charStyle = { paddingLeft: '0.02em', paddingRight: '0.02em', paddingTop: '0em', paddingBottom: '0.10em', marginLeft: '-0.02em', marginRight: '-0.02em', marginTop: '0em', marginBottom: '-0.10em' };
+                        let charStyle = { transition: 'none', paddingLeft: '0.02em', paddingRight: '0.02em', paddingTop: '0em', paddingBottom: '0.10em', marginLeft: '-0.02em', marginRight: '-0.02em', marginTop: '0em', marginBottom: '-0.10em' };
 
                         if (isYellow) {
                             charClassName += ' bg-yellow-200';
@@ -546,10 +546,10 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
 
                                         let rounded = 'rounded-sm';
                                         let customClasses = 'cursor-pointer';
-                                        let style = { paddingLeft: '0.02em', paddingRight: '0.02em', marginLeft: '-0.02em', marginRight: '-0.02em' };
+                                        let style = { transition: 'none', paddingLeft: '0.02em', paddingRight: '0.02em', marginLeft: '-0.02em', marginRight: '-0.02em' };
 
                                         if (isYellow) {
-                                            style = { backgroundColor: '#fef08a', paddingLeft: '0.02em', paddingRight: '0.02em', paddingTop: '0em', paddingBottom: '0.10em', marginLeft: '-0.02em', marginRight: '-0.02em', marginTop: '0em', marginBottom: '-0.10em' };
+                                            style = { transition: 'none', backgroundColor: '#fef08a', paddingLeft: '0.02em', paddingRight: '0.02em', paddingTop: '0em', paddingBottom: '0.10em', marginLeft: '-0.02em', marginRight: '-0.02em', marginTop: '0em', marginBottom: '-0.10em' };
                                             customClasses += ' bg-yellow-200';
 
                                             const simpleLeft = wordColors && wordColors[globalIndex - 1] === 'yellow';

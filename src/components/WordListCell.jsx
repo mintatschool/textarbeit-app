@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Icons } from './Icons'; // Assuming Icons exists here if needed, or remove if unused. Used for X button.
 
 const CLUSTERS = ['sch', 'ei', 'ie', 'au', 'eu', 'ch', 'pf', 'st', 'sp', 'qu', 'ai', 'oi', 'äu'];
@@ -13,6 +13,7 @@ export const WordListCell = React.memo(({
     toggleHighlights,
     onWordUpdate,
     onRemoveWord,
+    highlightedIndices,
     draggables
 }, ref) => {
     const { onDragStart, onDragEnd, onDrop, onDragOver } = draggables;
@@ -66,11 +67,12 @@ export const WordListCell = React.memo(({
     // For now: Always show if 'always'. Show if 'click' (user can see it). Never if 'never'.
     // "Click" in WordListView usually means "Show".
     const showSyllables = hasLetters
-        && (settings.displayTrigger === 'always' || settings.displayTrigger === 'click')
+        && (settings.displayTrigger === 'always' || settings.displayTrigger === 'click' || interactionMode === 'mark')
         && settings.visualType !== 'none'
         && word.syllables;
 
     const handleCharClick = (e, absCharIndex, sylObj, cIdx) => {
+        // console.log('Cell Click:', { mode: interactionMode, idx: absCharIndex });
         e.stopPropagation();
 
         if (interactionMode === 'case') {
@@ -86,107 +88,133 @@ export const WordListCell = React.memo(({
             const sylStrings = word.syllables.map(s => typeof s === 'string' ? s : s.text);
             const wordStartIndex = word.index;
             const indicesToToggle = findClusterIndices(absCharIndex, sylStrings, wordStartIndex);
+            // console.log('Toggling:', indicesToToggle);
             if (toggleHighlights) toggleHighlights(indicesToToggle);
         }
     };
 
+    const containerRef = useRef(null);
+
     return (
         <div
-            draggable
-            onDragStart={(e) => { e.stopPropagation(); onDragStart(e, 'word', word, colId, idx); }}
-            onDragEnd={onDragEnd}
+            ref={containerRef}
             onDrop={(e) => onDrop(e, colId, idx)}
             onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-            className="p-3 bg-white border border-slate-200 rounded-lg shadow-sm hover:shadow-md hover:border-blue-300 cursor-grab active:cursor-grabbing group relative select-none active:scale-[0.98] transition-transform"
+            className="p-3 bg-white border border-slate-200 rounded-lg shadow-sm hover:shadow-md hover:border-blue-300 group relative select-none active:scale-[0.98] transition-transform"
             style={{ fontFamily: settings.fontFamily, fontSize: `${settings.fontSize}px` }}
         >
-            <div className="text-center pointer-events-auto">
+            {/* Drag Handle - Top Left */}
+            <div
+                className="absolute top-0 left-0 p-2 cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 z-20"
+                draggable={true}
+                onDragStart={(e) => {
+                    e.stopPropagation();
+                    if (containerRef.current) {
+                        e.dataTransfer.setDragImage(containerRef.current, 10, 10);
+                    }
+                    onDragStart(e, 'word', word, colId, idx);
+                }}
+                onDragEnd={onDragEnd}
+            >
+                <Icons.Move size={16} />
+            </div>
+
+            <div className="text-center pointer-events-auto mt-2 cursor-default"> {/* Added margin-top to avoid clicking handle overlap if needed, or text centering relies on padding */}
                 {showSyllables ? (
                     <span className="inline-block whitespace-nowrap">
-                        {word.syllables.map((s, i) => {
-                            const isEven = i % 2 === 0;
-                            let styleClass = "";
-                            let textClass = "";
+                        {(() => {
+                            let currentGlobalIndex = word.index; // Initialize with word start index
+                            return word.syllables.map((s, i) => {
+                                const isEven = i % 2 === 0;
+                                let styleClass = "";
+                                let textClass = "";
 
-                            const sylObj = (typeof s === 'object' && s !== null) ? s : { text: String(s || "") };
-                            const textContent = sylObj.text;
+                                const sylObj = (typeof s === 'object' && s !== null) ? s : { text: String(s || "") };
+                                const textContent = sylObj.text;
 
-                            // VISUAL TYPE LOGIC (Aligned with Word.jsx)
-                            if (sylObj.isSpace) {
-                                styleClass = "bg-transparent mx-1 border-none inline-block w-5";
-                                textClass = "text-transparent select-none";
-                            } else if (settings.visualType === 'block') {
-                                styleClass = isEven ? 'bg-blue-100 border-blue-200' : 'bg-blue-200 border-blue-300';
-                                styleClass += " border rounded px-1 mx-[1px]";
-                                textClass = "text-slate-900";
-                            } else if (settings.visualType === 'black_gray') {
-                                textClass = isEven ? "text-black" : "text-gray-400";
-                            } else if (settings.visualType === 'arc' || settings.visualType === 'colored') {
-                                // For Arcs: Text is slate-900 (Black), ONLY Arcs are colored.
-                                // For Colored: Text IS colored.
-                                if (settings.visualType === 'arc') {
+                                // VISUAL TYPE LOGIC (Aligned with Word.jsx)
+                                if (sylObj.isSpace) {
+                                    styleClass = "bg-transparent mx-1 border-none inline-block w-5";
+                                    textClass = "text-transparent select-none";
+                                } else if (settings.visualType === 'block') {
+                                    styleClass = isEven ? 'bg-blue-100 border-blue-200' : 'bg-blue-200 border-blue-300';
+                                    styleClass += " border rounded px-1 mx-[1px]";
                                     textClass = "text-slate-900";
+                                } else if (settings.visualType === 'black_gray') {
+                                    textClass = isEven ? "text-black" : "text-gray-400";
+                                } else if (settings.visualType === 'arc' || settings.visualType === 'colored') {
+                                    if (settings.visualType === 'arc') {
+                                        textClass = "text-slate-900";
+                                    } else {
+                                        textClass = isEven ? "text-blue-700" : "text-red-600";
+                                    }
                                 } else {
-                                    textClass = isEven ? "text-blue-700" : "text-red-600";
+                                    textClass = "text-slate-900";
                                 }
-                            } else {
-                                textClass = "text-slate-900";
-                            }
 
-                            return (
-                                <span key={i} className={`inline-block relative leading-none ${styleClass}`}>
-                                    <span className="relative z-10">
-                                        {textContent.split('').map((char, cIdx) => {
-                                            const absCharIndex = sylObj.absStartIndex !== undefined ? sylObj.absStartIndex + cIdx : null;
-                                            // Specific Yellow check
-                                            const isCharHighlighted = absCharIndex !== null && wordColors && wordColors[absCharIndex] === 'yellow';
+                                const renderedSyllable = (
+                                    <span key={i} className={`inline-block relative leading-none ${styleClass}`}>
+                                        <span className="relative z-10">
+                                            {textContent.split('').map((char, cIdx) => {
+                                                // Calculate absolute index using running counter
+                                                const absCharIndex = currentGlobalIndex + cIdx;
 
-                                            let rounded = 'rounded px-[2px]'; // Default for non-highlighted
-                                            let customClasses = 'cursor-pointer hover:bg-slate-200 transition-colors active:bg-slate-300';
-                                            let style = {};
+                                                // Specific Yellow check (Transient OR Persisted)
+                                                const isCharHighlighted = (
+                                                    (wordColors && wordColors[absCharIndex] === 'yellow') ||
+                                                    (highlightedIndices && highlightedIndices.size > 0 && highlightedIndices.has(absCharIndex))
+                                                );
 
-                                            if (isCharHighlighted) {
-                                                // Exact styling match from Word.jsx
-                                                style = { backgroundColor: '#fef08a', paddingTop: '0.02em', paddingBottom: '0.04em', marginTop: '-0.02em', marginBottom: '-0.02em' };
-                                                customClasses = 'cursor-pointer bg-yellow-200'; // Remove transition-colors to fix "dimming"
+                                                let rounded = 'rounded px-[2px]'; // Default for non-highlighted
+                                                let customClasses = '!cursor-pointer hover:bg-slate-200 transition-colors active:bg-slate-300 prevent-pan';
+                                                let style = { transition: 'none' };
 
-                                                // Neighbor Check for Continuous Blocks
-                                                const simpleLeft = wordColors && wordColors[absCharIndex - 1] === 'yellow';
-                                                const simpleRight = wordColors && wordColors[absCharIndex + 1] === 'yellow';
+                                                if (isCharHighlighted) {
+                                                    style = { transition: 'none', backgroundColor: '#fef08a', paddingTop: '0em', paddingBottom: '0.10em', marginTop: '0em', marginBottom: '-0.10em' };
+                                                    customClasses = '!cursor-pointer bg-yellow-200 prevent-pan';
 
-                                                if (simpleLeft && simpleRight) {
-                                                    rounded = 'rounded-none';
-                                                    customClasses += ' shadow-border-yellow-mid';
-                                                } else if (simpleLeft) {
-                                                    rounded = 'rounded-r-md rounded-l-none';
-                                                    customClasses += ' shadow-border-yellow-right';
-                                                } else if (simpleRight) {
-                                                    rounded = 'rounded-l-md rounded-r-none';
-                                                    customClasses += ' shadow-border-yellow-left';
-                                                } else {
-                                                    rounded = 'rounded-md';
-                                                    customClasses += ' shadow-border-yellow';
+                                                    // Neighbor Check for Continuous Blocks
+                                                    const hasLeft = (wordColors && wordColors[absCharIndex - 1] === 'yellow') || (highlightedIndices && highlightedIndices.has(absCharIndex - 1));
+                                                    const hasRight = (wordColors && wordColors[absCharIndex + 1] === 'yellow') || (highlightedIndices && highlightedIndices.has(absCharIndex + 1));
+
+                                                    if (hasLeft && hasRight) {
+                                                        rounded = 'rounded-none';
+                                                        customClasses += ' shadow-border-yellow-mid';
+                                                    } else if (hasLeft) {
+                                                        rounded = 'rounded-r-md rounded-l-none';
+                                                        customClasses += ' shadow-border-yellow-right';
+                                                    } else if (hasRight) {
+                                                        rounded = 'rounded-l-md rounded-r-none';
+                                                        customClasses += ' shadow-border-yellow-left';
+                                                    } else {
+                                                        rounded = 'rounded-md';
+                                                        customClasses += ' shadow-border-yellow';
+                                                    }
                                                 }
-                                            }
 
-                                            return (
-                                                <span
-                                                    key={cIdx}
-                                                    className={`${textClass} ${customClasses} ${rounded} inline-block leading-none`}
-                                                    style={style}
-                                                    onClick={(e) => handleCharClick(e, absCharIndex, sylObj, cIdx)}
-                                                >
-                                                    {char}
-                                                </span>
-                                            );
-                                        })}
+                                                return (
+                                                    <span
+                                                        key={cIdx}
+                                                        className={`${textClass} ${customClasses} ${rounded} inline-block leading-none`}
+                                                        style={style}
+                                                        onClick={(e) => handleCharClick(e, absCharIndex, sylObj, cIdx)}
+                                                    >
+                                                        {char}
+                                                    </span>
+                                                );
+                                            })}
+                                        </span>
+                                        {settings.visualType === 'arc' && !sylObj.isSpace && (
+                                            <svg className="arc-svg pointer-events-none" viewBox="0 0 100 20" preserveAspectRatio="none"><path d="M 2 2 Q 50 20 98 2" fill="none" stroke={isEven ? '#2563eb' : '#dc2626'} strokeWidth="3" strokeLinecap="round" /></svg>
+                                        )}
                                     </span>
-                                    {settings.visualType === 'arc' && !sylObj.isSpace && (
-                                        <svg className="arc-svg pointer-events-none" viewBox="0 0 100 20" preserveAspectRatio="none"><path d="M 2 2 Q 50 20 98 2" fill="none" stroke={isEven ? '#2563eb' : '#dc2626'} strokeWidth="3" strokeLinecap="round" /></svg>
-                                    )}
-                                </span>
-                            );
-                        })}
+                                );
+
+                                // Advance running counter by syllable length
+                                currentGlobalIndex += textContent.length;
+                                return renderedSyllable;
+                            });
+                        })()}
                     </span>
                 ) : (
                     <span>{word.word}</span>
@@ -205,6 +233,9 @@ export const WordListCell = React.memo(({
     if (prev.idx !== next.idx) return false;
     if (prev.settings !== next.settings) return false;
     if (prev.interactionMode !== next.interactionMode) return false;
+    if (prev.toggleHighlights !== next.toggleHighlights) return false;
+    if (prev.onWordUpdate !== next.onWordUpdate) return false;
+    if (prev.onRemoveWord !== next.onRemoveWord) return false;
 
     // Check Colors - Only return false (re-render) if relevant colors changed
     if (prev.wordColors !== next.wordColors) {
@@ -226,6 +257,36 @@ export const WordListCell = React.memo(({
                 if (prev.wordColors[start + i] !== next.wordColors[start + i]) return false;
             }
         }
+    }
+
+    // Check highlightedIndices (Transient)
+    // Only return false if relevant indices changed
+    if (prev.highlightedIndices !== next.highlightedIndices) {
+        if (!prev.highlightedIndices || !next.highlightedIndices) return false;
+
+        // Range check
+        const start = prev.word.index;
+        // Approximation: Check range for this word
+        // WordListCell only cares about its own chars
+        // We need to know the length.
+        let length = 0;
+        if (prev.word.syllables) {
+            prev.word.syllables.forEach(s => length += (s.text ? s.text.length : s.length));
+        } else {
+            length = prev.word.word.length;
+        }
+
+        const end = start + length;
+        let changed = false;
+        // Check neighbors (glue) too? List view glue logic?
+        // Let's just check strict range for now + neighbors for rounded corners
+        for (let i = start - 1; i <= end + 1; i++) {
+            if (prev.highlightedIndices.has(i) !== next.highlightedIndices.has(i)) {
+                changed = true;
+                break;
+            }
+        }
+        if (changed) return false;
     }
     return true; // Props equal (enough), skip render
 });
