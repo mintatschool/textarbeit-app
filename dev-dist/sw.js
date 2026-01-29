@@ -79,12 +79,22 @@ define(['./workbox-0d7dea0d'], (function (workbox) { 'use strict';
    */
   workbox.precacheAndRoute([{
     "url": "index.html",
-    "revision": "0.7ca8kon5a4g"
+    "revision": "0.tkrh5ahtefc"
   }], {});
   workbox.cleanupOutdatedCaches();
   workbox.registerRoute(new workbox.NavigationRoute(workbox.createHandlerBoundToURL("index.html"), {
     allowlist: [/^\/$/]
   }));
+  workbox.registerRoute(({
+    request,
+    sameOrigin
+  }) => sameOrigin && request.destination !== "document", new workbox.CacheFirst({
+    "cacheName": "local-assets-cache",
+    plugins: [new workbox.ExpirationPlugin({
+      maxEntries: 500,
+      maxAgeSeconds: 2592000
+    })]
+  }), 'GET');
   workbox.registerRoute(({
     url
   }) => url.pathname.includes("/audio/"), new workbox.CacheFirst({

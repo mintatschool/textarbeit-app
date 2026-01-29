@@ -5,6 +5,7 @@ import { speak } from '../utils/speech';
 import availableSyllables from '../utils/available_syllables.json';
 import { getChunks } from '../utils/syllables';
 import { ExerciseHeader } from './ExerciseHeader';
+import { RewardModal } from './shared/RewardModal';
 
 const syllableSet = new Set(availableSyllables);
 
@@ -135,20 +136,11 @@ export const SyllableBuilderView = ({ settings, onClose }) => {
 
             {/* Game Area */}
             <div className="flex-1 flex flex-col items-center justify-center gap-12 p-6 relative overflow-hidden">
-                {showReward && (
-                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-50">
-                        {Array.from({ length: 30 }).map((_, i) => (
-                            <div key={i} className="confetti" style={{
-                                left: `${Math.random() * 100}%`,
-                                top: `-10%`,
-                                backgroundColor: ['#f00', '#0f0', '#00f', '#ff0'][Math.floor(Math.random() * 4)],
-                                animationDuration: `${2 + Math.random() * 3}s`,
-                                animationDelay: `${Math.random()}s`
-                            }} />
-                        ))}
-                        <div className="text-9xl pop-animate drop-shadow-2xl">🎉</div>
-                    </div>
-                )}
+                <RewardModal
+                    isOpen={round > TOTAL_ROUNDS || (round === TOTAL_ROUNDS && isComplete && showReward)}
+                    onClose={onClose}
+                    message="Alle Silben gebaut! Prima!"
+                />
 
                 {/* Slots */}
                 <div className="flex gap-4">

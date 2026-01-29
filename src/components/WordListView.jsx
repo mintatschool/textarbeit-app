@@ -5,7 +5,7 @@ import { WordListCell } from './WordListCell';
 import { usePreventTouchScroll } from '../hooks/usePreventTouchScroll';
 import { polyfill } from 'mobile-drag-drop';
 import { scrollBehaviourDragImageTranslateOverride } from 'mobile-drag-drop/scroll-behaviour';
-polyfill({ dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride });
+// polyfill({ dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride });
 export const WordListView = ({ words, columnsState, setColumnsState, onClose, settings, setSettings, onRemoveWord, onWordUpdate, onUpdateWordColor, wordColors = {}, colorHeaders = {}, setColorHeaders, colorPalette = [], title, groups = [], sortByColor, setSortByColor, columnCount, setColumnCount, updateTimestamp, activeColor, isTextMarkerMode, onToggleLetterMarker, toggleHighlights, highlightedIndices }) => {
     if (!words || words.length === 0) return (<div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col items-center justify-center modal-animate font-sans"><EmptyStateMessage onClose={onClose} /></div>);
     const [isDragging, setIsDragging] = useState(false);
@@ -431,7 +431,7 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
     // For mouse: block panning on draggable elements to avoid conflict with drag-and-drop
     // For touch: native scrolling via overflow-auto handles this
     const isInteractiveTarget = (target) => {
-        return target.closest('[draggable="true"]') || target.closest('button') || target.closest('input');
+        return target.closest('[draggable="true"]') || target.closest('button') || target.closest('input') || target.closest('.prevent-pan');
     };
 
     // Mouse handlers
@@ -607,7 +607,7 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                 onMouseMove={handlePanMouseMove}
                 onMouseLeave={handlePanMouseUp}
             >
-                <div className={`flex gap-6 min-h-full transition-all duration-300 ${!sortByColor && columnCount === 1 ? 'w-1/2 min-w-[350px] mr-auto' : 'min-w-full'}`} style={{ width: (!sortByColor && columnCount === 1) ? undefined : `${Math.max(100, columnsState.order.length * 300)}px` }}>
+                <div className={`flex gap-6 min-h-full transition-all duration-300 ${!sortByColor && columnCount === 1 ? 'w-full max-w-2xl mr-auto' : 'min-w-full'}`} style={{ width: (!sortByColor && columnCount === 1) ? undefined : `${Math.max(100, columnsState.order.length * 300)}px` }}>
                     {columnsState.order.map(colId => {
                         const col = columnsState.cols[colId];
                         const resolvedBg = resolveColor(col.color);
@@ -666,6 +666,8 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                                             toggleHighlights={toggleHighlights}
                                             onWordUpdate={onWordUpdate}
                                             onRemoveWord={onRemoveWord}
+                                            highlightedIndices={highlightedIndices}
+                                            onUpdateWordColor={onUpdateWordColor}
                                             draggables={{
                                                 onDragStart: handleDragStart,
                                                 onDragEnd: handleDragEnd,

@@ -27,15 +27,15 @@ export const Space = React.memo(({ id, content, index, color, onMouseDown, onMou
             style={{
                 backgroundColor: resolvedColor,
                 paddingRight: (showMarkerLayout && wordSpacing >= 0) ? `${wordSpacing}em` : '0px',
-                paddingTop: '0.01em',
-                paddingBottom: '0.15em',
-                lineHeight: lineHeight,
+                paddingTop: '0em',
+                paddingBottom: '0.10em',
+                lineHeight: 1.1,
                 fontSize: fontSize ? `${fontSize}px` : 'inherit',
                 letterSpacing: `${letterSpacing}em`,
                 verticalAlign: 'baseline',
                 marginRight: (showMarkerLayout && wordSpacing < 0) ? `${wordSpacing}em` : '0px',
-                marginTop: '-0.01em',
-                marginBottom: '-0.15em'
+                marginTop: '-0.25em',
+                marginBottom: '-0.10em'
             }}
         >
             {content}

@@ -14,6 +14,7 @@ export const WordListCell = React.memo(({
     onWordUpdate,
     onRemoveWord,
     highlightedIndices,
+    onUpdateWordColor, // New prop
     draggables
 }, ref) => {
     const { onDragStart, onDragEnd, onDrop, onDragOver } = draggables;
@@ -67,12 +68,12 @@ export const WordListCell = React.memo(({
     // For now: Always show if 'always'. Show if 'click' (user can see it). Never if 'never'.
     // "Click" in WordListView usually means "Show".
     const showSyllables = hasLetters
-        && (settings.displayTrigger === 'always' || settings.displayTrigger === 'click' || interactionMode === 'mark')
+        && (settings.displayTrigger === 'always' || settings.displayTrigger === 'click' || interactionMode === 'mark' || interactionMode === 'case')
         && settings.visualType !== 'none'
         && word.syllables;
 
     const handleCharClick = (e, absCharIndex, sylObj, cIdx) => {
-        // console.log('Cell Click:', { mode: interactionMode, idx: absCharIndex });
+        // console.log('Cell Click:', { mode: interactionMode, idx: absCharIndex, wordIndex: word.index, toggleHighlights: !!toggleHighlights });
         e.stopPropagation();
 
         if (interactionMode === 'case') {
@@ -88,8 +89,22 @@ export const WordListCell = React.memo(({
             const sylStrings = word.syllables.map(s => typeof s === 'string' ? s : s.text);
             const wordStartIndex = word.index;
             const indicesToToggle = findClusterIndices(absCharIndex, sylStrings, wordStartIndex);
-            // console.log('Toggling:', indicesToToggle);
-            if (toggleHighlights) toggleHighlights(indicesToToggle);
+
+            // Fix: Use persistent coloring instead of selection/highlighting for Table View
+            if (onUpdateWordColor) {
+                // Determine if we are adding or removing based on the clicked char
+                const isCurrentlyYellow = wordColors && wordColors[absCharIndex] === 'yellow';
+                const targetColor = isCurrentlyYellow ? null : 'yellow';
+
+                indicesToToggle.forEach(idx => {
+                    onUpdateWordColor(idx, targetColor);
+                });
+            } else if (toggleHighlights) {
+                // Fallback (Legacy)
+                toggleHighlights(indicesToToggle);
+            }
+        } else {
+            console.log("Ignored click:", { interactionMode, absCharIndex });
         }
     };
 
@@ -119,7 +134,7 @@ export const WordListCell = React.memo(({
                 <Icons.Move size={16} />
             </div>
 
-            <div className="text-center pointer-events-auto mt-2 cursor-default"> {/* Added margin-top to avoid clicking handle overlap if needed, or text centering relies on padding */}
+            <div className="text-center pointer-events-auto mt-2 cursor-default prevent-pan"> {/* Added margin-top to avoid clicking handle overlap if needed, or text centering relies on padding */}
                 {showSyllables ? (
                     <span className="inline-block whitespace-nowrap">
                         {(() => {
@@ -156,26 +171,31 @@ export const WordListCell = React.memo(({
                                     <span key={i} className={`inline-block relative leading-none ${styleClass}`}>
                                         <span className="relative z-10">
                                             {textContent.split('').map((char, cIdx) => {
-                                                // Calculate absolute index using running counter
-                                                const absCharIndex = currentGlobalIndex + cIdx;
+                                                // Calculate absolute index: Prefer sylObj.absStartIndex (from WordListView), fallback to running counter
+                                                const baseIndex = (typeof sylObj.absStartIndex === 'number') ? sylObj.absStartIndex : currentGlobalIndex;
+                                                const absCharIndex = baseIndex + cIdx;
+                                                const isNaNIndex = isNaN(absCharIndex);
 
-                                                // Specific Yellow check (Transient OR Persisted)
-                                                const isCharHighlighted = (
-                                                    (wordColors && wordColors[absCharIndex] === 'yellow') ||
-                                                    (highlightedIndices && highlightedIndices.size > 0 && highlightedIndices.has(absCharIndex))
-                                                );
+                                                // Specific Yellow check (Persistent ONLY)
+                                                // Fix: Do NOT use highlightedIndices (Selection) for yellow background in table
+                                                const isCharHighlighted = (wordColors && wordColors[absCharIndex] === 'yellow');
 
                                                 let rounded = 'rounded px-[2px]'; // Default for non-highlighted
                                                 let customClasses = '!cursor-pointer hover:bg-slate-200 transition-colors active:bg-slate-300 prevent-pan';
                                                 let style = { transition: 'none' };
 
+                                                if (isNaNIndex) {
+                                                    style.border = '2px solid red';
+                                                    style.backgroundColor = '#fee2e2';
+                                                }
+
                                                 if (isCharHighlighted) {
-                                                    style = { transition: 'none', backgroundColor: '#fef08a', paddingTop: '0em', paddingBottom: '0.10em', marginTop: '0em', marginBottom: '-0.10em' };
+                                                    style = { ...style, transition: 'none', backgroundColor: '#fef08a', paddingTop: '0em', paddingBottom: '0.10em', marginTop: '0em', marginBottom: '-0.10em' };
                                                     customClasses = '!cursor-pointer bg-yellow-200 prevent-pan';
 
                                                     // Neighbor Check for Continuous Blocks
-                                                    const hasLeft = (wordColors && wordColors[absCharIndex - 1] === 'yellow') || (highlightedIndices && highlightedIndices.has(absCharIndex - 1));
-                                                    const hasRight = (wordColors && wordColors[absCharIndex + 1] === 'yellow') || (highlightedIndices && highlightedIndices.has(absCharIndex + 1));
+                                                    const hasLeft = (wordColors && wordColors[absCharIndex - 1] === 'yellow');
+                                                    const hasRight = (wordColors && wordColors[absCharIndex + 1] === 'yellow');
 
                                                     if (hasLeft && hasRight) {
                                                         rounded = 'rounded-none';
@@ -198,6 +218,9 @@ export const WordListCell = React.memo(({
                                                         className={`${textClass} ${customClasses} ${rounded} inline-block leading-none`}
                                                         style={style}
                                                         onClick={(e) => handleCharClick(e, absCharIndex, sylObj, cIdx)}
+                                                        onMouseDown={(e) => e.stopPropagation()} // Prevent Pan Logic
+                                                        onTouchStart={(e) => e.stopPropagation()} // Prevent Touch Logic
+                                                        title={`Index: ${absCharIndex}, WordStart: ${word.index}`}
                                                     >
                                                         {char}
                                                     </span>
@@ -205,7 +228,7 @@ export const WordListCell = React.memo(({
                                             })}
                                         </span>
                                         {settings.visualType === 'arc' && !sylObj.isSpace && (
-                                            <svg className="arc-svg pointer-events-none" viewBox="0 0 100 20" preserveAspectRatio="none"><path d="M 2 2 Q 50 20 98 2" fill="none" stroke={isEven ? '#2563eb' : '#dc2626'} strokeWidth="3" strokeLinecap="round" /></svg>
+                                            <svg className="arc-svg pointer-events-none" style={{ zIndex: 20 }} viewBox="0 0 100 20" preserveAspectRatio="none"><path d="M 2 2 Q 50 20 98 2" fill="none" stroke={isEven ? '#2563eb' : '#dc2626'} strokeWidth="3" strokeLinecap="round" /></svg>
                                         )}
                                     </span>
                                 );
@@ -215,6 +238,8 @@ export const WordListCell = React.memo(({
                                 return renderedSyllable;
                             });
                         })()}
+                        {/* DEBUG TEXT */}
+
                     </span>
                 ) : (
                     <span>{word.word}</span>
@@ -236,6 +261,7 @@ export const WordListCell = React.memo(({
     if (prev.toggleHighlights !== next.toggleHighlights) return false;
     if (prev.onWordUpdate !== next.onWordUpdate) return false;
     if (prev.onRemoveWord !== next.onRemoveWord) return false;
+    if (prev.onUpdateWordColor !== next.onUpdateWordColor) return false; // New prop comparison
 
     // Check Colors - Only return false (re-render) if relevant colors changed
     if (prev.wordColors !== next.wordColors) {

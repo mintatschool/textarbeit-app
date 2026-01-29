@@ -13,13 +13,71 @@
     <title>Textarbeit</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Preload primary fonts to prevent FOUT -->
+    <link rel="preload" href="https://fonts.gstatic.com/s/patrickhand/v23/LDI1apSQOAYtY-IH9DFCA0fb.woff2" as="font"
+        type="font/woff2" crossorigin>
+    <link rel="preload" href="https://fonts.gstatic.com/s/comicneue/v8/4UaHrEJDsxBrF37olUeD96rp5w.woff2" as="font"
+        type="font/woff2" crossorigin>
+    <link rel="preload" href="https://fonts.gstatic.com/s/andika/v25/mem_Ya6iyW-Lw6LQZ7YVUQ.woff2" as="font"
+        type="font/woff2" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Andika&family=Comic+Neue:wght@400;700&family=Mali:wght@400;500;700&family=Open+Sans:wght@400;600&family=Patrick+Hand&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Andika&family=Comic+Neue:wght@400;700&family=Mali:wght@400;500;700&family=Open+Sans:wght@400;600&family=Patrick+Hand&display=block"
         rel="stylesheet">
+    <style>
+        /* Critical CSS for initial render - prevents black screen and font flash */
+        html,
+        body {
+            background-color: #f8fafc;
+        }
+
+        #root {
+            min-height: 100vh;
+            min-height: 100dvh;
+            background-color: #f8fafc;
+        }
+
+        /* Hide content until fonts are loaded to prevent FOUT */
+        .fonts-loading #root>* {
+            visibility: hidden;
+        }
+
+        /* Loading spinner while app initializes */
+        #root:empty::before {
+            content: '';
+            display: block;
+            width: 48px;
+            height: 48px;
+            border: 4px solid #e2e8f0;
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation: spinner 0.8s linear infinite;
+        }
+
+        @keyframes spinner {
+            to {
+                transform: translate(-50%, -50%) rotate(360deg);
+            }
+        }
+    </style>
 </head>
 
-<body class="no-context">
+<body class="no-context fonts-loading">
     <div id="root"></div>
+    <script>
+        // Remove fonts-loading class once all fonts are ready
+        if (document.fonts) {
+            document.fonts.ready.then(function() {
+                document.body.classList.remove('fonts-loading');
+            });
+        } else {
+            // Fallback for browsers without FontFaceSet API
+            document.body.classList.remove('fonts-loading');
+        }
+    </script>
     <script type="module" src="/src/main.jsx"></script>
 </body>
 

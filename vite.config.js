@@ -32,13 +32,13 @@ export default defineConfig({
         id: 'textarbeit-app',
         icons: [
           {
-            src: 'logo.png',
+            src: 'apple-touch-icon.png',
             sizes: '192x192',
             type: 'image/png',
             purpose: 'any maskable'
           },
           {
-            src: 'logo.png',
+            src: 'apple-touch-icon.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable'
@@ -46,8 +46,7 @@ export default defineConfig({
         ]
       },
       devOptions: {
-        enabled: !isNoHttps,
-        // Use 'module' type for better dev experience with proper caching
+        enabled: false, // Disabled in dev to prevent caching confusion
         type: 'module',
         navigateFallback: 'index.html'
       },

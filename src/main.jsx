@@ -5,6 +5,9 @@ import ErrorBoundary from './ErrorBoundary.jsx'
 import { registerSW } from 'virtual:pwa-register'
 import './index.css'
 
+// Verification Log (Updated: 2026-01-29 21:00)
+console.log('🚀 App Version: 2026-01-29 21:00 (Inline Syllables Fix)');
+
 try {
     const updateSW = registerSW({
         onOfflineReady() {

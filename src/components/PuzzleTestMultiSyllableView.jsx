@@ -16,6 +16,7 @@ import { HorizontalLines } from './shared/UIComponents';
 import { getPieceColor } from './shared/puzzleUtils';
 import { usePreventTouchScroll } from '../hooks/usePreventTouchScroll';
 import { ExerciseHeader } from './ExerciseHeader';
+import { RewardModal } from './shared/RewardModal';
 import { polyfill } from 'mobile-drag-drop';
 import { scrollBehaviourDragImageTranslateOverride } from 'mobile-drag-drop/scroll-behaviour';
 polyfill({ dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride });
@@ -545,28 +546,15 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
 
     if (gameState.gameStatus === 'finished') {
         return (
-            <div className="fixed inset-0 bg-blue-50 z-[100] flex flex-col items-center justify-center animate-in fade-in duration-500">
-                <Icons.Check className="w-24 h-24 text-green-500 mb-6 animate-bounce" />
-                <h2 className="text-3xl font-black text-slate-800 mb-2">Super!</h2>
-                <p className="text-slate-600 mb-8 text-xl">Alle Wörter gepuzzelt.</p>
-                <div className="flex gap-4 relative z-10">
-                    <button onClick={() => startNewGame()} className="bg-blue-600 text-white px-8 py-3 rounded-2xl font-bold shadow-xl text-lg hover:scale-105 transition-all flex items-center gap-2">
-                        <RotateCcw /> Noch einmal
-                    </button>
-                    <button onClick={onClose} className="bg-white text-slate-700 border border-slate-300 px-8 py-3 rounded-2xl font-bold shadow-sm text-lg hover:bg-slate-50 transition-all">Beenden</button>
-                </div>
-                {/* Confetti */}
-                <div className="fixed inset-0 pointer-events-none z-[60]">
-                    {Array.from({ length: 40 }).map((_, i) => (
-                        <div key={i} className="confetti" style={{
-                            left: `${Math.random() * 100}%`,
-                            backgroundColor: ['#3b82f6', '#ef4444', '#22c55e', '#eab308'][Math.floor(Math.random() * 4)],
-                            animationDuration: `${2 + Math.random() * 3}s`,
-                            animationDelay: `${Math.random()}s`
-                        }} />
-                    ))}
-                </div>
-            </div>
+            <RewardModal
+                isOpen={true}
+                onClose={() => { onClose(); }}
+                message="Alle Wörter gepuzzelt."
+                title="Super!"
+                buttonText="Beenden"
+                onRestart={() => startNewGame()}
+                restartText="Noch einmal"
+            />
         );
     }
 
@@ -807,7 +795,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                                     </div>
 
                                     {/* Audio, Checkmark & Manual Advance Group */}
-                                    <div className="flex flex-col items-center gap-4">
+                                    <div className="flex flex-col items-center gap-4 relative">
                                         <div className="flex items-center gap-2 min-h-[56px]">
                                             {/* Speaker */}
                                             {audioEnabled && (
@@ -830,7 +818,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
 
                                         {/* Manual Advance Button - Below Speaker Layout */}
                                         {(isLastItem && allSolved) && (
-                                            <div className="animate-in slide-in-from-top-4 duration-300 mt-6">
+                                            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-8 animate-in slide-in-from-top-4 duration-300 z-20">
                                                 <button
                                                     onClick={handleManualAdvance}
                                                     className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl font-bold shadow-xl text-xl hover:scale-105 transition-all flex items-center gap-2 ring-4 ring-white/50 whitespace-nowrap"

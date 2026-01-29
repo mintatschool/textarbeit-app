@@ -6,6 +6,7 @@ import { ProgressBar } from './ProgressBar';
 import { EmptyStateMessage } from './EmptyStateMessage';
 
 import { ExerciseHeader } from './ExerciseHeader';
+import { RewardModal } from './shared/RewardModal';
 import { polyfill } from 'mobile-drag-drop';
 import { scrollBehaviourDragImageTranslateOverride } from 'mobile-drag-drop/scroll-behaviour';
 polyfill({ dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride });
@@ -194,33 +195,11 @@ export const SentenceShuffleView = ({ text, settings, setSettings, onClose, titl
     return (
         <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans">
             {/* Reward Modal */}
-            {showReward && (
-                <div className="fixed inset-0 z-[150] pointer-events-none flex items-center justify-center">
-                    <div className="fixed inset-0 bg-white/60 backdrop-blur-[2px]"></div>
-                    <div className="bg-white rounded-3xl p-12 shadow-2xl pop-animate pointer-events-auto text-center border-b-8 border-green-100 relative z-10">
-                        <div className="flex flex-col items-center">
-                            <span className="text-4xl font-black text-green-600 mb-8 flex items-center gap-3">
-                                <Icons.Check size={64} className="text-green-500" /> Alles richtig sortiert! Super!
-                            </span>
-                            <button onClick={onClose} className="px-12 py-4 bg-blue-600 text-white rounded-2xl font-bold text-xl hover:bg-blue-700 hover:scale-105 transition-all shadow-lg min-touch-target">
-                                Beenden
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Confetti */}
-                    <div className="fixed inset-0 pointer-events-none z-[160]">
-                        {Array.from({ length: 40 }).map((_, i) => (
-                            <div key={i} className="confetti" style={{
-                                left: `${Math.random() * 100}%`,
-                                backgroundColor: ['#3b82f6', '#ef4444', '#22c55e', '#eab308'][Math.floor(Math.random() * 4)],
-                                animationDuration: `${2 + Math.random() * 3}s`,
-                                animationDelay: `${Math.random()}s`
-                            }} />
-                        ))}
-                    </div>
-                </div>
-            )}
+            <RewardModal
+                isOpen={showReward}
+                onClose={onClose}
+                message="Alles richtig sortiert! Super!"
+            />
 
             <ExerciseHeader
                 title={title || "Schüttelsätze"}

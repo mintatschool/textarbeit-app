@@ -62,7 +62,7 @@ const DEFAULT_SETTINGS = {
     visualType: 'block',
     displayTrigger: 'click',
     fontFamily: "'Patrick Hand', cursive",
-    enableCamera: false,
+    enableCamera: true,
     clickAction: 'yellow_border',
     zoomActive: false,
     zoomScale: 1.2,
@@ -556,97 +556,151 @@ const App = () => {
     const lastPaintedIndex = useRef(null);
     const dragStartIndex = useRef(null); // Track where the drag started
 
-    const handlePaint = useCallback((index) => {
-        // Fix: In Pen Mode, handlePaint should ONLY run if we are Erasing (transparent).
-        // If we are drawing (activeColor is set), we do not want to paint the background.
+    // RAF Painting Optimization
+    const pendingPaintIndices = useRef(new Set());
+    const rafRef = useRef(null);
+
+    // FLUSH function: Processes all pending indices in one batch
+    const flushPaintUpdates = useCallback(() => {
+        if (pendingPaintIndices.current.size === 0) return;
+
+        const indicesToProcess = Array.from(pendingPaintIndices.current);
+        pendingPaintIndices.current.clear();
+
+        // Check if we actually need to paint (tools active etc)
         if (!isTextMarkerMode) {
             if (activeTool !== 'pen') return;
             if (activeColor !== 'transparent') return;
         }
 
-        // Safety Fallback: Use default orange if activeColor is somehow invalid/neutral/yellow
-        const paintColor = (!activeColor || activeColor === 'neutral' || activeColor === 'yellow') ? 'rgba(249, 115, 22, 0.15)' : activeColor;
-        setWordColors(prev => {
-            const next = { ...prev };
-            let indicesToFill = [];
+        const paintColor = (!activeColor || activeColor === 'neutral' || activeColor === 'yellow') ? '#FEEADC' : activeColor;
 
-            // Always fill from drag start to current position to ensure no gaps
-            const startIdx = dragStartIndex.current !== null ? dragStartIndex.current : index;
-            const start = Math.min(startIdx, index);
-            const end = Math.max(startIdx, index);
-
-            // Fill entire range from start to end
-            for (let i = start; i <= end; i++) {
-                indicesToFill.push(i);
-            }
-
-            // EXPAND indices to include full words if any part of a word is touched
-            // This ensures erasing/coloring a word works completely even if we only graze it.
-            const expandedIndices = new Set();
-            indicesToFill.forEach(idx => {
-                // Check if this index belongs to a word
-                const wordItem = processedWords.find(w => {
-                    if (w.type === 'word') {
-                        return idx >= w.index && idx < w.index + w.word.length;
-                    }
-                    return w.index === idx;
-                });
-
-                if (wordItem && wordItem.type === 'word') {
-                    // Add ALL indices of this word
-                    for (let k = 0; k < wordItem.word.length; k++) {
-                        expandedIndices.add(wordItem.index + k);
-                    }
+        // 1. Expand Indices (Duplicated logic from RAF loop for consistency)
+        const expandedIndices = new Set();
+        indicesToProcess.forEach(targetIdx => {
+            const startIdx = dragStartIndex.current !== null ? dragStartIndex.current : targetIdx;
+            const s = Math.min(startIdx, targetIdx);
+            const e = Math.max(startIdx, targetIdx);
+            for (let i = s; i <= e; i++) {
+                const wordItem = processedWords.find(w => w.type === 'word' && i >= w.index && i < w.index + w.word.length);
+                if (wordItem) {
+                    for (let k = 0; k < wordItem.word.length; k++) expandedIndices.add(wordItem.index + k);
                 } else {
-                    expandedIndices.add(idx);
+                    expandedIndices.add(i);
                 }
-            });
-
-            // Convert back to array
-            indicesToFill = Array.from(expandedIndices);
-
-            let changed = false;
-            let highlightsChanged = false;
-
-            setHighlightedIndices(prevHighlights => {
-                const nextHighlights = new Set(prevHighlights);
-
-                indicesToFill.forEach(idx => {
-                    // Toggle logic: if dragging from an empty space into a filled one, we paint.
-                    // If dragging from a filled space into a filled one with same color, we stay.
-                    // To "Remove", maybe we need a dedicated "Transparent" state?
-                    // For now, let's keep it simple: overwrite or stay.
-
-                    if (next[idx] !== paintColor) {
-                        if (paintColor === 'transparent') {
-                            delete next[idx];
-                            // Also clear from highlightedIndices when erasing
-                            if (nextHighlights.has(idx)) {
-                                nextHighlights.delete(idx);
-                                highlightsChanged = true;
-                            }
-                        } else {
-                            // Preserve existing yellow letter markings when applying word color
-                            // Only apply word color if the letter is NOT already yellow-marked
-                            if (next[idx] !== 'yellow') {
-                                next[idx] = paintColor;
-                            }
-                        }
-                        changed = true;
-                    }
-                });
-
-                return highlightsChanged ? nextHighlights : prevHighlights;
-            });
-
-            if (changed || highlightsChanged) {
-                lastPaintedIndex.current = index;
-                return next;
             }
-            return prev;
         });
 
-    }, [isTextMarkerMode, activeColor, processedWords, activeTool]);
+        // 2. Batch Update Colors
+        setWordColors(prev => {
+            const next = { ...prev };
+            let changed = false;
+            expandedIndices.forEach(idx => {
+                if (next[idx] !== paintColor) {
+                    if (paintColor === 'transparent') {
+                        delete next[idx];
+                    } else {
+                        if (next[idx] !== 'yellow') {
+                            next[idx] = paintColor;
+                        }
+                    }
+                    changed = true;
+                }
+            });
+            return changed ? next : prev;
+        });
+
+        // 3. Update Highlights (Eraser Only)
+        setHighlightedIndices(prev => {
+            const next = new Set(prev);
+            let changed = false;
+            expandedIndices.forEach(idx => {
+                if (paintColor === 'transparent') {
+                    if (next.has(idx)) { next.delete(idx); changed = true; }
+                } else {
+                    // Logic Change: Textmarker (Color) should NOT trigger selection/highlight (Grey Box)
+                }
+            });
+            return changed ? next : prev;
+        });
+
+    }, [activeColor, isTextMarkerMode, processedWords, activeTool]);
+
+
+    // Refined buffer-adder
+    const handlePaint = useCallback((index) => {
+        pendingPaintIndices.current.add(index);
+    }, []);
+
+    // RAF Loop
+    useEffect(() => {
+        const loop = () => {
+            if (isPaintActive.current && pendingPaintIndices.current.size > 0) {
+                // Determine indices
+                const indices = Array.from(pendingPaintIndices.current);
+                pendingPaintIndices.current.clear();
+
+                const paintColor = (!activeColor || activeColor === 'neutral' || activeColor === 'yellow') ? '#FEEADC' : activeColor;
+
+                // Do the heavy lifting ONCE here
+                // 1. Expand Indices
+                const expandedIndices = new Set();
+                // Optimize: Find words once
+                indices.forEach(targetIdx => {
+                    const startIdx = dragStartIndex.current !== null ? dragStartIndex.current : targetIdx;
+                    const s = Math.min(startIdx, targetIdx);
+                    const e = Math.max(startIdx, targetIdx);
+                    for (let i = s; i <= e; i++) {
+                        // Find word for 'i'
+                        const wordItem = processedWords.find(w => w.type === 'word' && i >= w.index && i < w.index + w.word.length);
+                        if (wordItem) {
+                            for (let k = 0; k < wordItem.word.length; k++) expandedIndices.add(wordItem.index + k);
+                        } else {
+                            expandedIndices.add(i); // Space or text
+                        }
+                    }
+                });
+
+                // 2. Batch Update Colors
+                setWordColors(prev => {
+                    const next = { ...prev };
+                    let changed = false;
+                    expandedIndices.forEach(idx => {
+                        if (next[idx] !== paintColor) {
+                            if (paintColor === 'transparent') delete next[idx];
+                            else if (next[idx] !== 'yellow') next[idx] = paintColor;
+                            changed = true;
+                        }
+                    });
+                    return changed ? next : prev;
+                });
+
+                // 3. Batch Update Highlights
+                setHighlightedIndices(prev => {
+                    const next = new Set(prev);
+                    let changed = false;
+                    expandedIndices.forEach(idx => {
+                        if (paintColor === 'transparent') {
+                            if (next.has(idx)) { next.delete(idx); changed = true; }
+                        } else {
+                            // Logic Change: Textmarker (Color) should NOT trigger selection/highlight (Grey Box)
+                            // So we do NOTHING here if we are painting a color.
+                            // The grey box is reserved for "Selection" (Mouse Click without tool or Split/etc).
+                        }
+                    });
+                    return changed ? next : prev;
+                });
+
+                lastPaintedIndex.current = indices[indices.length - 1];
+            }
+            rafRef.current = requestAnimationFrame(loop);
+        };
+
+        rafRef.current = requestAnimationFrame(loop);
+        return () => cancelAnimationFrame(rafRef.current);
+    }, [activeColor, isTextMarkerMode, processedWords, activeTool]); // Dependencies trigger restart of loop, which is fine.
+
+    // Remove old handlePaint logic from here (it was lines 559-649)
 
     // Touch Logic for App.jsx - Global handlers
     // We add 'touchmove' and 'touchend' to window to handle "drag painting"
@@ -835,6 +889,13 @@ const App = () => {
             return next;
         });
     }, [isGrouping, handleGrouping, activeTool, wordGroups]);
+
+
+    // STABILITY FIX: Create a stable reference for toggleHighlights to prevent Word re-renders
+    const toggleHighlightsRef = useRef(toggleHighlights);
+    useEffect(() => { toggleHighlightsRef.current = toggleHighlights; }, [toggleHighlights]);
+    const stableToggleHighlights = useCallback((...args) => toggleHighlightsRef.current(...args), []);
+
     const toggleHidden = useCallback((key) => {
         setHiddenIndices(prev => { const next = new Set(prev); if (next.has(key)) next.delete(key); else next.add(key); return next; });
     }, []);
@@ -1423,7 +1484,7 @@ const App = () => {
                                                 //
                                                 isHidden={hiddenIndices.has(item.id)}
                                                 highlightedIndices={highlightedIndices}
-                                                toggleHighlights={toggleHighlights}
+                                                toggleHighlights={stableToggleHighlights}
                                                 toggleHidden={toggleHidden}
                                                 hideYellowLetters={hideYellowLetters}
                                                 activeTool={activeTool}
@@ -1444,7 +1505,7 @@ const App = () => {
                                                         handlePaint(idx);
                                                     }
                                                 }}
-                                                onMouseEnter={(idx, e) => { if (isPaintActive.current || (e && e.buttons === 1)) handlePaint(idx); }}
+                                                // Removed onMouseEnter to rely on global mousemove/touchmove for performance
                                                 onEditMode={(word, key, syls) => { setCorrectionData({ word, key, syllables: syls }); setShowCorrectionModal(true); }}
                                                 startIndex={item.index}
                                                 isReadingMode={activeTool === 'read'}
@@ -1452,8 +1513,12 @@ const App = () => {
                                                 wordColors={wordColors}
                                                 colorPalette={colorPalette}
                                                 domRef={(idx, node) => {
-                                                    if (node) wordRefs.current[idx] = node;
-                                                    else delete wordRefs.current[idx];
+                                                    try {
+                                                        if (node) wordRefs.current[idx] = node;
+                                                        else delete wordRefs.current[idx];
+                                                    } catch (e) {
+                                                        console.error("Ref Error", idx, e);
+                                                    }
                                                 }}
                                                 drawings={wordDrawings[item.index] || []}
                                                 onUpdateDrawings={handleUpdateDrawings}
@@ -1552,7 +1617,7 @@ const App = () => {
                                 if (activeTool === 'pen') setActiveTool(null);
                             }
                         }}
-                        toggleHighlights={toggleHighlights}
+                        toggleHighlights={stableToggleHighlights}
                         highlightedIndices={highlightedIndices}
                         onWordUpdate={(wordId, newText) => {
                             const index = parseInt(wordId.replace('word_', ''), 10);

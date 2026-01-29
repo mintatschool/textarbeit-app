@@ -16,6 +16,7 @@ export const QRCodeModal = ({ text, onClose }) => {
     // Slideshow State
     const [currentPart, setCurrentPart] = useState(0); // 0-indexed
     const [isPlaying, setIsPlaying] = useState(false);
+    const [displayDuration, setDisplayDuration] = useState(3.0);
     const timerRef = useRef(null);
 
     // UTF-8 Encoding Fix für Umlaute
@@ -138,14 +139,14 @@ export const QRCodeModal = ({ text, onClose }) => {
         if (isPlaying && isMultiPart && qrValues.length > 1) {
             timerRef.current = setInterval(() => {
                 setCurrentPart(prev => (prev + 1) % qrValues.length);
-            }, 3000); // 3 Sekunden pro Code
+            }, displayDuration * 1000);
         } else {
             if (timerRef.current) clearInterval(timerRef.current);
         }
         return () => {
             if (timerRef.current) clearInterval(timerRef.current);
         };
-    }, [isPlaying, isMultiPart, qrValues.length]);
+    }, [isPlaying, isMultiPart, qrValues.length, displayDuration]);
 
     // Initial Start Auto-Play bei Multipart
     useEffect(() => {
@@ -391,6 +392,22 @@ export const QRCodeModal = ({ text, onClose }) => {
                             ? 'Die Kamera erkennt automatisch, wenn alle Teile gescannt sind.'
                             : 'Scanne diesen Code mit der App-Kamera.')}
                 </p>
+
+                {/* Duration Setting */}
+                {isMultiPart && mode !== 'link' && (
+                    <div className="flex items-center justify-center gap-2 mb-4">
+                        <label className="text-sm text-slate-600 font-bold">Anzeigedauer:</label>
+                        <select
+                            value={displayDuration}
+                            onChange={(e) => setDisplayDuration(parseFloat(e.target.value))}
+                            className="bg-slate-100 border border-slate-300 rounded px-2 py-1 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                            {[1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0].map(val => (
+                                <option key={val} value={val}>{val.toFixed(1)} s</option>
+                            ))}
+                        </select>
+                    </div>
+                )}
 
                 <button
                     onClick={onClose}

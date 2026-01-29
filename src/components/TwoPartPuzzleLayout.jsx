@@ -15,6 +15,7 @@ import { HorizontalLines } from './shared/UIComponents';
 import { getPieceColor } from './shared/puzzleUtils';
 import { polyfill } from 'mobile-drag-drop';
 import { scrollBehaviourDragImageTranslateOverride } from 'mobile-drag-drop/scroll-behaviour';
+import { RewardModal } from './shared/RewardModal';
 polyfill({ dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride });
 /**
  * Shared layout component for two-part puzzle exercises.
@@ -168,39 +169,23 @@ export const TwoPartPuzzleLayout = ({
     // Stage/All complete overlay
     if (gameStatus === 'all-complete' || (gameStatus === 'stage-complete' && !skipStageConfirmation)) {
         const isAllDone = gameStatus === 'all-complete';
+
+        const handleClose = () => {
+            if (isAllDone) {
+                onClose();
+            } else {
+                advanceToNextStage();
+            }
+        };
+
         return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-md">
-                <div className="bg-white rounded-[3rem] shadow-2xl p-10 max-w-sm w-full flex flex-col items-center text-center animate-in zoom-in duration-300 relative overflow-hidden">
-                    <Icons.Check className="w-16 h-16 text-green-500 mb-6" />
-                    <h2 className="text-3xl font-black text-slate-900 mb-2">Super!</h2>
-                    <p className="text-slate-500 mb-8 font-medium">
-                        {isAllDone ? allCompleteMessage : stageCompleteMessage}
-                    </p>
-                    <button
-                        onClick={() => {
-                            if (isAllDone) {
-                                onClose();
-                            } else {
-                                advanceToNextStage();
-                            }
-                        }}
-                        className="w-full bg-blue-600 text-white py-5 rounded-2xl font-black text-xl flex items-center justify-center gap-3 transition-all hover:scale-105 active:scale-95 shadow-lg relative z-10"
-                    >
-                        {isAllDone ? 'Beenden' : 'Weiter'} <ChevronRight className="w-6 h-6" />
-                    </button>
-                </div>
-                {/* Confetti */}
-                <div className="fixed inset-0 pointer-events-none z-[60]">
-                    {Array.from({ length: 40 }).map((_, i) => (
-                        <div key={i} className="confetti" style={{
-                            left: `${Math.random() * 100}%`,
-                            backgroundColor: ['#3b82f6', '#ef4444', '#22c55e', '#eab308'][Math.floor(Math.random() * 4)],
-                            animationDuration: `${2 + Math.random() * 3}s`,
-                            animationDelay: `${Math.random()}s`
-                        }} />
-                    ))}
-                </div>
-            </div>
+            <RewardModal
+                isOpen={true}
+                onClose={handleClose}
+                message={isAllDone ? allCompleteMessage : stageCompleteMessage}
+                title="Super!"
+                buttonText={isAllDone ? 'Beenden' : 'Weiter'}
+            />
         );
     }
 
@@ -459,7 +444,7 @@ export const TwoPartPuzzleLayout = ({
 
                                     {/* Success Checkmark & Audio Group - Now strictly to the right of the Pieces Group */}
                                     {/* We wrap it in a container that has the same height-center alignment */}
-                                    <div className="flex flex-col items-center gap-4 ml-2 self-center mt-8">
+                                    <div className="flex flex-col items-center gap-4 ml-2 self-center mt-8 relative">
                                         <div className="flex items-center gap-5">
                                             {/* Speaker */}
                                             {audioEnabled && (
@@ -485,7 +470,7 @@ export const TwoPartPuzzleLayout = ({
 
                                         {/* Manual Advance Button - Below Speaker/Checkmark */}
                                         {manualAdvance && showSuccess && (
-                                            <div className="animate-in slide-in-from-top-4 duration-300">
+                                            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-8 animate-in slide-in-from-top-4 duration-300 z-20">
                                                 <button
                                                     onClick={handleNextItem}
                                                     className="bg-blue-600 hover:bg-blue-700 text-white pl-6 pr-4 py-3 rounded-2xl font-bold shadow-xl text-lg hover:scale-105 transition-all flex items-center gap-2 ring-4 ring-white/50 whitespace-nowrap"

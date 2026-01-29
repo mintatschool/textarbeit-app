@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Icons } from './Icons';
+import { RewardModal } from './shared/RewardModal';
 import { Word } from './Word';
 import { EmptyStateMessage } from './EmptyStateMessage';
 import { shuffleArray } from '../utils/arrayUtils';
@@ -779,17 +780,12 @@ export const WordSortingView = ({
                         </div>
                     )}
 
-                    {/* Game Complete - Restart Button (INSIDE Belt Area) */}
-                    {gameComplete && (
-                        <div className="absolute left-0 right-0 z-[150] flex justify-center items-center h-full pb-4 pointer-events-none">
-                            <button
-                                onClick={handleRestart}
-                                className="bg-blue-600 text-white py-4 px-12 rounded-2xl font-black text-xl hover:bg-blue-700 transition-all flex items-center justify-center gap-3 shadow-lg shadow-blue-200 hover:scale-[1.02] active:scale-[0.98] pop-animate pointer-events-auto"
-                            >
-                                <Icons.RotateCcw size={24} /> Noch einmal
-                            </button>
-                        </div>
-                    )}
+                    <RewardModal
+                        isOpen={gameComplete}
+                        onClose={handleRestart}
+                        message="Alle Wörter sortiert!"
+                        buttonText="Noch einmal"
+                    />
                 </div>
             </div>
 

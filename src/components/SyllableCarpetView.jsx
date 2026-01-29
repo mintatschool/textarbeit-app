@@ -7,6 +7,7 @@ import availableSyllables from '../utils/available_syllables.json';
 const syllableSet = new Set(availableSyllables);
 
 import { ProgressBar } from './ProgressBar';
+import { RewardModal } from './shared/RewardModal';
 
 export const SyllableCarpetView = ({ words, settings, setSettings, onClose, title }) => {
     if (!words || words.length === 0) return (<div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col items-center justify-center modal-animate font-sans"><EmptyStateMessage onClose={onClose} /></div>);
@@ -40,34 +41,16 @@ export const SyllableCarpetView = ({ words, settings, setSettings, onClose, titl
 
     return (
         <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans pt-0 md:pt-0 print-content">
-            {showReward && (
-                <div className="fixed inset-0 z-[150] pointer-events-none flex items-center justify-center">
-                    <div className="fixed inset-0 bg-white/60 backdrop-blur-[2px]"></div>
-                    <div className="bg-white rounded-3xl p-12 shadow-2xl pop-animate pointer-events-auto text-center border-b-8 border-green-100 relative z-10">
-                        <div className="flex flex-col items-center">
-                            <span className="text-4xl font-black text-green-600 mb-2 flex items-center gap-3">
-                                <Icons.Check size={64} className="text-green-500" /> Alle Silben gefunden!
-                            </span>
-                            <p className="text-2xl text-slate-600 mb-8 font-bold">Zeit: {timer} Sekunden</p>
-                            <button onClick={() => { setShowReward(false); setIsGameMode(false); }} className="px-12 py-4 bg-blue-600 text-white rounded-2xl font-bold text-xl hover:bg-blue-700 hover:scale-105 transition-all shadow-lg min-touch-target">
-                                Beenden
-                            </button>
-                        </div>
+            <RewardModal
+                isOpen={showReward}
+                onClose={() => { setShowReward(false); setIsGameMode(false); }}
+                message={(
+                    <div className="flex flex-col items-center">
+                        <span>Alle Silben gefunden!</span>
+                        <p className="text-2xl text-slate-600 mt-2 font-bold">Zeit: {timer} Sekunden</p>
                     </div>
-
-                    {/* Confetti */}
-                    <div className="fixed inset-0 pointer-events-none z-[160]">
-                        {Array.from({ length: 40 }).map((_, i) => (
-                            <div key={i} className="confetti" style={{
-                                left: `${Math.random() * 100}%`,
-                                backgroundColor: ['#3b82f6', '#ef4444', '#22c55e', '#eab308'][Math.floor(Math.random() * 4)],
-                                animationDuration: `${2 + Math.random() * 3}s`,
-                                animationDelay: `${Math.random()}s`
-                            }} />
-                        ))}
-                    </div>
-                </div>
-            )}
+                )}
+            />
             <div className="bg-white shadow-sm z-10 shrink-0">
                 <div className="px-6 py-4 flex flex-wrap gap-4 justify-between items-center">
                     <div className="flex items-center gap-4 md:gap-6">
