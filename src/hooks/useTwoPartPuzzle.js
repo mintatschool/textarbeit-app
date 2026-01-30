@@ -589,9 +589,9 @@ export const useTwoPartPuzzle = ({
 
     // Dynamic sidebar width based on current scale
     const sidebarWidth = useMemo(() => {
-        const baseWidth = 180; // TwoPartPuzzleLayout uses w-52 = 208px, we use 180 as base
-        const width = Math.round(200 * gameState.pieceScale);
-        return Math.max(baseWidth, Math.min(220, width));
+        const baseWidth = 220; // Increased base width to prevent clipping
+        const width = Math.round(200 * gameState.pieceScale) + 40; // Add buffer for padding
+        return Math.max(baseWidth, Math.min(300, width));
     }, [gameState.pieceScale]);
 
     // Auto-reduce scale if it exceeds maxScale (e.g., when stage changes)

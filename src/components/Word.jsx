@@ -2,7 +2,7 @@ import React, { useMemo, useCallback, useState, useRef, useEffect } from 'react'
 import { Icons } from './Icons';
 import { getCachedSyllables, CLUSTERS } from '../utils/syllables';
 
-const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, highlightedIndices = new Set(), isHidden, toggleHighlights, toggleHidden, hideYellowLetters, activeTool, activeColor, onEditMode, manualSyllables, hyphenator, settings, isReadingMode, wordColors = {}, colorPalette, domRef, isGrouped, isSelection, hidePunctuation, onMouseEnter, onMouseDown, onTouchStart, isTextMarkerMode, drawings = [], onUpdateDrawings, forceNoMargin, forceShowSyllables }) => {
+const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, highlightedIndices = new Set(), isHidden, toggleHighlights, toggleHidden, hideYellowLetters, activeTool, activeColor, onEditMode, manualSyllables, hyphenator, settings, isReadingMode, wordColors = {}, colorPalette, domRef, isGrouped, isSelection, hidePunctuation, onMouseEnter, onMouseDown, onTouchStart, isTextMarkerMode, drawings = [], onUpdateDrawings, forceNoMargin, forceShowSyllables, isHeadline }) => {
     const wordKey = `${word}_${startIndex}`;
     const syllables = useMemo(() => manualSyllables || getCachedSyllables(word, hyphenator), [word, manualSyllables, hyphenator]);
 
@@ -165,6 +165,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
         fontFamily: settings.fontFamily, // Explicitly set for better reliability
         lineHeight: settings.lineHeight || 1.3,
         letterSpacing: `${(settings.letterSpacing ?? 0)}em`,
+        fontWeight: isHeadline ? 'bold' : 'normal',
 
     };
     const renderPrefix = () => !hidePunctuation && prefix ? <span className="text-slate-900 pointer-events-none">{prefix}</span> : null;
@@ -383,7 +384,12 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
 
                 // Default char padding in em - Perfectly balanced (padding = -margin) for zero layout shift
                 // REDUCED paddingBottom to 0.10em (User Request: "Enger heran")
-                let charStyle = { transition: 'none', paddingLeft: '0.02em', paddingRight: '0.02em', paddingTop: '0em', paddingBottom: '0.10em', marginLeft: '-0.02em', marginRight: '-0.02em', marginTop: '0em', marginBottom: '-0.10em' };
+                // INCREASED horizontal padding/margin to 0.06em to prevent gaps in highlighting (Opaque colors allow overlap without stripes)
+                let charStyle = { transition: 'none', paddingLeft: '0.06em', paddingRight: '0.06em', paddingTop: '0em', paddingBottom: '0.10em', marginLeft: '-0.06em', marginRight: '-0.06em', marginTop: '0em', marginBottom: '-0.10em' };
+
+                // Detect generic color (non-yellow) and apply to character for continuous stroke
+                const charColorCode = wordColors && wordColors[globalIndex];
+                const resolvedCharColor = resolveColor(charColorCode);
 
                 if (isYellow) {
                     charClassName += ' bg-yellow-200';
@@ -408,6 +414,15 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                         rounded = 'rounded-md';
                         charClassName += ' shadow-border-yellow';
                     }
+                } else if (resolvedCharColor && resolvedCharColor !== 'transparent') {
+                    // Generic Color Marker Logic (e.g. Peach, Green)
+                    // Apply background color to character to leverage the negative margin overlap
+                    charStyle = {
+                        ...charStyle,
+                        backgroundColor: resolvedCharColor,
+                        // Ensure rounded-none for continuous block look, or add logic if needed
+                    };
+                    rounded = 'rounded-none';
                 }
 
                 const shouldHideLetter = isYellow && hideYellowLetters;
@@ -589,10 +604,15 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
 
                                         let rounded = 'rounded-sm';
                                         let customClasses = 'cursor-pointer';
-                                        let style = { transition: 'none', paddingLeft: '0.02em', paddingRight: '0.02em', marginLeft: '-0.02em', marginRight: '-0.02em' };
+                                        // INCREASED to 0.06em to close gaps
+                                        let style = { transition: 'none', paddingLeft: '0.06em', paddingRight: '0.06em', marginLeft: '-0.06em', marginRight: '-0.06em' };
+
+                                        // Detect generic color (non-yellow) and apply to character for continuous stroke
+                                        const charColorCode = wordColors && wordColors[globalIndex];
+                                        const resolvedCharColor = resolveColor(charColorCode);
 
                                         if (isYellow) {
-                                            style = { transition: 'none', backgroundColor: '#fef08a', paddingLeft: '0.02em', paddingRight: '0.02em', paddingTop: '0em', paddingBottom: '0.10em', marginLeft: '-0.02em', marginRight: '-0.02em', marginTop: '0em', marginBottom: '-0.10em' };
+                                            style = { transition: 'none', backgroundColor: '#fef08a', paddingLeft: '0.06em', paddingRight: '0.06em', paddingTop: '0em', paddingBottom: '0.10em', marginLeft: '-0.06em', marginRight: '-0.06em', marginTop: '0em', marginBottom: '-0.10em' };
                                             customClasses += ' bg-yellow-200';
 
                                             const simpleLeft = wordColors && wordColors[globalIndex - 1] === 'yellow';
@@ -611,6 +631,22 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                                                 rounded = 'rounded-md';
                                                 customClasses += ' shadow-border-yellow';
                                             }
+                                        } else if (resolvedCharColor && resolvedCharColor !== 'transparent') {
+                                            // Generic Color Marker Logic (e.g. Peach, Green)
+                                            style = {
+                                                transition: 'none',
+                                                backgroundColor: resolvedCharColor,
+                                                // Apply same metric fix as yellow to ensure stroke continuity
+                                                paddingLeft: '0.06em', paddingRight: '0.06em',
+                                                paddingTop: '0em', paddingBottom: '0.10em',
+                                                marginLeft: '-0.06em', marginRight: '-0.06em',
+                                                marginTop: '0em', marginBottom: '-0.10em'
+                                            };
+                                            // Make it look like a marker block
+                                            rounded = 'rounded-none';
+
+                                            // Optional: Add rounded logic for start/end of color blocks if desired, 
+                                            // but for now simple block is safer for continuity.
                                         }
 
                                         const shouldHideLetter = isYellow && hideYellowLetters;
@@ -728,6 +764,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
         prev.colorPalette === next.colorPalette &&
         prev.hidePunctuation === next.hidePunctuation &&
         prev.drawings === next.drawings && // Update on drawings change
+        prev.isHeadline === next.isHeadline &&
         true // refs are stable
     );
 });

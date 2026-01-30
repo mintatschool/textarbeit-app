@@ -124,8 +124,8 @@ export const SplitExerciseView = ({ words, onClose, settings, setSettings, title
                                             </div>
                                         </div>
                                         {i < fullWord.length - 1 && (!vStat || (vStat.type !== 'start' && vStat.type !== 'mid')) && (
-                                            <div onClick={() => handleGapClick(i)} className="group relative w-6 md:w-12 h-20 md:h-36 -mb-2 cursor-pointer flex justify-center items-end hover:bg-blue-50 rounded mx-1 transition-colors">
-                                                <div className={`w-2 md:w-3 h-16 md:h-28 rounded-full transition-all duration-200 ${userSplits.has(i) ? 'bg-blue-600 shadow-lg scale-y-100' : 'bg-slate-200 scale-y-50 group-hover:scale-y-75'}`}></div>
+                                            <div onClick={() => handleGapClick(i)} className="group relative w-6 md:w-12 h-24 md:h-40 -mb-4 cursor-pointer flex justify-center items-end hover:bg-blue-50 rounded mx-1 transition-colors">
+                                                <div className={`w-2 md:w-3 h-20 md:h-32 mb-3 md:mb-5 rounded-full transition-all duration-200 ${userSplits.has(i) ? 'bg-blue-600 shadow-lg scale-y-100' : 'bg-slate-200 scale-y-70 group-hover:scale-y-85'}`}></div>
                                             </div>
                                         )}
                                     </React.Fragment>

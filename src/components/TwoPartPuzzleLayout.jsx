@@ -301,7 +301,7 @@ export const TwoPartPuzzleLayout = ({
             {/* Main Content */}
             <main className="flex-1 relative flex overflow-hidden">
                 {/* Left Pieces */}
-                <div className="relative border-r border-blue-50 bg-white/20 shrink-0 overflow-y-auto overflow-x-hidden custom-scroll py-6 px-4 space-y-8 flex flex-col items-start transition-all duration-300"
+                <div className="relative border-r border-blue-50 bg-white/20 shrink-0 overflow-y-auto overflow-x-hidden custom-scroll pt-12 pb-6 px-4 space-y-8 flex flex-col items-start transition-all duration-300"
                     style={{ width: sidebarWidth }}
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={(e) => {
@@ -487,7 +487,7 @@ export const TwoPartPuzzleLayout = ({
                 </div>
 
                 {/* Right Pieces - Dynamic Width for "Ende" */}
-                <div className="shrink-0 relative border-l border-blue-50 bg-white/20 overflow-y-auto overflow-x-hidden custom-scroll py-6 px-4 space-y-8 flex flex-col items-end transition-all duration-300"
+                <div className="shrink-0 relative border-l border-blue-50 bg-white/20 overflow-y-auto overflow-x-hidden custom-scroll pt-12 pb-6 px-4 space-y-8 flex flex-col items-end transition-all duration-300"
                     style={{ width: sidebarWidth }}
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={(e) => {

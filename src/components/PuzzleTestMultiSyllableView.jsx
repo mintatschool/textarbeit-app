@@ -26,7 +26,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
         stages: [],
         currentStageIndex: 0,
         gameStatus: 'loading',
-        pieceScale: 0.7,
+        pieceScale: 0.85,
         wordsPerStage: 3
     });
 
@@ -636,7 +636,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                     }}
                 >
                     <div className="bg-slate-200/50 py-1 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Anfang</div>
-                    <div className="flex-1 overflow-y-auto custom-scroll p-2 flex flex-col items-start gap-4">
+                    <div className="flex-1 overflow-y-auto custom-scroll p-2 pt-8 flex flex-col items-start gap-4">
                         {getVisiblePieces('left').map(p => {
                             const isHighlighted = highlightedWordId === p.wordId;
                             const isSelected = selectedPiece?.id === p.id;
@@ -677,7 +677,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                             }}
                         >
                             <div className="absolute top-1 left-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Mitte</div>
-                            <div className="w-full relative pt-6 px-4 pb-4 flex flex-wrap items-center justify-center gap-4 content-center overflow-y-auto custom-scroll">
+                            <div className="w-full relative pt-12 px-4 pb-4 flex flex-wrap items-center justify-center gap-4 content-center overflow-y-auto custom-scroll">
                                 {getVisiblePieces('middle').map(p => {
                                     const isHighlighted = highlightedWordId === p.wordId;
                                     const isSelected = selectedPiece?.id === p.id;
@@ -847,7 +847,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                     }}
                 >
                     <div className="bg-slate-200/50 py-1 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ende</div>
-                    <div className="flex-1 overflow-y-auto custom-scroll p-2 flex flex-col items-end gap-4">
+                    <div className="flex-1 overflow-y-auto custom-scroll p-2 pt-8 flex flex-col items-end gap-4">
                         {getVisiblePieces('right').map(p => {
                             const isHighlighted = highlightedWordId === p.wordId;
                             const isSelected = selectedPiece?.id === p.id;

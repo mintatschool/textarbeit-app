@@ -28,7 +28,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
         stages: [],
         currentStageIndex: 0,
         gameStatus: 'loading',
-        pieceScale: 0.8,
+        pieceScale: 0.95,
         wordsPerStage: 3
     });
 
@@ -608,7 +608,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                     }}
                 >
                     <div className="bg-slate-200/50 py-1 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Anfang</div>
-                    <div className="flex-1 overflow-y-auto custom-scroll p-2 flex flex-col items-center gap-4">
+                    <div className="flex-1 overflow-y-auto custom-scroll p-2 pt-8 flex flex-col items-center gap-4">
                         {leftVisible.map(p => {
                             const isSelected = selectedPiece?.id === p.id;
                             return (
@@ -638,7 +638,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                             }}
                         >
                             <div className="absolute top-1 left-2 text-[10px] font-bold text-slate-400 uppercase">Mitte</div>
-                            <div className="w-full relative pt-6 px-4 pb-4 flex flex-wrap items-center justify-center gap-4 content-center overflow-y-auto custom-scroll">
+                            <div className="w-full relative pt-12 px-4 pb-4 flex flex-wrap items-center justify-center gap-4 content-center overflow-y-auto custom-scroll">
                                 {middleVisible.map(p => {
                                     const isSelected = selectedPiece?.id === p.id;
                                     return (
@@ -813,7 +813,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                     }}
                 >
                     <div className="bg-slate-200/50 py-1 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ende</div>
-                    <div className="flex-1 overflow-y-auto custom-scroll p-2 flex flex-col items-center gap-4">
+                    <div className="flex-1 overflow-y-auto custom-scroll p-2 pt-8 flex flex-col items-center gap-4">
                         {rightVisible.map(p => {
                             const isSelected = selectedPiece?.id === p.id;
                             return (

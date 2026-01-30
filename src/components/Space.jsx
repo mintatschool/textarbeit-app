@@ -1,6 +1,6 @@
 import React from 'react';
 
-export const Space = React.memo(({ id, content, index, color, onMouseDown, onMouseEnter, isTextMarkerMode, isReadingMode, wordSpacing = 0, fontSize, colorPalette, letterSpacing = 0, lineHeight = 1.4 }) => {
+export const Space = React.memo(({ id, content, index, color, onMouseDown, onMouseEnter, isTextMarkerMode, isReadingMode, wordSpacing = 0, fontSize, colorPalette, letterSpacing = 0, lineHeight = 1.4, isHeadline }) => {
     // Helper to resolve color palette indices
     const resolveColor = (colorCode) => {
         if (!colorCode) return 'transparent';
@@ -35,12 +35,13 @@ export const Space = React.memo(({ id, content, index, color, onMouseDown, onMou
                 verticalAlign: 'baseline',
                 marginRight: (showMarkerLayout && wordSpacing < 0) ? `${wordSpacing}em` : '0px',
                 marginTop: '-0.25em',
-                marginBottom: '-0.10em'
+                marginBottom: '-0.10em',
+                fontWeight: isHeadline ? 'bold' : 'normal',
             }}
         >
             {content}
         </span>
     );
 }, (prev, next) => {
-    return prev.color === next.color && prev.content === next.content && prev.index === next.index && prev.wordSpacing === next.wordSpacing && prev.fontSize === next.fontSize && prev.isTextMarkerMode === next.isTextMarkerMode && prev.colorPalette === next.colorPalette && prev.isReadingMode === next.isReadingMode && prev.letterSpacing === next.letterSpacing && prev.lineHeight === next.lineHeight;
+    return prev.color === next.color && prev.content === next.content && prev.index === next.index && prev.wordSpacing === next.wordSpacing && prev.fontSize === next.fontSize && prev.isTextMarkerMode === next.isTextMarkerMode && prev.colorPalette === next.colorPalette && prev.isReadingMode === next.isReadingMode && prev.letterSpacing === next.letterSpacing && prev.lineHeight === next.lineHeight && prev.isHeadline === next.isHeadline;
 });

@@ -133,7 +133,16 @@ export const Toolbar = ({
         const r = parseInt(hex.substring(1, 3), 16);
         const g = parseInt(hex.substring(3, 5), 16);
         const b = parseInt(hex.substring(5, 7), 16);
-        return `rgba(${r}, ${g}, ${b}, 0.15)`;
+
+        // Calculate opaque pastel color (simulating 0.15 opacity on white)
+        // Formula: Target = Color * Alpha + Background * (1 - Alpha)
+        // Alpha = 0.25 (increased slightly from 0.15 for better visibility as opaque)
+        const alpha = 0.25;
+        const r_mix = Math.round(r * alpha + 255 * (1 - alpha));
+        const g_mix = Math.round(g * alpha + 255 * (1 - alpha));
+        const b_mix = Math.round(b * alpha + 255 * (1 - alpha));
+
+        return `rgb(${r_mix}, ${g_mix}, ${b_mix})`;
     };
 
     // Helper for displaying the lighter colors in the palette bubbles themselves

@@ -270,19 +270,38 @@ const App = () => {
 
     const processedWords = useMemo(() => {
         if (!text) return [];
+
+        // Headline Detection Logic
+        let headlineEndIndex = -1;
+        const lines = text.split('\n');
+        const line0 = lines[0];
+        if (line0 && line0.trim().length > 0) {
+            const trimmed = line0.trim();
+            const lastChar = trimmed[trimmed.length - 1];
+            // Bedingung 2: Kein Schlusszeichen wie .!?
+            if (!['.', '!', '?'].includes(lastChar)) {
+                // Bedingung 3: Darunter eine Freizeile
+                if (lines.length > 1 && lines[1].trim().length === 0) {
+                    headlineEndIndex = line0.length;
+                }
+            }
+        }
+
         const segments = text.split(/(\s+)/);
         let currentIndex = 0;
         return segments.map((segment, idx) => {
             const startIndex = currentIndex;
             currentIndex += segment.length;
 
+            const isHeadline = startIndex < headlineEndIndex;
+
             // Check for newlines
             if (segment.match(/^\s+$/)) {
                 if (segment.includes('\n')) {
                     const newlines = segment.match(/\n/g).length;
-                    return { id: `nl-${startIndex}`, type: 'newline', count: newlines, content: segment, index: startIndex };
+                    return { id: `nl-${startIndex}`, type: 'newline', count: newlines, content: segment, index: startIndex, isHeadline };
                 }
-                return { id: `space-${startIndex}`, type: 'space', content: segment, index: startIndex };
+                return { id: `space-${startIndex}`, type: 'space', content: segment, index: startIndex, isHeadline };
             }
 
             // Simple logic to separate punctuation
@@ -296,9 +315,9 @@ const App = () => {
                 const key = `word_${wordStartIndex}`;
                 const lookupKey = `${cleanWord}_${wordStartIndex}`;
                 const syllables = manualCorrections[lookupKey] || getCachedSyllables(cleanWord, hyphenator);
-                return { type: 'word', word: cleanWord, prefix, suffix, index: wordStartIndex, id: key, syllables };
+                return { type: 'word', word: cleanWord, prefix, suffix, index: wordStartIndex, id: key, syllables, isHeadline };
             }
-            return { type: 'text', content: segment, index: startIndex, id: `text_${startIndex}` };
+            return { type: 'text', content: segment, index: startIndex, id: `text_${startIndex}`, isHeadline };
         });
     }, [text, manualCorrections, hyphenator]);
 
@@ -1211,6 +1230,7 @@ const App = () => {
                         setWordGroups([]); // FIX: Clear Groups too
                         setColumnsState({ cols: {}, order: [] }); // FIX: Clear Table as well
                         setIsTextMarkerMode(false);
+                        setWordDrawings({}); // FIX: Clear Pen Drawings
                         setActiveTool(null); // FIX: Do not switch to 'read' mode, go to Hand mode
                         setActiveColor('neutral');
                     }}
@@ -1462,7 +1482,7 @@ const App = () => {
                                             return <div key={item.id} style={{ height: `${newlineHeight}em`, width: '100%' }}></div>;
                                         }
                                         if (item.type === 'space') {
-                                            return <Space key={item.id} {...item} isTextMarkerMode={isTextMarkerMode || activeTool === 'pen'} isReadingMode={activeTool === 'read'} color={wordColors[item.index]} colorPalette={colorPalette} wordSpacing={settings.wordSpacing} letterSpacing={settings.letterSpacing} fontSize={settings.fontSize} lineHeight={settings.lineHeight || 1.4} onMouseDown={(idx) => { isPaintActive.current = true; dragStartIndex.current = idx; lastPaintedIndex.current = idx; }} onMouseEnter={(idx, e) => { if (isPaintActive.current || (e && e.buttons === 1)) handlePaint(idx); }} />;
+                                            return <Space key={item.id} {...item} isTextMarkerMode={isTextMarkerMode || activeTool === 'pen'} isReadingMode={activeTool === 'read'} color={wordColors[item.index]} colorPalette={colorPalette} wordSpacing={settings.wordSpacing} letterSpacing={settings.letterSpacing} fontSize={settings.fontSize} lineHeight={settings.lineHeight || 1.4} isHeadline={item.isHeadline} onMouseDown={(idx) => { isPaintActive.current = true; dragStartIndex.current = idx; lastPaintedIndex.current = idx; }} onMouseEnter={(idx, e) => { if (isPaintActive.current || (e && e.buttons === 1)) handlePaint(idx); }} />;
                                         }
                                         if (item.type === 'text') return <span key={item.id} className="text-slate-800 break-words" style={{ fontSize: `${settings.fontSize}px` }}>{item.content}</span>;
                                         const isWordHighlighted = Array.from({ length: item.word.length }, (_, i) => item.index + i).some(idx => highlightedIndices.has(idx));
@@ -1478,6 +1498,7 @@ const App = () => {
                                                 isHighlighted={isWordHighlighted}
                                                 isTextMarkerMode={isTextMarkerMode || activeTool === 'pen'}
                                                 forceNoMargin={isNextSpaceColored}
+                                                isHeadline={item.isHeadline}
                                                 // Grouping Styling
                                                 isGrouped={wordGroups.some(g => g.ids.includes(item.index))}
                                                 isSelection={currentGroupSelection.includes(item.index)}
