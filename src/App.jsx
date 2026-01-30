@@ -587,9 +587,11 @@ const App = () => {
         pendingPaintIndices.current.clear();
 
         // Check if we actually need to paint (tools active etc)
-        if (!isTextMarkerMode) {
-            if (activeTool !== 'pen') return;
+        // Fix: If Pen is active, we do NOT want to paint background colors (wordColors), unless erasing.
+        if (activeTool === 'pen') {
             if (activeColor !== 'transparent') return;
+        } else if (!isTextMarkerMode) {
+            return;
         }
 
         const paintColor = (!activeColor || activeColor === 'neutral' || activeColor === 'yellow') ? '#FEEADC' : activeColor;
@@ -658,6 +660,17 @@ const App = () => {
                 // Determine indices
                 const indices = Array.from(pendingPaintIndices.current);
                 pendingPaintIndices.current.clear();
+
+                // Fix: If Pen is active, we do NOT want to paint background colors (wordColors), unless erasing.
+                if (activeTool === 'pen') {
+                    if (activeColor !== 'transparent') {
+                        rafRef.current = requestAnimationFrame(loop);
+                        return;
+                    }
+                } else if (!isTextMarkerMode) {
+                    rafRef.current = requestAnimationFrame(loop);
+                    return;
+                }
 
                 const paintColor = (!activeColor || activeColor === 'neutral' || activeColor === 'yellow') ? '#FEEADC' : activeColor;
 

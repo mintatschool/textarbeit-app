@@ -335,12 +335,13 @@ export const Toolbar = ({
                                     onToolChange(null);
                                     onSetActiveColor('neutral');
                                 } else {
-                                    // Activate Pen, STRICTLY Deactivate Marker
-                                    setIsTextMarkerMode(false);
+                                    // Activate Pen
+                                    // Fix: DO NOT deactivate Marker Mode (to preserve layout/spacing preference)
+                                    // setIsTextMarkerMode(false); 
                                     onToolChange('pen');
 
-                                    // FORCE Default Orange (Matches Textmarker logic - Transparent as requested)
-                                    onSetActiveColor(toHighlighterColor('#f97316'));
+                                    // FIX: Use Transparent Color for Pen (so it doesn't cover text)
+                                    onSetActiveColor(toPenColor('#f97316'));
                                 }
                             }}
                             className={`p-1 rounded-xl transition flex-1 flex justify-center items-center min-w-0 ${activeTool === 'pen' ? 'bg-slate-800 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-100 hover:text-blue-600'}`}
@@ -372,12 +373,12 @@ export const Toolbar = ({
                             let isActive = false;
                             // For palette bubbles: Show lighter "Preview" color if in marker mode
                             const displayColor = (isTextMarkerMode || activeTool === 'pen') ? toPalettePreviewColor(color) : color;
-                            const highlighterValue = toHighlighterColor(color);
+                            const comparisonValue = activeTool === 'pen' ? toPenColor(color) : toHighlighterColor(color);
 
                             if (typeof activeColor === 'string' && activeColor.startsWith('palette-') && !isTextMarkerMode && activeTool !== 'pen') {
                                 const activeIndex = parseInt(activeColor.split('-')[1], 10);
                                 if (activeIndex === originalIndex) isActive = true;
-                            } else if (activeColor === color || ((isTextMarkerMode || activeTool === 'pen') && activeColor === highlighterValue)) {
+                            } else if (activeColor === color || ((isTextMarkerMode || activeTool === 'pen') && activeColor === comparisonValue)) {
                                 isActive = true;
                             }
 
@@ -387,7 +388,7 @@ export const Toolbar = ({
                                     onClick={() => {
                                         if (isTextMarkerMode || activeTool === 'pen') {
                                             // In Marker/Pen modes: just select the transparent color, no color picker
-                                            onSetActiveColor(toHighlighterColor(color));
+                                            onSetActiveColor(activeTool === 'pen' ? toPenColor(color) : toHighlighterColor(color));
                                         } else if (isActive) {
                                             // Outside Marker/Pen: double-click opens color picker
                                             setEditingColorIndex(originalIndex);
@@ -425,7 +426,7 @@ export const Toolbar = ({
                                     onClick={() => {
                                         if (isTextMarkerMode || activeTool === 'pen') {
                                             // In Marker/Pen modes: just select the transparent color, no color picker
-                                            onSetActiveColor(toHighlighterColor(color));
+                                            onSetActiveColor(activeTool === 'pen' ? toPenColor(color) : toHighlighterColor(color));
                                         } else if (isActive) {
                                             // Outside Marker/Pen: double-click opens color picker
                                             setEditingColorIndex(originalIndex);
