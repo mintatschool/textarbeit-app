@@ -4,11 +4,8 @@ import { RewardModal } from './shared/RewardModal';
 import { Word } from './Word';
 import { EmptyStateMessage } from './EmptyStateMessage';
 import { shuffleArray } from '../utils/arrayUtils';
-import { polyfill } from 'mobile-drag-drop';
-import { scrollBehaviourDragImageTranslateOverride } from 'mobile-drag-drop/scroll-behaviour';
 import { ProgressBar } from './ProgressBar';
 
-polyfill({ dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride });
 
 // Min 0.4, Max 4.8 (approx +20% of 4.0), Default 5 (Index 4)
 const SPEEDS = [0.4, 0.6, 0.8, 1.0, 1.3, 1.7, 2.2, 2.8, 3.5, 4.0, 4.4, 4.8];
@@ -38,8 +35,10 @@ export const WordSortingView = ({
     onClose,
     title = "Wörter sortieren",
     wordColors,
+    highlightedIndices = new Set(),
     colorPalette = [],
-    textCorrections = {}
+    textCorrections = {},
+    hideYellowLetters = false,
 }) => {
     const [speedLevel, setSpeedLevel] = useState(5);
     const [score, setScore] = useState(0);
@@ -49,14 +48,39 @@ export const WordSortingView = ({
     const [validColumns, setValidColumns] = useState([]);
     const [errorMsg, setErrorMsg] = useState(null);
     const [selectedWordId, setSelectedWordId] = useState(null);
+    const selectedWordIdRef = useRef(null);
     const [isWrong, setIsWrong] = useState(false);
     const [sortedWords, setSortedWords] = useState({});
     const [totalWords, setTotalWords] = useState(0);
     const [beltStopped, setBeltStopped] = useState(false);
 
-    const [userInteractionPause, setUserInteractionPause] = useState(false);
+    const [userInteractionPause, _setUserInteractionPause] = useState(false);
+    const userInteractionPauseRef = useRef(false);
+    const setUserInteractionPause = useCallback((v) => {
+        userInteractionPauseRef.current = v;
+        _setUserInteractionPause(v);
+    }, []);
     // Random rotation angle for each word (-15 to +15 degrees)
     const [wordRotation, setWordRotation] = useState(0);
+
+    // Pointer-based drag state (replaces HTML5 drag for iPad compatibility)
+    const [isDraggingWord, setIsDraggingWord] = useState(false);
+    const [dragPos, setDragPos] = useState({ x: 0, y: 0 });
+    const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+    const [hoveredColId, setHoveredColId] = useState(null);
+    const columnElsRef = useRef({}); // { colId: HTMLElement }
+    const itemsContainerRefs = useRef({}); // { colId: HTMLElement }
+    const wordElRef = useRef(null);
+    const pointerStartRef = useRef(null); // track if it was a tap vs drag
+    const [hasErrors, setHasErrors] = useState(false);
+
+    // Prevent page scroll during pointer drag (iPad)
+    useEffect(() => {
+        if (!isDraggingWord) return;
+        const prevent = (e) => e.preventDefault();
+        document.addEventListener('touchmove', prevent, { passive: false });
+        return () => document.removeEventListener('touchmove', prevent);
+    }, [isDraggingWord]);
 
     const containerRef = useRef(null);
     const beltRef = useRef(null);
@@ -66,6 +90,10 @@ export const WordSortingView = ({
 
     // Initialize
     useEffect(() => {
+        if (!columnsState || !columnsState.order || !columnsState.cols) {
+            return;
+        }
+
         const cols = columnsState.order
             .map(id => columnsState.cols[id])
             .filter(c => c && c.title && c.title.trim() !== '' && c.items && c.items.length > 0);
@@ -85,12 +113,8 @@ export const WordSortingView = ({
         const allWords = cols.flatMap(col =>
             col.items.map(w => {
                 const lookupKey = `${w.word}_${w.index}`;
-                if (textCorrections[lookupKey]) {
+                if (textCorrections && textCorrections[lookupKey]) {
                     const newText = textCorrections[lookupKey];
-                    // Note: getCachedSyllables is not available here easily, 
-                    // but Word component used in render will handle syllables if word changes.
-                    // Actually we should ideally update syllables if word changed significantly,
-                    // but for casing it's same syllables.
                     return { ...w, word: newText, correctColId: col.id };
                 }
                 return { ...w, correctColId: col.id };
@@ -106,11 +130,11 @@ export const WordSortingView = ({
             // Set random rotation for first word (-15 to +15 degrees)
             setWordRotation((Math.random() - 0.5) * 30);
         }
-    }, [columnsState]);
+    }, [columnsState, textCorrections]);
 
     // Animation loop - move the single word across the belt
     const animate = useCallback((time) => {
-        if (!currentWord || isWrong || userInteractionPause) { // Pause on interaction
+        if (!currentWord || isWrong || userInteractionPauseRef.current) { // Pause on interaction (ref for instant response)
             lastTimeRef.current = null; // Reset delta tracking on pause
             animationRef.current = requestAnimationFrame(animate);
             return;
@@ -123,6 +147,9 @@ export const WordSortingView = ({
             const beltWidth = beltRef.current?.clientWidth || 800;
 
             setWordX(prev => {
+                // Double-check pause ref inside updater to prevent stale-closure race
+                if (userInteractionPauseRef.current) return prev;
+
                 let speedToAdd = speed;
 
                 // Fast Entry Logic: "Geschubst" (Pushed)
@@ -156,7 +183,7 @@ export const WordSortingView = ({
         }
         lastTimeRef.current = time;
         animationRef.current = requestAnimationFrame(animate);
-    }, [currentWord, wordsQueue, speedLevel, isWrong, userInteractionPause]);
+    }, [currentWord, wordsQueue, speedLevel, isWrong]);
 
     useEffect(() => {
         if (!errorMsg && currentWord) {
@@ -167,31 +194,49 @@ export const WordSortingView = ({
     }, [animate, errorMsg, currentWord]);
 
     // Handlers
-    const handleWordClick = () => {
+    const handleWordClick = useCallback(() => {
         if (currentWord && !isWrong) {
-            setSelectedWordId(selectedWordId === 'current' ? null : 'current');
+            if (selectedWordIdRef.current === 'current') {
+                // Deselect → resume belt
+                selectedWordIdRef.current = null;
+                setSelectedWordId(null);
+                setUserInteractionPause(false);
+            } else {
+                // Select → pause belt so word stays in place
+                selectedWordIdRef.current = 'current';
+                setSelectedWordId('current');
+                setUserInteractionPause(true);
+            }
         }
-    };
+    }, [currentWord, isWrong]);
 
-    const handleColumnClick = (colId) => {
-        if (selectedWordId === 'current' && currentWord) {
+    const handleColumnClick = useCallback((colId) => {
+        if (selectedWordIdRef.current === 'current' && currentWord) {
             checkPlacement(colId);
+            selectedWordIdRef.current = null;
             setSelectedWordId(null);
+            setUserInteractionPause(false);
         }
-    };
+    }, [currentWord]);
 
     const handleRestart = () => {
         setBeltStopped(false);
         setScore(0);
+        setHasErrors(false);
+
+        if (!validColumns || validColumns.length === 0) return;
+
         // Reset sorted words with empty arrays for each column
         const initial = {};
         validColumns.forEach(c => { initial[c.id] = []; });
         setSortedWords(initial);
 
         // Re-shuffle and start
-        const allWords = validColumns.flatMap(col =>
-            col.items.map(w => ({ ...w, correctColId: col.id }))
-        );
+        const allWords = validColumns.flatMap(col => {
+            if (!col || !col.items) return []; // Safety check
+            return col.items.map(w => ({ ...w, correctColId: col.id }));
+        });
+
         const shuffled = shuffleArray(allWords);
         setTotalWords(shuffled.length);
 
@@ -199,23 +244,117 @@ export const WordSortingView = ({
             setCurrentWord(shuffled[0]);
             setWordsQueue(shuffled.slice(1));
             setWordX(-250);
+            setWordRotation((Math.random() - 0.5) * 30);
         } else {
             setCurrentWord(null);
         }
     };
 
-    const handleDragStart = (e) => {
-        if (!currentWord) return;
-        e.dataTransfer.setData('text/plain', 'sorting-word');
-        e.dataTransfer.effectAllowed = 'move';
+    // Auto-scroll removed as we use justify-end for "hochrutschen" effect
+
+    // --- Pointer-based drag handlers (iPad-friendly, no bitmap snapshot) ---
+    const pointerIdRef = useRef(null);
+
+    const handlePointerDown = (e) => {
+        if (!currentWord || isWrong) return;
+        e.preventDefault();
+        e.stopPropagation();
+        setUserInteractionPause(true);
+        const el = wordElRef.current;
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        setDragOffset({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+        setDragPos({ x: e.clientX, y: e.clientY });
+        pointerStartRef.current = { x: e.clientX, y: e.clientY, time: Date.now() };
+        pointerIdRef.current = e.pointerId;
+        // Do NOT enter drag mode yet — wait for pointer to move beyond threshold
+        // This prevents opacity-0 flicker and pointer capture issues on iPad taps
     };
 
-    const handleDrop = (e, colId) => {
-        e.preventDefault();
-        if (currentWord) {
-            checkPlacement(colId);
+    const handlePointerMove = useCallback((e) => {
+        if (!currentWord) return;
+        const start = pointerStartRef.current;
+        if (!start) return; // no active interaction
+
+        // If not yet dragging, check if we exceeded the drag threshold (8px)
+        if (!isDraggingWord) {
+            const dx = e.clientX - start.x;
+            const dy = e.clientY - start.y;
+            if (Math.sqrt(dx * dx + dy * dy) > 8) {
+                // Threshold exceeded → enter drag mode now
+                setIsDraggingWord(true);
+                const el = wordElRef.current;
+                if (el && pointerIdRef.current != null) {
+                    try { el.setPointerCapture(pointerIdRef.current); } catch (_) { }
+                }
+            } else {
+                return; // Still below threshold, wait
+            }
         }
-    };
+
+        e.preventDefault();
+        setDragPos({ x: e.clientX, y: e.clientY });
+
+        // Hit-test columns for hover highlight
+        let foundCol = null;
+        for (const [colId, colEl] of Object.entries(columnElsRef.current)) {
+            if (!colEl) continue;
+            const r = colEl.getBoundingClientRect();
+            if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
+                foundCol = colId;
+                break;
+            }
+        }
+        setHoveredColId(foundCol);
+    }, [isDraggingWord, currentWord]);
+
+    const handlePointerUp = useCallback((e) => {
+        const start = pointerStartRef.current;
+
+        // Release pointer capture immediately so subsequent touches on columns work on iPad
+        if (pointerIdRef.current != null && wordElRef.current) {
+            try { wordElRef.current.releasePointerCapture(pointerIdRef.current); } catch (_) { }
+            pointerIdRef.current = null;
+        }
+
+        // Case 1: Was in drag mode → handle drop
+        if (isDraggingWord) {
+            setIsDraggingWord(false);
+            setHoveredColId(null);
+            pointerStartRef.current = null;
+
+            if (!currentWord) {
+                setUserInteractionPause(false);
+                return;
+            }
+
+            setUserInteractionPause(false);
+
+            // Hit-test columns for drop
+            for (const [colId, colEl] of Object.entries(columnElsRef.current)) {
+                if (!colEl) continue;
+                const r = colEl.getBoundingClientRect();
+                if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
+                    checkPlacement(colId);
+                    return;
+                }
+            }
+            // Dropped outside any column → do nothing (word stays on belt)
+            return;
+        }
+
+        // Case 2: Never entered drag mode → it's a tap
+        if (start && currentWord) {
+            pointerStartRef.current = null;
+            // handleWordClick manages userInteractionPause itself
+            handleWordClick();
+            return;
+        }
+
+        // Fallback: clean up
+        pointerStartRef.current = null;
+        setUserInteractionPause(false);
+    }, [isDraggingWord, currentWord, handleWordClick]);
 
     const checkPlacement = (targetColId) => {
         if (!currentWord) return;
@@ -233,6 +372,7 @@ export const WordSortingView = ({
             // Wrong!
             // Play negative feedback sound (optional)
             setIsWrong(true);
+            setHasErrors(true);
 
             // Add to correct column as error (gray)
             // Wait for fall animation to start before updating state if needed, 
@@ -274,8 +414,11 @@ export const WordSortingView = ({
     };
 
     // Check if table is unconfigured: no headers or no items at all
-    const hasAnyHeader = columnsState.order.some(id => columnsState.cols[id]?.title?.trim());
-    const hasAnyItems = columnsState.order.some(id => columnsState.cols[id]?.items?.length > 0);
+    const hasAnyHeader = columnsState?.order?.some(id => columnsState.cols[id]?.title?.trim());
+    const hasAnyItems = columnsState?.order?.some(id => columnsState.cols[id]?.items?.length > 0);
+
+    // Initial checks for safety
+    if (!columnsState || !validColumns) return null;
 
     if (!hasAnyHeader || !hasAnyItems || validColumns.length < 2) {
         return (
@@ -555,22 +698,21 @@ export const WordSortingView = ({
                             return (
                                 <div
                                     key={col.id}
+                                    ref={(el) => { columnElsRef.current[col.id] = el; }}
+                                    data-col-id={col.id}
                                     onClick={() => handleColumnClick(col.id)}
-                                    // ... drop handlers ...
-                                    onDragOver={(e) => {
-                                        e.preventDefault();
-                                        e.currentTarget.classList.add('ring-4', 'ring-blue-400', 'bg-blue-50');
-                                    }}
-                                    onDragLeave={(e) => {
-                                        e.currentTarget.classList.remove('ring-4', 'ring-blue-400', 'bg-blue-50');
-                                    }}
-                                    onDrop={(e) => {
-                                        e.currentTarget.classList.remove('ring-4', 'ring-blue-400', 'bg-blue-50');
-                                        handleDrop(e, col.id);
+                                    onPointerUp={(e) => {
+                                        // iPad: onClick may not fire reliably on touch, so also handle here
+                                        if (!isDraggingWord) {
+                                            e.stopPropagation();
+                                            handleColumnClick(col.id);
+                                        }
                                     }}
                                     className={`flex-1 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col min-w-[280px] transition-all relative
                                         ${isSelected ? 'cursor-pointer ring-4 ring-blue-300 ring-offset-2 border-blue-400' : 'hover:border-slate-300'}
+                                        ${hoveredColId === col.id ? 'ring-4 ring-blue-400 bg-blue-50' : ''}
                                     `}
+                                    style={{ touchAction: 'manipulation' }}
                                 >
                                     {/* Column Header - matches WordListView */}
                                     <div
@@ -587,7 +729,11 @@ export const WordSortingView = ({
                                     </div>
 
                                     {/* Column Items - sorted words appear here */}
-                                    <div className="p-3 space-y-2 flex-1 relative min-h-[100px]">
+                                    <div
+                                        ref={(el) => { itemsContainerRefs.current[col.id] = el; }}
+                                        className="p-3 space-y-2 flex-1 relative min-h-[100px] overflow-y-auto no-scrollbar max-h-[calc(100vh-350px)] flex flex-col"
+                                    >
+
                                         {/* Click feedback overlay for selected column */}
                                         {isSelected && (
                                             <div className="absolute inset-0 bg-blue-50/30 rounded-lg pointer-events-none animate-pulse" />
@@ -607,9 +753,13 @@ export const WordSortingView = ({
                                                 >
                                                     <Word
                                                         word={word.word}
+                                                        startIndex={word.index}
                                                         settings={{ ...settings, fontSize: settings.fontSize * 0.85 }}
                                                         isReadingMode={true}
                                                         forceShowSyllables={true}
+                                                        wordColors={wordColors}
+                                                        highlightedIndices={highlightedIndices}
+                                                        hideYellowLetters={hideYellowLetters}
                                                     />
                                                 </div>
                                             );
@@ -626,7 +776,7 @@ export const WordSortingView = ({
                 {/* CONVEYOR BELT - Fixed at bottom */}
                 <div
                     ref={beltRef}
-                    className="absolute bottom-0 left-0 right-0"
+                    className="absolute bottom-0 left-0 right-0 z-[400]"
                     style={{ height: `${beltHeight}px`, backgroundColor: '#1e293b' }} // slate-800 to match darker app theme
                 >
                     {/* Size constants:
@@ -664,7 +814,7 @@ export const WordSortingView = ({
 
                     {/* Belt Curves also need high z-index to cover if needed, matching rollers */}
                     <div
-                        className="absolute w-[60px] h-[60px] -translate-y-1/2 z-[290]"
+                        className="absolute w-[60px] h-[60px] -translate-y-1/2 z-[490]"
                         style={{ top: `${rollerCenterY}px`, left: `${rollerOffset}px` }}
                     >
                         <div
@@ -674,7 +824,7 @@ export const WordSortingView = ({
                     </div>
 
                     <div
-                        className="absolute w-[60px] h-[60px] -translate-y-1/2 z-[290]"
+                        className="absolute w-[60px] h-[60px] -translate-y-1/2 z-[490]"
                         style={{ top: `${rollerCenterY}px`, right: `${rollerOffset}px` }}
                     >
                         <div
@@ -704,7 +854,7 @@ export const WordSortingView = ({
 
                     {/* LEFT ROLLER - Interactive */}
                     <div
-                        className="absolute -translate-y-1/2 w-[70px] h-[70px] z-[300] cursor-grab active:cursor-grabbing hover:scale-105 transition-transform"
+                        className="absolute -translate-y-1/2 w-[70px] h-[70px] z-[500] cursor-grab active:cursor-grabbing hover:scale-105 transition-transform"
                         style={{ top: `${rollerCenterY}px`, left: `${rollerOffset - 5}px` }}
                         onMouseDown={handleRollerPress}
                         onTouchStart={handleRollerPress}
@@ -728,7 +878,7 @@ export const WordSortingView = ({
 
                     {/* RIGHT ROLLER - Interactive */}
                     <div
-                        className="absolute -translate-y-1/2 w-[70px] h-[70px] z-[300] cursor-grab active:cursor-grabbing hover:scale-105 transition-transform"
+                        className="absolute -translate-y-1/2 w-[70px] h-[70px] z-[500] cursor-grab active:cursor-grabbing hover:scale-105 transition-transform"
                         style={{ top: `${rollerCenterY}px`, right: `${rollerOffset - 5}px` }}
                         onMouseDown={handleRollerPress}
                         onTouchStart={handleRollerPress}
@@ -753,18 +903,23 @@ export const WordSortingView = ({
                     {/* THE WORD - sits ON the top belt surface, BEHIND rollers (z-200 vs z-300) */}
                     {currentWord && (
                         <div
-                            className={`absolute z-[200] cursor-grab active:cursor-grabbing origin-bottom
+                            ref={wordElRef}
+                            className={`absolute z-[450] cursor-grab active:cursor-grabbing origin-bottom
                                 ${isWrong ? 'animate-fall' : ''}
+                                ${isDraggingWord ? 'opacity-0 pointer-events-none' : ''}
                                 ${isSelected ? '!scale-110' : 'hover:scale-110 hover:-translate-y-1 hover:rotate-1 hover:shadow-lg'} 
                             `}
                             style={{
                                 ...getWordStyle(),
                                 'transform': isWrong ? `translateY(300px) rotate(${10 + Math.random() * 30}deg)` : getWordStyle().transform,
-                                'transition': isWrong ? 'transform 0.6s ease-in' : 'transform 0.15s ease-out' // Smooth hover
+                                'transition': isWrong ? 'transform 0.6s ease-in' : 'transform 0.15s ease-out',
+                                'touchAction': 'none' // Prevents 300ms delay on iPad
                             }}
-                            draggable
-                            onDragStart={handleDragStart}
-                            onClick={handleWordClick}
+                            onPointerDown={handlePointerDown}
+                            onPointerMove={handlePointerMove}
+                            onPointerUp={handlePointerUp}
+                            onPointerCancel={() => { setIsDraggingWord(false); setHoveredColId(null); setUserInteractionPause(false); pointerStartRef.current = null; }}
+                            onTouchStart={(e) => e.stopPropagation()} /* Block mobile-drag-drop polyfill */
                         >
                             <div className={`
                                 bg-white px-4 py-2 rounded-lg shadow-lg border 
@@ -772,9 +927,39 @@ export const WordSortingView = ({
                             `}>
                                 <Word
                                     word={currentWord.word}
+                                    startIndex={currentWord.index}
                                     settings={{ ...settings, fontSize: settings.fontSize * 0.85 }}
                                     isReadingMode={true}
                                     forceShowSyllables={true}
+                                    wordColors={wordColors}
+                                    highlightedIndices={highlightedIndices}
+                                    hideYellowLetters={hideYellowLetters}
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Floating drag clone - follows pointer during drag */}
+                    {isDraggingWord && currentWord && (
+                        <div
+                            className="fixed z-[10000] pointer-events-none"
+                            style={{
+                                left: `${dragPos.x - dragOffset.x}px`,
+                                top: `${dragPos.y - dragOffset.y}px`,
+                                transform: 'scale(1.05) rotate(2deg)',
+                                filter: 'drop-shadow(0 20px 30px rgba(0,0,0,0.25))'
+                            }}
+                        >
+                            <div className="bg-white px-4 py-2 rounded-lg shadow-lg border border-blue-500">
+                                <Word
+                                    word={currentWord.word}
+                                    startIndex={currentWord.index}
+                                    settings={{ ...settings, fontSize: settings.fontSize * 0.85 }}
+                                    isReadingMode={true}
+                                    forceShowSyllables={true}
+                                    wordColors={wordColors}
+                                    highlightedIndices={highlightedIndices}
+                                    hideYellowLetters={hideYellowLetters}
                                 />
                             </div>
                         </div>
@@ -782,9 +967,16 @@ export const WordSortingView = ({
 
                     <RewardModal
                         isOpen={gameComplete}
-                        onClose={handleRestart}
-                        message="Alle Wörter sortiert!"
-                        buttonText="Noch einmal"
+                        onClose={onClose}
+                        onRestart={handleRestart}
+                        message={hasErrors ? "Alle Wörter einsortiert!" : "Hervorragend! Alles richtig!"}
+                        buttonText="Zurück"
+                        restartText="Noch einmal"
+                        showConfetti={!hasErrors}
+                        iconSize={24}
+                        containerClassName="absolute left-0 right-0 bottom-0 z-[600] flex items-center justify-center pointer-events-none"
+                        style={{ height: `${beltHeight}px` }}
+                        contentClassName="bg-white/95 backdrop-blur-sm rounded-xl p-3 shadow-xl pop-animate pointer-events-auto text-center border-b-4 border-blue-200 relative z-10 mx-4 max-w-xl w-full"
                     />
                 </div>
             </div>
@@ -828,7 +1020,7 @@ export const WordSortingView = ({
 
                 @keyframes fall {
                     0% { transform: translateY(0) rotate(0); opacity: 1; }
-                    100% { transform: translateY(300px) rotate(var(--fall-rotate)); opacity: 0; }
+                    100% { transform: translateY(300px) rotate(var(--fall-rotate, 10deg)); opacity: 0; }
                 }
                 .animate-fall {
                     animation: fall 0.6s cubic-bezier(0.55, 0.085, 0.68, 0.53) forwards;

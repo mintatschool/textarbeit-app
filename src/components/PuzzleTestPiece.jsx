@@ -1,8 +1,6 @@
 import React from 'react';
 import { PUZZLE_PATH_LEFT, PUZZLE_PATH_RIGHT, PUZZLE_PATH_MIDDLE, PUZZLE_PATH_ZIGZAG_LEFT, PUZZLE_PATH_ZIGZAG_RIGHT, PUZZLE_PATH_ZIGZAG_MIDDLE } from './puzzleConstants';
-import { polyfill } from 'mobile-drag-drop';
-import { scrollBehaviourDragImageTranslateOverride } from 'mobile-drag-drop/scroll-behaviour';
-polyfill({ dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride });
+
 const PuzzleTestPiece = ({
     id,
     label,
@@ -17,7 +15,9 @@ const PuzzleTestPiece = ({
     isGhost = false,
     showSeamLine = false,
     dynamicWidth = null,
-    fontFamily
+    fontFamily,
+    isSelected = false, // Added prop
+    forceWhiteText = false // New prop to ensure white text without effects
 }) => {
     // Determine base width
     const standardBaseWidth = 200;
@@ -143,15 +143,20 @@ const PuzzleTestPiece = ({
                         className={`overflow-visible -translate-x-2 -translate-y-2 ${!isGhost ? 'drop-shadow-xl' : ''}`}
                         preserveAspectRatio="none"
                     >
+                        {/* Seam line behind or separate if needed, but main path is below */}
+
                         <path
                             d={path}
                             fill={getHexColor(colorClass)}
-                            stroke={isGhost ? '#64748b' : (isNeutral ? '#cbd5e1' : 'rgba(255,255,255,0.7)')}
-                            strokeWidth={isGhost ? "4" : (isNeutral ? (4 / stretchX) : (3 / stretchX))}
-                            strokeOpacity="1"
-                            strokeDasharray="0"
+                            stroke={isSelected ? '#3b82f6' : (isGhost ? '#64748b' : (isNeutral ? '#cbd5e1' : 'rgba(255,255,255,0.7)'))}
+                            strokeWidth={isSelected ? (5 / stretchX) : (isGhost ? "4" : (isNeutral ? (4 / stretchX) : (3 / stretchX)))}
+                            strokeOpacity={isSelected ? "1" : "1"}
+                            strokeDasharray={isSelected ? "0" : "0"}
                             strokeLinejoin="round"
                             vectorEffect="non-scaling-stroke"
+                            style={{
+                                filter: isSelected ? 'drop-shadow(0 0 4px #3b82f6)' : 'none'
+                            }}
                         />
 
                         {showSeamLine && !isGhost && (
@@ -169,11 +174,11 @@ const PuzzleTestPiece = ({
 
                 {!isGhost && (
                     <div className={`absolute inset-0 flex items-center justify-center pointer-events-none z-10 ${getTextPadding()}`}>
-                        <span className={`select-none font-black text-center block w-full ${isNeutral ? 'text-slate-800' : 'text-white'}`}
+                        <span className={`select-none font-black text-center block w-full ${(isNeutral && !forceWhiteText) ? 'text-slate-800' : 'text-white'}`}
                             style={{
                                 fontSize: calculateFontSize(),
                                 fontFamily: fontFamily,
-                                textShadow: isNeutral ? 'none' : '0 2px 5px rgba(0,0,0,0.4)',
+                                textShadow: (isNeutral || forceWhiteText) ? 'none' : '0 1px 2px rgba(0,0,0,0.2)',
                                 maxWidth: '100%',
                                 whiteSpace: 'nowrap',
                             }}>

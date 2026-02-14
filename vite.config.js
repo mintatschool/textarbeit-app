@@ -103,9 +103,9 @@ export default defineConfig({
     https: !isNoHttps,
     port: port,
     allowedHosts: true, // Allow tunnel hosts like .trycloudflare.com
-    hmr: {
-      clientPort: 443, // Standard port for the tunnel's HTTPS interface
-    },
+    // hmr: {
+    //   clientPort: 443, // Standard port for the tunnel's HTTPS interface - Enable if using a tunnel
+    // },
   },
   preview: {
     host: true, // Listen on all local IP addresses for preview as well

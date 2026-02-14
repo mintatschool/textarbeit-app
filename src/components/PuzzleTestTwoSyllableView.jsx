@@ -100,6 +100,7 @@ export const PuzzleTestTwoSyllableView = ({ words, settings, onClose, title, act
             skipStageConfirmation={true}
             hideStageFeedback={true}
             maxWordsPerStage={validItems.length}
+            forceWhiteText={true}
         />
     );
 };

@@ -8,9 +8,9 @@ import { HorizontalLines } from './shared/UIComponents';
 import { usePreventTouchScroll } from '../hooks/usePreventTouchScroll';
 import { ExerciseHeader } from './ExerciseHeader';
 import { RewardModal } from './shared/RewardModal';
-import { polyfill } from 'mobile-drag-drop';
-import { scrollBehaviourDragImageTranslateOverride } from 'mobile-drag-drop/scroll-behaviour';
-polyfill({ dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride });
+
+import { usePointerDrag } from '../hooks/usePointerDrag';
+// Removed polyfill import
 // Pastel colors for words
 const WORD_COLORS = [
     'bg-red-100 text-red-700',
@@ -45,10 +45,8 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
     const [selectedWord, setSelectedWord] = useState(null); // For Click-to-Place
     const [pendingItemsCount, setPendingItemsCount] = useState(5);
     const debounceTimerRef = useRef(null);
-    const dragItemRef = useRef(null);
 
-    // iPad Fix: Prevent touch scrolling during drag
-    usePreventTouchScroll(isDragging);
+    // iPad Fix: Prevent touch scrolling during drag handled by hook
 
     // Sentence Splitting Logic
     const splitSentences = (txt) => {
@@ -220,55 +218,61 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
         setGroupSolved(false);
     }, [currentGroup]);
 
-    // Drag & Drop Handlers
-    const handleDragStart = (e, word, source, gapId = null) => {
-        setIsDragging(true);
-        dragItemRef.current = { word, source, gapId };
-        e.dataTransfer.setData('application/json', JSON.stringify(word));
-        e.dataTransfer.effectAllowed = 'move';
+    const handlePointerDrop = (dragItem, targetId) => {
+        // dragItem: { word, source, gapId }
+        // targetId: 'gap_S_I', 'pool', 'background'
+
+        const { word, source, gapId } = dragItem;
+
+        if (targetId === 'background' || targetId === 'pool') {
+            // Drop to background/pool -> Remove from gap
+            if (source === 'gap' && gapId) {
+                setPlacedWords(prev => {
+                    const next = { ...prev };
+                    delete next[gapId];
+                    return next;
+                });
+                setPoolWords(prev => [...prev, word]);
+            }
+        } else if (targetId && targetId.startsWith('gap_')) {
+
+            // My generic ID is `gap_...`. 
+            // The registerDropZone calls `gap_${p.id}` where p.id IS `gap_${sIdx}_${i}`.
+            // So targetId will be `gap_gap_${sIdx}_${i}`? 
+            // NO. usage: `ref={registerDropZone(p.id)}`. p.id is `gap_0_1`.
+            // So targetId in handlePointerDrop will be `gap_0_1`.
+            // So I don't need to strip prefix if I register exact ID.
+
+            // BUT, in GapWordsView I registered as `gap_${chunk.id}`. Here p.id already has 'gap_' prefix?
+            // processSentence: `id: Gap_${sIdx}_${i}`
+            // Yes.
+
+            // So logic:
+            const targetGapId = targetId;
+
+            const existingWord = placedWords[targetGapId];
+
+            setPlacedWords(prev => {
+                const next = { ...prev };
+                next[targetGapId] = word;
+                if (source === 'gap' && gapId) delete next[gapId];
+                return next;
+            });
+
+            setPoolWords(prev => {
+                let next = prev;
+                if (source === 'pool') next = next.filter(w => w.poolId !== word.poolId);
+                if (existingWord) next = [...next, existingWord];
+                return next;
+            });
+        }
     };
 
-    const handleDragEnd = (e) => {
-        setIsDragging(false);
-        dragItemRef.current = null;
-        document.querySelectorAll('.active-target').forEach(el => el.classList.remove('active-target'));
-    };
+    const { getDragProps, registerDropZone, dragState, hoveredZoneId, isDragging: isPointerDragging } = usePointerDrag({
+        onDrop: handlePointerDrop
+    });
 
-    const handleDrop = (e, targetGapId, targetWord) => {
-        e.preventDefault();
-        const dragData = dragItemRef.current;
-        if (!dragData) return;
-
-        // Allow placement even if incorrect (User Request)
-        // const cleanDragged = dragData.word.text.replace(/[^\w\u00C0-\u017F]/g, '').toLowerCase();
-        // const cleanTarget = targetWord.replace(/[^\w\u00C0-\u017F]/g, '').toLowerCase();
-
-        // if (cleanDragged !== cleanTarget) return;
-
-        const existingWord = placedWords[targetGapId];
-
-        setPlacedWords(prev => {
-            const next = { ...prev };
-            next[targetGapId] = dragData.word;
-            if (dragData.source === 'gap' && dragData.gapId) delete next[dragData.gapId];
-            return next;
-        });
-
-        setPoolWords(prev => {
-            let next = prev;
-            if (dragData.source === 'pool') next = next.filter(w => w.poolId !== dragData.word.poolId);
-            if (existingWord) next = [...next, existingWord];
-            return next;
-        });
-    };
-
-    const handlePoolDrop = (e) => {
-        e.preventDefault();
-        const dragData = dragItemRef.current;
-        if (!dragData || dragData.source !== 'gap') return;
-        setPlacedWords(prev => { const next = { ...prev }; delete next[dragData.gapId]; return next; });
-        setPoolWords(prev => [...prev, dragData.word]);
-    };
+    // Old handlers removed (handleDragStart, handleDragEnd, handleDrop, handlePoolDrop)
 
     // Click-to-Place Handlers
     const handlePoolWordClick = (word) => {
@@ -430,7 +434,10 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
             />
 
             <div className="flex-1 flex overflow-hidden">
-                <div className="flex-1 p-8 overflow-y-auto custom-scroll flex flex-col gap-8 bg-white/50">
+                <div
+                    className="flex-1 p-8 overflow-y-auto custom-scroll flex flex-col gap-8 bg-white/50"
+                    ref={registerDropZone('background')}
+                >
                     <div className="max-w-7xl mx-auto space-y-12 py-24">
                         {currentGroup.map(sentence => (
                             <div key={sentence.id} className="flex flex-wrap items-center text-slate-800 leading-relaxed" style={{ fontSize: `${settings.fontSize}px`, fontFamily: settings.fontFamily, columnGap: `${(settings.wordSpacing ?? 0.5)}em`, rowGap: '1.5em' }}>
@@ -455,20 +462,15 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
                                     return (
                                         <div
                                             key={i}
-                                            onDragOver={(e) => e.preventDefault()}
-                                            onDragEnter={(e) => { e.preventDefault(); e.currentTarget.classList.add('bg-blue-50', 'border-blue-400'); }}
-                                            onDragLeave={(e) => { e.currentTarget.classList.remove('bg-blue-50', 'border-blue-400'); }}
-                                            onDrop={(e) => { e.currentTarget.classList.remove('bg-blue-50', 'border-blue-400'); handleDrop(e, p.id, p.correctText); }}
+                                            ref={registerDropZone(p.id)}
                                             onClick={() => handleGapClick(p.id, p.correctText)}
-                                            className={`relative inline-flex items-center justify-center min-w-[4em] h-[2.2em] border-b-4 transition-all rounded-t-xl cursor-pointer ${placed ? 'border-transparent' : 'border-slate-300 bg-slate-100/50 hover:bg-white hover:border-blue-400'} ${selectedWord ? 'ring-2 ring-blue-300 ring-offset-2 animate-pulse' : ''}`}
+                                            className={`relative inline-flex items-center justify-center min-w-[4em] h-[2.2em] border-b-4 transition-all rounded-t-xl cursor-pointer ${placed ? 'border-transparent' : 'border-slate-300 bg-slate-100/50 hover:bg-white hover:border-blue-400'} ${selectedWord ? 'ring-2 ring-blue-300 ring-offset-2 animate-pulse' : ''} ${hoveredZoneId === p.id ? 'bg-blue-100/50 ring-2 ring-blue-200' : ''}`}
                                         >
                                             {placed ? (
                                                 <div
-                                                    draggable
-                                                    onDragStart={(e) => handleDragStart(e, placed, 'gap', p.id)}
-                                                    onDragEnd={handleDragEnd}
-                                                    className={`px-1 py-0 rounded font-bold cursor-grab active:cursor-grabbing animate-[popIn_0.3s_ease-out] whitespace-nowrap leading-none select-none text-blue-600`}
-                                                    style={{ fontSize: '1.2em' }}
+                                                    {...getDragProps({ word: placed, source: 'gap', gapId: p.id }, p.id)}
+                                                    className={`px-1 py-0 rounded font-bold cursor-grab active:cursor-grabbing animate-[popIn_0.3s_ease-out] whitespace-nowrap leading-none select-none text-blue-600 ${isPointerDragging && dragState?.sourceId === p.id ? 'opacity-40' : ''}`}
+                                                    style={{ fontSize: '1.2em', touchAction: 'none' }}
                                                 >
                                                     <Word
                                                         word={placed.text}
@@ -503,7 +505,7 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
                     )}
                 </div>
 
-                <div className="w-80 bg-white border-l border-slate-100 flex flex-col shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.05)] z-20" onDragOver={(e) => e.preventDefault()} onDrop={handlePoolDrop}>
+                <div className="w-80 bg-white border-l border-slate-100 flex flex-col shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.05)] z-20" ref={registerDropZone('pool')}>
                     <div className="p-4 border-b border-slate-50 bg-slate-50/30">
                         <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Wortauswahl</span>
                     </div>
@@ -511,14 +513,13 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
                         {poolWords.map((w) => (
                             <div
                                 key={w.poolId}
-                                draggable
-                                onDragStart={(e) => handleDragStart(e, w, 'pool')}
-                                onDragEnd={handleDragEnd}
+                                {...getDragProps({ word: w, source: 'pool' }, w.poolId)}
                                 onClick={() => handlePoolWordClick(w)}
-                                className={`w-full p-4 font-bold rounded-2xl transition-all flex items-center justify-center cursor-grab active:cursor-grabbing hover:scale-[1.02] select-none bg-white border border-blue-600 text-slate-800 ${selectedWord?.poolId === w.poolId ? 'scale-105 ring-4 ring-blue-500/20' : ''}`}
+                                className={`w-full p-4 font-bold rounded-2xl transition-all flex items-center justify-center cursor-grab active:cursor-grabbing hover:scale-[1.02] select-none bg-white border border-blue-600 text-slate-800 ${selectedWord?.poolId === w.poolId ? 'scale-105 ring-4 ring-blue-500/20' : ''} ${isPointerDragging && dragState?.sourceId === w.poolId ? 'opacity-40' : ''}`}
                                 style={{
                                     fontFamily: settings.fontFamily,
                                     fontSize: `${Math.max(20, settings.fontSize * 0.8)}px`,
+                                    touchAction: 'none'
                                 }}
                             >
                                 <Word
@@ -540,6 +541,39 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
                         )}
                     </div>
                 </div>
+
+                {/* Floating Drag Overlay */}
+                {dragState && (
+                    <div
+                        className="fixed z-[10000] pointer-events-none"
+                        style={{
+                            left: dragState.pos.x - dragState.offset.x,
+                            top: dragState.pos.y - dragState.offset.y,
+                            width: dragState.cloneRect.width,
+                            height: dragState.cloneRect.height,
+                            transform: 'scale(1.03) rotate(1deg)',
+                            filter: 'drop-shadow(0 15px 25px rgba(0,0,0,0.20))'
+                        }}
+                    >
+                        <div
+                            className={`w-full h-full font-bold rounded-2xl flex items-center justify-center bg-white shadow-xl border border-blue-600 text-slate-800`}
+                            style={{
+                                fontFamily: settings.fontFamily,
+                                fontSize: dragState.cloneStyle?.fontSize || (settings.fontSize + 'px')
+                            }}
+                        >
+                            <Word
+                                word={dragState.item.word.text}
+                                startIndex={0}
+                                settings={settings}
+                                hyphenator={hyphenator}
+                                isReadingMode={true}
+                                forceNoMargin={true}
+                                forceShowSyllables={true}
+                            />
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

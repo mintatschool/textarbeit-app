@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
 import { Icons } from './Icons';
 import { EmptyStateMessage } from './EmptyStateMessage';
+import { getCorrectCasing } from '../utils/wordCasingUtils';
 
 import { shuffleArray } from '../utils/arrayUtils';
 import { ExerciseHeader } from './ExerciseHeader';
@@ -27,7 +27,36 @@ export const SyllablePuzzleView = ({ words, settings, setSettings, onClose, titl
     }, [isDragging]);
 
     useEffect(() => {
-        const pWords = words.map(w => { return { id: w.id, fullWord: w.word, syllables: w.syllables, pieces: w.syllables.map((txt, idx) => ({ id: `${w.id}_syl_${idx}`, text: txt, wordId: w.id, index: idx, isStart: idx === 0, isEnd: idx === w.syllables.length - 1, isSolo: w.syllables.length === 1 })) }; });
+        const pWords = words.map(w => {
+            const correctedFullWord = getCorrectCasing(w.word);
+            const isCapitalized = correctedFullWord.charAt(0) === correctedFullWord.charAt(0).toUpperCase() && correctedFullWord.charAt(0) !== correctedFullWord.charAt(0).toLowerCase();
+
+            const correctedSyllables = w.syllables.map((s, idx) => {
+                if (idx === 0 && isCapitalized) {
+                    return s.charAt(0).toUpperCase() + s.slice(1);
+                }
+                // If the word is NOT capitalized but the syllable IS (e.g. from start of sentence), lower it
+                if (!isCapitalized) {
+                    return s.toLowerCase();
+                }
+                return s;
+            });
+
+            return {
+                id: w.id,
+                fullWord: correctedFullWord,
+                syllables: correctedSyllables,
+                pieces: correctedSyllables.map((txt, idx) => ({
+                    id: `${w.id}_syl_${idx}`,
+                    text: txt,
+                    wordId: w.id,
+                    index: idx,
+                    isStart: idx === 0,
+                    isEnd: idx === correctedSyllables.length - 1,
+                    isSolo: correctedSyllables.length === 1
+                }))
+            };
+        });
         setPuzzleWords(shuffleArray(pWords));
         const allPieces = pWords.flatMap(w => w.pieces);
         for (let i = allPieces.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[allPieces[i], allPieces[j]] = [allPieces[j], allPieces[i]]; }

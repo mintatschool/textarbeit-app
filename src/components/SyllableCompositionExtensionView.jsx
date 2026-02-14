@@ -7,7 +7,9 @@ import {
     Volume2,
     VolumeX,
     Minus,
-    Plus
+    Plus,
+    ArrowRight,
+    Check
 } from 'lucide-react';
 import { Icons } from './Icons';
 import { ProgressBar } from './ProgressBar';
@@ -19,9 +21,9 @@ import { getPieceColor } from './shared/puzzleUtils';
 import { usePreventTouchScroll } from '../hooks/usePreventTouchScroll';
 import { ExerciseHeader } from './ExerciseHeader';
 import { RewardModal } from './shared/RewardModal';
-import { polyfill } from 'mobile-drag-drop';
-import { scrollBehaviourDragImageTranslateOverride } from 'mobile-drag-drop/scroll-behaviour';
-polyfill({ dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride });
+import { usePointerDrag } from '../hooks/usePointerDrag';
+import { getCorrectCasing } from '../utils/wordCasingUtils';
+
 export const SyllableCompositionExtensionView = ({ words, settings, onClose, title, activeColor }) => {
     // Game Configuration
     const [gameState, setGameState] = useState({
@@ -40,7 +42,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
 
     const [pendingWordsCount, setPendingWordsCount] = useState(3);
     const debounceTimerRef = useRef(null);
-    const [activeLengths, setActiveLengths] = useState([]); // Needed for drop logic compatibility? No, we use stage items.
+    const [activeLengths, setActiveLengths] = useState([]);
 
     // State for Pieces & Slots
     // scrambledPieces: Array of { id, text, type, color, ... }
@@ -131,9 +133,9 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
         if (words && Array.isArray(words)) {
             words.forEach(w => {
                 if (w && Array.isArray(w.syllables)) {
-                    w.syllables.forEach(s => { if (typeof s === 'string') candidateSyllables.push(s); });
+                    w.syllables.forEach(s => { if (typeof s === 'string') candidateSyllables.push(getCorrectCasing(s)); });
                 } else if (w && w.word) {
-                    candidateSyllables.push(w.word);
+                    candidateSyllables.push(getCorrectCasing(w.word));
                 }
             });
         }
@@ -229,7 +231,6 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
 
         const currentStage = gameState.stages[gameState.currentStageIndex];
         const newPools = { left: [], middle: [], right: [] };
-        const usedIds = new Set();
 
         // Generate Pieces for all targets in this stage
         currentStage.items.forEach((target, tIdx) => {
@@ -249,14 +250,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                     text: partText,
                     type: type,
                     color: 'bg-blue-500',
-                    targetId: target.id, // For verification only? Or allowing mix?
-                    // "Silbenbau" typically lets you mix parts as long as text matches?
-                    // User said: "Es gibt die Einstellung... wie viele Wörter gleichzeitig ... dargeboten werden."
-                    // Implication: You solve multiple words from a mixed pool.
-                    // So we shouldn't strictly bind a piece ID to a slot ID if texts are identical.
-                    // But for simplicity, let's keep identity for now, or use text matching.
-                    // Let's rely on ID for Dragging, but check logic might use ID.
-
+                    targetId: target.id,
                     rotation: (Math.random() - 0.5) * 8, // slight jitter for middle
                     // Middle pieces need grid positions
                     x: 10 + Math.random() * 80,
@@ -273,8 +267,6 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
         // Shuffle within pools
         ['left', 'middle', 'right'].forEach(k => {
             newPools[k].sort(() => Math.random() - 0.5);
-            // Arrange Middle pieces in a grid/random spread?
-            // Re-calc positions for middle to avoid overlap?
             if (k === 'middle') {
                 newPools[k] = newPools[k].map((p, i) => ({
                     ...p,
@@ -298,14 +290,9 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
     const handleDrop = (pieceId, targetId, slotIndex) => {
         // Find piece in pools
         let foundPiece = null;
-        let sourcePool = null;
-
         ['left', 'middle', 'right'].forEach(pool => {
             const p = scrambledPieces[pool].find(x => x.id === pieceId);
-            if (p) {
-                foundPiece = p;
-                sourcePool = pool;
-            }
+            if (p) foundPiece = p;
         });
 
         if (!foundPiece) return;
@@ -338,12 +325,10 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
             next[slotKey] = foundPiece;
             return next;
         });
-
     };
 
     const handleRemove = (targetId, slotIndex) => {
         const slotKey = `${targetId}-${slotIndex}`;
-        // if (completedRows[targetId]) return; // Locked
         setPlacedPieces(prev => {
             const next = { ...prev };
             delete next[slotKey];
@@ -413,8 +398,6 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
 
         // check each row (defined by a target item)
         currentStage.items.forEach(rowTarget => {
-            // Lock removed for flexible validation
-
             // Check if all slots in this row are filled
             let isFull = true;
             let currentParts = [];
@@ -443,7 +426,6 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                 if (matchedTarget) {
                     // Success! 
                     if (completedRows[rowTarget.id] !== matchedTarget.id) {
-                        // if (audioEnabled) speak(matchedTarget.full); // Removed per user request
                         setCompletedRows(prev => ({
                             ...prev,
                             [rowTarget.id]: matchedTarget.id
@@ -487,12 +469,6 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
         });
     }, []);
 
-    // Check Stage Completion
-    useEffect(() => {
-        // No Auto Advance
-    }, [completedRows, gameState.stages, gameState.currentStageIndex]);
-
-
     // --------------------------------------------------------------------------------
     // 6. RENDER HELPERS
     // --------------------------------------------------------------------------------
@@ -505,6 +481,27 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
             startNewGame(next);
         }, 800);
     };
+
+    // Pointer Drag Integration
+    const { getDragProps, registerDropZone, dragState, isDragging: isPointerDragging } = usePointerDrag({
+        onDragStart: (item) => setIsDragging(item.id),
+        onDragEnd: () => setIsDragging(null),
+        onDrop: (dragItem, targetId) => {
+            // targetId: 'pool-left/middle/right' or 'SLOT:{targetId}:{slotIndex}'
+
+            if (targetId.startsWith('pool-')) {
+                handleReturnToPool(dragItem.id);
+            } else if (targetId.startsWith('SLOT:')) {
+                const parts = targetId.split(':');
+                if (parts.length === 3) {
+                    const tId = parts[1];
+                    const sIdx = parseInt(parts[2], 10);
+                    handleDrop(dragItem.id, tId, sIdx);
+                }
+            }
+        }
+    });
+
 
     if (gameState.gameStatus === 'finished') {
         return (
@@ -532,10 +529,6 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
             </div>
         );
     }
-
-
-
-    // getPieceColor is now imported from shared/puzzleUtils
 
     const currentStage = gameState.stages[gameState.currentStageIndex];
 
@@ -598,27 +591,29 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
 
             <div className="flex-1 relative flex overflow-hidden">
                 {/* LEFT SIDEBAR (Start Pieces) */}
-                <div className="bg-slate-100/50 border-r border-slate-200 flex flex-col shrink-0 transition-all duration-300"
+                <div
+                    className="bg-slate-100/50 border-r border-slate-200 flex flex-col shrink-0 transition-all duration-300"
                     style={{ width: sidebarWidth }}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={(e) => {
-                        e.preventDefault();
-                        const pid = e.dataTransfer.getData("pieceId");
-                        if (pid) handleReturnToPool(pid);
-                    }}
+                    ref={registerDropZone('pool-left')}
                 >
                     <div className="bg-slate-200/50 py-1 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Anfang</div>
                     <div className="flex-1 overflow-y-auto custom-scroll p-2 pt-8 flex flex-col items-center gap-4">
                         {leftVisible.map(p => {
                             const isSelected = selectedPiece?.id === p.id;
+                            const isDraggingThis = isPointerDragging && dragState?.sourceId === p.id;
                             return (
                                 <div key={p.id}
-                                    className={`transition-all duration-200 cursor-pointer ${isSelected ? 'scale-110 z-50' : 'hover:scale-105 active:scale-95'
-                                        }`}
-                                    style={{ filter: isSelected ? 'drop-shadow(0 0 12px rgba(59, 130, 246, 0.8))' : 'none' }}
+                                    className={`transition-all duration-200 cursor-pointer ${isSelected ? 'scale-110 z-50' : 'hover:scale-105 active:scale-95'} ${isDraggingThis ? 'opacity-40' : ''}`}
+                                    style={{
+                                        filter: 'none',
+                                        touchAction: 'none'
+                                    }}
                                     onClick={() => handlePieceSelect(p)}
-                                    draggable onDragStart={(e) => { e.dataTransfer.setData("pieceId", p.id); setIsDragging(p.id); }} onDragEnd={() => setIsDragging(null)}>
-                                    <PuzzleTestPiece label={p.text} type="zigzag-left" colorClass={getPieceColor(p.color, activeColor)} scale={gameState.pieceScale * 0.8} fontFamily={settings.fontFamily} onDragStart={() => { }} />
+                                    {...getDragProps(p, p.id)}
+                                >
+                                    <div className={`transition-all duration-200 rounded-xl`}>
+                                        <PuzzleTestPiece label={p.text} type="zigzag-left" colorClass={getPieceColor(p.color, activeColor)} scale={gameState.pieceScale * 0.8} fontFamily={settings.fontFamily} isSelected={isSelected} />
+                                    </div>
                                 </div>
                             );
                         })}
@@ -627,28 +622,31 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
 
                 {/* MAIN AREA */}
                 <div className="flex-1 flex flex-col relative bg-white">
-                    {/* Middle Pieces Pool (Top Strip) - Conditional Rendering & Dynamic Height */}
+                    {/* Middle Pieces Pool */}
                     {scrambledPieces.middle.length > 0 && (
-                        <div className="bg-blue-50/30 border-b border-blue-100 relative w-full overflow-hidden shrink-0 min-h-0 h-auto max-h-[35%]"
-                            onDragOver={(e) => e.preventDefault()}
-                            onDrop={(e) => {
-                                e.preventDefault();
-                                const pid = e.dataTransfer.getData("pieceId");
-                                if (pid) handleReturnToPool(pid);
-                            }}
+                        <div
+                            className="bg-blue-50/30 border-b border-blue-100 relative w-full overflow-hidden shrink-0 min-h-0 h-auto max-h-[35%]"
+                            ref={registerDropZone('pool-middle')}
                         >
                             <div className="absolute top-1 left-2 text-[10px] font-bold text-slate-400 uppercase">Mitte</div>
                             <div className="w-full relative pt-12 px-4 pb-4 flex flex-wrap items-center justify-center gap-4 content-center overflow-y-auto custom-scroll">
                                 {middleVisible.map(p => {
                                     const isSelected = selectedPiece?.id === p.id;
+                                    const isDraggingThis = isPointerDragging && dragState?.sourceId === p.id;
                                     return (
                                         <div key={p.id}
-                                            className={`transition-all duration-200 cursor-pointer ${isSelected ? 'scale-110 z-50' : 'hover:z-50 hover:scale-105 active:scale-95'}`}
-                                            style={{ transform: `rotate(${p.rotation}deg)`, filter: isSelected ? 'drop-shadow(0 0 12px rgba(59, 130, 246, 0.8))' : 'none' }}
+                                            className={`transition-all duration-200 cursor-pointer ${isSelected ? 'scale-110 z-50' : 'hover:z-50 hover:scale-105 active:scale-95'} ${isDraggingThis ? 'opacity-40' : ''}`}
+                                            style={{
+                                                transform: `rotate(${p.rotation}deg)`,
+                                                filter: 'none',
+                                                touchAction: 'none'
+                                            }}
                                             onClick={() => handlePieceSelect(p)}
-                                            draggable onDragStart={(e) => { e.dataTransfer.setData("pieceId", p.id); setIsDragging(p.id); }} onDragEnd={() => setIsDragging(null)}
+                                            {...getDragProps(p, p.id)}
                                         >
-                                            <PuzzleTestPiece label={p.text} type="zigzag-middle" colorClass={getPieceColor(p.color, activeColor)} scale={gameState.pieceScale * 0.8} fontFamily={settings.fontFamily} onDragStart={() => { }} />
+                                            <div className={`transition-all duration-200 rounded-xl`}>
+                                                <PuzzleTestPiece label={p.text} type="zigzag-middle" colorClass={getPieceColor(p.color, activeColor)} scale={gameState.pieceScale * 0.8} fontFamily={settings.fontFamily} isSelected={isSelected} />
+                                            </div>
                                         </div>
                                     );
                                 })}
@@ -664,28 +662,23 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                             const isLastItem = idx === currentStage.items.length - 1;
                             const allSolved = currentStage.items.every(t => completedRows[t.id]);
 
-                            // Audio should play the solved word if complete, otherwise the target hint
                             const audioText = isComplete
                                 ? (currentStage.items.find(t => t.id === solvedId)?.full || target.full)
                                 : target.full;
 
                             const SNAP_OFFSET = 20;
-                            // Calculate total overlaps to determine width
+                            // Width calculation
                             let totalOverlapReduction = 0;
                             if (target.parts.length > 1) {
-                                // Overlap 1 (Left-Middle connection)
                                 let ov1 = 90;
                                 if (!isComplete) ov1 -= SNAP_OFFSET;
                                 totalOverlapReduction += ov1;
 
-                                // Subsequent overlaps
                                 if (target.parts.length > 2) {
                                     const subOv = 60 - (isComplete ? 0 : SNAP_OFFSET);
                                     totalOverlapReduction += (target.parts.length - 2) * subOv;
                                 }
                             }
-
-                            // Width = (N * 200) - TotalOverlaps
                             const totalWidth = (target.parts.length * 200) - totalOverlapReduction;
 
                             return (
@@ -703,8 +696,6 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                                                 const isStart = idx === 0;
                                                 const isEnd = idx === target.parts.length - 1;
 
-                                                // Variable overlap: 90px for first connection (Left->Middle), 60px for others
-                                                // Apply SNAP_OFFSET if not complete
                                                 let overlap = idx === 0 ? 0 : (idx === 1 ? 90 : 60);
                                                 if (!isComplete && idx > 0) {
                                                     overlap -= SNAP_OFFSET;
@@ -718,40 +709,42 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                                                 return (
                                                     <div
                                                         key={idx}
+                                                        ref={registerDropZone(`SLOT:${target.id}:${idx}`)}
                                                         className={`relative flex items-center justify-center group transition-all duration-500 ${slotIsTarget ? 'scale-105 cursor-pointer' : ''
                                                             }`}
                                                         style={{
                                                             width: 200, height: 110,
                                                             marginLeft: marginLeft,
                                                             zIndex: 10 + idx,
-                                                            filter: slotIsTarget ? 'drop-shadow(0 0 10px rgba(59, 130, 246, 0.7))' : 'none'
-                                                        }}
-                                                        onDragOver={(e) => e.preventDefault()}
-                                                        onDrop={(e) => {
-                                                            e.preventDefault();
-                                                            const pid = e.dataTransfer.getData("pieceId");
-                                                            if (pid && !isComplete) handleDrop(pid, target.id, idx);
+                                                            filter: 'none'
                                                         }}
                                                         onClick={() => {
                                                             if (!piece && !isComplete) handleSlotSelect(target.id, idx, target);
                                                         }}
                                                     >
                                                         {!piece && (
-                                                            <div className="pointer-events-none opacity-40">
-                                                                <PuzzleTestPiece label="" type={targetType} isGhost scale={1} fontFamily={settings.fontFamily} />
+                                                            <div className={`pointer-events-none transition-all duration-200 rounded-xl ${slotIsTarget ? 'opacity-100' : 'opacity-40'}`}>
+                                                                <PuzzleTestPiece label="" type={targetType} isGhost scale={1} fontFamily={settings.fontFamily} isSelected={slotIsTarget} />
                                                             </div>
                                                         )}
                                                         {piece && (
-                                                            <div className="cursor-pointer hover:scale-105 transition-transform relative z-50"
-                                                                onClick={(e) => { e.stopPropagation(); handleRemove(target.id, idx); }}
-                                                                draggable
-                                                                onDragStart={(e) => {
-                                                                    // Allow "pulling out" via drag
-                                                                    e.dataTransfer.setData("pieceId", piece.id);
-                                                                    setIsDragging(piece.id);
-                                                                }}
+                                                            <div
+                                                                className={`cursor-pointer hover:scale-105 transition-transform relative z-50 ${isPointerDragging && dragState?.sourceId === piece.id ? 'opacity-40' : ''}`}
+                                                                onClick={(e) => { e.stopPropagation(); if (!isPointerDragging) handleRemove(target.id, idx); }}
+                                                                style={{ touchAction: 'none' }}
+                                                                {...getDragProps(piece, piece.id)}
                                                             >
-                                                                <PuzzleTestPiece label={piece.text} type={targetType} colorClass={getPieceColor(piece.color, activeColor)} scale={1} id={piece.id} showSeamLine fontFamily={settings.fontFamily} />
+                                                                <PuzzleTestPiece
+                                                                    label={piece.text}
+                                                                    type={targetType}
+                                                                    colorClass={getPieceColor(piece.color, activeColor)}
+                                                                    scale={1}
+                                                                    id={piece.id}
+                                                                    dynamicWidth={piece.width}
+                                                                    showSeamLine={true}
+                                                                    fontFamily={settings.fontFamily}
+                                                                    forceWhiteText={true}
+                                                                />
                                                             </div>
                                                         )}
                                                     </div>
@@ -774,7 +767,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                                                 </button>
                                             )}
 
-                                            {/* Checkmark - Flex for reliable alignment */}
+                                            {/* Checkmark */}
                                             <div className={`transition-all duration-500 ease-out flex items-center
                                                 ${isComplete ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}
                                             `}>
@@ -782,14 +775,14 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                                             </div>
                                         </div>
 
-                                        {/* Manual Advance Button - Below Speaker Layout */}
+                                        {/* Manual Advance Button */}
                                         {isLastItem && allSolved && (
                                             <div className="absolute top-full left-1/2 -translate-x-1/2 mt-8 animate-in slide-in-from-top-4 duration-300 z-20">
                                                 <button
                                                     onClick={handleManualAdvance}
                                                     className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl font-bold shadow-xl text-xl hover:scale-105 transition-all flex items-center gap-2 ring-4 ring-white/50 whitespace-nowrap"
                                                 >
-                                                    Weiter <Icons.ArrowRight size={30} />
+                                                    Weiter <ArrowRight size={30} />
                                                 </button>
                                             </div>
                                         )}
@@ -797,40 +790,74 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                                 </div>
                             );
                         })}
-                        {/* Spacer for bottom scrolling */}
-                        <div className="h-20 w-full" />
+                        {/* Spacer */}
+                        <div className="h-32 w-full" />
                     </div>
                 </div>
 
                 {/* RIGHT SIDEBAR (End Pieces) */}
-                <div className="bg-slate-100/50 border-l border-slate-200 flex flex-col shrink-0 transition-all duration-300"
+                <div
+                    className="shrink-0 relative border-l border-blue-50 bg-white/20 overflow-y-auto overflow-x-hidden custom-scroll pt-12 pb-6 px-4 space-y-8 flex flex-col items-center transition-all duration-300"
                     style={{ width: sidebarWidth }}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={(e) => {
-                        e.preventDefault();
-                        const pid = e.dataTransfer.getData("pieceId");
-                        if (pid) handleReturnToPool(pid);
-                    }}
+                    ref={registerDropZone('pool-right')}
                 >
-                    <div className="bg-slate-200/50 py-1 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ende</div>
-                    <div className="flex-1 overflow-y-auto custom-scroll p-2 pt-8 flex flex-col items-center gap-4">
-                        {rightVisible.map(p => {
-                            const isSelected = selectedPiece?.id === p.id;
-                            return (
-                                <div key={p.id}
-                                    className={`transition-all duration-200 cursor-pointer ${isSelected ? 'scale-110 z-50' : 'hover:scale-105 active:scale-95'}`}
-                                    style={{ filter: isSelected ? 'drop-shadow(0 0 12px rgba(59, 130, 246, 0.8))' : 'none' }}
-                                    onClick={() => handlePieceSelect(p)}
-                                    draggable onDragStart={(e) => { e.dataTransfer.setData("pieceId", p.id); setIsDragging(p.id); }} onDragEnd={() => setIsDragging(null)}>
-                                    <PuzzleTestPiece label={p.text} type="zigzag-right" colorClass={getPieceColor(p.color, activeColor)} scale={gameState.pieceScale * 0.8} fontFamily={settings.fontFamily} onDragStart={() => { }} />
+                    <div className="bg-slate-200/50 py-1 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest w-full mb-4">Ende</div>
+                    {rightVisible.map(p => {
+                        const isSelected = selectedPiece?.id === p.id;
+                        const isDraggingThis = isPointerDragging && dragState?.sourceId === p.id;
+                        return (
+                            <div
+                                key={p.id}
+                                className={`transition-all duration-200 cursor-pointer ${isSelected ? 'scale-110 z-50' : 'hover:scale-105 active:scale-95'} ${isDraggingThis ? 'opacity-40' : ''}`}
+                                style={{
+                                    filter: 'none',
+                                    touchAction: 'none'
+                                }}
+                                onClick={() => handlePieceSelect(p)}
+                                {...getDragProps(p, p.id)}
+                            >
+                                <div className={`transition-all duration-200 rounded-xl`}>
+                                    <PuzzleTestPiece
+                                        label={p.text}
+                                        type="zigzag-right"
+                                        colorClass={getPieceColor(p.color, activeColor)}
+                                        scale={gameState.pieceScale * 0.8}
+                                        fontFamily={settings.fontFamily}
+                                        isSelected={isSelected}
+                                        forceWhiteText={true}
+                                    />
                                 </div>
-                            );
-                        })}
-                    </div>
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
-            {/* Manual Advance Button Removed (Moved to Last Item) */}
-        </div >
+
+            {/* Drag Overlay */}
+            {dragState && (
+                <div
+                    className="fixed z-[10000] pointer-events-none"
+                    style={{
+                        left: dragState.pos.x,
+                        top: dragState.pos.y,
+                        transform: 'translate(-50%, -50%) rotate(2deg)',
+                        filter: 'drop-shadow(0 15px 25px rgba(0,0,0,0.20))'
+                    }}
+                >
+                    <div style={{ transform: 'scale(1.05)' }}>
+                        <PuzzleTestPiece
+                            label={dragState.item.text}
+                            type={dragState.item.type}
+                            colorClass={getPieceColor(dragState.item.color, activeColor)}
+                            scale={gameState.pieceScale * 0.8}
+                            fontFamily={settings.fontFamily}
+                            showSeamLine={true}
+                        />
+                    </div>
+                </div>
+            )}
+        </div>
     );
 };
 
+export default SyllableCompositionExtensionView;

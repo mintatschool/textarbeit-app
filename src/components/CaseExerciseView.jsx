@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Icons } from './Icons';
 import { RewardModal } from './shared/RewardModal';
+import { getCorrectCasing } from '../utils/wordCasingUtils';
 
 export const CaseExerciseView = ({ text, settings, setSettings, onClose, title }) => {
     const [wordStates, setWordStates] = useState({}); // idx -> 'UPPER' | 'STANDARD' | 'LOWER'
@@ -20,6 +21,9 @@ export const CaseExerciseView = ({ text, settings, setSettings, onClose, title }
             let content = part;
 
             if (isWord) {
+                // Get the 'canonical' casing from DB
+                content = getCorrectCasing(part);
+
                 if (isAtSentenceStart && content.length > 0) {
                     content = content.charAt(0).toUpperCase() + content.slice(1);
                 }

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Icons } from './Icons';
 import { MenuDropdown, MenuItem } from './MenuDropdown';
+import { ExerciseHintModal } from './ExerciseHintModal';
 
 const Separator = ({ horizontal = false }) => (
     horizontal
@@ -97,6 +98,10 @@ export const Toolbar = ({
     setShowSentenceShuffle, // New: Word shuffle within sentences
     setShowCaseExercise,   // New: Capitalization exercise
     setShowGapWords,       // New: Missing letters exercise
+    setShowVerbWriting,    // New: Verb conjugation
+    setShowAdjectiveWriting, // New: Adjective comparison
+    setShowNounWriting,    // New: Noun writing
+    setShowVerbPuzzle,     // New: Verb puzzle
     setShowInitialSound,   // New: Finding initial sounds
     setShowGapSentences,   // New: Missing words in sentences
     setShowGapText,        // New: Full text with gaps
@@ -104,6 +109,7 @@ export const Toolbar = ({
 
     setShowSpeedReading,   // New: Speed reading exercise
     setShowWordSorting,    // New: Word sorting exercise
+    setShowWordSortingByParticiple, // New: Word sorting by part of speech
     setShowAlphabetSorting, // New: Alphabet sorting exercise
 
 
@@ -121,11 +127,14 @@ export const Toolbar = ({
     // New Props for Textmarker
     isTextMarkerMode,
     setIsTextMarkerMode,
-    onToggleTextMarkerMode
+    onToggleTextMarkerMode,
+    exerciseActivity = {}, // New prop for exercise availability
+    onShowExerciseHint // New: Function to show exercise hint modal
 }) => {
     const [editingColorIndex, setEditingColorIndex] = useState(null);
     const [showResetConfirm, setShowResetConfirm] = useState(false);
     const [showMarkAllConfirm, setShowMarkAllConfirm] = useState(false); // New state
+    const [showWortartenMenu, setShowWortartenMenu] = useState(false); // New Central Menu State
     // Removed local isTextMarkerMode state
 
     const toHighlighterColor = (hex) => {
@@ -162,6 +171,15 @@ export const Toolbar = ({
         const g = parseInt(hex.substring(3, 5), 16);
         const b = parseInt(hex.substring(5, 7), 16);
         return `rgba(${r}, ${g}, ${b}, 0.6)`;
+    };
+
+    // Helper to handle exercise clicks - show hint if inactive, otherwise activate
+    const handleExerciseClick = (exerciseKey, activationFn) => {
+        if (!exerciseActivity[exerciseKey]) {
+            onShowExerciseHint(exerciseKey);
+        } else {
+            activationFn();
+        }
     };
 
     // Layout-Klasse: Feste Sidebar rechts (Docked)
@@ -308,7 +326,9 @@ export const Toolbar = ({
                                 if (isTextMarkerMode) {
                                     // If currently in Eraser mode (transparent), switch back to last color (or default)
                                     if (activeColor === 'transparent') {
-                                        onSetActiveColor(toHighlighterColor('#f97316')); // Default to Orange for now, or could store last color
+                                        // Use Orange slot (index 3) or Blue slot (index 0) if available
+                                        const defaultColor = colorPalette[3] || colorPalette[0] || '#f97316';
+                                        onSetActiveColor(toHighlighterColor(defaultColor));
                                     } else {
                                         // Deactivate
                                         onToggleTextMarkerMode();
@@ -318,8 +338,9 @@ export const Toolbar = ({
                                     onToolChange(null);
                                     setIsTextMarkerMode(true);
 
-                                    // FORCE Default Orange if switching
-                                    onSetActiveColor(toHighlighterColor('#f97316'));
+                                    // FORCE Default Orange slot if switching
+                                    const defaultColor = colorPalette[3] || colorPalette[0] || '#f97316';
+                                    onSetActiveColor(toHighlighterColor(defaultColor));
                                 }
                             }}
                             className={`p-1 rounded-xl transition flex-1 flex justify-center items-center min-w-0 ${isTextMarkerMode ? 'bg-slate-800 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-100 hover:text-blue-600'}`}
@@ -341,7 +362,9 @@ export const Toolbar = ({
                                     onToolChange('pen');
 
                                     // FIX: Use Transparent Color for Pen (so it doesn't cover text)
-                                    onSetActiveColor(toPenColor('#f97316'));
+                                    // Use Orange slot (index 3) or Blue slot (index 0) if available
+                                    const defaultColor = colorPalette[3] || colorPalette[0] || '#f97316';
+                                    onSetActiveColor(toPenColor(defaultColor));
                                 }
                             }}
                             className={`p-1 rounded-xl transition flex-1 flex justify-center items-center min-w-0 ${activeTool === 'pen' ? 'bg-slate-800 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-100 hover:text-blue-600'}`}
@@ -411,12 +434,12 @@ export const Toolbar = ({
                             // Resolve the active palette index if activeColor is 'palette-X'
                             let isActive = false;
                             const displayColor = (isTextMarkerMode || activeTool === 'pen') ? toPalettePreviewColor(color) : color;
-                            const highlighterValue = toHighlighterColor(color);
+                            const comparisonValue = activeTool === 'pen' ? toPenColor(color) : toHighlighterColor(color);
 
                             if (typeof activeColor === 'string' && activeColor.startsWith('palette-') && !isTextMarkerMode && activeTool !== 'pen') {
                                 const activeIndex = parseInt(activeColor.split('-')[1], 10);
                                 if (activeIndex === originalIndex) isActive = true;
-                            } else if (activeColor === color || ((isTextMarkerMode || activeTool === 'pen') && activeColor === highlighterValue)) {
+                            } else if (activeColor === color || ((isTextMarkerMode || activeTool === 'pen') && activeColor === comparisonValue)) {
                                 isActive = true;
                             }
 
@@ -481,7 +504,7 @@ export const Toolbar = ({
                 align="right"
                 className="bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-600 hover:border-blue-300 rounded-xl"
             >
-                <MenuItem onClick={() => setShowFindLetters(true)} icon={<Icons.LetterSearch size={20} className="text-blue-600" />}>
+                <MenuItem onClick={() => handleExerciseClick('findLetters', () => setShowFindLetters(true))} icon={<Icons.LetterSearch size={20} className="text-blue-600" />} inactive={!exerciseActivity.findLetters}>
                     Buchstaben finden
                 </MenuItem>
             </MenuDropdown>
@@ -494,13 +517,13 @@ export const Toolbar = ({
                 align="right"
                 className="bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-600 hover:border-blue-300 rounded-xl"
             >
-                <MenuItem onClick={() => setShowCarpet(true)} icon={<Icons.Grid2x2 size={20} className="text-indigo-600" />}>
+                <MenuItem onClick={() => handleExerciseClick('syllableCarpet', () => setShowCarpet(true))} icon={<Icons.Grid2x2 size={20} className="text-indigo-600" />} inactive={!exerciseActivity.syllableCarpet}>
                     Silbenteppich
                 </MenuItem>
-                <MenuItem onClick={() => setShowSyllableComposition(true)} icon={<Icons.Silbenbau1 size={28} className="text-blue-600" />}>
+                <MenuItem onClick={() => handleExerciseClick('syllableComposition', () => setShowSyllableComposition(true))} icon={<Icons.Silbenbau1 size={28} className="text-blue-600" />} inactive={!exerciseActivity.syllableComposition}>
                     Silbenbau 1
                 </MenuItem>
-                <MenuItem onClick={() => setShowSyllableExtension(true)} icon={<Icons.Silbenbau2 size={28} className="text-blue-600" />}>
+                <MenuItem onClick={() => handleExerciseClick('syllableExtension', () => setShowSyllableExtension(true))} icon={<Icons.Silbenbau2 size={28} className="text-blue-600" />} inactive={!exerciseActivity.syllableExtension}>
                     Silbenbau 2
                 </MenuItem>
             </MenuDropdown>
@@ -513,35 +536,46 @@ export const Toolbar = ({
                 align="right"
                 className="bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-600 hover:border-blue-300 rounded-xl"
             >
-                <MenuItem onClick={() => setShowStaircase(true)} icon={<Icons.Stairs size={20} className="text-purple-600" />}>
+                <MenuItem onClick={() => handleExerciseClick('staircase', () => setShowStaircase(true))} icon={<Icons.Stairs size={20} className="text-purple-600" />} inactive={!exerciseActivity.staircase}>
                     Treppenwörter
                 </MenuItem>
-                <MenuItem onClick={() => setShowSpeedReading(true)} icon={<Icons.Zap size={20} className="text-purple-600" />}>
+                <MenuItem onClick={() => handleExerciseClick('speedReading', () => setShowSpeedReading(true))} icon={<Icons.Zap size={20} className="text-purple-600" />} inactive={!exerciseActivity.speedReading}>
                     Blitzlesen
                 </MenuItem>
-                <MenuItem onClick={() => setShowWordSorting(true)} icon={<Icons.WordSorting size={28} className="text-blue-600" />}>
+                <MenuItem onClick={() => handleExerciseClick('wordSorting', () => setShowWordSorting(true))} icon={<Icons.WordSorting size={28} className="text-blue-600" />} inactive={!exerciseActivity.wordSorting}>
                     Wörter sortieren
                 </MenuItem>
-                <MenuItem onClick={() => setShowAlphabetSorting(true)} icon={<Icons.SortAsc size={28} className="text-blue-600" />}>
+
+                <MenuItem onClick={() => handleExerciseClick('alphabetSorting', () => setShowAlphabetSorting(true))} icon={<Icons.SortAsc size={28} className="text-blue-600" />} inactive={!exerciseActivity.alphabetSorting}>
                     Alphabetisch sortieren
                 </MenuItem>
-                <MenuItem onClick={() => setShowPuzzleTestTwo(true)} icon={<Icons.Silbenpuzzle1 size={28} className="text-blue-600" />}>
+                <MenuItem onClick={() => handleExerciseClick('puzzleTestTwo', () => setShowPuzzleTestTwo(true))} icon={<Icons.Silbenpuzzle1 size={28} className="text-blue-600" />} inactive={!exerciseActivity.puzzleTestTwo}>
                     Silbenpuzzle 1
                 </MenuItem>
-                <MenuItem onClick={() => setShowPuzzleTestMulti(true)} icon={<Icons.Silbenpuzzle2 size={28} className="text-blue-600" />}>
+                <MenuItem onClick={() => handleExerciseClick('puzzleTestMulti', () => setShowPuzzleTestMulti(true))} icon={<Icons.Silbenpuzzle2 size={28} className="text-blue-600" />} inactive={!exerciseActivity.puzzleTestMulti}>
                     Silbenpuzzle 2
                 </MenuItem>
-                <MenuItem onClick={() => setShowInitialSound(true)} icon={<Icons.InitialSound size={20} className="text-blue-600" />}>
+                <MenuItem onClick={() => handleExerciseClick('initialSound', () => setShowInitialSound(true))} icon={<Icons.InitialSound size={20} className="text-blue-600" />} inactive={!exerciseActivity.initialSound}>
                     Anfangsbuchstaben finden
                 </MenuItem>
-                <MenuItem onClick={() => setShowGapWords(true)} icon={<Icons.GapWords size={20} className="text-blue-600" />}>
+                <MenuItem onClick={() => handleExerciseClick('gapWords', () => setShowGapWords(true))} icon={<Icons.GapWords size={20} className="text-blue-600" />} inactive={!exerciseActivity.gapWords}>
                     Lückenwörter
                 </MenuItem>
-                <MenuItem onClick={() => setShowCloud(true)} icon={<Icons.Cloud size={20} className="text-blue-600" />}>
+
+
+
+
+                <MenuItem onClick={() => handleExerciseClick('cloud', () => setShowCloud(true))} icon={<Icons.Cloud size={20} className="text-blue-600" />} inactive={!exerciseActivity.cloud}>
                     Schüttelwörter
                 </MenuItem>
-                <MenuItem onClick={() => setShowSplitExercise(true)} icon={<Icons.Scissors size={20} className="text-blue-600 -rotate-90" />}>
+                <MenuItem onClick={() => handleExerciseClick('splitExercise', () => setShowSplitExercise(true))} icon={<Icons.Scissors size={20} className="text-blue-600 -rotate-90" />} inactive={!exerciseActivity.splitExercise}>
                     Wörter trennen
+                </MenuItem>
+
+                <div className="my-1 border-t border-slate-100"></div>
+
+                <MenuItem onClick={() => setShowWortartenMenu(true)} icon={<Icons.Wortarten size={28} />} className="font-bold text-slate-800 bg-slate-50 hover:bg-indigo-50 hover:text-indigo-800" inactive={!exerciseActivity.wordSortingByParticiple && !exerciseActivity.nounWriting && !exerciseActivity.verbWriting && !exerciseActivity.adjectiveWriting && !exerciseActivity.verbPuzzle}>
+                    Wortarten
                 </MenuItem>
             </MenuDropdown>
 
@@ -553,10 +587,10 @@ export const Toolbar = ({
                 align="right"
                 className="bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-600 hover:border-blue-300 rounded-xl"
             >
-                <MenuItem onClick={() => setShowSentenceShuffle(true)} icon={<Icons.Shuffle size={20} className="text-purple-500" />}>
+                <MenuItem onClick={() => handleExerciseClick('sentenceShuffle', () => setShowSentenceShuffle(true))} icon={<Icons.Shuffle size={20} className="text-purple-500" />} inactive={!exerciseActivity.sentenceShuffle}>
                     Schüttelsätze
                 </MenuItem>
-                <MenuItem onClick={() => setShowGapSentences(true)} icon={<Icons.GapSentences size={20} className="text-indigo-500" />}>
+                <MenuItem onClick={() => handleExerciseClick('gapSentences', () => setShowGapSentences(true))} icon={<Icons.GapSentences size={20} className="text-indigo-500" />} inactive={!exerciseActivity.gapSentences}>
                     Lückensätze
                 </MenuItem>
             </MenuDropdown>
@@ -569,13 +603,13 @@ export const Toolbar = ({
                 align="right"
                 className="bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-600 hover:border-blue-300 rounded-xl"
             >
-                <MenuItem onClick={() => setShowSentencePuzzle(true)} icon={<Icons.Sentence size={20} className="text-pink-500" />}>
+                <MenuItem onClick={() => handleExerciseClick('sentencePuzzle', () => setShowSentencePuzzle(true))} icon={<Icons.Sentence size={20} className="text-pink-500" />} inactive={!exerciseActivity.sentencePuzzle}>
                     Satzpuzzle
                 </MenuItem>
-                <MenuItem onClick={() => setShowTextPuzzle(true)} icon={<Icons.TextBlocks size={20} className="text-emerald-500" />}>
+                <MenuItem onClick={() => handleExerciseClick('textPuzzle', () => setShowTextPuzzle(true))} icon={<Icons.TextBlocks size={20} className="text-emerald-500" />} inactive={!exerciseActivity.textPuzzle}>
                     Textpuzzle
                 </MenuItem>
-                <MenuItem onClick={() => setShowCaseExercise(true)} icon={<Icons.Capitalization size={20} className="text-blue-600" />}>
+                <MenuItem onClick={() => handleExerciseClick('caseExercise', () => setShowCaseExercise(true))} icon={<Icons.Capitalization size={20} className="text-blue-600" />} inactive={!exerciseActivity.caseExercise}>
                     Groß-/Kleinschreibung
                 </MenuItem>
             </MenuDropdown>
@@ -613,6 +647,116 @@ export const Toolbar = ({
                         >
                             Abbrechen
                         </button>
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {/* Wortarten Central Menu Modal */}
+            {showWortartenMenu && createPortal(
+                <div
+                    className="fixed inset-0 z-[9999] bg-black/20 backdrop-blur-sm flex items-center justify-center animate-fadeIn"
+                    onClick={() => setShowWortartenMenu(false)}
+                    onKeyDown={e => { if (e.key === 'Escape') setShowWortartenMenu(false); }}
+                    tabIndex={-1}
+                    ref={el => el && el.focus()}
+                >
+                    <div
+                        className="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full mx-4 border border-slate-200"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <div className="flex items-center gap-4 mb-8">
+                            <div className="p-3 bg-indigo-50 rounded-2xl">
+                                <Icons.Wortarten size={40} />
+                            </div>
+                            <h2 className="text-3xl font-black text-slate-800">Wortarten</h2>
+                            <button
+                                onClick={() => setShowWortartenMenu(false)}
+                                className="ml-auto p-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition"
+                            >
+                                <Icons.X size={32} />
+                            </button>
+                        </div>
+
+                        <div className="flex flex-col gap-4">
+                            {/* Sorting by Part of Speech - FULL WIDTH TOP */}
+                            <button
+                                onClick={() => handleExerciseClick('wordSortingByParticiple', () => { setShowWordSortingByParticiple(true); setShowWortartenMenu(false); })}
+                                className={`p-6 rounded-2xl border-2 text-left transition flex items-center gap-4 group w-full ${!exerciseActivity.wordSortingByParticiple ? 'opacity-50 grayscale border-slate-100' : 'border-orange-100 bg-orange-50/50 hover:bg-orange-50 hover:border-orange-300 hover:shadow-lg'}`}
+                            >
+                                <div className="p-3 bg-white rounded-xl shadow-sm group-hover:scale-110 transition border border-orange-100">
+                                    <Icons.WordSorting size={32} className="text-orange-500" />
+                                </div>
+                                <div>
+                                    <div className="font-bold text-lg text-slate-800">Nach Wortart sortieren</div>
+                                    <div className="text-sm text-slate-500 font-medium">Substantive, Verben, Adjektive</div>
+                                </div>
+                            </button>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {/* LEFT COLUMN */}
+                                <div className="flex flex-col gap-4">
+                                    {/* Nouns */}
+                                    <button
+                                        onClick={() => handleExerciseClick('nounWriting', () => { setShowNounWriting(true); setShowWortartenMenu(false); })}
+                                        className={`p-6 rounded-2xl border-2 text-left transition flex items-center gap-4 group ${!exerciseActivity.nounWriting ? 'opacity-50 grayscale border-slate-100' : 'border-blue-100 bg-blue-50/50 hover:bg-blue-50 hover:border-blue-300 hover:shadow-lg'}`}
+                                    >
+                                        <div className="p-3 bg-white rounded-xl shadow-sm group-hover:scale-110 transition border border-blue-100">
+                                            <Icons.Edit2 size={32} className="text-blue-500" />
+                                        </div>
+                                        <div>
+                                            <div className="font-bold text-lg text-slate-800">Substantive schreiben</div>
+                                            <div className="text-sm text-slate-500 font-medium">Einzahl & Mehrzahl</div>
+                                        </div>
+                                    </button>
+
+                                    {/* Adjectives */}
+                                    <button
+                                        onClick={() => handleExerciseClick('adjectiveWriting', () => { setShowAdjectiveWriting(true); setShowWortartenMenu(false); })}
+                                        className={`p-6 rounded-2xl border-2 text-left transition flex items-center gap-4 group ${!exerciseActivity.adjectiveWriting ? 'opacity-50 grayscale border-slate-100' : 'border-green-100 bg-green-50/50 hover:bg-green-50 hover:border-green-300 hover:shadow-lg'}`}
+                                    >
+                                        <div className="p-3 bg-white rounded-xl shadow-sm group-hover:scale-110 transition border border-green-100">
+                                            <Icons.Edit2 size={32} className="text-green-500" />
+                                        </div>
+                                        <div>
+                                            <div className="font-bold text-lg text-slate-800">Adjektive schreiben</div>
+                                            <div className="text-sm text-slate-500 font-medium">Steigern</div>
+                                        </div>
+                                    </button>
+                                </div>
+
+                                {/* RIGHT COLUMN */}
+                                <div className="flex flex-col gap-4">
+                                    {/* Verbs Writing */}
+                                    <button
+                                        onClick={() => handleExerciseClick('verbWriting', () => { setShowVerbWriting(true); setShowWortartenMenu(false); })}
+                                        className={`p-6 rounded-2xl border-2 text-left transition flex items-center gap-4 group ${!exerciseActivity.verbWriting ? 'opacity-50 grayscale border-slate-100' : 'border-red-100 bg-red-50/50 hover:bg-red-50 hover:border-red-300 hover:shadow-lg'}`}
+                                    >
+                                        <div className="p-3 bg-white rounded-xl shadow-sm group-hover:scale-110 transition border border-red-100">
+                                            <Icons.Edit2 size={32} className="text-red-500" />
+                                        </div>
+                                        <div>
+                                            <div className="font-bold text-lg text-slate-800">Verben schreiben</div>
+                                            <div className="text-sm text-slate-500 font-medium">Konjugieren</div>
+                                        </div>
+                                    </button>
+
+                                    {/* Verbs Puzzle */}
+                                    <button
+                                        onClick={() => handleExerciseClick('verbPuzzle', () => { setShowVerbPuzzle(true); setShowWortartenMenu(false); })}
+                                        className={`p-6 rounded-2xl border-2 text-left transition flex items-center gap-4 group ${!exerciseActivity.verbPuzzle ? 'opacity-50 grayscale border-slate-100' : 'border-red-100 bg-red-50/50 hover:bg-red-50 hover:border-red-300 hover:shadow-lg'}`}
+                                    >
+                                        <div className="p-3 bg-white rounded-xl shadow-sm group-hover:scale-110 transition border border-red-100">
+                                            <Icons.VerbPuzzle size={32} className="text-red-500" />
+                                        </div>
+                                        <div>
+                                            <div className="font-bold text-lg text-slate-800">Verben puzzlen</div>
+                                            <div className="text-sm text-slate-500 font-medium">Formen zusammensetzen</div>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>,
                 document.body

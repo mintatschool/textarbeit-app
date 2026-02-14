@@ -7,9 +7,9 @@ import { EmptyStateMessage } from './EmptyStateMessage';
 
 import { ExerciseHeader } from './ExerciseHeader';
 import { RewardModal } from './shared/RewardModal';
-import { polyfill } from 'mobile-drag-drop';
-import { scrollBehaviourDragImageTranslateOverride } from 'mobile-drag-drop/scroll-behaviour';
-polyfill({ dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride });
+
+import { usePointerDrag } from '../hooks/usePointerDrag';
+// Removed polyfill import
 // Pastel colors for words
 const WORD_COLORS = [
     'bg-red-100',
@@ -55,23 +55,9 @@ export const SentenceShuffleView = ({ text, settings, setSettings, onClose, titl
     const [isCorrect, setIsCorrect] = useState(false);
     const [showReward, setShowReward] = useState(false);
     const [completedSentences, setCompletedSentences] = useState(new Set());
-    const [isDragging, setIsDragging] = useState(false);
     const [isShaking, setIsShaking] = useState(false);
 
-    const dragItem = useRef(null);
-    const dragOverItem = useRef(null);
-
-    // iPad Fix: Prevent touch scrolling during drag
-    useEffect(() => {
-        if (!isDragging) return;
-        const preventDefault = (e) => { e.preventDefault(); };
-        document.body.style.overflow = 'hidden';
-        document.addEventListener('touchmove', preventDefault, { passive: false });
-        return () => {
-            document.body.style.overflow = '';
-            document.removeEventListener('touchmove', preventDefault);
-        };
-    }, [isDragging]);
+    // iPad Fix: Prevent touch scrolling during drag handled by hook
 
     // Initialize sentences
     useEffect(() => {
@@ -146,38 +132,14 @@ export const SentenceShuffleView = ({ text, settings, setSettings, onClose, titl
         }
     };
 
-    // Drag handlers
-    const handleDragStart = (e, position) => {
-        setIsDragging(true);
-        dragItem.current = position;
+    // Drag & Drop via usePointerDrag
+    const handleDrop = (dragItem, targetId) => {
+        // dragItem: { ...word, sourceIndex }
+        // targetId: index
+        const dI = dragItem.sourceIndex;
+        const dO = Number(targetId);
 
-        // Safari/iPad Fix: setData is mandatory to trigger drag
-        e.dataTransfer.setData('text/plain', '');
-        e.dataTransfer.effectAllowed = 'move';
-        setTimeout(() => e.target.classList.add('opacity-50', 'scale-105'), 0);
-    };
-
-    const handleDragEnter = (e, position) => {
-        dragOverItem.current = position;
-        e.preventDefault();
-        e.currentTarget.classList.add('scale-110', 'shadow-lg');
-    };
-
-    const handleDragLeave = (e) => {
-        e.currentTarget.classList.remove('scale-110', 'shadow-lg');
-    };
-
-    const handleDragEnd = (e) => {
-        setIsDragging(false);
-        e.target.classList.remove('opacity-50', 'scale-105');
-        document.querySelectorAll('.word-card').forEach(el => {
-            el.classList.remove('scale-110', 'shadow-lg');
-        });
-
-        const dI = dragItem.current;
-        const dO = dragOverItem.current;
-
-        if (dI !== null && dO !== null && dI !== dO) {
+        if (dI !== undefined && !isNaN(dO) && dI !== dO) {
             const newWords = [...words];
             const draggedItem = newWords[dI];
             newWords.splice(dI, 1);
@@ -185,10 +147,14 @@ export const SentenceShuffleView = ({ text, settings, setSettings, onClose, titl
             setWords(newWords);
             setIsCorrect(false);
         }
-
-        dragItem.current = null;
-        dragOverItem.current = null;
     };
+
+    const { getDragProps, registerDropZone, dragState, hoveredZoneId, isDragging: isPointerDragging } = usePointerDrag({
+        onDrop: handleDrop
+    });
+
+    // iPad scroll prevention handled by hook
+    // Old handlers removed (handleDragStart, handleDragEnter, handleDragLeave, handleDragEnd)
 
     const progress = sentences.length > 0 ? ((currentIndex + 1) / sentences.length) * 100 : 0;
 
@@ -221,27 +187,24 @@ export const SentenceShuffleView = ({ text, settings, setSettings, onClose, titl
                 {/* Word Cards Container */}
                 <div
                     id="word-container"
-                    className={`flex flex-wrap justify-center items-center max-w-[95vw] p-4 rounded-2xl transition-all duration-300 ${isCorrect ? 'bg-green-50' : 'bg-white'
+                    className={`flex flex-wrap justify-center items-center max-w-[95vw] p-16 rounded-2xl transition-all duration-300 ${isCorrect ? 'bg-green-50' : 'bg-white'
                         }`}
                     style={{ columnGap: `${(settings.wordSpacing ?? 0.5)}em`, rowGap: '1em' }}
                 >
                     {words.map((word, idx) => (
                         <div
                             key={word.id}
-                            draggable={!isCorrect}
-                            onDragStart={(e) => handleDragStart(e, idx)}
-                            onDragEnter={(e) => handleDragEnter(e, idx)}
-                            onDragLeave={handleDragLeave}
-                            onDragEnd={handleDragEnd}
-                            onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; return false; }}
+                            ref={registerDropZone(idx)}
+                            {...(!isCorrect ? getDragProps({ ...word, sourceIndex: idx }, idx) : {})}
                             onContextMenu={(e) => e.preventDefault()}
                             className={`word-card px-4 py-2 rounded-xl shadow-sm select-none transition-all duration-200 ${word.color} ${isCorrect
                                 ? 'cursor-default'
                                 : 'cursor-grab active:cursor-grabbing hover:scale-105 hover:shadow-md'
-                                }`}
+                                } ${isPointerDragging && dragState?.sourceId === idx ? 'opacity-40' : ''} ${hoveredZoneId === String(idx) && dragState?.sourceId !== idx ? 'scale-110 shadow-lg' : ''}`}
                             style={{
                                 fontFamily: settings.fontFamily,
-                                fontSize: `${settings.fontSize}px`
+                                fontSize: `${settings.fontSize}px`,
+                                touchAction: 'pan-y'
                             }}
                         >
                             <Word
@@ -256,6 +219,40 @@ export const SentenceShuffleView = ({ text, settings, setSettings, onClose, titl
                         </div>
                     ))}
                 </div>
+
+                {/* Floating Drag Overlay */}
+                {dragState && (
+                    <div
+                        className="fixed z-[10000] pointer-events-none"
+                        style={{
+                            left: dragState.pos.x - dragState.offset.x,
+                            top: dragState.pos.y - dragState.offset.y,
+                            width: dragState.cloneRect.width,
+                            height: dragState.cloneRect.height,
+                            transform: 'scale(1.03) rotate(1deg)',
+                            filter: 'drop-shadow(0 15px 25px rgba(0,0,0,0.20))'
+                        }}
+                    >
+                        <div
+                            className={`px-4 py-2 rounded-xl shadow-xl ${dragState.item.color}`}
+                            style={{
+                                fontFamily: settings.fontFamily,
+                                fontSize: `${settings.fontSize}px`
+                            }}
+                        >
+                            <Word
+                                word={dragState.item.text}
+                                startIndex={0}
+                                settings={settings}
+                                hyphenator={hyphenator}
+                                isReadingMode={true}
+                                forceNoMargin={true}
+                                forceShowSyllables={true}
+                            />
+                        </div>
+                    </div>
+                )}
+
 
                 {/* Success Checkmark */}
                 {isCorrect && (
@@ -284,6 +281,6 @@ export const SentenceShuffleView = ({ text, settings, setSettings, onClose, titl
                     </button>
                 )}
             </div>
-        </div>
+        </div >
     );
 };

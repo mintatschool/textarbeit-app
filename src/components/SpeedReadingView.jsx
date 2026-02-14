@@ -5,6 +5,7 @@ import { Word } from './Word'; // Import Word for consistent rendering (arcs etc
 import { shuffleArray } from '../utils/arrayUtils';
 import { ProgressBar } from './ProgressBar';
 import { EmptyStateMessage } from './EmptyStateMessage';
+import { getCorrectCasing } from '../utils/wordCasingUtils';
 
 export const SpeedReadingView = ({ words, settings, setSettings, onClose, title }) => {
     // Level calculation Round 5 (Exponential gaps):
@@ -24,7 +25,11 @@ export const SpeedReadingView = ({ words, settings, setSettings, onClose, title 
     const exerciseWords = useMemo(() => {
         if (!words || words.length === 0) return [];
         const filtered = words.filter(w => w.type === 'word');
-        return shuffleArray(filtered);
+        const mapped = filtered.map(w => ({
+            ...w,
+            word: getCorrectCasing(w.word)
+        }));
+        return shuffleArray(mapped);
     }, [words, round]);
 
     const currentWord = exerciseWords[currentIndex];
@@ -184,6 +189,15 @@ export const SpeedReadingView = ({ words, settings, setSettings, onClose, title 
 
             {/* Game Content */}
             <main className="flex-1 flex flex-col items-center justify-center p-8 relative">
+
+                {/* Intro Status Badge - Positioned absolutely in main container */}
+                {gameState === 'intro' && (
+                    <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
+                        <span className="bg-blue-100 text-blue-700 px-4 py-2 rounded-full font-bold text-xl shadow-sm border border-blue-200">
+                            0 / {exerciseWords.length}
+                        </span>
+                    </div>
+                )}
 
                 {gameState === 'intro' && (
                     <div className="flex flex-col items-center animate-fadeIn">

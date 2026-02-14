@@ -2,10 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Icons } from './Icons';
 import { RewardModal } from './shared/RewardModal';
 import { EmptyStateMessage } from './EmptyStateMessage';
-import { polyfill } from 'mobile-drag-drop';
-import { scrollBehaviourDragImageTranslateOverride } from 'mobile-drag-drop/scroll-behaviour';
-polyfill({ dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride });
-export const AlphabetSortingView = ({ words, onClose, settings, setSettings, title }) => {
+import { usePointerDrag } from '../hooks/usePointerDrag';
+import { getCorrectCasing } from '../utils/wordCasingUtils';
+// Removed mobile-drag-drop polyfill import/init as it's replaced by pointer events
+export const AlphabetSortingView = ({ words, onClose, settings, setSettings, title, wordColors = {}, highlightedIndices = new Set(), hideYellowLetters = false }) => {
     // Ensure we have words
     if (!words || words.length === 0) {
         return (
@@ -20,26 +20,17 @@ export const AlphabetSortingView = ({ words, onClose, settings, setSettings, tit
     const [isShaking, setIsShaking] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
 
-    // iPad Fix: Prevent touch scrolling during drag
-    useEffect(() => {
-        if (!isDragging) return;
-        const preventDefault = (e) => { e.preventDefault(); };
-        document.body.style.overflow = 'hidden';
-        document.addEventListener('touchmove', preventDefault, { passive: false });
-        return () => {
-            document.body.style.overflow = '';
-            document.removeEventListener('touchmove', preventDefault);
-        };
-    }, [isDragging]);
+    // iPad Fix: Prevent touch scrolling during drag is now handled by usePointerDrag
 
     // Initialize
     useEffect(() => {
         // Prepare initial pieces from passed words
         // We use the 'word' property of the word objects
         const initialPieces = words.map((w, idx) => {
+            const correctedWord = getCorrectCasing(w.word);
             return {
-                id: `word-${idx}-${w.word}`, // Unique ID
-                text: w.word,
+                id: `word-${idx}-${correctedWord}`, // Unique ID
+                text: correctedWord,
                 originalObject: w,
                 // The correct alphabetical index will be determined by sorting the array
             };
@@ -89,84 +80,49 @@ export const AlphabetSortingView = ({ words, onClose, settings, setSettings, tit
         setActiveHighlights(newHighlights);
     };
 
-    // Drag & Drop
-    const dragItem = useRef(null);
-    const dragOverItem = useRef(null);
-    const scrollContainerRef = useRef(null);
-    const autoScrollInterval = useRef(null);
+    // Drag & Drop via usePointerDrag
+    const handleDrop = (dragItem, targetId) => {
+        // dragItem contains the piece object and original index (sourceId)
+        // targetId is the index of the slot dropped onto (string or number from registerDropZone)
 
-    const handleDragStart = (e, position) => {
-        setIsDragging(true);
-        dragItem.current = position;
-        e.dataTransfer.setData('text/plain', '');
-        e.dataTransfer.effectAllowed = 'move';
-        setTimeout(() => e.target.classList.add('dragging', 'scale-105'), 0);
-    };
+        const sourceIndex = dragItem.sourceIndex;
+        const targetIndex = Number(targetId);
 
-    const handleDragEnter = (e, position) => {
-        dragOverItem.current = position;
-        e.preventDefault();
-    };
-
-    const handleDragEnd = (e) => {
-        setIsDragging(false);
-        e.target.classList.remove('dragging');
-
-        // Stop auto-scroll
-        if (autoScrollInterval.current) {
-            clearInterval(autoScrollInterval.current);
-            autoScrollInterval.current = null;
-        }
-
-        const dI = dragItem.current;
-        const dO = dragOverItem.current;
-
-        if (dI !== null && dO !== null && dI !== dO) {
+        if (sourceIndex !== targetIndex && !isNaN(targetIndex)) {
             const newPieces = [...pieces];
-            const draggedContent = newPieces[dI];
-            newPieces.splice(dI, 1);
-            newPieces.splice(dO, 0, draggedContent);
+            const draggedContent = newPieces[sourceIndex];
+            newPieces.splice(sourceIndex, 1);
+            newPieces.splice(targetIndex, 0, draggedContent);
             setPieces(newPieces);
-
-            // Reset validation state on interaction
             setStatus('idle');
         }
-
-        dragItem.current = null;
-        dragOverItem.current = null;
     };
 
-    // Auto-scroll when dragging near edges
-    const handleContainerDragOver = (e) => {
-        e.preventDefault();
-        if (!scrollContainerRef.current || !isDragging) return;
+    const { getDragProps, registerDropZone, dragState, isDragging: isPointerDragging } = usePointerDrag({
+        onDrop: handleDrop
+    });
 
+    // Auto-scroll logic (Restored for Pointer Events)
+    const scrollContainerRef = useRef(null);
+    useEffect(() => {
         const container = scrollContainerRef.current;
-        const rect = container.getBoundingClientRect();
-        const y = e.clientY;
+        if (!isPointerDragging || !dragState || !container) return;
 
-        const edgeSize = 80; // pixels from edge to trigger scroll
-        const scrollSpeed = 8; // pixels per frame
+        const handleAutoScroll = () => {
+            const { y } = dragState.pos;
+            const r = container.getBoundingClientRect();
+            const edge = 80;
+            const speed = 10;
+            if (y < r.top + edge) container.scrollTop -= speed;
+            else if (y > r.bottom - edge) container.scrollTop += speed;
+        };
 
-        // Clear existing interval
-        if (autoScrollInterval.current) {
-            clearInterval(autoScrollInterval.current);
-            autoScrollInterval.current = null;
-        }
+        const interval = setInterval(handleAutoScroll, 20);
+        return () => clearInterval(interval);
+    }, [isPointerDragging, dragState]);
 
-        // Check if near top edge
-        if (y < rect.top + edgeSize) {
-            autoScrollInterval.current = setInterval(() => {
-                container.scrollTop -= scrollSpeed;
-            }, 16);
-        }
-        // Check if near bottom edge
-        else if (y > rect.bottom - edgeSize) {
-            autoScrollInterval.current = setInterval(() => {
-                container.scrollTop += scrollSpeed;
-            }, 16);
-        }
-    };
+    // iPad Touch Scroll Prevention is handled inside usePointerDrag now
+    // Old manual handlers (handleDragStart, handleDragEnter, handleDragEnd, handleContainerDragOver) removed
 
     const checkOrder = () => {
         const currentTexts = pieces.map(p => p.text);
@@ -270,13 +226,12 @@ export const AlphabetSortingView = ({ words, onClose, settings, setSettings, tit
             {/* CONTENT */}
             <div
                 ref={scrollContainerRef}
-                onDragOver={handleContainerDragOver}
                 className="flex-1 overflow-y-auto custom-scroll p-6 pl-12 pt-2 bg-slate-50/50"
             >
                 <div id="puzzle-container" className="max-w-2xl pb-24 transition-transform text-left space-y-2 mt-4">
                     {pieces.map((piece, idx) => {
                         return (
-                            <div key={piece.id} className={`flex items-stretch gap-6 transition-transform ${isDragging && idx === dragItem.current ? 'opacity-50' : 'opacity-100'}`}>
+                            <div key={piece.id} className={`flex items-stretch gap-6 transition-transform ${isPointerDragging && dragState?.sourceId === idx ? 'opacity-50' : 'opacity-100'}`}>
                                 {/* Ranking Box (Static) */}
                                 <div className="flex items-center justify-center px-4 rounded-xl border-2 border-blue-200 bg-blue-50 shadow-sm w-16 shrink-0">
                                     <span className="text-xl font-bold text-blue-600">{idx + 1}.</span>
@@ -284,16 +239,12 @@ export const AlphabetSortingView = ({ words, onClose, settings, setSettings, tit
 
                                 {/* Draggable Word Box */}
                                 <div
-                                    draggable
-                                    onDragStart={(e) => handleDragStart(e, idx)}
-                                    // handler on element itself for correct target detection
-                                    onDragEnter={(e) => handleDragEnter(e, idx)}
-                                    onDragEnd={handleDragEnd}
-                                    onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; return false; }}
-                                    className={`p-4 pl-3 rounded-xl border-2 shadow-sm transition-all cursor-grab active:cursor-grabbing flex gap-4 items-center select-none bg-white border-slate-200 ${!isDragging ? 'hover:shadow-md hover:bg-blue-50/50' : ''}`}
+                                    ref={registerDropZone(idx)}
+                                    {...getDragProps({ ...piece, sourceIndex: idx }, idx)}
+                                    className={`p-4 pl-3 rounded-xl border-2 shadow-sm transition-all cursor-grab active:cursor-grabbing flex gap-4 items-center select-none bg-white border-slate-200 ${isPointerDragging && dragState?.sourceId === idx ? 'opacity-40' : 'hover:shadow-md hover:bg-blue-50/50'}`}
                                 >
                                     {/* Drag Handle */}
-                                    <div className="text-slate-300 cursor-grab active:cursor-grabbing shrink-0">
+                                    <div className="drag-handle text-slate-300 cursor-grab active:cursor-grabbing shrink-0" style={{ touchAction: 'none' }}>
                                         <Icons.MoveVertical size={24} />
                                     </div>
                                     <div
@@ -310,14 +261,29 @@ export const AlphabetSortingView = ({ words, onClose, settings, setSettings, tit
                                                 highlightClass = HIGHLIGHT_COLORS[charIdx];
                                             }
 
+                                            // Support general yellow markings (only if not task-highlighted)
+                                            let customStyle = {
+                                                width: '0.7em',
+                                                marginRight: '0.05em'
+                                            };
+                                            if (!highlightClass && !hideYellowLetters) {
+                                                const globalIdx = piece.originalObject.index + charIdx;
+                                                if (wordColors[globalIdx] === 'yellow') {
+                                                    highlightClass = 'bg-yellow-200';
+                                                    customStyle.borderRadius = '4px';
+                                                    customStyle.padding = '0 2px';
+                                                } else if (highlightedIndices.has(globalIdx)) {
+                                                    highlightClass = 'bg-slate-200';
+                                                    customStyle.borderRadius = '4px';
+                                                    customStyle.padding = '0 2px';
+                                                }
+                                            }
+
                                             return (
                                                 <span
                                                     key={charIdx}
                                                     className={`${highlightClass} rounded-sm transition-colors duration-300 inline-block text-center`}
-                                                    style={{
-                                                        width: '0.7em',
-                                                        marginRight: '0.05em'
-                                                    }}
+                                                    style={customStyle}
                                                 >
                                                     {char}
                                                 </span>
@@ -330,6 +296,36 @@ export const AlphabetSortingView = ({ words, onClose, settings, setSettings, tit
                     })}
                 </div>
             </div>
+
+            {/* Floating Drag Overlay */}
+            {dragState && (
+                <div
+                    className="fixed z-[10000] pointer-events-none"
+                    style={{
+                        left: dragState.pos.x - dragState.offset.x,
+                        top: dragState.pos.y - dragState.offset.y,
+                        width: dragState.cloneRect.width,
+                        height: dragState.cloneRect.height,
+                        transform: 'scale(1.03) rotate(1deg)',
+                        filter: 'drop-shadow(0 15px 25px rgba(0,0,0,0.20))'
+                    }}
+                >
+                    <div className="p-4 pl-3 rounded-xl border-2 border-blue-400 bg-white shadow-xl flex gap-4 items-center h-full">
+                        <div className="text-blue-400 shrink-0">
+                            <Icons.MoveVertical size={24} />
+                        </div>
+                        <div
+                            className="flex-1 font-bold text-slate-800"
+                            style={{
+                                fontSize: `${settings.fontSize}px`,
+                                fontFamily: settings.fontFamily
+                            }}
+                        >
+                            {dragState.item.text}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Footer Actions */}
             <div className="px-6 py-3 bg-white border-t border-slate-200 flex justify-end gap-4 shrink-0">

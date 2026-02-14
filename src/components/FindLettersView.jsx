@@ -343,10 +343,10 @@ export const FindLettersView = ({ text, settings, setSettings, onClose, title })
                     } else {
                         setFlashMode('correct-lower');
                     }
-                    setTimeout(() => setFlashMode(null), 400);
+                    setTimeout(() => setFlashMode(null), 600);
                 } else {
                     setFlashMode('wrong');
-                    setTimeout(() => setFlashMode(null), 400);
+                    setTimeout(() => setFlashMode(null), 600);
                 }
             }
             return next;
@@ -407,10 +407,10 @@ export const FindLettersView = ({ text, settings, setSettings, onClose, title })
                     <div className="flex items-center gap-2">
                         <button
                             onClick={() => setShowSelection(true)}
-                            className={`flex items-center gap-3 px-4 py-2 bg-slate-100/80 border-2 rounded-2xl transition-all duration-300 group hover:bg-white hover:border-blue-300 ${flashMode === 'wrong' ? 'border-red-400 animate-shake' : 'border-transparent'}`}
+                            className={`flex items-center gap-3 px-4 py-2 bg-slate-100/80 border-2 rounded-2xl transition-all duration-500 group hover:bg-white hover:border-blue-300 ${flashMode === 'wrong' ? 'border-red-400 animate-shake' : 'border-transparent'}`}
                         >
                             <span className="text-slate-500 font-bold text-sm uppercase tracking-wider">GESUCHT:</span>
-                            <span className={`text-2xl font-black transition-colors duration-300 ${flashMode && flashMode.startsWith('correct') ? 'text-green-600' : flashMode === 'wrong' ? 'text-red-600' : 'text-blue-700'
+                            <span className={`text-2xl font-black transition-colors duration-500 ${flashMode && flashMode.startsWith('correct') ? 'text-green-600' : flashMode === 'wrong' ? 'text-red-600' : 'text-blue-700'
                                 }`} style={{ fontFamily: settings.fontFamily }}>
                                 {selectedTarget?.label || "?"}
                             </span>
@@ -499,7 +499,7 @@ export const FindLettersView = ({ text, settings, setSettings, onClose, title })
                         {/* Selected Indicator - Fixed Left Column */}
                         <div className="shrink-0 bg-white/40 border-r border-slate-100 flex flex-col items-center pt-12 px-12 z-10">
                             <div
-                                className={`text-[7rem] md:text-[10rem] font-black transition-all duration-300 leading-none flex items-baseline ${flashMode === 'wrong' ? 'animate-shake' : ''
+                                className={`text-[7rem] md:text-[10rem] font-black transition-all duration-500 leading-none flex items-baseline ${flashMode === 'wrong' ? 'animate-shake' : ''
                                     }`}
                                 style={{ fontFamily: settings.fontFamily }}
                             >
@@ -508,7 +508,7 @@ export const FindLettersView = ({ text, settings, setSettings, onClose, title })
                                     const parts = selectedTarget.label.split(' ');
                                     if (parts.length === 1) {
                                         return (
-                                            <span className={`inline-block transition-all duration-300 ${flashMode && flashMode.startsWith('correct') ? 'text-green-500' :
+                                            <span className={`inline-block transition-all duration-500 ${flashMode && flashMode.startsWith('correct') ? 'text-green-500' :
                                                 flashMode === 'wrong' ? 'text-red-500' : 'text-blue-700'
                                                 }`}>
                                                 {parts[0]}
@@ -517,13 +517,13 @@ export const FindLettersView = ({ text, settings, setSettings, onClose, title })
                                     }
                                     return (
                                         <>
-                                            <span className={`inline-block transition-all duration-300 ${flashMode === 'correct-upper' ? 'text-green-500' :
+                                            <span className={`inline-block transition-all duration-500 ${flashMode === 'correct-upper' ? 'text-green-500' :
                                                 flashMode === 'wrong' ? 'text-red-500' : 'text-blue-700'
                                                 }`}>
                                                 {parts[0]}
                                             </span>
                                             <span className="whitespace-pre"> </span>
-                                            <span className={`inline-block transition-all duration-300 ${flashMode === 'correct-lower' ? 'text-green-500' :
+                                            <span className={`inline-block transition-all duration-500 ${flashMode === 'correct-lower' ? 'text-green-500' :
                                                 flashMode === 'wrong' ? 'text-red-500' : 'text-blue-700'
                                                 }`}>
                                                 {parts[1]}
@@ -577,6 +577,7 @@ export const FindLettersView = ({ text, settings, setSettings, onClose, title })
                                                     isReadingMode={false}
                                                     wordColors={currentWordColors}
                                                     colorPalette={[]}
+                                                    hideSelectionFrame={true}
                                                 />
                                             );
                                         });

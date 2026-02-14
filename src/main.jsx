@@ -5,8 +5,8 @@ import ErrorBoundary from './ErrorBoundary.jsx'
 import { registerSW } from 'virtual:pwa-register'
 import './index.css'
 
-// Verification Log (Updated: 2026-01-29 21:00)
-console.log('🚀 App Version: 2026-01-29 21:00 (Inline Syllables Fix)');
+// Verification Log (Updated: 2026-02-12 15:43)
+console.log('🚀 App Version: 2026-02-12 15:43 (Blitzlesen Fix)');
 
 try {
     const updateSW = registerSW({

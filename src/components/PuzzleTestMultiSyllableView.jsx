@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
     AlertCircle,
@@ -5,7 +6,9 @@ import {
     Volume2,
     VolumeX,
     Minus,
-    Plus
+    Plus,
+    ArrowRight,
+    Check
 } from 'lucide-react';
 import { Icons } from './Icons';
 import { ProgressBar } from './ProgressBar';
@@ -17,9 +20,8 @@ import { getPieceColor } from './shared/puzzleUtils';
 import { usePreventTouchScroll } from '../hooks/usePreventTouchScroll';
 import { ExerciseHeader } from './ExerciseHeader';
 import { RewardModal } from './shared/RewardModal';
-import { polyfill } from 'mobile-drag-drop';
-import { scrollBehaviourDragImageTranslateOverride } from 'mobile-drag-drop/scroll-behaviour';
-polyfill({ dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride });
+import { usePointerDrag } from '../hooks/usePointerDrag';
+
 export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, activeColor }) => {
     // Game State
     const [gameState, setGameState] = useState({
@@ -209,7 +211,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                     wordId: word.id,
                     syllableIndex: index,
                     totalSyllables: word.syllables.length,
-                    color: 'bg-blue-500', // Could use distinct colors per word if desired, but blue is standard here
+                    color: 'bg-blue-500',
                     rotation: (Math.random() - 0.5) * 4,
                     width: width,
                     sortIndex: Math.random()
@@ -284,7 +286,6 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
     };
 
     const removePieceFromSlot = (slotKey, wordId) => {
-        // if (completedRows[wordId]) return; // Unlock
         setSlots(prev => {
             const next = { ...prev };
             delete next[slotKey];
@@ -377,7 +378,6 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                 if (matchedWord) {
                     // Only update if not already set to this ID
                     if (completedRows[rowWord.id] !== matchedWord.id) {
-                        // if (audioEnabled) speak(matchedWord.word); // Removed per user request
                         setCompletedRows(prev => ({
                             ...prev,
                             [rowWord.id]: matchedWord.id
@@ -421,14 +421,8 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
         });
     }, []);
 
-    // Check Stage Completion
-    useEffect(() => {
-        // No Auto Advance
-    }, [completedRows, gameState.stages, gameState.currentStageIndex]);
-
-
     // --------------------------------------------------------------------------------
-    // 5. RENDER HELPERS (Hooks must be before any early returns)
+    // 5. RENDER HELPERS
     // --------------------------------------------------------------------------------
 
     const totalWords = useMemo(() => gameState.stages.reduce((acc, stage) => acc + stage.items.length, 0), [gameState.stages]);
@@ -451,8 +445,6 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
             debounceTimerRef.current = null;
         }, 1200);
     };
-
-    // getPieceColor is now imported from shared/puzzleUtils
 
     const getVisiblePieces = (zone) => {
         const inSlots = Object.values(slots).map(p => p.id);
@@ -529,6 +521,27 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
 
         return totalWidth;
     };
+
+    const { getDragProps, registerDropZone, dragState, isDragging: isPointerDragging } = usePointerDrag({
+        onDragStart: (item) => setIsDragging(item.id),
+        onDragEnd: () => setIsDragging(null),
+        onDrop: (dragItem, targetId) => {
+            // targetId: 'pool-left/middle/right' or 'SLOT:{wordId}:{slotIndex}'
+
+            if (targetId.startsWith('pool-')) {
+                handleReturnToPool(dragItem.id);
+            } else if (targetId.startsWith('SLOT:')) {
+                const parts = targetId.split(':');
+                if (parts.length >= 3) {
+                    // Reassemble wordId if it contained colons (unlikely but safe)
+                    const sIdx = parseInt(parts[parts.length - 1], 10);
+                    const wId = parts.slice(1, parts.length - 1).join(':');
+                    handleDrop(dragItem.id, wId, sIdx);
+                }
+            }
+        }
+    });
+
     // --------------------------------------------------------------------------------
     // 6. RENDER
     // --------------------------------------------------------------------------------
@@ -626,38 +639,43 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
             <div className="flex-1 relative flex overflow-hidden">
 
                 {/* LEFT ZONE - Anfangsstücke */}
-                <div className="bg-slate-100/50 border-r border-slate-200 flex flex-col shrink-0 transition-all duration-300"
+                <div
+                    className="bg-slate-100/50 border-r border-slate-200 flex flex-col shrink-0 transition-all duration-300"
                     style={{ width: sidebarWidth }}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={(e) => {
-                        e.preventDefault();
-                        const pid = e.dataTransfer.getData("application/puzzle-piece-id");
-                        if (pid) handleReturnToPool(pid);
-                    }}
+                    ref={registerDropZone('pool-left')}
                 >
                     <div className="bg-slate-200/50 py-1 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Anfang</div>
                     <div className="flex-1 overflow-y-auto custom-scroll p-2 pt-8 flex flex-col items-start gap-4">
                         {getVisiblePieces('left').map(p => {
                             const isHighlighted = highlightedWordId === p.wordId;
                             const isSelected = selectedPiece?.id === p.id;
+                            const isDraggingThis = isPointerDragging && dragState?.sourceId === p.id;
                             return (
                                 <div key={p.id}
                                     className={`transition-all duration-200 cursor-pointer
                                         ${isHighlighted ? 'scale-110 drop-shadow-xl' : ''}
                                         ${isSelected ? 'scale-110 z-50' : 'hover:scale-105 active:scale-95'}
+                                        ${isDraggingThis ? 'opacity-40' : ''}
                                     `}
-                                    style={{ filter: isSelected ? 'drop-shadow(0 0 12px rgba(59, 130, 246, 0.8))' : 'none' }}
+                                    style={{
+                                        filter: 'none',
+                                        touchAction: 'none'
+                                    }}
                                     onClick={() => handlePieceSelect(p)}
-                                    draggable onDragStart={(e) => { e.dataTransfer.setData("application/puzzle-piece-id", p.id); setIsDragging(p.id); }}
-                                    onDragEnd={() => setIsDragging(null)}>
-                                    <PuzzleTestPiece
-                                        label={p.text}
-                                        type="left"
-                                        colorClass={getPieceColor(p.color, activeColor)}
-                                        dynamicWidth={p.width}
-                                        scale={gameState.pieceScale * 0.8}
-                                        fontFamily={settings.fontFamily}
-                                    />
+                                    {...getDragProps(p, p.id)}
+                                >
+                                    <div className={`transition-all duration-200 rounded-xl`}>
+                                        <PuzzleTestPiece
+                                            label={p.text}
+                                            type="left"
+                                            colorClass={getPieceColor(p.color, activeColor)}
+                                            dynamicWidth={p.width}
+                                            scale={gameState.pieceScale * 0.8}
+                                            fontFamily={settings.fontFamily}
+                                            isSelected={isSelected}
+                                            forceWhiteText={true}
+                                        />
+                                    </div>
                                 </div>
                             );
                         })}
@@ -666,42 +684,45 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
 
                 {/* MIDDLE ZONE + CENTER */}
                 <div className="flex-1 flex flex-col relative bg-white">
-                    {/* Middle Pieces Pool (Top Strip) - Conditional Rendering & Dynamic Height */}
+                    {/* Middle Pieces Pool (Top Strip) */}
                     {pieces.middle.length > 0 && (
-                        <div className="bg-blue-50/30 border-b border-blue-100 relative w-full overflow-hidden shrink-0 min-h-0 h-auto max-h-[35%]"
-                            onDragOver={(e) => e.preventDefault()}
-                            onDrop={(e) => {
-                                e.preventDefault();
-                                const pid = e.dataTransfer.getData("application/puzzle-piece-id");
-                                if (pid) handleReturnToPool(pid);
-                            }}
+                        <div
+                            className="bg-blue-50/30 border-b border-blue-100 relative w-full overflow-hidden shrink-0 min-h-0 h-auto max-h-[35%]"
+                            ref={registerDropZone('pool-middle')}
                         >
                             <div className="absolute top-1 left-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Mitte</div>
                             <div className="w-full relative pt-12 px-4 pb-4 flex flex-wrap items-center justify-center gap-4 content-center overflow-y-auto custom-scroll">
                                 {getVisiblePieces('middle').map(p => {
                                     const isHighlighted = highlightedWordId === p.wordId;
                                     const isSelected = selectedPiece?.id === p.id;
+                                    const isDraggingThis = isPointerDragging && dragState?.sourceId === p.id;
                                     return (
                                         <div key={p.id}
                                             className={`transition-all duration-200 cursor-pointer
                                                 ${isHighlighted ? 'scale-110 z-[100] drop-shadow-xl' : ''}
                                                 ${isSelected ? 'scale-110 z-50' : 'hover:z-50 hover:scale-105 active:scale-95'}
+                                                ${isDraggingThis ? 'opacity-40' : ''}
                                             `}
                                             style={{
                                                 transform: `rotate(${p.rotation}deg)`,
-                                                filter: isSelected ? 'drop-shadow(0 0 12px rgba(59, 130, 246, 0.8))' : 'none'
+                                                filter: 'none',
+                                                touchAction: 'none'
                                             }}
                                             onClick={() => handlePieceSelect(p)}
-                                            draggable onDragStart={(e) => { e.dataTransfer.setData("application/puzzle-piece-id", p.id); setIsDragging(p.id); }}
-                                            onDragEnd={() => setIsDragging(null)}>
-                                            <PuzzleTestPiece
-                                                label={p.text}
-                                                type="middle"
-                                                colorClass={getPieceColor(p.color, activeColor)}
-                                                dynamicWidth={p.width}
-                                                scale={gameState.pieceScale * 0.8}
-                                                fontFamily={settings.fontFamily}
-                                            />
+                                            {...getDragProps(p, p.id)}
+                                        >
+                                            <div className={`transition-all duration-200 rounded-xl`}>
+                                                <PuzzleTestPiece
+                                                    label={p.text}
+                                                    type="middle"
+                                                    colorClass={getPieceColor(p.color, activeColor)}
+                                                    dynamicWidth={p.width}
+                                                    scale={gameState.pieceScale * 0.8}
+                                                    fontFamily={settings.fontFamily}
+                                                    isSelected={isSelected}
+                                                    forceWhiteText={true}
+                                                />
+                                            </div>
                                         </div>
                                     );
                                 })}
@@ -738,44 +759,37 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                                                 return (
                                                     <div
                                                         key={idx}
+                                                        ref={registerDropZone(`SLOT:${word.id}:${idx}`)}
                                                         className={`relative flex items-center justify-center transition-all duration-300 group ${slotIsTarget ? 'scale-105 cursor-pointer' : ''
                                                             }`}
                                                         style={{
                                                             ...slotStyles,
-                                                            filter: slotIsTarget ? 'drop-shadow(0 0 10px rgba(59, 130, 246, 0.7))' : 'none'
-                                                        }}
-                                                        onDragOver={(e) => e.preventDefault()}
-                                                        onDrop={(e) => {
-                                                            e.preventDefault();
-                                                            const id = e.dataTransfer.getData("application/puzzle-piece-id");
-                                                            if (!isComplete) handleDrop(id, word.id, idx);
+                                                            filter: 'none'
                                                         }}
                                                         onClick={() => {
                                                             if (!piece && !isComplete) handleSlotSelect(word.id, idx, word);
                                                         }}
                                                     >
                                                         {!piece && (
-                                                            <div className="pointer-events-none opacity-40">
+                                                            <div className={`pointer-events-none transition-all duration-200 rounded-xl ${slotIsTarget ? 'opacity-100' : 'opacity-40'}`}>
                                                                 <PuzzleTestPiece
                                                                     label=""
                                                                     type={type}
                                                                     isGhost={true}
                                                                     scale={1}
                                                                     fontFamily={settings.fontFamily}
+                                                                    isSelected={slotIsTarget}
+                                                                    forceWhiteText={true}
                                                                 />
                                                             </div>
                                                         )}
 
                                                         {piece && (
                                                             <div
-                                                                className="cursor-pointer hover:scale-105 transition-transform"
-                                                                draggable
-                                                                onDragStart={(e) => {
-                                                                    e.dataTransfer.setData("application/puzzle-piece-id", piece.id);
-                                                                    // Do not set isDragging(piece.id) to avoid hiding it in the slot immediately, or do?
-                                                                    // Usually we want it visible while dragging until dropped.
-                                                                }}
-                                                                onClick={() => removePieceFromSlot(slotKey, word.id)}
+                                                                className={`cursor-pointer hover:scale-105 transition-transform ${isPointerDragging && dragState?.sourceId === piece.id ? 'opacity-40' : ''}`}
+                                                                style={{ touchAction: 'none' }}
+                                                                onClick={(e) => { e.stopPropagation(); if (!isPointerDragging) removePieceFromSlot(slotKey, word.id); }}
+                                                                {...getDragProps(piece, piece.id)}
                                                             >
                                                                 <PuzzleTestPiece
                                                                     label={piece.text}
@@ -785,6 +799,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                                                                     dynamicWidth={piece.width}
                                                                     showSeamLine={true}
                                                                     fontFamily={settings.fontFamily}
+                                                                    forceWhiteText={true}
                                                                 />
                                                             </div>
                                                         )}
@@ -801,14 +816,14 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                                             {audioEnabled && (
                                                 <button
                                                     onClick={() => speak(audioText)}
-                                                    className="w-[70px] h-[70px] bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg transition-all shrink-0 ring-4 ring-white/50 hover:scale-105 active:scale-95 z-10"
+                                                    className="w-[70px] h-[70px] bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg transition-all ring-4 ring-white/50 hover:scale-105 active:scale-95 z-10 shrink-0"
                                                     title="Anhören"
                                                 >
-                                                    <Icons.Volume2 size={30} />
+                                                    <Volume2 size={30} />
                                                 </button>
                                             )}
 
-                                            {/* Checkmark - Flex for reliable alignment */}
+                                            {/* Checkmark */}
                                             <div className={`transition-all duration-500 ease-out flex items-center
                                                 ${isComplete ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}
                                             `}>
@@ -816,14 +831,14 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                                             </div>
                                         </div>
 
-                                        {/* Manual Advance Button - Below Speaker Layout */}
-                                        {(isLastItem && allSolved) && (
+                                        {/* Manual Advance Button */}
+                                        {isLastItem && allSolved && (
                                             <div className="absolute top-full left-1/2 -translate-x-1/2 mt-8 animate-in slide-in-from-top-4 duration-300 z-20">
                                                 <button
                                                     onClick={handleManualAdvance}
                                                     className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl font-bold shadow-xl text-xl hover:scale-105 transition-all flex items-center gap-2 ring-4 ring-white/50 whitespace-nowrap"
                                                 >
-                                                    Weiter <Icons.ArrowRight size={30} />
+                                                    Weiter <ArrowRight size={30} />
                                                 </button>
                                             </div>
                                         )}
@@ -831,36 +846,39 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                                 </div>
                             );
                         })}
-                        {/* Spacer for scrolling */}
-                        <div className="h-20 w-full" />
+
+                        {/* Spacer */}
+                        <div className="h-32 w-full" />
                     </div>
                 </div>
 
                 {/* RIGHT ZONE - Endstücke */}
-                <div className="bg-slate-100/50 border-l border-slate-200 flex flex-col shrink-0 transition-all duration-300"
+                <div
+                    className="shrink-0 relative border-l border-blue-50 bg-white/20 overflow-y-auto overflow-x-hidden custom-scroll pt-12 pb-6 px-4 space-y-8 flex flex-col items-center transition-all duration-300"
                     style={{ width: sidebarWidth }}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={(e) => {
-                        e.preventDefault();
-                        const pid = e.dataTransfer.getData("application/puzzle-piece-id");
-                        if (pid) handleReturnToPool(pid);
-                    }}
+                    ref={registerDropZone('pool-right')}
                 >
-                    <div className="bg-slate-200/50 py-1 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ende</div>
-                    <div className="flex-1 overflow-y-auto custom-scroll p-2 pt-8 flex flex-col items-end gap-4">
-                        {getVisiblePieces('right').map(p => {
-                            const isHighlighted = highlightedWordId === p.wordId;
-                            const isSelected = selectedPiece?.id === p.id;
-                            return (
-                                <div key={p.id}
-                                    className={`transition-all duration-200 cursor-pointer
-                                        ${isHighlighted ? 'scale-110 drop-shadow-xl' : ''}
-                                        ${isSelected ? 'scale-110 z-50' : 'hover:scale-105 active:scale-95'}
-                                    `}
-                                    style={{ filter: isSelected ? 'drop-shadow(0 0 12px rgba(59, 130, 246, 0.8))' : 'none' }}
-                                    onClick={() => handlePieceSelect(p)}
-                                    draggable onDragStart={(e) => { e.dataTransfer.setData("application/puzzle-piece-id", p.id); setIsDragging(p.id); }}
-                                    onDragEnd={() => setIsDragging(null)}>
+                    <div className="bg-slate-200/50 py-1 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest w-full mb-4">Ende</div>
+                    {getVisiblePieces('right').map(p => {
+                        const isHighlighted = highlightedWordId === p.wordId;
+                        const isSelected = selectedPiece?.id === p.id;
+                        const isDraggingThis = isPointerDragging && dragState?.sourceId === p.id;
+                        return (
+                            <div
+                                key={p.id}
+                                className={`transition-all duration-200 cursor-pointer
+                                    ${isHighlighted ? 'scale-110 drop-shadow-xl' : ''}
+                                    ${isSelected ? 'scale-110 z-50' : 'hover:scale-105 active:scale-95'}
+                                    ${isDraggingThis ? 'opacity-40' : ''}
+                                `}
+                                style={{
+                                    filter: 'none',
+                                    touchAction: 'none'
+                                }}
+                                onClick={() => handlePieceSelect(p)}
+                                {...getDragProps(p, p.id)}
+                            >
+                                <div className={`transition-all duration-200 rounded-xl`}>
                                     <PuzzleTestPiece
                                         label={p.text}
                                         type="right"
@@ -868,16 +886,41 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                                         dynamicWidth={p.width}
                                         scale={gameState.pieceScale * 0.8}
                                         fontFamily={settings.fontFamily}
+                                        isSelected={isSelected}
                                     />
                                 </div>
-                            );
-                        })}
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* Drag Overlay */}
+            {dragState && (
+                <div
+                    className="fixed z-[10000] pointer-events-none"
+                    style={{
+                        left: dragState.pos.x,
+                        top: dragState.pos.y,
+                        transform: 'translate(-50%, -50%) rotate(2deg)',
+                        filter: 'drop-shadow(0 15px 25px rgba(0,0,0,0.20))'
+                    }}
+                >
+                    <div style={{ transform: 'scale(1.05)' }}>
+                        <PuzzleTestPiece
+                            label={dragState.item.text}
+                            type={dragState.item.type}
+                            colorClass={getPieceColor(dragState.item.color, activeColor)}
+                            dynamicWidth={dragState.item.width}
+                            scale={gameState.pieceScale * 0.8}
+                            fontFamily={settings.fontFamily}
+                            showSeamLine={true}
+                        />
                     </div>
                 </div>
-
-            </div>
-            {/* Manual Advance Button */}
-            {/* Manual Advance Button Removed (Moved to inside list) */}
-        </div >
+            )}
+        </div>
     );
 };
+
+export default PuzzleTestMultiSyllableView;

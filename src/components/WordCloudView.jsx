@@ -7,9 +7,7 @@ import { ProgressBar } from './ProgressBar';
 import { ExerciseHeader } from './ExerciseHeader';
 import { RewardModal } from './shared/RewardModal';
 import { shuffleArray } from '../utils/arrayUtils';
-import { polyfill } from 'mobile-drag-drop';
-import { scrollBehaviourDragImageTranslateOverride } from 'mobile-drag-drop/scroll-behaviour';
-polyfill({ dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride });
+import { usePointerDrag } from '../hooks/usePointerDrag';
 export const WordCloudView = ({ words, settings, setSettings, onClose, title }) => {
     if (!words || words.length === 0) return (<div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col items-center justify-center modal-animate font-sans"><EmptyStateMessage onClose={onClose} IconComponent={Icons.GhostHighlight} /></div>);
 
@@ -29,13 +27,7 @@ export const WordCloudView = ({ words, settings, setSettings, onClose, title }) 
     const [selectedChunk, setSelectedChunk] = useState(null);
     const dragItemRef = useRef(null);
 
-    useEffect(() => {
-        if (!isDragging) return;
-        const preventDefault = (e) => { e.preventDefault(); };
-        document.body.style.overflow = 'hidden';
-        document.addEventListener('touchmove', preventDefault, { passive: false });
-        return () => { document.body.style.overflow = ''; document.removeEventListener('touchmove', preventDefault); };
-    }, [isDragging]);
+    // iPad Fix: Prevent touch scrolling during drag handled by hook
 
     // Initialization & Grouping
     useEffect(() => {
@@ -91,41 +83,37 @@ export const WordCloudView = ({ words, settings, setSettings, onClose, title }) 
         // Logic moved to "Weiter" / "Beenden" button
     }, []);
 
-    const handleDragStart = (e, chunk, source, slotId = null) => { setIsDragging(true); dragItemRef.current = { chunk, source, slotId }; e.dataTransfer.setData('application/json', JSON.stringify(chunk)); e.dataTransfer.effectAllowed = 'move'; setTimeout(() => e.target.classList.add('dragging'), 0); };
-    const handleDragEnd = (e) => { setIsDragging(false); e.target.classList.remove('dragging'); dragItemRef.current = null; document.querySelectorAll('.active-target').forEach(el => el.classList.remove('active-target')); };
-    const handleDrop = (e, targetWordId, targetChunkId) => {
-        setIsDragging(false);
-        e.preventDefault();
-        e.stopPropagation();
-        document.querySelectorAll('.active-target').forEach(el => el.classList.remove('active-target'));
-        const dragData = dragItemRef.current;
-        if (!dragData || dragData.chunk.wordId !== targetWordId) return;
+    const handlePointerDrop = (draggedItem, targetId) => {
+        // draggedItem: { chunk, source, slotId }
+        // targetId: 'cloud_wordID', 'gap_chunkID|wordID'
+        const { chunk, source, slotId } = draggedItem;
 
-        const existingChunk = placedChunks[targetChunkId];
+        if (targetId.startsWith('gap_')) {
+            const [targetChunkId, targetWordId] = targetId.replace('gap_', '').split('|');
+            if (chunk.wordId !== targetWordId) return;
 
-        setPlacedChunks(prev => {
-            const next = { ...prev, [targetChunkId]: dragData.chunk };
-            if (dragData.source === 'slot' && dragData.slotId) delete next[dragData.slotId];
-            return next;
-        });
-
-        // Pool update is handled by useEffect dependency on placedChunks
-    };
-
-    const handleCloudReturnDrop = (e, targetWordId) => {
-        setIsDragging(false);
-        e.preventDefault();
-        e.stopPropagation();
-        const dragData = dragItemRef.current;
-        if (!dragData || dragData.chunk.wordId !== targetWordId) return;
-        if (dragData.source === 'slot') {
             setPlacedChunks(prev => {
-                const next = { ...prev };
-                delete next[dragData.slotId];
+                const next = { ...prev, [targetChunkId]: chunk };
+                if (source === 'slot' && slotId) delete next[slotId];
                 return next;
             });
+        } else if (targetId.startsWith('cloud_')) {
+            const targetWordId = targetId.replace('cloud_', '');
+            if (chunk.wordId !== targetWordId) return;
+
+            if (source === 'slot' && slotId) {
+                setPlacedChunks(prev => {
+                    const next = { ...prev };
+                    delete next[slotId];
+                    return next;
+                });
+            }
         }
     };
+
+    const { getDragProps, registerDropZone, dragState, hoveredZoneId, isDragging: isPointerDragging } = usePointerDrag({
+        onDrop: handlePointerDrop
+    });
 
     // Calculate Progress (Global)
     const progressPercentage = React.useMemo(() => {
@@ -225,9 +213,8 @@ export const WordCloudView = ({ words, settings, setSettings, onClose, title }) 
 
                         return (
                             <div key={word.id}
-                                onDragOver={(e) => e.preventDefault()}
-                                onDrop={(e) => handleCloudReturnDrop(e, word.id)}
-                                className={`rounded-xl border-2 p-4 flex flex-col items-start gap-4 shadow-sm transition-all w-fit max-w-full bg-white ${borderClass}`}
+                                ref={registerDropZone(`cloud_${word.id}`)}
+                                className={`rounded-xl border-2 p-4 flex flex-col items-start gap-4 shadow-sm transition-all w-fit max-w-full bg-white ${borderClass} ${hoveredZoneId === `cloud_${word.id}` ? 'ring-2 ring-blue-300' : ''}`}
                             >
                                 <div className="relative w-full min-w-[12rem] max-w-full min-h-[12rem] flex items-center justify-center">
                                     <div className="absolute inset-0 text-blue-100/50 drop-shadow-sm flex items-center justify-center">
@@ -240,12 +227,11 @@ export const WordCloudView = ({ words, settings, setSettings, onClose, title }) 
                                         {activePool.map((chunk, idx) => {
                                             const rotate = (idx % 2 === 0 ? 1 : -1) * ((idx * 3) % 4 + 1);
                                             return (
-                                                <div key={chunk.id} draggable
-                                                    onDragStart={(e) => handleDragStart(e, chunk, 'pool')}
-                                                    onDragEnd={handleDragEnd}
-                                                    onClick={(e) => { e.stopPropagation(); handleChunkClick(chunk, 'pool'); }}
+                                                <div key={chunk.id}
+                                                    {...getDragProps({ chunk, source: 'pool' }, chunk.id)}
                                                     onContextMenu={(e) => e.preventDefault()}
-                                                    className={`cursor-grab active:cursor-grabbing bg-white border-2 border-blue-400 shadow-md rounded-lg flex items-center justify-center font-bold text-slate-800 hover:scale-110 active:scale-95 transition-all select-none ${selectedChunk?.id === chunk.id ? 'ring-4 ring-blue-500 scale-125 z-50' : 'z-20'}`}
+                                                    onClick={(e) => { e.stopPropagation(); handleChunkClick(chunk, 'pool'); }}
+                                                    className={`cursor-grab active:cursor-grabbing bg-white border-2 border-blue-400 shadow-md rounded-lg flex items-center justify-center font-bold text-slate-800 hover:scale-110 active:scale-95 transition-all select-none ${selectedChunk?.id === chunk.id ? 'ring-4 ring-blue-500 scale-125 z-50' : 'z-20'} ${isPointerDragging && dragState?.item?.chunk?.id === chunk.id ? 'opacity-40' : ''}`}
                                                     style={{
                                                         fontFamily: settings.fontFamily,
                                                         fontSize: `${Math.max(16, settings.fontSize * 0.75)}px`,
@@ -299,9 +285,20 @@ export const WordCloudView = ({ words, settings, setSettings, onClose, title }) 
                                                     {sylObj.chunks.map((chunk) => {
                                                         const placed = placedChunks[chunk.id];
                                                         return (
-                                                            <div key={chunk.id} onDragOver={(e) => e.preventDefault()} onDragEnter={(e) => { e.preventDefault(); e.currentTarget.classList.add('active-target') }} onDragLeave={(e) => e.currentTarget.classList.remove('active-target')} onDrop={(e) => handleDrop(e, word.id, chunk.id)} onClick={() => handleSlotClick(word.id, chunk.id)} className={`cloud-drop-target cursor-pointer ${placed ? 'filled' : ''} px-1 flex items-center justify-center transition-all ${selectedChunk && selectedChunk.wordId === word.id ? 'ring-2 ring-blue-300 ring-offset-2 animate-pulse' : ''}`} style={{ minWidth: `${Math.max(2.5, settings.fontSize * 0.08)}rem`, height: `${settings.fontSize * 1.5}px` }}>
+                                                            <div key={chunk.id}
+                                                                ref={registerDropZone(`gap_${chunk.id}|${word.id}`)}
+                                                                onClick={() => handleSlotClick(word.id, chunk.id)}
+                                                                className={`cloud-drop-target cursor-pointer ${placed ? 'filled' : ''} px-1 flex items-center justify-center transition-all ${selectedChunk && selectedChunk.wordId === word.id ? 'ring-2 ring-blue-300 ring-offset-2 animate-pulse' : ''} ${hoveredZoneId === `gap_${chunk.id}|${word.id}` ? 'bg-blue-100 ring-2 ring-blue-200' : ''}`}
+                                                                style={{ minWidth: `${Math.max(2.5, settings.fontSize * 0.08)}rem`, height: `${settings.fontSize * 1.5}px` }}
+                                                            >
                                                                 {placed ? (
-                                                                    <div draggable onDragStart={(e) => handleDragStart(e, placed, 'slot', chunk.id)} onDragEnd={handleDragEnd} onClick={(e) => { e.stopPropagation(); handleChunkClick(placed, 'slot', chunk.id); }} className={`cursor-grab active:cursor-grabbing font-bold animate-[popIn_0.3s_ease-out] select-none flex items-stretch h-full overflow-hidden rounded-lg ${contentTextColor}`} style={{ fontFamily: settings.fontFamily, fontSize: `${settings.fontSize}px` }}>
+                                                                    <div
+                                                                        {...getDragProps({ chunk: placed, source: 'slot', slotId: chunk.id }, chunk.id)}
+                                                                        onContextMenu={(e) => e.preventDefault()}
+                                                                        onClick={(e) => { e.stopPropagation(); handleChunkClick(placed, 'slot', chunk.id); }}
+                                                                        className={`cursor-grab active:cursor-grabbing font-bold animate-[popIn_0.3s_ease-out] select-none flex items-stretch h-full overflow-hidden rounded-lg ${contentTextColor} ${isPointerDragging && dragState?.item?.slotId === chunk.id ? 'opacity-40' : ''}`}
+                                                                        style={{ fontFamily: settings.fontFamily, fontSize: `${settings.fontSize}px` }}
+                                                                    >
                                                                         {placed.text.split('').map((char, cI) => {
                                                                             const isVowel = /[aeiouyäöüAEIOUYÄÖÜ]/.test(char);
                                                                             // Ensure background for vowels doesn't conflict with text color mode? 
@@ -356,6 +353,33 @@ export const WordCloudView = ({ words, settings, setSettings, onClose, title }) 
                     </div>
                 )}
             </div>
+
+            {/* Floating Drag Overlay */}
+            {dragState && (
+                <div
+                    className="fixed z-[10000] pointer-events-none"
+                    style={{
+                        left: dragState.pos.x - dragState.offset.x,
+                        top: dragState.pos.y - dragState.offset.y,
+                        width: dragState.cloneRect.width,
+                        height: dragState.cloneRect.height,
+                        transform: 'scale(1.05) rotate(0deg)',
+                        filter: 'drop-shadow(0 15px 30px rgba(0,0,0,0.25))'
+                    }}
+                >
+                    <div className={`bg-white border-2 border-blue-400 rounded-lg flex items-center justify-center font-bold text-slate-800 shadow-2xl`}
+                        style={{
+                            width: '100%',
+                            height: '100%',
+                            fontFamily: settings.fontFamily,
+                            fontSize: dragState.cloneStyle.fontSize || (settings.fontSize * 0.75) + 'px',
+                            padding: dragState.cloneStyle.padding || '0.2em 0.5em',
+                            color: dragState.cloneStyle.color
+                        }}>
+                        {dragState.item.chunk.text}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

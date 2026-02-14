@@ -8,9 +8,9 @@ import { HorizontalLines } from './shared/UIComponents';
 import { usePreventTouchScroll } from '../hooks/usePreventTouchScroll';
 import { ExerciseHeader } from './ExerciseHeader';
 import { RewardModal } from './shared/RewardModal';
-import { polyfill } from 'mobile-drag-drop';
-import { scrollBehaviourDragImageTranslateOverride } from 'mobile-drag-drop/scroll-behaviour';
-polyfill({ dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride });
+
+import { usePointerDrag } from '../hooks/usePointerDrag';
+// Removed polyfill import
 export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialSound = false, title, highlightedIndices = new Set(), wordColors = {} }) => {
     const [mode, setMode] = useState('vowels'); // 'vowels', 'consonants', or 'marked'
     const [currentGroupIdx, setCurrentGroupIdx] = useState(0);
@@ -25,10 +25,8 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
     const [wordsPerStage, setWordsPerStage] = useState(5);
     const [pendingWordsCount, setPendingWordsCount] = useState(5);
     const debounceTimerRef = useRef(null);
-    const dragItemRef = useRef(null);
 
-    // iPad Fix: Prevent touch scrolling during drag
-    usePreventTouchScroll(isDragging);
+    // iPad Fix: Prevent touch scrolling during drag handled by hook
 
     // Audio support
     const speakWord = (text) => {
@@ -328,82 +326,49 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
     }, [currentWords, mode, isInitialSound]);
 
 
-    // Background Drop Handler (for removing letters)
-    const handleBackgroundDrop = (e) => {
-        e.preventDefault();
-        const dragData = dragItemRef.current;
-        // Only handle drops coming from a gap
-        if (!dragData || dragData.source !== 'gap') return;
+    const handlePointerDrop = (dragItem, targetId) => {
+        // dragItem: { letter, source, gapId }
+        // targetId: 'gap_XYZ', 'pool', 'background'
 
-        // Remove from gap and return to pool
-        setPlacedLetters(prev => {
-            const next = { ...prev };
-            delete next[dragData.gapId];
-            return next;
-        });
+        const { letter, source, gapId } = dragItem;
 
-        setSpeicherLetters(prev => [...prev, dragData.letter]);
-    };
+        if (targetId === 'background' || targetId === 'pool') {
+            // Drop to background/pool -> Remove from gap
+            if (source === 'gap' && gapId) {
+                setPlacedLetters(prev => {
+                    const next = { ...prev };
+                    delete next[gapId];
+                    return next;
+                });
+                setSpeicherLetters(prev => [...prev, letter]);
+            }
+        } else if (targetId && targetId.startsWith('gap_')) {
+            const targetGapId = targetId.replace('gap_', '');
 
-    const handleDragStart = (e, letter, source, gapId = null) => {
-        setIsDragging(true);
-        dragItemRef.current = { letter, source, gapId };
-        e.dataTransfer.setData('application/json', JSON.stringify(letter));
-        e.dataTransfer.effectAllowed = 'move';
-        setTimeout(() => e.target.classList.add('opacity-40'), 0);
-    };
+            // Allow same logic as original handleDrop
+            const existingLetter = placedLetters[targetGapId];
 
-    const handleDragEnd = (e) => {
-        setIsDragging(false);
-        if (e.target.classList) e.target.classList.remove('opacity-40');
-        dragItemRef.current = null;
-        document.querySelectorAll('.active-target').forEach(el => el.classList.remove('active-target'));
-    };
+            setPlacedLetters(prev => {
+                const next = { ...prev };
+                next[targetGapId] = letter;
+                if (source === 'gap' && gapId) delete next[gapId];
+                return next;
+            });
 
-    // Haptic Feedback für iPad
-    const triggerHapticFeedback = () => {
-        if ('vibrate' in navigator) {
-            navigator.vibrate(50);
+            setSpeicherLetters(prev => {
+                let next = prev;
+                if (source === 'pool') next = next.filter(l => l.poolId !== letter.poolId);
+                if (existingLetter) next = [...next, existingLetter];
+                return next;
+            });
         }
     };
 
-    const handleDrop = (e, targetGapId, targetText) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const dragData = dragItemRef.current;
-        if (!dragData) return;
+    const { getDragProps, registerDropZone, dragState, hoveredZoneId, isDragging: isPointerDragging } = usePointerDrag({
+        onDrop: handlePointerDrop
+    });
 
-        // CHANGED: Allow incorrect insertion (removed strict check)
-        // if (dragData.letter.text.toLowerCase() !== targetText.toLowerCase()) return;
-
-        // Haptic Feedback bei erfolgreichem Drop
-        triggerHapticFeedback();
-
-        const existingLetter = placedLetters[targetGapId];
-
-        setPlacedLetters(prev => {
-            const next = { ...prev };
-            next[targetGapId] = dragData.letter;
-            if (dragData.source === 'gap' && dragData.gapId) delete next[dragData.gapId];
-            return next;
-        });
-
-        setSpeicherLetters(prev => {
-            let next = prev;
-            if (dragData.source === 'pool') next = next.filter(l => l.poolId !== dragData.letter.poolId);
-            if (existingLetter) next = [...next, existingLetter];
-            return next;
-        });
-    };
-
-    const handleSpeicherDrop = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const dragData = dragItemRef.current;
-        if (!dragData || dragData.source !== 'gap') return;
-        setPlacedLetters(prev => { const next = { ...prev }; delete next[dragData.gapId]; return next; });
-        setSpeicherLetters(prev => [...prev, dragData.letter]);
-    };
+    // Old handlers removed (handleBackgroundDrop, handleDragStart, handleDragEnd, handleDrop, handleSpeicherDrop)
 
     // Click-to-Place Handlers
     const handleSpeicherLetterClick = (letter) => {
@@ -426,9 +391,6 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
         }
 
         // CHANGED: Allow incorrect insertion via Click-to-Place
-        // Haptic Feedback bei Click-to-Place
-        triggerHapticFeedback();
-
         const letterToPlace = selectedLetter;
         const existingLetter = placedLetters[gapId];
 
@@ -586,8 +548,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                 {/* Content Column - Scrolls independently - Added background drop handler */}
                 <div
                     className="flex-1 overflow-y-auto custom-scroll min-h-full pt-12 pb-48 px-8 flex flex-col items-center justify-start gap-12 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent"
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={handleBackgroundDrop}
+                    ref={registerDropZone('background')}
                 >
                     <div className="w-full max-w-4xl space-y-4">
                         {currentWords.map((word) => {
@@ -655,10 +616,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                                                         return (
                                                             <div
                                                                 key={chunk.id}
-                                                                onDragOver={(e) => e.preventDefault()}
-                                                                onDragEnter={(e) => { e.preventDefault(); e.currentTarget.classList.add('active-target'); }}
-                                                                onDragLeave={(e) => { e.currentTarget.classList.remove('active-target'); }}
-                                                                onDrop={(e) => { e.currentTarget.classList.remove('active-target'); handleDrop(e, chunk.id, chunk.text); }}
+                                                                ref={registerDropZone(`gap_${chunk.id}`)}
                                                                 onClick={() => handleGapClick(chunk.id, chunk.text)}
                                                                 className={`relative flex items-center justify-center transition-all mx-2 rounded-t-xl gap-zone cursor-pointer pb-0 
                                                                     ${placed && speicherLetters.length === 0
@@ -669,15 +627,13 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                                                                             ? 'border-b-4 border-transparent'
                                                                             : 'border-b-4 border-slate-400 bg-slate-50/50 hover:bg-slate-100 hover:border-slate-500'
                                                                     }
-                                                                    ${selectedLetter ? 'ring-2 ring-blue-300 ring-offset-2 animate-pulse' : ''}`}
+                                                                    ${selectedLetter ? 'ring-2 ring-blue-300 ring-offset-2 animate-pulse' : ''} ${hoveredZoneId === `gap_${chunk.id}` ? 'bg-blue-100/50 ring-2 ring-blue-200' : ''}`}
                                                                 style={{ minWidth: `${Math.max(1.2, chunk.text.length * 0.9)}em`, height: '1.75em' }}
                                                             >
                                                                 {placed ? (
                                                                     <div
-                                                                        draggable
-                                                                        onDragStart={(e) => handleDragStart(e, placed, 'gap', chunk.id)}
-                                                                        onDragEnd={handleDragEnd}
-                                                                        className={`font-bold transition-all px-1 rounded-sm cursor-grab active:cursor-grabbing animate-[popIn_0.3s_ease-out] select-none ${showYellowStyle ? 'bg-yellow-100 mx-px' : ''} ${placedTextClass}`}
+                                                                        {...getDragProps({ letter: placed, source: 'gap', gapId: chunk.id }, chunk.id)}
+                                                                        className={`font-bold transition-all px-1 rounded-sm cursor-grab active:cursor-grabbing animate-[popIn_0.3s_ease-out] select-none ${showYellowStyle ? 'bg-yellow-100 mx-px' : ''} ${placedTextClass} ${isPointerDragging && dragState?.sourceId === chunk.id ? 'opacity-40' : ''}`}
                                                                     >
                                                                         {placed.text}
                                                                     </div>
@@ -720,7 +676,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                     )}
                 </div>
 
-                <div className={`${isInitialSound ? 'w-[200px]' : 'w-[30%]'} h-full flex flex-col bg-slate-200/50 border-l border-r border-slate-300 shadow-inner z-20`} onDragOver={(e) => e.preventDefault()} onDrop={handleSpeicherDrop}>
+                <div className={`${isInitialSound ? 'w-[200px]' : 'w-[30%]'} h-full flex flex-col bg-slate-200/50 border-l border-r border-slate-300 shadow-inner z-20`} ref={registerDropZone('pool')}>
                     <div className="p-4 bg-white/80 border-b border-slate-200 shadow-sm space-y-3">
                         <div className="flex items-center justify-between">
                             <span className="font-bold text-slate-600 flex items-center gap-2 uppercase tracking-wider text-[10px]">Speicher</span>
@@ -737,12 +693,10 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                             return (
                                 <div
                                     key={l.poolId}
-                                    draggable
-                                    onDragStart={(e) => handleDragStart(e, l, 'pool')}
-                                    onDragEnd={handleDragEnd}
+                                    {...getDragProps({ letter: l, source: 'pool' }, l.poolId)}
                                     onClick={() => handleSpeicherLetterClick(l)}
                                     onContextMenu={(e) => e.preventDefault()}
-                                    className={`border-2 ${tileTextColor} font-bold rounded-2xl transition-all flex items-center justify-center p-3 cursor-grab active:cursor-grabbing hover:scale-110 bg-white border-slate-300 hover:translate-y-[2px] draggable-piece ${isVowelTile ? 'bg-yellow-100 border-yellow-400' : ''} ${selectedLetter?.poolId === l.poolId ? 'selected-piece ring-4 ring-blue-500 !scale-110 z-50' : ''}`}
+                                    className={`border-2 ${tileTextColor} font-bold rounded-2xl transition-all flex items-center justify-center p-3 cursor-grab active:cursor-grabbing hover:scale-110 bg-white border-slate-300 hover:translate-y-[2px] draggable-piece ${isVowelTile ? 'bg-yellow-100 border-yellow-400' : ''} ${selectedLetter?.poolId === l.poolId ? 'selected-piece ring-4 ring-blue-500 !scale-110 z-50' : ''} ${isPointerDragging && dragState?.sourceId === l.poolId ? 'opacity-40' : ''}`}
                                     style={{ fontSize: `${Math.max(20, settings.fontSize * 0.8)}px`, fontFamily: settings.fontFamily, minWidth: '3.5rem' }}
                                 >
                                     {l.text}
@@ -752,6 +706,33 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
 
                     </div>
                 </div>
+
+                {/* Floating Drag Overlay */}
+                {dragState && (
+                    <div
+                        className="fixed z-[10000] pointer-events-none"
+                        style={{
+                            left: dragState.pos.x - dragState.offset.x,
+                            top: dragState.pos.y - dragState.offset.y,
+                            width: dragState.cloneRect.width,
+                            height: dragState.cloneRect.height,
+                            transform: 'scale(1.03) rotate(1deg)',
+                            filter: 'drop-shadow(0 15px 25px rgba(0,0,0,0.20))'
+                        }}
+                    >
+                        <div className={`border-2 font-bold rounded-xl flex items-center justify-center bg-white shadow-xl ${dragState.item.letter.text.length > 2 ? 'px-3' : 'px-2'}`}
+                            style={{
+                                width: '100%',
+                                height: '100%',
+                                fontFamily: settings.fontFamily,
+                                fontSize: dragState.cloneStyle.fontSize || settings.fontSize + 'px',
+                                // Inherit colors? 
+                                color: dragState.cloneStyle?.color
+                            }}>
+                            {dragState.item.letter.text}
+                        </div>
+                    </div>
+                )}
             </div>
         </div >
     );

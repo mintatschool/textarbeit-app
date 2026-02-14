@@ -45,6 +45,8 @@ export const Icons = {
     // Untermenü-Icons
     Grid2x2: (p) => <Icon {...p} path={<><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /></>} />,
     Puzzle: (p) => <Icon {...p} path={<path d="M20.5 11H18V7c0-1.1-.9-2-2-2h-4V3.5C12 2.12 10.88 1 9.5 1S7 2.12 7 3.5V5H3c-1.1 0-2 .9-2 2v4h1.5C3.88 11 5 12.12 5 13.5S3.88 16 2.5 16H1v4c0 1.1.9 2 2 2h4v-1.5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5V22h4c1.1 0 2-.9 2-2v-4h1.5c1.38 0 2.5-1.12 2.5-2.5S21.88 11 20.5 11z" />} />,
+    VerbPuzzle: (p) => <Icon {...p} path={<g transform="translate(1, 1) scale(0.9)"><path d="M21.5 12H19V8c0-1.1-.9-2-2-2h-4V4.5C13 3.12 11.88 2 10.5 2S8 3.12 8 4.5V6H4c-1.1 0-2 .9-2 2v4h1.5C4.88 12 6 13.12 6 14.5S4.88 17 3.5 17H2v4c0 1.1.9 2 2 2h4v-1.5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5V23h4c1.1 0 2-.9 2-2v-4h1.5c1.38 0 2.5-1.12 2.5-2.5S22.88 12 21.5 12z" strokeWidth="2" /><path d="M9 10l3 3-3 3" strokeWidth="2.5" /><path d="M13 13h3" strokeWidth="2.5" /></g>} />,
+    VerbWriting: (p) => <Icon {...p} path={<g transform="translate(1, 1) scale(0.9)"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" strokeWidth="2" /><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z" strokeWidth="2" /><path d="M9 10l3 3-3 3" strokeWidth="2.5" /><path d="M13 13h3" strokeWidth="2.5" /></g>} />,
     Stairs: (p) => <Icon {...p} path={<polyline points="19 5 19 19 5 19 5 15 9 15 9 11 13 11 13 7 19 7" />} />,
     Cloud: (p) => <Icon {...p} path={<path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" />} />,
     Scissors: (p) => <Icon {...p} path={<><circle cx="6" cy="6" r="3" /><circle cx="6" cy="18" r="3" /><line x1="20" y1="4" x2="8.12" y2="15.88" /><line x1="14.47" y1="14.48" x2="20" y2="20" /><line x1="8.12" y1="8.12" x2="12" y2="12" /></>} />,
@@ -236,6 +238,25 @@ export const Icons = {
     File: (p) => <Icon {...p} path={<><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></>} />,
     Files: (p) => <Icon {...p} path={<><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /><path d="M8 13h2" /><path d="M8 17h2" /></>} />,
     FileText: (p) => <Icon {...p} path={<><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><line x1="10" y1="9" x2="8" y2="9" /></>} />,
+
+    // Composite Icon: Document + Edit2 Pen
+    WritingMenu: (p) => <Icon {...p} path={<>
+        {/* Document Box (faded) */}
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" className="opacity-50" />
+        {/* Pen (Edit2) */}
+        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" fill="currentColor" stroke="currentColor" strokeWidth="2" />
+    </>} />,
+
+    // Multi-color Wortarten Icon
+    Wortarten: (p) => <Icon {...p} viewBox="0 0 24 24" fill="none" stroke="none" path={<>
+        {/* Blue Top */}
+        <rect x="7" y="2" width="10" height="10" rx="3" fill="#3b82f6" transform="rotate(-5 12 7)" />
+        {/* Red Bottom Left */}
+        <rect x="3" y="11" width="10" height="10" rx="3" fill="#ef4444" transform="rotate(-10 8 16)" />
+        {/* Green Bottom Right */}
+        <rect x="13" y="10" width="10" height="10" rx="3" fill="#22c55e" transform="rotate(5 18 15)" />
+    </>} />,
+
     // New Icons from import/svg-grafiken
     SilbenKorrigieren: (p) => <Icon {...p} viewBox="0 100 800 600" fill="none" stroke="currentColor" strokeWidth="50" path={<>
         <path d="M 666.68 127.84 C 666.68 127.84 674.73 120.34 682.72 116.67 C 690.71 112.99 692.87 112.44 701.65 111.76 C 710.42 111.07 712.64 111.28 721.11 113.67 C 729.58 116.05 731.59 117.02 738.71 122.19 C 745.83 127.35 747.38 128.95 752.26 136.26 C 757.15 143.56 758.04 145.60 760.09 154.14 C 762.14 162.68 761.49 164.85 761.23 173.63 C 761.10 178.03 760.88 179.13 759.22 183.21 C 755.93 191.36 756.46 194.29 750.33 200.60 C 652.42 301.42 610.80 366.61 479.49 471.28 C 441.47 501.59 375.16 499.68 375.16 499.68 C 375.16 499.68 372.79 496.91 373.40 494.55 C 383.10 456.53 372.62 428.89 402.89 391.05 C 505.54 262.70 574.35 219.96 666.68 127.84 L 666.68 127.84 Z" />

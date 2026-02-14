@@ -4,6 +4,7 @@ import TwoPartPuzzleLayout from './TwoPartPuzzleLayout';
 import { useTwoPartPuzzle } from '../hooks/useTwoPartPuzzle';
 import { speak, hasAudio } from '../utils/speech';
 import availableSyllables from '../utils/available_syllables.json';
+import { getCorrectCasing } from '../utils/wordCasingUtils';
 
 // Arrow-style ModeIcon for Silbenbau (different from puzzle pieces)
 const ArrowModeIcon = ({ mode, active }) => {
@@ -66,10 +67,10 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [], ti
             words.forEach(w => {
                 if (w && Array.isArray(w.syllables)) {
                     w.syllables.forEach(s => {
-                        if (typeof s === 'string') candidateSyllables.push(s);
+                        if (typeof s === 'string') candidateSyllables.push(getCorrectCasing(s));
                     });
                 } else if (w && w.word) {
-                    candidateSyllables.push(w.word);
+                    candidateSyllables.push(getCorrectCasing(w.word));
                 }
             });
         }
@@ -77,12 +78,13 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [], ti
         // Filter loop
         candidateSyllables.forEach(syl => {
             if (!syl || typeof syl !== 'string') return;
-            const cleanSyl = syl.toLowerCase().trim();
+            const cleanSyl = syl.trim();
+            const lowerSyl = cleanSyl.toLowerCase();
             if (cleanSyl.length < 2) return;
-            if (seen.has(cleanSyl)) return;
+            if (seen.has(lowerSyl)) return;
 
             // Must have audio
-            if (!hasAudio(cleanSyl)) return;
+            if (!hasAudio(lowerSyl)) return;
 
             // Must consist of (Letter/Cluster) + (Letter/Cluster)
             let foundSplit = null;
@@ -90,8 +92,8 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [], ti
                 const partA = cleanSyl.substring(0, i);
                 const partB = cleanSyl.substring(i);
 
-                const isPartAValid = partA.length === 1 || allowedClusters.has(partA);
-                const isPartBValid = partB.length === 1 || allowedClusters.has(partB);
+                const isPartAValid = partA.length === 1 || allowedClusters.has(partA.toLowerCase());
+                const isPartBValid = partB.length === 1 || allowedClusters.has(partB.toLowerCase());
 
                 if (isPartAValid && isPartBValid) {
                     foundSplit = {
@@ -105,7 +107,7 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [], ti
 
             if (foundSplit) {
                 valid.push(foundSplit);
-                seen.add(cleanSyl);
+                seen.add(lowerSyl);
             }
         });
 
@@ -157,6 +159,7 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [], ti
             skipStageConfirmation={true}
             manualAdvance={true}
             maxWordsPerStage={validItems.length}
+            forceWhiteText={true}
         />
     );
 };

@@ -4,9 +4,8 @@ import { Icons } from './Icons';
 import { ProgressBar } from './ProgressBar';
 import { EmptyStateMessage } from './EmptyStateMessage';
 import { RewardModal } from './shared/RewardModal';
-import { polyfill } from 'mobile-drag-drop';
-import { scrollBehaviourDragImageTranslateOverride } from 'mobile-drag-drop/scroll-behaviour';
-polyfill({ dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride });
+import { usePointerDrag } from '../hooks/usePointerDrag';
+
 // --- UTILS ---
 const splitText = (text, mode) => {
     if (mode === 'sentence') {
@@ -44,19 +43,7 @@ export const SentencePuzzleView = ({ text, mode = 'sentence', onClose, settings,
     const [pieces, setPieces] = useState([]);
     const [status, setStatus] = useState('idle'); // idle, correct, wrong
     const [isShaking, setIsShaking] = useState(false);
-    const [isDragging, setIsDragging] = useState(false);
-
-    // iPad Fix: Prevent touch scrolling during drag
-    useEffect(() => {
-        if (!isDragging) return;
-        const preventDefault = (e) => { e.preventDefault(); };
-        document.body.style.overflow = 'hidden';
-        document.addEventListener('touchmove', preventDefault, { passive: false });
-        return () => {
-            document.body.style.overflow = '';
-            document.removeEventListener('touchmove', preventDefault);
-        };
-    }, [isDragging]);
+    // iPad scroll prevention handled by hook
 
     // Initialize
     useEffect(() => {
@@ -91,34 +78,14 @@ export const SentencePuzzleView = ({ text, mode = 'sentence', onClose, settings,
         setStatus('idle');
     }, [text, mode]);
 
-    // Drag & Drop
-    const dragItem = useRef(null);
-    const dragOverItem = useRef(null);
+    // Drag & Drop via usePointerDrag
+    const handleDrop = (dragItem, targetId) => {
+        // dragItem: { ...piece, sourceIndex }
+        // targetId: index
+        const dI = dragItem.sourceIndex;
+        const dO = Number(targetId);
 
-    const handleDragStart = (e, position) => {
-        setIsDragging(true);
-        dragItem.current = position;
-
-        // Safari/iPad Fix: setData is mandatory to trigger drag
-        e.dataTransfer.setData('text/plain', '');
-        e.dataTransfer.effectAllowed = 'move';
-        // Add dragging class for visuals
-        setTimeout(() => e.target.classList.add('dragging'), 0);
-    };
-
-    const handleDragEnter = (e, position) => {
-        dragOverItem.current = position;
-        e.preventDefault();
-        // Add visual indicator
-    };
-
-    const handleDragEnd = (e) => {
-        setIsDragging(false);
-        e.target.classList.remove('dragging');
-        const dI = dragItem.current;
-        const dO = dragOverItem.current;
-
-        if (dI !== null && dO !== null && dI !== dO) {
+        if (dI !== undefined && !isNaN(dO) && dI !== dO) {
             const newPieces = [...pieces];
             const draggedContent = newPieces[dI];
             newPieces.splice(dI, 1);
@@ -126,10 +93,11 @@ export const SentencePuzzleView = ({ text, mode = 'sentence', onClose, settings,
             setPieces(newPieces);
             setStatus('idle');
         }
-
-        dragItem.current = null;
-        dragOverItem.current = null;
     };
+
+    const { getDragProps, registerDropZone, dragState, hoveredZoneId, isDragging } = usePointerDrag({
+        onDrop: handleDrop
+    });
 
     const checkOrder = () => {
         const isCorrect = pieces.every((p, i) => p.originalIndex === i);
@@ -187,14 +155,13 @@ export const SentencePuzzleView = ({ text, mode = 'sentence', onClose, settings,
                     {pieces.map((piece, idx) => (
                         <div
                             key={piece.id}
-                            draggable
-                            onDragStart={(e) => handleDragStart(e, idx)}
-                            onDragEnter={(e) => handleDragEnter(e, idx)}
-                            onDragEnd={handleDragEnd}
-                            onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; return false; }}
-                            className={`${piece.color} p-6 rounded-xl border-l-4 shadow-sm hover:shadow-md hover:scale-[1.01] transition-all cursor-grab active:cursor-grabbing flex gap-4 items-start bg-opacity-50 select-none`}
+                            ref={registerDropZone(idx)}
+                            {...getDragProps({ ...piece, sourceIndex: idx }, idx)}
+                            className={`${piece.color} p-6 rounded-xl border-l-4 shadow-sm hover:shadow-md transition-all flex gap-4 items-start bg-opacity-50 select-none ${isDragging && dragState?.sourceId === idx ? 'opacity-40' : 'cursor-grab active:cursor-grabbing hover:scale-[1.01]'} ${hoveredZoneId === String(idx) && dragState?.sourceId !== idx ? 'scale-[1.02] shadow-lg ring-2 ring-blue-300' : ''}`}
+                            onContextMenu={(e) => e.preventDefault()}
+                            style={{ touchAction: 'pan-y' }}
                         >
-                            <div className="text-slate-300 cursor-grab active:cursor-grabbing shrink-0 flex items-center justify-center w-8">
+                            <div className="drag-handle text-slate-300 cursor-grab active:cursor-grabbing shrink-0 flex items-center justify-center w-8" style={{ touchAction: 'none' }}>
                                 <Icons.MoveVertical size={28} />
                             </div>
                             <div
@@ -226,6 +193,55 @@ export const SentencePuzzleView = ({ text, mode = 'sentence', onClose, settings,
                         </div>
                     ))}
                 </div>
+
+                {/* Floating Drag Overlay */}
+                {dragState && (
+                    <div
+                        className="fixed z-[10000] pointer-events-none"
+                        style={{
+                            left: dragState.pos.x - dragState.offset.x,
+                            top: dragState.pos.y - dragState.offset.y,
+                            width: dragState.cloneRect.width,
+                            height: dragState.cloneRect.height,
+                            transform: 'scale(1.02) rotate(0.5deg)',
+                            filter: 'drop-shadow(0 15px 25px rgba(0,0,0,0.15))'
+                        }}
+                    >
+                        <div
+                            className={`${dragState.item.color} p-6 rounded-xl border-l-4 shadow-xl flex gap-4 items-start bg-opacity-90`}
+                        >
+                            <div className="text-slate-400 shrink-0 flex items-center justify-center w-8">
+                                <Icons.MoveVertical size={28} />
+                            </div>
+                            <div
+                                className="flex-1 text-slate-800 whitespace-pre-wrap leading-relaxed"
+                                style={{
+                                    fontFamily: settings.fontFamily,
+                                    fontSize: `${settings.fontSize}px`
+                                }}
+                            >
+                                <div className="flex flex-wrap items-start" style={{ columnGap: `${(settings.wordSpacing ?? 0.5)}em`, rowGap: '0.2em' }}>
+                                    {dragState.item.text.split(/(\s+)/).map((seg, sidx) => {
+                                        if (seg.match(/\n/)) return <div key={sidx} className="w-full h-0" />;
+                                        if (seg.trim().length === 0) return null;
+                                        return (
+                                            <Word
+                                                key={sidx}
+                                                word={seg}
+                                                startIndex={0}
+                                                settings={settings}
+                                                hyphenator={hyphenator}
+                                                isReadingMode={true}
+                                                forceNoMargin={true}
+                                                forceShowSyllables={true}
+                                            />
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Footer Actions */}

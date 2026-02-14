@@ -11,6 +11,7 @@ export const SettingsModal = ({ settings, setSettings, onExport, onImport, logo,
     const [tableOrientation, setTableOrientation] = useState('landscape');
     const [showClusterManager, setShowClusterManager] = useState(false);
     const [newCluster, setNewCluster] = useState('');
+    const [qrTitle, setQrTitle] = useState('');
 
     // Close on ESC
     useEffect(() => {
@@ -338,9 +339,10 @@ export const SettingsModal = ({ settings, setSettings, onExport, onImport, logo,
                                             <option value="text">Text (Standard)</option>
                                             <option value="list">Liste / Tabelle</option>
                                             <option value="carpet">Silbenteppich</option>
+                                            <option value="qrcode">QR-Code(s)</option>
                                         </select>
                                         <button
-                                            onClick={() => onPrint(printType, (printType === 'list' || printType === 'carpet') ? { orientation: tableOrientation } : { orientation: 'auto' })}
+                                            onClick={() => onPrint(printType, (printType === 'list' || printType === 'carpet') ? { orientation: tableOrientation } : (printType === 'qrcode' ? { orientation: 'portrait', title: qrTitle } : { orientation: 'auto' }))}
                                             className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-4 flex items-center justify-center transition shadow-sm min-touch-target"
                                             title="Drucken"
                                         >
@@ -362,6 +364,19 @@ export const SettingsModal = ({ settings, setSettings, onExport, onImport, logo,
                                             >
                                                 <Icons.FileText className="rotate-0" size={16} /> Querformat
                                             </button>
+                                        </div>
+                                    )}
+
+                                    {printType === 'qrcode' && (
+                                        <div className="p-3 bg-slate-100 rounded-xl animate-in slide-in-from-top-2 duration-200">
+                                            <label className="block text-xs font-bold text-slate-500 mb-1">Titel (optional)</label>
+                                            <input
+                                                type="text"
+                                                value={qrTitle}
+                                                onChange={(e) => setQrTitle(e.target.value)}
+                                                placeholder="z.B. Hausaufgabe Mathe"
+                                                className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm font-bold text-slate-800 outline-none focus:border-blue-500"
+                                            />
                                         </div>
                                     )}
                                 </div>

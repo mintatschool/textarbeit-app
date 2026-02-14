@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Icons } from './Icons';
 import { EmptyStateMessage } from './EmptyStateMessage';
 import { WordListCell } from './WordListCell';
 import { usePreventTouchScroll } from '../hooks/usePreventTouchScroll';
 import { polyfill } from 'mobile-drag-drop';
 import { scrollBehaviourDragImageTranslateOverride } from 'mobile-drag-drop/scroll-behaviour';
-// polyfill({ dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride });
+polyfill({ dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride });
 export const WordListView = ({ words, columnsState, setColumnsState, onClose, settings, setSettings, onRemoveWord, onWordUpdate, onUpdateWordColor, wordColors = {}, colorHeaders = {}, setColorHeaders, colorPalette = [], title, groups = [], sortByColor, setSortByColor, columnCount, setColumnCount, updateTimestamp, activeColor, isTextMarkerMode, onToggleLetterMarker, toggleHighlights, highlightedIndices }) => {
     if (!words || words.length === 0) return (<div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col items-center justify-center modal-animate font-sans"><EmptyStateMessage onClose={onClose} /></div>);
     const [isDragging, setIsDragging] = useState(false);
@@ -32,6 +32,111 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
 
     // iPad Fix: Prevent touch scrolling during drag
     usePreventTouchScroll(isDragging);
+
+    // --- Pointer-based drag state (iPad-friendly, replaces HTML5 drag for word items) ---
+    const [pointerDragState, setPointerDragState] = useState(null); // { word, colId, idx, offset, pos, cloneRect }
+    const columnElsRef = useRef({}); // { colId: HTMLElement }
+    const [pointerHoveredColId, setPointerHoveredColId] = useState(null);
+
+    // Valid ref for drop logic (avoid TDZ)
+    const handleDropOnItemLogicRef = useRef(null);
+
+    // Prevent page scroll during pointer drag (iPad)
+    useEffect(() => {
+        if (!pointerDragState) return;
+        const prevent = (e) => e.preventDefault();
+        document.addEventListener('touchmove', prevent, { passive: false });
+        return () => document.removeEventListener('touchmove', prevent);
+    }, [pointerDragState]);
+
+    // Global Pointer Listeners (active only during drag)
+    useEffect(() => {
+        if (!pointerDragState) return;
+
+        const handleWindowPointerMove = (e) => {
+            e.preventDefault();
+            setPointerDragState(prev => prev ? { ...prev, pos: { x: e.clientX, y: e.clientY } } : null);
+
+            // Hit-test columns logic duplicated here for window listener
+            // (Or refactor to shared function, but direct here is fine for perf)
+            let foundCol = null;
+            for (const [colId, colEl] of Object.entries(columnElsRef.current)) {
+                if (!colEl) continue;
+                const r = colEl.getBoundingClientRect();
+                if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
+                    foundCol = colId;
+                    break;
+                }
+            }
+            setPointerHoveredColId(foundCol);
+        };
+
+        const handleWindowPointerUp = (e) => {
+            // Drop logic
+            // We need access to latest columnsState and refs. 
+            // Since this effect depends on pointerDragState, we need to be careful about stale closures if columnsState changes.
+            // But dragging usually doesn't change columnsState until drop.
+            // However, to be safe, we can use refs or dependency array.
+
+            // Actually, handlePointerDragEnd defines the logic. Let's call it.
+            // But handlePointerDragEnd relies on scope.
+            // Let's implement the logic directly here or use a stable ref to the latest handler?
+            // Easier: just implement logic here for simplicity.
+
+            // Hit-test columns for drop
+            for (const [colId, colEl] of Object.entries(columnElsRef.current)) {
+                if (!colEl) continue;
+                const r = colEl.getBoundingClientRect();
+                if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
+                    const targetItems = columnsState.cols[colId]?.items || []; // This works because columnsState is in dependency
+                    handleDropOnItemLogicRef.current(colId, targetItems.length);
+                    break;
+                }
+            }
+
+            setPointerDragState(null);
+            setPointerHoveredColId(null);
+            setIsDragging(false);
+            dragItemRef.current = null;
+        };
+
+        const handleWindowPointerCancel = () => {
+            setPointerDragState(null);
+            setPointerHoveredColId(null);
+            setIsDragging(false);
+            dragItemRef.current = null;
+        };
+
+        window.addEventListener('pointermove', handleWindowPointerMove);
+        window.addEventListener('pointerup', handleWindowPointerUp);
+        window.addEventListener('pointercancel', handleWindowPointerCancel);
+
+        return () => {
+            window.removeEventListener('pointermove', handleWindowPointerMove);
+            window.removeEventListener('pointerup', handleWindowPointerUp);
+            window.removeEventListener('pointercancel', handleWindowPointerCancel);
+        };
+    }, [pointerDragState, columnsState]); // Re-bind if state changes (which is fine, or optimize refs)
+
+    const handlePointerDragStart = useCallback((e, word, colId, idx, cellEl) => {
+        if (!cellEl) return;
+        // e.preventDefault(); // Don't prevent default here immediately if it blocks click? 
+        // Actually for drag we do want to prevent.
+        // e.stopPropagation();
+
+        const rect = cellEl.getBoundingClientRect();
+        setPointerDragState({
+            word, colId, idx,
+            offset: { x: e.clientX - rect.left, y: e.clientY - rect.top },
+            pos: { x: e.clientX, y: e.clientY },
+            cloneRect: { width: rect.width, height: rect.height }
+        });
+        setIsDragging(true);
+        dragItemRef.current = { type: 'word', item: word, sourceColId: colId, index: idx };
+        // No setPointerCapture needed with window listeners
+    }, []);
+
+    // (Old handlers removed: handlePointerDragMove, handlePointerDragEnd, handlePointerDragCancel)
 
     // Helper to resolve palette-X to hex
     const resolveColor = (colorCode) => {
@@ -418,6 +523,9 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
         setColumnsState({ ...columnsState, cols: newCols });
     };
 
+    // Update ref with latest function to avoid stale closures in window listeners
+    useEffect(() => { handleDropOnItemLogicRef.current = handleDropOnItemLogic; });
+
     const handleDropOnItem = (e, targetColId, targetIndex) => {
         e.preventDefault(); e.stopPropagation();
         handleDropOnItemLogic(targetColId, targetIndex);
@@ -615,9 +723,9 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                         const headerClass = sortByColor && col.color ? "p-3 rounded-t-xl shadow-sm text-center font-bold" : "p-3 border-b border-slate-100 bg-slate-50 rounded-t-xl cursor-grab active:cursor-grabbing hover:bg-slate-100 transition-colors";
 
                         return (
-                            <div key={colId} onDragOver={handleDragOver} onDragLeave={handleDragLeaveCol} onDragEnter={handleDragEnterCol} onDrop={(e) => handleDropOnColumn(e, colId)} className="flex-1 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col min-w-[280px] transition-colors group/col">
+                            <div key={colId} ref={(el) => { columnElsRef.current[colId] = el; }} onDragOver={handleDragOver} onDragLeave={handleDragLeaveCol} onDragEnter={handleDragEnterCol} onDrop={(e) => handleDropOnColumn(e, colId)} className={`flex-1 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col min-w-[280px] transition-colors group/col ${pointerHoveredColId === colId ? 'ring-4 ring-blue-400 bg-blue-50' : ''}`}>
                                 {sortByColor ? (
-                                    <div className={headerClass} style={headerStyle} draggable={true} onDragStart={(e) => handleDragStart(e, 'column', colId)}>
+                                    <div className={headerClass + " touch-none"} style={headerStyle} draggable={true} onDragStart={(e) => handleDragStart(e, 'column', colId)}>
                                         <input
                                             type="text"
                                             placeholder="Titel..."
@@ -634,11 +742,13 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                                             }}
                                             onClick={(e) => e.stopPropagation()}
                                             draggable={false}
-                                            spellCheck={false}
+                                            spellCheck="false"
+                                            autoCorrect="off"
+                                            autoComplete="off"
                                         />
                                     </div>
                                 ) : (
-                                    <div className={headerClass} title="Spalte verschieben" draggable={true} onDragStart={(e) => handleDragStart(e, 'column', colId)}>
+                                    <div className={headerClass + " touch-none"} title="Spalte verschieben" draggable={true} onDragStart={(e) => handleDragStart(e, 'column', colId)}>
                                         <input
                                             type="text"
                                             placeholder="Titel"
@@ -648,7 +758,9 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                                             onChange={(e) => { const newCols = { ...columnsState.cols, [colId]: { ...col, title: e.target.value } }; setColumnsState({ ...columnsState, cols: newCols }); }}
                                             onClick={(e) => e.stopPropagation()}
                                             draggable={false}
-                                            spellCheck={false}
+                                            spellCheck="false"
+                                            autoCorrect="off"
+                                            autoComplete="off"
                                         />
                                     </div>
                                 )}
@@ -668,6 +780,10 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                                             onRemoveWord={onRemoveWord}
                                             highlightedIndices={highlightedIndices}
                                             onUpdateWordColor={onUpdateWordColor}
+                                            pointerDrag={{
+                                                onPointerDown: handlePointerDragStart,
+                                                isDragging: pointerDragState?.word?.id === word.id
+                                            }}
                                             draggables={{
                                                 onDragStart: handleDragStart,
                                                 onDragEnd: handleDragEnd,
@@ -685,6 +801,27 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                     })}
                 </div>
             </div>
+
+            {/* Floating drag clone - follows pointer during drag */}
+            {pointerDragState && (
+                <div
+                    className="fixed z-[10000] pointer-events-none"
+                    style={{
+                        left: `${pointerDragState.pos.x - pointerDragState.offset.x}px`,
+                        top: `${pointerDragState.pos.y - pointerDragState.offset.y}px`,
+                        width: `${pointerDragState.cloneRect.width}px`,
+                        transform: 'scale(1.03) rotate(1deg)',
+                        filter: 'drop-shadow(0 15px 25px rgba(0,0,0,0.20))'
+                    }}
+                >
+                    <div
+                        className="p-3 bg-white border border-blue-300 rounded-lg shadow-md text-center"
+                        style={{ fontFamily: settings.fontFamily, fontSize: `${settings.fontSize}px` }}
+                    >
+                        {pointerDragState.word.word}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

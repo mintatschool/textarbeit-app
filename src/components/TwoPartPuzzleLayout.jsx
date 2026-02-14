@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import {
     Volume2,
@@ -13,10 +14,9 @@ import { ProgressBar } from './ProgressBar';
 import PuzzleTestPiece from './PuzzleTestPiece';
 import { HorizontalLines } from './shared/UIComponents';
 import { getPieceColor } from './shared/puzzleUtils';
-import { polyfill } from 'mobile-drag-drop';
-import { scrollBehaviourDragImageTranslateOverride } from 'mobile-drag-drop/scroll-behaviour';
 import { RewardModal } from './shared/RewardModal';
-polyfill({ dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride });
+import { usePointerDrag } from '../hooks/usePointerDrag';
+
 /**
  * Shared layout component for two-part puzzle exercises.
  * Used by both SyllableCompositionView and PuzzleTestTwoSyllableView.
@@ -105,7 +105,8 @@ export const TwoPartPuzzleLayout = ({
     manualAdvance = false,
     skipStageConfirmation = false, // New prop to skip stage complete modal
     maxWordsPerStage, // New prop to limit the max value of words per stage
-    hideStageFeedback = false // New prop to hide success UI and auto-advance
+    hideStageFeedback = false, // New prop to hide success UI and auto-advance
+    forceWhiteText = false // New prop to pass down to pieces
 }) => {
     const { gameStatus } = gameState;
 
@@ -140,7 +141,24 @@ export const TwoPartPuzzleLayout = ({
         }
     }, [showSuccess]);
 
-    // getPieceColor is now imported from shared/puzzleUtils
+    // Pointer Drag Integration
+    const { getDragProps, registerDropZone, dragState, isDragging: isPointerDragging } = usePointerDrag({
+        onDragStart: (item) => setIsDragging(item.id),
+        onDragEnd: () => setIsDragging(null),
+        onDrop: (dragItem, targetId) => {
+            // dragItem: { ...piece, sourceRole: 'left'|'right'|undefined }
+            if (targetId === 'slot-left') {
+                handleDrop('left');
+            } else if (targetId === 'slot-right') {
+                handleDrop('right');
+            } else if (targetId === 'sidebar-left' || targetId === 'sidebar-right') {
+                // Determine if we need to remove from slot
+                if (dragItem.sourceRole) {
+                    removePieceFromSlot(dragItem.sourceRole);
+                }
+            }
+        }
+    });
 
     // Loading state
     if (gameStatus === 'loading' || !scrambledPieces) {
@@ -153,8 +171,6 @@ export const TwoPartPuzzleLayout = ({
     }
 
     // Empty state - no valid items
-    // Only show if we truly have no items in the stages, AND we are not in a loading state.
-    // We check totalItems to be sure.
     const hasItems = gameState.stages && gameState.stages.length > 0;
     if (gameStatus === 'playing' && !hasItems) {
         return (
@@ -163,8 +179,6 @@ export const TwoPartPuzzleLayout = ({
             </div>
         );
     }
-
-
 
     // Stage/All complete overlay
     if (gameStatus === 'all-complete' || (gameStatus === 'stage-complete' && !skipStageConfirmation)) {
@@ -190,7 +204,6 @@ export const TwoPartPuzzleLayout = ({
     }
 
     const scale = gameState.pieceScale;
-    const scaledOverlap = overlap * scale;
 
     return (
         <div className="fixed inset-0 bg-blue-50 z-[100] flex flex-col font-sans no-select select-none">
@@ -301,39 +314,37 @@ export const TwoPartPuzzleLayout = ({
             {/* Main Content */}
             <main className="flex-1 relative flex overflow-hidden">
                 {/* Left Pieces */}
-                <div className="relative border-r border-blue-50 bg-white/20 shrink-0 overflow-y-auto overflow-x-hidden custom-scroll pt-12 pb-6 px-4 space-y-8 flex flex-col items-start transition-all duration-300"
+                <div
+                    className="relative border-r border-blue-50 bg-white/20 shrink-0 overflow-y-auto overflow-x-hidden custom-scroll pt-12 pb-6 px-4 space-y-8 flex flex-col items-start transition-all duration-300"
                     style={{ width: sidebarWidth }}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={(e) => {
-                        e.preventDefault();
-                        const sourceRole = e.dataTransfer.getData("source-role");
-                        if (sourceRole) removePieceFromSlot(sourceRole);
-                    }}
+                    ref={registerDropZone('sidebar-left')}
                 >
                     {scrambledPieces.filter(s => s.type === leftType).map(s => {
                         const isSelected = selectedPiece?.id === s.id;
                         return (
                             <div
                                 key={s.id}
-                                className={`transition-all duration-200 cursor-pointer ${isSelected ? 'scale-110 z-50' : 'hover:scale-105 active:scale-95 z-20'
-                                    }`}
+                                className={`transition-all duration-200 cursor-pointer ${isSelected ? 'scale-110 z-50' : 'hover:scale-105 active:scale-95 z-20'} ${isPointerDragging && dragState?.sourceId === s.id ? 'opacity-40' : ''}`}
                                 style={{
-                                    zIndex: isDragging === s.id ? 100 : (isSelected ? 50 : 10),
-                                    filter: isSelected ? 'drop-shadow(0 0 12px rgba(59, 130, 246, 0.8))' : 'none'
+                                    // Removed drop-shadow for selection
+                                    filter: 'none',
+                                    touchAction: 'none'
                                 }}
                                 onClick={() => handlePieceSelect?.(s)}
-                                onContextMenu={(e) => e.preventDefault()}
+                                {...getDragProps(s, s.id)}
                             >
-                                <PuzzleTestPiece
-                                    label={s.text}
-                                    type={leftType}
-                                    colorClass={getPieceColor(s.color, activeColor)}
-                                    scale={scale}
-                                    onDragStart={() => setIsDragging(s.id)}
-                                    onDragEnd={() => setIsDragging(null)}
-                                    isDragging={isDragging === s.id}
-                                    fontFamily={settings.fontFamily}
-                                />
+                                <div className={`transition-all duration-200 rounded-xl`}>
+                                    <PuzzleTestPiece
+                                        label={s.text}
+                                        type={leftType}
+                                        colorClass={getPieceColor(s.color, activeColor)}
+                                        scale={scale}
+                                        isDragging={false} // Handled by opacity above
+                                        fontFamily={settings.fontFamily}
+                                        isSelected={isSelected}
+                                        forceWhiteText={forceWhiteText}
+                                    />
+                                </div>
                             </div>
                         );
                     })}
@@ -341,8 +352,6 @@ export const TwoPartPuzzleLayout = ({
 
                 {/* Center - Drop Zone */}
                 <div className="flex-1 flex flex-col px-4 relative overflow-y-hidden overflow-x-auto">
-
-
                     {/* Target Area - using mx-auto mt-32 for fixed top positioning */}
                     <div className="mx-auto mt-32 flex items-center justify-center w-fit p-4 relative">
 
@@ -370,10 +379,12 @@ export const TwoPartPuzzleLayout = ({
                                             const placedPiece = placedPieces[role];
                                             const pieceText = placedPiece?.text || placedPiece; // Handle both object and legacy string
                                             const typeName = role === 'left' ? leftType : rightType;
+                                            const slotId = `slot-${role}`;
 
                                             return (
                                                 <div
                                                     key={role}
+                                                    ref={registerDropZone(slotId)}
                                                     className={`relative flex items-center justify-center transition-all duration-300 group overflow-visible ${!pieceText && selectedPiece && selectedPiece.type === (role === 'left' ? leftType : rightType)
                                                         ? 'scale-105 cursor-pointer'
                                                         : ''
@@ -385,14 +396,7 @@ export const TwoPartPuzzleLayout = ({
                                                         marginLeft: idx === 0 ? 0 : `-${(isSnapped && pieceText ? (overlap + 52) : overlap) * scale}px`,
                                                         zIndex: idx === 0 ? 2 : 1,
                                                         transform: 'none',
-                                                        filter: !pieceText && selectedPiece && selectedPiece.type === (role === 'left' ? leftType : rightType)
-                                                            ? 'drop-shadow(0 0 10px rgba(59, 130, 246, 0.7))'
-                                                            : 'none'
-                                                    }}
-                                                    onDragOver={(e) => e.preventDefault()}
-                                                    onDrop={(e) => {
-                                                        e.preventDefault();
-                                                        handleDrop(role);
+                                                        filter: 'none'
                                                     }}
                                                     onClick={() => {
                                                         // If slot is empty and piece is selected, place it
@@ -405,13 +409,15 @@ export const TwoPartPuzzleLayout = ({
 
                                                     {/* Empty Slot Ghost */}
                                                     {!pieceText && (
-                                                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                                                        <div className={`pointer-events-none absolute inset-0 flex items-center justify-center transition-all duration-200 rounded-xl`}>
                                                             <PuzzleTestPiece
                                                                 label=""
                                                                 type={typeName}
                                                                 isGhost={true}
                                                                 scale={scale}
                                                                 fontFamily={settings.fontFamily}
+                                                                isSelected={!pieceText && selectedPiece && selectedPiece.type === (role === 'left' ? leftType : rightType)}
+                                                                forceWhiteText={forceWhiteText}
                                                             />
                                                         </div>
                                                     )}
@@ -419,13 +425,12 @@ export const TwoPartPuzzleLayout = ({
                                                     {/* Filled Slot */}
                                                     {pieceText && (
                                                         <div
-                                                            className="absolute inset-0 flex items-center justify-center cursor-pointer hover:scale-105 transition-transform touch-none"
-                                                            draggable
-                                                            onDragStart={(e) => {
-                                                                e.dataTransfer.setData("source-role", role);
+                                                            className={`absolute inset-0 flex items-center justify-center cursor-pointer hover:scale-105 transition-transform touch-none ${isPointerDragging && dragState?.sourceId === placedPiece?.id ? 'opacity-40' : ''}`}
+                                                            onClick={(e) => {
+                                                                // Allow click to remove (only if not dragging)
+                                                                if (!isPointerDragging) removePieceFromSlot(role);
                                                             }}
-                                                            onClick={() => removePieceFromSlot(role)}
-                                                            onContextMenu={(e) => e.preventDefault()}
+                                                            {...(placedPiece && typeof placedPiece === 'object' ? getDragProps({ ...placedPiece, sourceRole: role }, placedPiece.id) : {})}
                                                         >
                                                             <PuzzleTestPiece
                                                                 label={pieceText}
@@ -434,6 +439,7 @@ export const TwoPartPuzzleLayout = ({
                                                                 scale={scale}
                                                                 showSeamLine={true}
                                                                 fontFamily={settings.fontFamily}
+                                                                forceWhiteText={forceWhiteText}
                                                             />
                                                         </div>
                                                     )}
@@ -487,44 +493,67 @@ export const TwoPartPuzzleLayout = ({
                 </div>
 
                 {/* Right Pieces - Dynamic Width for "Ende" */}
-                <div className="shrink-0 relative border-l border-blue-50 bg-white/20 overflow-y-auto overflow-x-hidden custom-scroll pt-12 pb-6 px-4 space-y-8 flex flex-col items-end transition-all duration-300"
+                <div
+                    className="shrink-0 relative border-l border-blue-50 bg-white/20 overflow-y-auto overflow-x-hidden custom-scroll pt-12 pb-6 px-4 space-y-8 flex flex-col items-end transition-all duration-300"
                     style={{ width: sidebarWidth }}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={(e) => {
-                        e.preventDefault();
-                        const sourceRole = e.dataTransfer.getData("source-role");
-                        if (sourceRole) removePieceFromSlot(sourceRole);
-                    }}
+                    ref={registerDropZone('sidebar-right')}
                 >
                     {scrambledPieces.filter(s => s.type === rightType).map(s => {
                         const isSelected = selectedPiece?.id === s.id;
                         return (
                             <div
                                 key={s.id}
-                                className={`transition-all duration-200 cursor-pointer ${isSelected ? 'scale-110 z-50' : 'hover:scale-105 active:scale-95 z-20'
-                                    }`}
+                                className={`transition-all duration-200 cursor-pointer ${isSelected ? 'scale-110 z-50' : 'hover:scale-105 active:scale-95 z-20'} ${isPointerDragging && dragState?.sourceId === s.id ? 'opacity-40' : ''}`}
                                 style={{
+                                    filter: 'none',
                                     zIndex: isDragging === s.id ? 100 : (isSelected ? 50 : 10),
-                                    filter: isSelected ? 'drop-shadow(0 0 12px rgba(59, 130, 246, 0.8))' : 'none'
+                                    touchAction: 'none'
                                 }}
                                 onClick={() => handlePieceSelect?.(s)}
-                                onContextMenu={(e) => e.preventDefault()}
+                                {...getDragProps(s, s.id)}
                             >
-                                <PuzzleTestPiece
-                                    label={s.text}
-                                    type={rightType}
-                                    colorClass={getPieceColor(s.color, activeColor)}
-                                    scale={scale}
-                                    onDragStart={() => setIsDragging(s.id)}
-                                    onDragEnd={() => setIsDragging(null)}
-                                    isDragging={isDragging === s.id}
-                                    fontFamily={settings.fontFamily}
-                                />
+                                <div className={`transition-all duration-200 rounded-xl`}>
+                                    <PuzzleTestPiece
+                                        label={s.text}
+                                        type={rightType}
+                                        colorClass={getPieceColor(s.color, activeColor)}
+                                        scale={scale}
+                                        isDragging={false}
+                                        fontFamily={settings.fontFamily}
+                                        isSelected={isSelected}
+                                        forceWhiteText={forceWhiteText}
+                                    />
+                                </div>
                             </div>
                         );
                     })}
                 </div>
             </main >
+
+            {/* Drag Overlay */}
+            {dragState && (
+                <div
+                    className="fixed z-[10000] pointer-events-none"
+                    style={{
+                        left: dragState.pos.x,
+                        top: dragState.pos.y,
+                        transform: 'translate(-50%, -50%) rotate(2deg)',
+                        filter: 'drop-shadow(0 15px 25px rgba(0,0,0,0.20))'
+                    }}
+                >
+                    <div style={{ transform: 'scale(1.05)' }}>
+                        <PuzzleTestPiece
+                            label={dragState.item.text}
+                            type={dragState.item.type}
+                            colorClass={getPieceColor(dragState.item.color, activeColor)}
+                            scale={scale} // Display at correct scale
+                            fontFamily={settings.fontFamily}
+                            showSeamLine={true} // Always show seams in dragging
+                            forceWhiteText={forceWhiteText}
+                        />
+                    </div>
+                </div>
+            )}
         </div >
     );
 };

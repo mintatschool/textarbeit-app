@@ -2,7 +2,7 @@ import React, { useMemo, useCallback, useState, useRef, useEffect } from 'react'
 import { Icons } from './Icons';
 import { getCachedSyllables, CLUSTERS } from '../utils/syllables';
 
-const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, highlightedIndices = new Set(), isHidden, toggleHighlights, toggleHidden, hideYellowLetters, activeTool, activeColor, onEditMode, manualSyllables, hyphenator, settings, isReadingMode, wordColors = {}, colorPalette, domRef, isGrouped, isSelection, hidePunctuation, onMouseEnter, onMouseDown, onTouchStart, isTextMarkerMode, drawings = [], onUpdateDrawings, forceNoMargin, forceShowSyllables, isHeadline }) => {
+const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, highlightedIndices = new Set(), isHidden, toggleHighlights, toggleHidden, hideYellowLetters, activeTool, activeColor, onEditMode, manualSyllables, hyphenator, settings, isReadingMode, wordColors = {}, colorPalette, domRef, isGrouped, isSelection, hidePunctuation, onMouseEnter, onMouseDown, onTouchStart, isTextMarkerMode, drawings = [], onUpdateDrawings, forceNoMargin, forceShowSyllables, isHeadline, hideSelectionFrame }) => {
     const wordKey = `${word}_${startIndex}`;
     const syllables = useMemo(() => manualSyllables || getCachedSyllables(word, hyphenator), [word, manualSyllables, hyphenator]);
 
@@ -290,7 +290,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
     const isColorMarked = firstCharColor !== 'transparent';
     const isNeutralMarked = (isHighlighted && !isColorMarked) || (isGrouped && !isColorMarked);
 
-    const showFrame = isHighlighted || isGrouped;
+    const showFrame = (isHighlighted || isGrouped) && !hideSelectionFrame;
 
     // Use different style for Textmarker (isColorMarked) to create a continuous line
     // Use linear scaling units (em) instead of fixed px to ensure drawing overlay matches
@@ -765,6 +765,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
         prev.hidePunctuation === next.hidePunctuation &&
         prev.drawings === next.drawings && // Update on drawings change
         prev.isHeadline === next.isHeadline &&
+        prev.hideSelectionFrame === next.hideSelectionFrame &&
         true // refs are stable
     );
 });

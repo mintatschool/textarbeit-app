@@ -37,3 +37,7 @@ Thumbs.db
 
 # PWA Dev
 dev-dist
+
+# AI Metadata
+.agent/
+.cursorrules
