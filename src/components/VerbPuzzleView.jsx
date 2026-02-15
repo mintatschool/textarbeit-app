@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Icons } from './Icons';
-import { Volume2, VolumeX, ChevronsUpDown } from 'lucide-react'; // Import icons directly
+
 import { ExerciseHeader } from './ExerciseHeader';
 import { RewardModal } from './shared/RewardModal';
 import { Tense, VERB_PRONOUNS, getVerbPuzzleParts, getInfinitiveStem } from '../utils/verbUtils';
 import { getLocalConjugation, findVerbLemma } from '../data/verbDatabase';
 import { Word } from './Word';
 import { speak } from '../utils/speech';
+import { getTerm } from '../utils/terminology';
 import { polyfill } from 'mobile-drag-drop';
 import { scrollBehaviourDragImageTranslateOverride } from 'mobile-drag-drop/scroll-behaviour';
 
@@ -342,8 +343,8 @@ export const VerbPuzzleView = ({ words, settings, setSettings, onClose }) => {
             <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col items-center justify-center">
                 <div className="bg-white p-8 rounded-3xl shadow-xl text-center max-w-md">
                     <Icons.AlertTriangle size={64} className="mx-auto text-amber-500 mb-4" />
-                    <h2 className="text-2xl font-bold text-slate-800 mb-2">Keine Verben gefunden</h2>
-                    <p className="text-slate-600 mb-6">Bitte markiere zuerst einige Verben im Text, um diese Übung zu starten.</p>
+                    <h2 className="text-2xl font-bold text-slate-800 mb-2">Keine {getTerm("Verben", settings)} gefunden</h2>
+                    <p className="text-slate-600 mb-6">Bitte markiere zuerst einige {getTerm("Verben", settings)} im Text, um diese Übung zu starten.</p>
                     <button onClick={onClose} className="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-blue-700 transition-colors">Zurück zum Text</button>
                 </div>
             </div>
@@ -353,7 +354,7 @@ export const VerbPuzzleView = ({ words, settings, setSettings, onClose }) => {
     return (
         <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans select-none overflow-hidden">
             <ExerciseHeader
-                title="Verben puzzlen"
+                title={`${getTerm("Verben", settings)} puzzlen`}
                 icon={Icons.VerbPuzzle}
                 current={currentIndex + 1}
                 total={verbItems.length}
@@ -377,7 +378,7 @@ export const VerbPuzzleView = ({ words, settings, setSettings, onClose }) => {
                                     className={`px-3 py-2 flex items-center justify-center transition-all hover:bg-slate-200 text-blue-600 ${isTenseMenuOpen ? 'bg-slate-200' : ''}`}
                                     title="Zeitform wählen"
                                 >
-                                    <ChevronsUpDown size={20} />
+                                    <Icons.ChevronsUpDown size={20} />
                                 </button>
                             </div>
 
@@ -406,7 +407,7 @@ export const VerbPuzzleView = ({ words, settings, setSettings, onClose }) => {
                             className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${audioEnabled ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-400'}`}
                             title={audioEnabled ? 'Audio an' : 'Audio aus'}
                         >
-                            {audioEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
+                            {audioEnabled ? <Icons.Volume2 size={20} /> : <Icons.VolumeX size={20} />}
                         </button>
                     </div>
                 }
@@ -542,7 +543,7 @@ export const VerbPuzzleView = ({ words, settings, setSettings, onClose }) => {
                                                     className="w-10 h-10 bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-full flex items-center justify-center transition-all shadow-sm"
                                                     title="Anhören"
                                                 >
-                                                    <Volume2 size={20} />
+                                                    <Icons.Volume2 size={20} />
                                                 </button>
                                             </div>
                                         )}
@@ -616,7 +617,7 @@ export const VerbPuzzleView = ({ words, settings, setSettings, onClose }) => {
             <RewardModal
                 isOpen={showReward}
                 onClose={onClose}
-                message="Alle Verben gemeistert! Fantastisch!"
+                message={`Alle ${getTerm("Verben", settings)} gemeistert! Fantastisch!`}
             />
         </div >
     );

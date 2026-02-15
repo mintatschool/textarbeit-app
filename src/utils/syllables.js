@@ -1,7 +1,7 @@
 export const DIPHTHONGS_REGEX = /^(eu|äu|au|ei|ie|ai)/i;
 export const DIGRAPHS_REGEX = /^(ch|sch|ph|th|ck|qu|pf)/i;
 export const VOWEL_REGEX = /[aeiouyäöü]/i;
-export const CLUSTERS = ['sch', 'chs', 'ch', 'ck', 'ph', 'pf', 'th', 'qu', 'ei', 'ie', 'eu', 'au', 'äu', 'ai', 'sp', 'st'];
+export const CLUSTERS = ['sch', 'chs', 'ch', 'ck', 'ph', 'pf', 'th', 'qu', 'ei', 'ie', 'eu', 'au', 'äu', 'ai', 'sp', 'st', 'ng', 'nk', 'tz'];
 export const MONOSYLLABIC_EXCEPTIONS = ['Text', 'text', 'Wort', 'wort', 'Haus', 'haus', 'Kind', 'kind', 'Buch', 'buch', 'dich', 'sich', 'mir', 'dir', 'ihn', 'sie', 'es'];
 
 export const CUSTOM_SYLLABLES = {
@@ -183,21 +183,28 @@ export const getCachedSyllables = (word, hyphenator) => {
 export const getChunks = (text, useClusters, activeClusters = CLUSTERS) => {
     if (!useClusters) return text.split('');
     const clustersToUse = activeClusters || CLUSTERS;
+    // Normalize text and clusters to ensure consistency (e.g., composed vs decomposed umlauts)
+    const normalizedText = text.normalize('NFC');
+    const normalizedClusters = clustersToUse.map(c => c.normalize('NFC'));
+
     const result = [];
     let i = 0;
-    while (i < text.length) {
+    while (i < normalizedText.length) {
         let match = null;
-        for (const cluster of clustersToUse) {
+        for (const cluster of normalizedClusters) {
             // "st" and "sp" are only clusters at the beginning of a syllable (Anlaut)
+            // Note: simple syllable start check is imperfect on raw text without full syllabification context here, 
+            // but consistent with previous implementation.
             if ((cluster.toLowerCase() === 'st' || cluster.toLowerCase() === 'sp') && i !== 0) continue;
 
-            if (text.substring(i).toLowerCase().startsWith(cluster)) {
-                match = text.substring(i, i + cluster.length);
+            const lowSub = normalizedText.substring(i).toLowerCase();
+            if (lowSub.startsWith(cluster.toLowerCase())) {
+                match = normalizedText.substring(i, i + cluster.length);
                 break;
             }
         }
         if (match) { result.push(match); i += match.length; }
-        else { result.push(text[i]); i++; }
+        else { result.push(normalizedText[i]); i++; }
     }
     return result;
 };

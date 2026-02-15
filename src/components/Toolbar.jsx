@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Icons } from './Icons';
 import { MenuDropdown, MenuItem } from './MenuDropdown';
 import { ExerciseHintModal } from './ExerciseHintModal';
+import { getTerm } from '../utils/terminology';
 
 const Separator = ({ horizontal = false }) => (
     horizontal
@@ -689,7 +690,7 @@ export const Toolbar = ({
                                 </div>
                                 <div>
                                     <div className="font-bold text-lg text-slate-800">Nach Wortart sortieren</div>
-                                    <div className="text-sm text-slate-500 font-medium">Substantive, Verben, Adjektive</div>
+                                    <div className="text-sm text-slate-500 font-medium">{getTerm("Substantive", settings)}, {getTerm("Verben", settings)}, {getTerm("Adjektive", settings)}</div>
                                 </div>
                             </button>
 
@@ -705,8 +706,7 @@ export const Toolbar = ({
                                             <Icons.Edit2 size={32} className="text-blue-500" />
                                         </div>
                                         <div>
-                                            <div className="font-bold text-lg text-slate-800">Substantive schreiben</div>
-                                            <div className="text-sm text-slate-500 font-medium">Einzahl & Mehrzahl</div>
+                                            <div className="font-bold text-lg text-slate-800">{getTerm("Substantive", settings)} schreiben</div>
                                         </div>
                                     </button>
 
@@ -719,8 +719,7 @@ export const Toolbar = ({
                                             <Icons.Edit2 size={32} className="text-green-500" />
                                         </div>
                                         <div>
-                                            <div className="font-bold text-lg text-slate-800">Adjektive schreiben</div>
-                                            <div className="text-sm text-slate-500 font-medium">Steigern</div>
+                                            <div className="font-bold text-lg text-slate-800">{getTerm("Adjektive", settings)} schreiben</div>
                                         </div>
                                     </button>
                                 </div>
@@ -736,8 +735,7 @@ export const Toolbar = ({
                                             <Icons.Edit2 size={32} className="text-red-500" />
                                         </div>
                                         <div>
-                                            <div className="font-bold text-lg text-slate-800">Verben schreiben</div>
-                                            <div className="text-sm text-slate-500 font-medium">Konjugieren</div>
+                                            <div className="font-bold text-lg text-slate-800">{getTerm("Verben", settings)} schreiben</div>
                                         </div>
                                     </button>
 
@@ -750,8 +748,7 @@ export const Toolbar = ({
                                             <Icons.VerbPuzzle size={32} className="text-red-500" />
                                         </div>
                                         <div>
-                                            <div className="font-bold text-lg text-slate-800">Verben puzzlen</div>
-                                            <div className="text-sm text-slate-500 font-medium">Formen zusammensetzen</div>
+                                            <div className="font-bold text-lg text-slate-800">{getTerm("Verben", settings)} puzzlen</div>
                                         </div>
                                     </button>
                                 </div>

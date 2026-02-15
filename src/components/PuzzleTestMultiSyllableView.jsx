@@ -1,15 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import {
-    AlertCircle,
-    RotateCcw,
-    Volume2,
-    VolumeX,
-    Minus,
-    Plus,
-    ArrowRight,
-    Check
-} from 'lucide-react';
+
 import { Icons } from './Icons';
 import { ProgressBar } from './ProgressBar';
 import PuzzleTestPiece from './PuzzleTestPiece';
@@ -468,9 +459,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
         const stretchX = finalWidth / base;
 
         // Perfect geometric overlap based on SVG coordinates (unscaled)
-        // Left->Middle: 80px (scaled by stretchX)
-        // Middle->Next: 60px (scaled by stretchX)
-        const SNAP_OFFSET = 20;
+        const SNAP_OFFSET = 25;
         let baseOverlap = index === 0 ? 0 : (index === 1 ? 80 : 60);
 
         if (!isComplete && index > 0) {
@@ -491,7 +480,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
         let totalWidth = 0;
         const len = word.syllables.length;
         if (len === 0) return 0;
-        const SNAP_OFFSET = 20;
+        const SNAP_OFFSET = 25;
 
         // Helper to get width from text
         const getW = (text) => {
@@ -596,22 +585,22 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                             className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${audioEnabled ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-400'}`}
                             title={audioEnabled ? 'Audio an' : 'Audio aus'}
                         >
-                            {audioEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
+                            {audioEnabled ? <Icons.Volume2 size={20} /> : <Icons.VolumeX size={20} />}
                         </button>
 
                         {/* Words Count Control */}
                         <div className="flex items-center gap-2 bg-slate-50 px-2 py-1 rounded-2xl border border-slate-200 hidden lg:flex">
                             <HorizontalLines count={2} />
                             <button onClick={() => handleWordsCountChange(-1)} disabled={gameState.wordsPerStage <= 2} className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 active:scale-90 transition-all shadow-sm disabled:opacity-20 ml-1">
-                                <Minus className="w-5 h-5" />
+                                <Icons.Minus size={20} />
                             </button>
                             <div className="flex flex-col items-center min-w-[24px]">
-                                <span className={`text-xl font-black transition-colors leading-none ${pendingWordsCount !== gameState.wordsPerStage ? 'text-orange-500' : 'text-slate-800'}`}>
+                                <span className={`text-xl font-bold transition-colors leading-none ${pendingWordsCount !== gameState.wordsPerStage ? 'text-orange-500' : 'text-slate-800'}`}>
                                     {pendingWordsCount}
                                 </span>
                             </div>
                             <button onClick={() => handleWordsCountChange(1)} disabled={gameState.wordsPerStage >= 6} className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 active:scale-90 transition-all shadow-sm disabled:opacity-20 mr-1">
-                                <Plus className="w-5 h-5" />
+                                <Icons.Plus size={20} />
                             </button>
                             <HorizontalLines count={5} />
                         </div>
@@ -744,8 +733,8 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                                 : word.word;
 
                             return (
-                                <div key={word.id} className={`flex items-center gap-0 transition-all duration-500 ${isComplete ? 'opacity-80 scale-95' : ''}`}>
-                                    <div className="relative flex items-center pr-0 transition-[width] duration-500" style={{ height: 110 * gameState.pieceScale, width: getRowWidth(word, isComplete) * gameState.pieceScale }}>
+                                <div key={word.id} className={`flex items-center gap-0 transition-all duration-500 ${isComplete ? 'opacity-80' : ''}`}>
+                                    <div className="relative flex items-center pr-0 transition-[width] duration-500 overflow-visible" style={{ height: 110 * gameState.pieceScale, width: getRowWidth(word, isComplete) * gameState.pieceScale }}>
                                         <div className="flex items-center gap-0 absolute left-0 top-0 transition-transform duration-500" style={{ transform: `scale(${gameState.pieceScale})`, transformOrigin: 'left center', height: 110 }}>
                                             {word.syllables.map((syl, idx) => {
                                                 const slotKey = `${word.id}-${idx}`;
@@ -810,7 +799,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                                     </div>
 
                                     {/* Audio, Checkmark & Manual Advance Group */}
-                                    <div className="flex flex-col items-center gap-4 relative">
+                                    <div className="flex flex-col items-center gap-4 ml-10 relative">
                                         <div className="flex items-center gap-2 min-h-[56px]">
                                             {/* Speaker */}
                                             {audioEnabled && (
@@ -819,7 +808,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                                                     className="w-[70px] h-[70px] bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg transition-all ring-4 ring-white/50 hover:scale-105 active:scale-95 z-10 shrink-0"
                                                     title="Anhören"
                                                 >
-                                                    <Volume2 size={30} />
+                                                    <Icons.Volume2 size={30} />
                                                 </button>
                                             )}
 
@@ -838,7 +827,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
                                                     onClick={handleManualAdvance}
                                                     className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl font-bold shadow-xl text-xl hover:scale-105 transition-all flex items-center gap-2 ring-4 ring-white/50 whitespace-nowrap"
                                                 >
-                                                    Weiter <ArrowRight size={30} />
+                                                    Weiter <Icons.ArrowRight size={30} />
                                                 </button>
                                             </div>
                                         )}

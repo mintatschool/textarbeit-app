@@ -77,6 +77,19 @@ export const PuzzleTestTwoSyllableView = ({ words, settings, onClose, title, act
         }
     };
 
+    const [forceLowercase, setForceLowercase] = React.useState(false);
+
+    // Casing Toggle Button
+    const casingToggleButton = (
+        <button
+            onClick={() => setForceLowercase(!forceLowercase)}
+            className={`w-12 h-10 flex items-center justify-center rounded-lg transition-all border mr-2 ${forceLowercase ? 'bg-blue-600 border-blue-700 shadow-inner' : 'bg-slate-100 border-slate-200 text-slate-500 hover:bg-white hover:shadow-sm'}`}
+            title={forceLowercase ? "Nur Kleinbuchstaben (aktiv)" : "Original Schreibung"}
+        >
+            <Icons.SyllableCasingCorrection size={28} className={forceLowercase ? 'text-white' : 'text-slate-600'} />
+        </button>
+    );
+
     return (
         <TwoPartPuzzleLayout
             {...puzzleState}
@@ -101,6 +114,8 @@ export const PuzzleTestTwoSyllableView = ({ words, settings, onClose, title, act
             hideStageFeedback={true}
             maxWordsPerStage={validItems.length}
             forceWhiteText={true}
+            forceLowercase={forceLowercase}
+            customControls={casingToggleButton}
         />
     );
 };

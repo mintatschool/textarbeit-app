@@ -293,7 +293,7 @@ export const QRCodeModal = ({ text, onClose }) => {
                 {/* Link-Eingabe */}
                 {mode === 'link' && (
                     <div className="w-full mb-4 p-3 bg-slate-50 rounded-xl border border-slate-200">
-                        <label className="text-sm font-bold text-slate-600 block mb-2">Datei-Link (Cloud) für Schüler:</label>
+                        <label className="text-sm font-bold text-slate-600 block mb-2">Dateilink (Cloud):</label>
                         <div className="flex gap-2">
                             <input
                                 type="text"

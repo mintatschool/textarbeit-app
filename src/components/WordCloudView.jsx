@@ -8,6 +8,7 @@ import { ExerciseHeader } from './ExerciseHeader';
 import { RewardModal } from './shared/RewardModal';
 import { shuffleArray } from '../utils/arrayUtils';
 import { usePointerDrag } from '../hooks/usePointerDrag';
+import { getTerm } from '../utils/terminology';
 export const WordCloudView = ({ words, settings, setSettings, onClose, title }) => {
     if (!words || words.length === 0) return (<div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col items-center justify-center modal-animate font-sans"><EmptyStateMessage onClose={onClose} IconComponent={Icons.GhostHighlight} /></div>);
 
@@ -185,7 +186,7 @@ export const WordCloudView = ({ words, settings, setSettings, onClose, title }) 
                         onClick={() => setShowVowels(!showVowels)}
                         className={`px-4 py-2 rounded-xl font-bold text-lg border transition-all min-touch-target ${showVowels ? 'bg-yellow-400 text-yellow-900 border-yellow-500 shadow-[0_2px_0_0_#eab308]' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}
                     >
-                        Vokale
+                        {getTerm("Vokale", settings)}
                     </button>
                 }
             />

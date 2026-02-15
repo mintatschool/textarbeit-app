@@ -3,10 +3,11 @@ import Hypher from 'hypher';
 import german from 'hyphenation.de';
 import { Icons } from './Icons';
 import { Word } from './Word';
-import { getCachedSyllables } from '../utils/syllables';
+import { getCachedSyllables, CLUSTERS } from '../utils/syllables';
 import { ProgressBar } from './ProgressBar';
 import { ExerciseHeader } from './ExerciseHeader';
 import { RewardModal } from './shared/RewardModal';
+import { getTerm } from '../utils/terminology';
 
 // Ensure standard clusters are available
 const DEFAULT_CLUSTERS = ['Au', 'Ei', 'Eu', 'Äu', 'Ai', 'Ch', 'Sch', 'Sp', 'St', 'Pf', 'Ph', 'Qu', 'Ck', 'Tz', 'Ie'];
@@ -20,6 +21,7 @@ export const FindLettersView = ({ text, settings, setSettings, onClose, title })
     const [showSelection, setShowSelection] = useState(true);
     const [flashMode, setFlashMode] = useState(null); // null | 'correct' | 'wrong'
     const [isShaking, setIsShaking] = useState(false);
+    const [showVowels, setShowVowels] = useState(true);
 
     const hyphenator = useMemo(() => new Hypher(german), []);
 
@@ -403,18 +405,29 @@ export const FindLettersView = ({ text, settings, setSettings, onClose, title })
                 sliderMax={120}
             >
                 {/* Sub-Header with Target Selection and Counts */}
-                <div className="px-4 py-2 border-t border-slate-50 flex items-center gap-4 bg-slate-50/30">
-                    <div className="flex items-center gap-2">
+                <div className="px-4 py-2 border-t border-slate-50 flex items-center justify-between gap-4 bg-slate-50/30">
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setShowSelection(true)}
+                                className={`flex items-center gap-3 px-4 py-2 bg-slate-100/80 border-2 rounded-2xl transition-all duration-500 group hover:bg-white hover:border-blue-300 ${flashMode === 'wrong' ? 'border-red-400 animate-shake' : 'border-transparent'}`}
+                            >
+                                <span className="text-slate-500 font-bold text-sm uppercase tracking-wider">GESUCHT:</span>
+                                <span className={`text-2xl font-black transition-colors duration-500 ${flashMode && flashMode.startsWith('correct') ? 'text-green-600' : flashMode === 'wrong' ? 'text-red-600' : 'text-blue-700'
+                                    }`} style={{ fontFamily: settings.fontFamily }}>
+                                    {selectedTarget?.label || "?"}
+                                </span>
+                                <Icons.ChevronDown size={20} className="text-slate-400 group-hover:text-blue-500" />
+                            </button>
+                        </div>
+
+                        {/* NEW: Vowel Toggle */}
                         <button
-                            onClick={() => setShowSelection(true)}
-                            className={`flex items-center gap-3 px-4 py-2 bg-slate-100/80 border-2 rounded-2xl transition-all duration-500 group hover:bg-white hover:border-blue-300 ${flashMode === 'wrong' ? 'border-red-400 animate-shake' : 'border-transparent'}`}
+                            onClick={() => setShowVowels(!showVowels)}
+                            className={`px-3 py-2 rounded-xl font-bold text-sm transition-all flex items-center gap-2 ${showVowels ? 'bg-yellow-400 text-yellow-900 border-yellow-500 ring-2 ring-yellow-200' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
                         >
-                            <span className="text-slate-500 font-bold text-sm uppercase tracking-wider">GESUCHT:</span>
-                            <span className={`text-2xl font-black transition-colors duration-500 ${flashMode && flashMode.startsWith('correct') ? 'text-green-600' : flashMode === 'wrong' ? 'text-red-600' : 'text-blue-700'
-                                }`} style={{ fontFamily: settings.fontFamily }}>
-                                {selectedTarget?.label || "?"}
-                            </span>
-                            <Icons.ChevronDown size={20} className="text-slate-400 group-hover:text-blue-500" />
+                            <span>{getTerm("Vokale", settings)}</span>
+                            {showVowels ? <Icons.Eye size={18} /> : <Icons.EyeOff size={18} />}
                         </button>
                     </div>
 
@@ -541,10 +554,18 @@ export const FindLettersView = ({ text, settings, setSettings, onClose, title })
                                     {(() => {
                                         const activeClustersRaw = settings.clusters && settings.clusters.length > 0 ? settings.clusters : DEFAULT_CLUSTERS;
                                         const activeClustersLower = activeClustersRaw.map(c => c.toLowerCase());
+                                        const standardClustersLower = CLUSTERS.map(c => c.toLowerCase());
+
+                                        // Merge with standard CLUSTERS to ensure visual grouping works for all standard clusters
+                                        // even if they are not the current search target.
+                                        // Sort by length specific to avoid "a" matching before "au" if both are present
+                                        const combinedClusters = Array.from(new Set([...activeClustersLower, ...standardClustersLower]))
+                                            .sort((a, b) => b.length - a.length);
+
                                         const wordSettings = {
                                             ...settings,
                                             smartSelection: true,
-                                            clusters: activeClustersLower
+                                            clusters: combinedClusters
                                         };
 
                                         return processedWords.map((item) => {
@@ -555,7 +576,35 @@ export const FindLettersView = ({ text, settings, setSettings, onClose, title })
                                             const currentWordColors = {};
                                             for (let i = 0; i < item.word.length; i++) {
                                                 const gIdx = item.index + i;
-                                                if (displayWordColors[gIdx]) currentWordColors[gIdx] = displayWordColors[gIdx];
+                                                const char = item.word[i];
+                                                const isVowelChar = /[aeiouyäöüAEIOUYÄÖÜ]/.test(char);
+
+                                                if (displayWordColors[gIdx]) {
+                                                    // Prioritize manual marking/correction
+                                                    currentWordColors[gIdx] = displayWordColors[gIdx];
+                                                } else if (showVowels && isVowelChar) {
+                                                    // Visual Highlight for Vowels (if not already marked?)
+                                                    // "Wenn er gedrückt ist werden innerhalb der Wörter Vokale gelb angezeigt."
+                                                    // Should this be selectable/interactive? 
+                                                    // Usually visual help is background color. 
+                                                    // Let's use 'yellow' but logically separate if we want interaction?
+                                                    // But if it's yellow, it might look like "marked".
+                                                    // In GapWordsView it's just visual.
+                                                    // But here user needs to CLICK to mark. 
+                                                    // If already yellow, can they click?
+                                                    // If we pass 'yellow' to Word, it renders yellow. 
+                                                    // But we want to distinguish "User Marked" vs "Vowel Highlight".
+                                                    // Let's use a subtle yellow or just pass 'yellow' and accept it looks marked.
+                                                    // User says: "wie bei Lückenwörter... Vokale gelb angezeigt."
+                                                    // If I click a Vowel that is already yellow? 
+                                                    // The interaction logic (Word) toggles based on smart selection.
+                                                    // If we pass it as `wordColors`, Word sees it as colored.
+                                                    // If we want it strictly background but selectable:
+                                                    // Word component uses `wordColors` for background.
+
+                                                    // Strategy: Pass as 'yellow'.
+                                                    currentWordColors[gIdx] = 'yellow';
+                                                }
                                             }
 
                                             return (

@@ -1,6 +1,6 @@
 import React, { useMemo, useCallback, useState, useRef, useEffect } from 'react';
 import { Icons } from './Icons';
-import { getCachedSyllables, CLUSTERS } from '../utils/syllables';
+import { getCachedSyllables, CLUSTERS, getChunks } from '../utils/syllables';
 
 const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, highlightedIndices = new Set(), isHidden, toggleHighlights, toggleHidden, hideYellowLetters, activeTool, activeColor, onEditMode, manualSyllables, hyphenator, settings, isReadingMode, wordColors = {}, colorPalette, domRef, isGrouped, isSelection, hidePunctuation, onMouseEnter, onMouseDown, onTouchStart, isTextMarkerMode, drawings = [], onUpdateDrawings, forceNoMargin, forceShowSyllables, isHeadline, hideSelectionFrame }) => {
     const wordKey = `${word}_${startIndex}`;
@@ -375,89 +375,150 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
     const renderedContent = (
         <>
             {renderPrefix()}
-            {word.split('').map((char, i) => {
-                const globalIndex = startIndex + i;
-                const isYellow = wordColors && wordColors[globalIndex] === 'yellow';
+            {(() => {
+                const chunks = getChunks(word, settings.smartSelection, settings.clusters);
 
-                let rounded = 'rounded';
-                let charClassName = `inline-block leading-none ${isColorMarked ? '' : 'hover:bg-slate-100'} cursor-pointer`;
+                // DEBUG: Trace highlighting logic for problem words (Stringified for easy reading)
+                if (word === 'Lied' || word === 'Leine' || word === 'Meise' || word === 'Eule') {
+                    chunks.forEach((chunk, i) => {
+                        let charOffset = 0;
+                        for (let c = 0; c < i; c++) charOffset += chunks[c].length;
+                        const chunkStartIndex = charOffset;
+                        const globalIndex = startIndex + chunkStartIndex;
+                        const rightNeighborIdx = globalIndex + chunk.length;
+                        const leftNeighborIdx = globalIndex - 1;
 
-                // Default char padding in em - Perfectly balanced (padding = -margin) for zero layout shift
-                // REDUCED paddingBottom to 0.10em (User Request: "Enger heran")
-                // INCREASED horizontal padding/margin to 0.06em to prevent gaps in highlighting (Opaque colors allow overlap without stripes)
-                let charStyle = { transition: 'none', paddingLeft: '0.06em', paddingRight: '0.06em', paddingTop: '0em', paddingBottom: '0.10em', marginLeft: '-0.06em', marginRight: '-0.06em', marginTop: '0em', marginBottom: '-0.10em' };
-
-                // Detect generic color (non-yellow) and apply to character for continuous stroke
-                const charColorCode = wordColors && wordColors[globalIndex];
-                const resolvedCharColor = resolveColor(charColorCode);
-
-                if (isYellow) {
-                    charClassName += ' bg-yellow-200';
-
-                    // Check visual adjacency regardless of smartSelection setting for cohesive look
-                    const simpleLeft = wordColors && wordColors[globalIndex - 1] === 'yellow';
-                    const simpleRight = wordColors && wordColors[globalIndex + 1] === 'yellow';
-
-                    // Determine rounded corners based on adjacency
-                    // Used for BOTH yellow highlight AND hidden grey box
-                    if (simpleLeft && simpleRight) {
-                        rounded = 'rounded-none';
-                        charClassName += ' shadow-border-yellow-mid';
-                    } else if (simpleLeft) {
-                        rounded = 'rounded-r-md rounded-l-none';
-                        charClassName += ' shadow-border-yellow-right';
-                    } else if (simpleRight) {
-                        rounded = 'rounded-l-md rounded-r-none';
-                        charClassName += ' shadow-border-yellow-left';
-                    } else {
-                        // Standalone
-                        rounded = 'rounded-md';
-                        charClassName += ' shadow-border-yellow';
-                    }
-                } else if (resolvedCharColor && resolvedCharColor !== 'transparent') {
-                    // Generic Color Marker Logic (e.g. Peach, Green)
-                    // Apply background color to character to leverage the negative margin overlap
-                    charStyle = {
-                        ...charStyle,
-                        backgroundColor: resolvedCharColor,
-                        // Ensure rounded-none for continuous block look, or add logic if needed
-                    };
-                    rounded = 'rounded-none';
+                        console.log(`Debug ${word} chunk[${i}] "${chunk}":`,
+                            `GlobalIdx=${globalIndex}`,
+                            `IsYellow=${wordColors && wordColors[globalIndex] === 'yellow'}`,
+                            `RightNeighbor(${rightNeighborIdx})=${wordColors?.[rightNeighborIdx]}`,
+                            `LeftNeighbor(${leftNeighborIdx})=${wordColors?.[leftNeighborIdx]}`,
+                            `RadiusCheck=${(wordColors?.[rightNeighborIdx] === 'yellow') ? 'ShouldConnectRight' : 'NoConnect'}`
+                        );
+                    });
                 }
 
-                const shouldHideLetter = isYellow && hideYellowLetters;
+                let charOffset = 0;
+                return chunks.map((chunk, i) => {
+                    const chunkStartIndex = charOffset;
+                    charOffset += chunk.length;
+                    const globalIndex = startIndex + chunkStartIndex;
 
-                return (
-                    <span
-                        key={i}
-                        data-paint-index={globalIndex}
-                        onMouseDown={(e) => {
-                            // Removed e.stopPropagation() to allow drag-and-drop bubbling
-                        }}
-                        onClick={(e) => {
-                            // Prevent highlighting in Marker/Pen/Reading modes
-                            if (isTextMarkerMode || activeTool === 'pen' || isReadingMode) return;
-                            handleInteraction(e, globalIndex);
-                        }}
-                        className={`${charClassName} ${rounded} ${shouldHideLetter ? 'blur-letter' : ''} transition-none duration-0`}
-                        style={charStyle}
-                        onMouseEnter={(e) => {
-                            if ((activeTool === 'pen' || isTextMarkerMode) && onMouseEnter) {
-                                onMouseEnter(globalIndex, e);
-                            }
-                        }}
-                        onPointerEnter={(e) => {
-                            if ((activeTool === 'pen' || isTextMarkerMode) && onMouseEnter && e.buttons === 1) {
-                                onMouseEnter(globalIndex, e);
-                            }
-                        }}
-                    >
-                        <span className={shouldHideLetter ? 'blur-letter-content' : ''}>
-                            {char}
+                    // Check if any character in this chunk is highlighted or colored
+                    const getNormalizedColor = (idx) => {
+                        const code = wordColors && wordColors[idx];
+                        const resolved = resolveColor(code);
+                        if (code === 'yellow' || resolved === 'yellow') return '#fef08a';
+                        return resolved;
+                    };
+
+                    // Check if any character in this chunk is highlighted or colored
+                    let resolvedChunkColor = 'transparent';
+                    for (let k = 0; k < chunk.length; k++) {
+                        const c = getNormalizedColor(startIndex + chunkStartIndex + k);
+                        if (c && c !== 'transparent' && c !== 'rgba(0,0,0,0)') {
+                            resolvedChunkColor = c;
+                            break;
+                        }
+                    }
+
+                    let rounded = 'rounded';
+                    let customClasses = `inline-block leading-none ${isColorMarked ? '' : 'hover:bg-slate-100'} cursor-pointer`;
+
+                    // AGGRESSIVE MERGING STRATEGY (Approved Plan)
+                    // Use large overlapping padding/margins to force visual cohesion
+                    // Reference: SplitExerciseView uses pr-3 -mr-1 (~0.75rem / -0.25rem)
+                    // Here we use em units for scaling. 
+                    // 0.25em padding + -0.25em margin = 0 net width change, but massive visual overlap.
+
+                    // GENERALIZED AGGRESSIVE MERGING STRATEGY
+                    // Applies to ANY background color (Yellow, Hex, Palette)
+                    // Visual cohesion enforced via large padding/negative margins
+
+                    let style = {
+                        transition: 'none',
+                        paddingTop: '0em',
+                        paddingBottom: '0.10em',
+                        marginTop: '0em',
+                        marginBottom: '-0.10em',
+
+                        // Default (Transparent/Unmarked)
+                        paddingLeft: '0em',
+                        paddingRight: '0em',
+                        marginLeft: '0em',
+                        marginRight: '0em',
+                        zIndex: 0,
+                        position: 'relative'
+                    };
+
+                    if (resolvedChunkColor && resolvedChunkColor !== 'transparent') {
+                        // Colored Highlight (Aggressive Overlap)
+                        style = {
+                            ...style,
+                            backgroundColor: resolvedChunkColor,
+                            paddingLeft: '0.25em',
+                            paddingRight: '0.25em',
+                            marginLeft: '-0.25em',
+                            marginRight: '-0.25em',
+                            zIndex: 10 // Ensure color layer is above standard text
+                        };
+                        // Identify as yellow for legacy class logic if needed (e.g. text color black)
+                        if (resolvedChunkColor === '#fef08a' || resolvedChunkColor === 'yellow') {
+                            customClasses += ' bg-yellow-200';
+                        }
+
+                        // Check neighbors for SAME color
+                        const colorLeft = getNormalizedColor(globalIndex - 1);
+                        const colorRight = getNormalizedColor(globalIndex + chunk.length);
+
+                        const matchLeft = colorLeft !== 'transparent' && colorLeft === resolvedChunkColor;
+                        const matchRight = colorRight !== 'transparent' && colorRight === resolvedChunkColor;
+
+                        if (matchLeft && matchRight) {
+                            rounded = 'rounded-none';
+                            if (resolvedChunkColor === '#fef08a' || resolvedChunkColor === 'yellow') customClasses += ' shadow-border-yellow-mid';
+                        } else if (matchLeft) {
+                            rounded = 'rounded-r-md rounded-l-none';
+                            if (resolvedChunkColor === '#fef08a' || resolvedChunkColor === 'yellow') customClasses += ' shadow-border-yellow-right';
+                        } else if (matchRight) {
+                            rounded = 'rounded-l-md rounded-r-none';
+                            if (resolvedChunkColor === '#fef08a' || resolvedChunkColor === 'yellow') customClasses += ' shadow-border-yellow-left';
+                        } else {
+                            rounded = 'rounded-md';
+                            if (resolvedChunkColor === '#fef08a' || resolvedChunkColor === 'yellow') customClasses += ' shadow-border-yellow';
+                        }
+                    }
+
+                    const shouldHideLetter = (resolvedChunkColor === '#fef08a' || resolvedChunkColor === 'yellow') && hideYellowLetters;
+
+                    return (
+                        <span
+                            key={i}
+                            data-paint-index={globalIndex}
+                            onClick={(e) => {
+                                if (isTextMarkerMode || activeTool === 'pen' || isReadingMode) return;
+                                handleInteraction(e, globalIndex);
+                            }}
+                            className={`${customClasses} ${rounded} inline-block leading-none ${shouldHideLetter ? 'blur-letter' : ''} transition-none duration-0`}
+                            style={style}
+                            onMouseEnter={(e) => {
+                                if ((activeTool === 'pen' || isTextMarkerMode) && onMouseEnter) {
+                                    onMouseEnter(globalIndex, e);
+                                }
+                            }}
+                            onPointerEnter={(e) => {
+                                if ((activeTool === 'pen' || isTextMarkerMode) && onMouseEnter && e.buttons === 1) {
+                                    onMouseEnter(globalIndex, e);
+                                }
+                            }}
+                        >
+                            <span className={shouldHideLetter ? 'blur-letter-content' : ''}>
+                                {chunk}
+                            </span>
                         </span>
-                    </span>
-                );
-            })}
+                    );
+                });
+            })()}
             {renderSuffix()}
             {/* Drawing Layer */}
             {drawingLayer}
@@ -592,96 +653,115 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                                 boxShadow: 'inset 0 0 0 1px rgba(191, 219, 254, 0.5)' // Inset border replacement (blue-200/50)
                             } : { display: 'inline-block', paddingBottom: '0.10em', marginLeft: '0', marginRight: '0' }}>
                                 <span className={`inline-block relative z-10 ${settings.visualType === 'black_gray' ? (isEven ? 'text-black' : 'text-gray-400') : ''}`}>
-                                    {syl.split('').map((char, cIdx) => {
-                                        const globalIndex = startIndex + currentStart + cIdx;
-                                        const isYellow = wordColors && wordColors[globalIndex] === 'yellow';
+                                    {(() => {
+                                        const chunks = getChunks(syl, settings.smartSelection, settings.clusters);
+                                        let sylCharOffset = 0;
+                                        return chunks.map((chunk, cIdx) => {
+                                            const chunkStartInSyl = sylCharOffset;
+                                            sylCharOffset += chunk.length;
+                                            const globalIndex = startIndex + currentStart + chunkStartInSyl;
 
-                                        const glueLeft = highlightedIndices.has(globalIndex - 1) && clusterConnections.has(globalIndex - 1);
-                                        const glueRight = highlightedIndices.has(globalIndex + 1) && clusterConnections.has(globalIndex);
-
-                                        let charStyleClass = 'text-slate-900';
-                                        if (settings.visualType === 'black_gray') charStyleClass = isEven ? 'text-black' : 'text-gray-400';
-
-                                        let rounded = 'rounded-sm';
-                                        let customClasses = 'cursor-pointer';
-                                        // INCREASED to 0.06em to close gaps
-                                        let style = { transition: 'none', paddingLeft: '0.06em', paddingRight: '0.06em', marginLeft: '-0.06em', marginRight: '-0.06em' };
-
-                                        // Detect generic color (non-yellow) and apply to character for continuous stroke
-                                        const charColorCode = wordColors && wordColors[globalIndex];
-                                        const resolvedCharColor = resolveColor(charColorCode);
-
-                                        if (isYellow) {
-                                            style = { transition: 'none', backgroundColor: '#fef08a', paddingLeft: '0.06em', paddingRight: '0.06em', paddingTop: '0em', paddingBottom: '0.10em', marginLeft: '-0.06em', marginRight: '-0.06em', marginTop: '0em', marginBottom: '-0.10em' };
-                                            customClasses += ' bg-yellow-200';
-
-                                            const simpleLeft = wordColors && wordColors[globalIndex - 1] === 'yellow';
-                                            const simpleRight = wordColors && wordColors[globalIndex + 1] === 'yellow';
-
-                                            if (simpleLeft && simpleRight) {
-                                                rounded = 'rounded-none';
-                                                customClasses += ' shadow-border-yellow-mid';
-                                            } else if (simpleLeft) {
-                                                rounded = 'rounded-r-md rounded-l-none';
-                                                customClasses += ' shadow-border-yellow-right';
-                                            } else if (simpleRight) {
-                                                rounded = 'rounded-l-md rounded-r-none';
-                                                customClasses += ' shadow-border-yellow-left';
-                                            } else {
-                                                rounded = 'rounded-md';
-                                                customClasses += ' shadow-border-yellow';
-                                            }
-                                        } else if (resolvedCharColor && resolvedCharColor !== 'transparent') {
-                                            // Generic Color Marker Logic (e.g. Peach, Green)
-                                            style = {
-                                                transition: 'none',
-                                                backgroundColor: resolvedCharColor,
-                                                // Apply same metric fix as yellow to ensure stroke continuity
-                                                paddingLeft: '0.06em', paddingRight: '0.06em',
-                                                paddingTop: '0em', paddingBottom: '0.10em',
-                                                marginLeft: '-0.06em', marginRight: '-0.06em',
-                                                marginTop: '0em', marginBottom: '-0.10em'
+                                            const getNormalizedColor = (idx) => {
+                                                const code = wordColors && wordColors[idx];
+                                                const resolved = resolveColor(code);
+                                                if (code === 'yellow' || resolved === 'yellow') return '#fef08a';
+                                                return resolved;
                                             };
-                                            // Make it look like a marker block
-                                            rounded = 'rounded-none';
 
-                                            // Optional: Add rounded logic for start/end of color blocks if desired, 
-                                            // but for now simple block is safer for continuity.
-                                        }
+                                            let resolvedChunkColor = 'transparent';
+                                            for (let k = 0; k < chunk.length; k++) {
+                                                const c = getNormalizedColor(startIndex + currentStart + chunkStartInSyl + k);
+                                                if (c && c !== 'transparent' && c !== 'rgba(0,0,0,0)') {
+                                                    resolvedChunkColor = c;
+                                                    break;
+                                                }
+                                            }
 
-                                        const shouldHideLetter = isYellow && hideYellowLetters;
+                                            // GENERALIZED AGGRESSIVE MERGING STRATEGY (Syllable View)
+                                            // Same logic as standard view
+                                            let rounded = 'rounded-sm';
+                                            let customClasses = 'cursor-pointer';
+                                            let style = {
+                                                transition: 'none',
+                                                paddingTop: '0em',
+                                                paddingBottom: '0.10em',
+                                                marginTop: '0em',
+                                                marginBottom: '-0.10em',
+                                                paddingLeft: '0.06em',
+                                                paddingRight: '0.06em',
+                                                marginLeft: '-0.06em',
+                                                marginRight: '-0.06em',
+                                                zIndex: 0,
+                                                position: 'relative'
+                                            };
 
-                                        return (
-                                            <span
-                                                key={cIdx}
-                                                data-paint-index={globalIndex}
-                                                onMouseDown={(e) => {
-                                                    // Removed e.stopPropagation() to allow drag-and-drop bubbling
-                                                }}
-                                                onClick={(e) => {
-                                                    // Prevent highlighting in Marker/Pen/Reading modes
-                                                    if (isTextMarkerMode || activeTool === 'pen' || isReadingMode) return;
-                                                    handleInteraction(e, globalIndex);
-                                                }}
-                                                className={`${customClasses} ${rounded} inline-block leading-none ${shouldHideLetter ? 'blur-letter' : ''} transition-none duration-0`}
-                                                style={style}
-                                                onMouseEnter={(e) => {
-                                                    if ((activeTool === 'pen' || isTextMarkerMode) && onMouseEnter) {
-                                                        onMouseEnter(globalIndex, e);
-                                                    }
-                                                }}
-                                                onPointerEnter={(e) => {
-                                                    if ((activeTool === 'pen' || isTextMarkerMode) && onMouseEnter && e.buttons === 1) {
-                                                        onMouseEnter(globalIndex, e);
-                                                    }
-                                                }}
-                                            >
-                                                <span className={shouldHideLetter ? 'blur-letter-content' : ''}>
-                                                    {char}
+                                            if (resolvedChunkColor && resolvedChunkColor !== 'transparent') {
+                                                style = {
+                                                    ...style,
+                                                    backgroundColor: resolvedChunkColor,
+                                                    paddingLeft: '0.25em',
+                                                    paddingRight: '0.25em',
+                                                    marginLeft: '-0.25em',
+                                                    marginRight: '-0.25em',
+                                                    zIndex: 10
+                                                };
+                                                // Identify as yellow for legacy class logic if needed
+                                                if (resolvedChunkColor === '#fef08a' || resolvedChunkColor === 'yellow') {
+                                                    customClasses += ' bg-yellow-200';
+                                                }
+
+                                                // Check neighbors for SAME color
+                                                const colorLeft = getNormalizedColor(globalIndex - 1);
+                                                const colorRight = getNormalizedColor(globalIndex + chunk.length);
+
+                                                const matchLeft = colorLeft !== 'transparent' && colorLeft === resolvedChunkColor;
+                                                const matchRight = colorRight !== 'transparent' && colorRight === resolvedChunkColor;
+
+                                                if (matchLeft && matchRight) {
+                                                    rounded = 'rounded-none';
+                                                    if (resolvedChunkColor === '#fef08a' || resolvedChunkColor === 'yellow') customClasses += ' shadow-border-yellow-mid';
+                                                } else if (matchLeft) {
+                                                    rounded = 'rounded-r-md rounded-l-none';
+                                                    if (resolvedChunkColor === '#fef08a' || resolvedChunkColor === 'yellow') customClasses += ' shadow-border-yellow-right';
+                                                } else if (matchRight) {
+                                                    rounded = 'rounded-l-md rounded-r-none';
+                                                    if (resolvedChunkColor === '#fef08a' || resolvedChunkColor === 'yellow') customClasses += ' shadow-border-yellow-left';
+                                                } else {
+                                                    rounded = 'rounded-md';
+                                                    if (resolvedChunkColor === '#fef08a' || resolvedChunkColor === 'yellow') customClasses += ' shadow-border-yellow';
+                                                }
+                                            }
+
+                                            const shouldHideLetter = (resolvedChunkColor === '#fef08a' || resolvedChunkColor === 'yellow') && hideYellowLetters;
+
+                                            return (
+                                                <span
+                                                    key={cIdx}
+                                                    data-paint-index={globalIndex}
+                                                    onClick={(e) => {
+                                                        if (isTextMarkerMode || activeTool === 'pen' || isReadingMode) return;
+                                                        handleInteraction(e, globalIndex);
+                                                    }}
+                                                    className={`${customClasses} ${rounded} inline-block leading-none ${shouldHideLetter ? 'blur-letter' : ''} transition-none duration-0`}
+                                                    style={style}
+                                                    onMouseEnter={(e) => {
+                                                        if ((activeTool === 'pen' || isTextMarkerMode) && onMouseEnter) {
+                                                            onMouseEnter(globalIndex, e);
+                                                        }
+                                                    }}
+                                                    onPointerEnter={(e) => {
+                                                        if ((activeTool === 'pen' || isTextMarkerMode) && onMouseEnter && e.buttons === 1) {
+                                                            onMouseEnter(globalIndex, e);
+                                                        }
+                                                    }}
+                                                >
+                                                    <span className={shouldHideLetter ? 'blur-letter-content' : ''}>
+                                                        {chunk}
+                                                    </span>
                                                 </span>
-                                            </span>
-                                        );
-                                    })}
+                                            );
+                                        });
+                                    })()}
                                 </span>
                                 {settings.visualType === 'arc' && isVisualSyllable && <svg className="arc-svg pointer-events-none" style={{ zIndex: 20 }} viewBox="0 0 100 20" preserveAspectRatio="none"><path d="M 2 2 Q 50 20 98 2" fill="none" stroke={arcColor} strokeWidth="3" strokeLinecap="round" /></svg>}
                             </span>

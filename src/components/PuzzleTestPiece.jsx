@@ -17,7 +17,8 @@ const PuzzleTestPiece = ({
     dynamicWidth = null,
     fontFamily,
     isSelected = false, // Added prop
-    forceWhiteText = false // New prop to ensure white text without effects
+    forceWhiteText = false, // New prop to ensure white text without effects
+    forceLowercase = false // New prop for casing toggle
 }) => {
     // Determine base width
     const standardBaseWidth = 200;
@@ -68,7 +69,7 @@ const PuzzleTestPiece = ({
     };
 
     const getHexColor = (twClass) => {
-        if (isGhost) return '#F1F5F9'; // Very light slate for background
+        if (isGhost) return 'transparent'; // Transparent to prevent masking adjacent pieces
         if (twClass === 'neutral') return '#3b82f6'; // Blue background for neutral (User request)
         if (twClass && twClass.startsWith('#')) return twClass; // Direct hex support
 
@@ -89,18 +90,14 @@ const PuzzleTestPiece = ({
     // Determine padding to center text visually in the "body" excluding knobs
     // Determine padding to center text visually in the "body" excluding knobs
     const getTextPadding = () => {
-        // Start pieces (Knob/Arrow on Right) -> Need Padding Right to shift text Left
-        // Increased from pr-12 to pr-20 to shift text further left
-        if (type === 'left' || type === 'zigzag-left') return 'pr-20';
-
-        // End pieces (Hole/Arrow-In on Left) -> Need Padding Left to shift text Right
-        // Using pr instead of pl to shift text further left
-        if (type === 'right' || type === 'zigzag-right') return 'pr-10';
-
-        // Middle pieces (Hole Left, Knob Right) -> Shift left
-        if (type === 'middle' || type === 'zigzag-middle') return 'pr-14';
-
-        return 'pr-4 pl-1';
+        // Precise offsets based on geometric centers of standard and zigzag pieces
+        if (type === 'left') return 'pr-[60px]';
+        if (type === 'zigzag-left') return 'pr-[60px]';
+        if (type === 'right') return 'pl-[45px]';
+        if (type === 'zigzag-right') return 'pl-[80px]';
+        if (type === 'middle') return 'pl-[5px]';
+        if (type === 'zigzag-middle') return 'pl-[30px]';
+        return '';
     };
 
     return (
@@ -130,17 +127,25 @@ const PuzzleTestPiece = ({
             >
                 {/* SVG Container */}
                 <div
-                    className="absolute inset-0 flex items-center justify-center overflow-visible"
+                    className="absolute inset-0 overflow-visible"
                     style={{
                         transform: `scaleX(${stretchX})`,
-                        transformOrigin: 'center center'
+                        transformOrigin: 'center center',
+                        willChange: 'transform'
                     }}
                 >
                     <svg
-                        width={svgWidth}
-                        height={svgHeight}
-                        viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-                        className={`overflow-visible -translate-x-2 -translate-y-2 ${!isGhost ? 'drop-shadow-xl' : ''}`}
+                        width="240"
+                        height="150"
+                        viewBox="-20 -20 240 150"
+                        className={`absolute overflow-visible ${!isGhost ? 'drop-shadow-xl' : ''}`}
+                        style={{
+                            left: '-20px',
+                            top: '-20px',
+                            width: '240px',
+                            height: '150px',
+                            transform: 'translateZ(0)' // Force hardware acceleration
+                        }}
                         preserveAspectRatio="none"
                     >
                         {/* Seam line behind or separate if needed, but main path is below */}
@@ -151,11 +156,12 @@ const PuzzleTestPiece = ({
                             stroke={isSelected ? '#3b82f6' : (isGhost ? '#64748b' : (isNeutral ? '#cbd5e1' : 'rgba(255,255,255,0.7)'))}
                             strokeWidth={isSelected ? (5 / stretchX) : (isGhost ? "4" : (isNeutral ? (4 / stretchX) : (3 / stretchX)))}
                             strokeOpacity={isSelected ? "1" : "1"}
-                            strokeDasharray={isSelected ? "0" : "0"}
+                            strokeDasharray="0"
                             strokeLinejoin="round"
                             vectorEffect="non-scaling-stroke"
                             style={{
-                                filter: isSelected ? 'drop-shadow(0 0 4px #3b82f6)' : 'none'
+                                filter: isSelected ? 'drop-shadow(0 0 4px #3b82f6)' : 'none',
+                                opacity: 1
                             }}
                         />
 
@@ -174,7 +180,7 @@ const PuzzleTestPiece = ({
 
                 {!isGhost && (
                     <div className={`absolute inset-0 flex items-center justify-center pointer-events-none z-10 ${getTextPadding()}`}>
-                        <span className={`select-none font-black text-center block w-full ${(isNeutral && !forceWhiteText) ? 'text-slate-800' : 'text-white'}`}
+                        <span className={`select-none font-medium text-center block w-full -translate-y-1 ${(isNeutral && !forceWhiteText) ? 'text-slate-800' : 'text-white'}`}
                             style={{
                                 fontSize: calculateFontSize(),
                                 fontFamily: fontFamily,
@@ -182,7 +188,7 @@ const PuzzleTestPiece = ({
                                 maxWidth: '100%',
                                 whiteSpace: 'nowrap',
                             }}>
-                            {label}
+                            {forceLowercase && label ? label.toLowerCase() : label}
                         </span>
                     </div>
                 )}

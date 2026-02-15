@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback, Suspense, lazy } from 'react';
 import Hypher from 'hypher';
 import german from 'hyphenation.de';
 import { polyfill } from "mobile-drag-drop";
@@ -7,42 +7,44 @@ import { Icons } from './components/Icons';
 import { Word } from './components/Word';
 import { SettingsModal } from './components/SettingsModal';
 import { QRCodeModal } from './components/QRCodeModal';
-import { QRScannerModal } from './components/QRScannerModal';
 import { CorrectionModal } from './components/CorrectionModal';
-import { SplitExerciseView } from './components/SplitExerciseView';
-import { PuzzleTestTwoSyllableView } from './components/PuzzleTestTwoSyllableView';
-import { PuzzleTestMultiSyllableView } from './components/PuzzleTestMultiSyllableView';
-import { SyllableCompositionView } from './components/SyllableCompositionView';
-import { SyllableCompositionExtensionView } from './components/SyllableCompositionExtensionView';
-import { WordCloudView } from './components/WordCloudView';
-import { SyllableCarpetView } from './components/SyllableCarpetView';
-import { WordListView } from './components/WordListView';
-import { SentencePuzzleView } from './components/SentencePuzzleView';
-import { SentenceShuffleView } from './components/SentenceShuffleView';
-import { StaircaseView } from './components/StaircaseView';
-import { GapWordsView } from './components/GapWordsView';
-import { VerbWritingView } from './components/VerbWritingView';
-import { AdjectiveWritingView } from './components/AdjectiveWritingView';
-import { NounWritingView } from './components/NounWritingView';
-import { VerbPuzzleView } from './components/VerbPuzzleView';
-import { GapSentencesView } from './components/GapSentencesView';
-import { GapTextView } from './components/GapTextView';
-import { CaseExerciseView } from './components/CaseExerciseView';
-import { FindLettersView } from './components/FindLettersView';
 import { Toolbar } from './components/Toolbar';
 import { ExerciseHintModal } from './components/ExerciseHintModal';
 import { Space } from './components/Space';
 import { getCachedSyllables } from './utils/syllables';
 import { compressIndices, decompressIndices, compressColors, decompressColors } from './utils/compression';
-import { SpeedReadingView } from './components/SpeedReadingView';
-import { WordSortingView } from './components/WordSortingView';
-import { AlphabetSortingView } from './components/AlphabetSortingView';
 import { ConnectionOverlay } from './components/ConnectionOverlay';
-import { QRCodePrintView } from './components/QRCodePrintView';
+
+// Lazy-loaded Exercise Views (code-splitting)
+const QRScannerModal = lazy(() => import('./components/QRScannerModal').then(m => ({ default: m.QRScannerModal })));
+const SplitExerciseView = lazy(() => import('./components/SplitExerciseView').then(m => ({ default: m.SplitExerciseView })));
+const PuzzleTestTwoSyllableView = lazy(() => import('./components/PuzzleTestTwoSyllableView').then(m => ({ default: m.PuzzleTestTwoSyllableView })));
+const PuzzleTestMultiSyllableView = lazy(() => import('./components/PuzzleTestMultiSyllableView').then(m => ({ default: m.PuzzleTestMultiSyllableView })));
+const SyllableCompositionView = lazy(() => import('./components/SyllableCompositionView').then(m => ({ default: m.SyllableCompositionView })));
+const SyllableCompositionExtensionView = lazy(() => import('./components/SyllableCompositionExtensionView').then(m => ({ default: m.SyllableCompositionExtensionView })));
+const WordCloudView = lazy(() => import('./components/WordCloudView').then(m => ({ default: m.WordCloudView })));
+const SyllableCarpetView = lazy(() => import('./components/SyllableCarpetView').then(m => ({ default: m.SyllableCarpetView })));
+const WordListView = lazy(() => import('./components/WordListView').then(m => ({ default: m.WordListView })));
+const SentencePuzzleView = lazy(() => import('./components/SentencePuzzleView').then(m => ({ default: m.SentencePuzzleView })));
+const SentenceShuffleView = lazy(() => import('./components/SentenceShuffleView').then(m => ({ default: m.SentenceShuffleView })));
+const StaircaseView = lazy(() => import('./components/StaircaseView').then(m => ({ default: m.StaircaseView })));
+const GapWordsView = lazy(() => import('./components/GapWordsView').then(m => ({ default: m.GapWordsView })));
+const VerbWritingView = lazy(() => import('./components/VerbWritingView').then(m => ({ default: m.VerbWritingView })));
+const AdjectiveWritingView = lazy(() => import('./components/AdjectiveWritingView').then(m => ({ default: m.AdjectiveWritingView })));
+const NounWritingView = lazy(() => import('./components/NounWritingView').then(m => ({ default: m.NounWritingView })));
+const VerbPuzzleView = lazy(() => import('./components/VerbPuzzleView').then(m => ({ default: m.VerbPuzzleView })));
+const GapSentencesView = lazy(() => import('./components/GapSentencesView').then(m => ({ default: m.GapSentencesView })));
+const GapTextView = lazy(() => import('./components/GapTextView').then(m => ({ default: m.GapTextView })));
+const CaseExerciseView = lazy(() => import('./components/CaseExerciseView').then(m => ({ default: m.CaseExerciseView })));
+const FindLettersView = lazy(() => import('./components/FindLettersView').then(m => ({ default: m.FindLettersView })));
+const SpeedReadingView = lazy(() => import('./components/SpeedReadingView').then(m => ({ default: m.SpeedReadingView })));
+const WordSortingView = lazy(() => import('./components/WordSortingView').then(m => ({ default: m.WordSortingView })));
+const AlphabetSortingView = lazy(() => import('./components/AlphabetSortingView').then(m => ({ default: m.AlphabetSortingView })));
+const QRCodePrintView = lazy(() => import('./components/QRCodePrintView').then(m => ({ default: m.QRCodePrintView })));
+const WordPartOfSpeechSortingView = lazy(() => import('./components/WordPartOfSpeechSortingView').then(m => ({ default: m.WordPartOfSpeechSortingView })));
 import { findVerbLemma } from './data/verbDatabase';
 import { findAdjectiveLemma } from './data/adjectiveDatabase';
 import { analyzeTextLocalNouns } from './data/nounDatabase';
-import { WordPartOfSpeechSortingView } from './components/WordPartOfSpeechSortingView';
 import { getCorrectCasing } from './utils/wordCasingUtils';
 
 import "mobile-drag-drop/default.css";
@@ -54,7 +56,12 @@ polyfill({
     force: true
 });
 
-
+// Loading spinner for lazy-loaded components
+const LazyFallback = () => (
+    <div className="flex-1 flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-slate-200 border-t-blue-500 rounded-full animate-spin"></div>
+    </div>
+);
 
 const useHypherLoader = () => {
     const [hyphenatorInstance, setHyphenatorInstance] = useState(null);
@@ -84,7 +91,15 @@ const DEFAULT_SETTINGS = {
     letterSpacing: 0.05,
     reduceMenu: false,
     clusters: ['sch', 'chs', 'ch', 'ck', 'ph', 'pf', 'th', 'qu', 'ei', 'ie', 'eu', 'au', 'äu', 'ai', 'sp', 'st'],
-    imageWidth: 15
+    imageWidth: 15,
+    replaceTechnicalTerms: false,
+    termReplacements: [
+        { technical: "Vokale", simple: "Selbstlaute" },
+        { technical: "Konsonanten", simple: "Mitlaute" },
+        { technical: "Substantive", simple: "Namenwörter" },
+        { technical: "Verben", simple: "Tunwörter" },
+        { technical: "Adjektive", simple: "Wiewörter" }
+    ]
 };
 
 const App = () => {
@@ -372,6 +387,7 @@ const App = () => {
 
             return {
                 ...w,
+                originalWord: w.word, // Preserve original text casing
                 word: finalWord,
                 text: finalWord,
                 syllables: getCachedSyllables(finalWord, hyphenator)
@@ -672,9 +688,9 @@ const App = () => {
         const cleanData = generateExportData();
 
         // Ask for filename
-        let filename = prompt('Bitte Dateinamen eingeben:', 'textarbeit-export');
+        let filename = prompt('Bitte Dateinamen eingeben:', 'Dateiname');
         if (filename === null) return; // Cancelled
-        if (!filename.trim()) filename = 'textarbeit-export';
+        if (!filename.trim()) filename = 'Dateiname';
         if (!filename.toLowerCase().endsWith('.json')) filename += '.json';
 
         const blob = new Blob([JSON.stringify(cleanData)], { type: 'application/json' });
@@ -1154,7 +1170,7 @@ const App = () => {
         const orientation = options.orientation || 'auto';
         if (options.title) setQrPrintTitle(options.title);
         const isQR = type === 'qrcode';
-        const pageMargin = isQR ? '0' : '1.5cm 0.5cm 0.5cm 0.5cm';
+        const pageMargin = isQR ? '0' : '2cm 1cm 1cm 1cm';
         const landscapeRule = `@page { size: ${orientation}; margin: ${pageMargin}; }`;
         style.innerHTML = `
             ${landscapeRule}
@@ -1201,7 +1217,11 @@ const App = () => {
             window.print();
             document.head.removeChild(style);
         } else {
-            setActiveView(type);
+            // Use transition to allow suspension during render
+            React.startTransition(() => {
+                setActiveView(type);
+            });
+
             setTimeout(() => {
                 window.print();
                 setActiveView('text');
@@ -1738,148 +1758,149 @@ const App = () => {
                     )}
 
 
+                    <Suspense fallback={<LazyFallback />}>
+                        {activeView === 'puzzletest_two' && <PuzzleTestTwoSyllableView words={hasMarkings ? uniqueExerciseWords : []} settings={settings} onClose={() => setActiveView('text')} title="Silbenpuzzle 1" activeColor={activeColor} />}
+                        {activeView === 'syllable_composition' && <SyllableCompositionView words={hasMarkings ? uniqueExerciseWords : []} settings={settings} onClose={() => setActiveView('text')} title="Silbenbau 1" activeColor={activeColor} />}
+                        {activeView === 'syllable_composition_extension' && <SyllableCompositionExtensionView words={hasMarkings ? uniqueExerciseWords : []} settings={settings} onClose={() => setActiveView('text')} title="Silbenbau 2" activeColor={activeColor} />}
+                        {activeView === 'puzzletest_multi' && <PuzzleTestMultiSyllableView words={hasMarkings ? uniqueExerciseWords : []} settings={settings} onClose={() => setActiveView('text')} title="Silbenpuzzle 2" activeColor={activeColor} />}
+                        {activeView === 'cloud' && <WordCloudView words={hasMarkings ? uniqueExerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Wortwolke" />}
+                        {activeView === 'carpet' && <SyllableCarpetView words={hasMarkings ? exerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Silbenteppich" />}
+                        {activeView === 'speed_reading' && <SpeedReadingView words={hasMarkings ? uniqueExerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Blitzlesen" />}
+                        {activeView === 'wordSortingByParticiple' && (
+                            <WordPartOfSpeechSortingView
+                                text={text}
+                                processedWords={processedWords}
+                                settings={settings}
+                                setSettings={setSettings}
+                                colorPalette={colorPalette}
+                                onClose={() => setActiveView('text')}
+                                highlightedIndices={highlightedIndices}
+                                hideYellowLetters={hideYellowLetters}
+                                wordColors={wordColors}
+                            />
+                        )}
 
-                    {activeView === 'puzzletest_two' && <PuzzleTestTwoSyllableView words={hasMarkings ? uniqueExerciseWords : []} settings={settings} onClose={() => setActiveView('text')} title="Silbenpuzzle 1" activeColor={activeColor} />}
-                    {activeView === 'syllable_composition' && <SyllableCompositionView words={hasMarkings ? uniqueExerciseWords : []} settings={settings} onClose={() => setActiveView('text')} title="Silbenbau 1" activeColor={activeColor} />}
-                    {activeView === 'syllable_composition_extension' && <SyllableCompositionExtensionView words={hasMarkings ? uniqueExerciseWords : []} settings={settings} onClose={() => setActiveView('text')} title="Silbenbau 2" activeColor={activeColor} />}
-                    {activeView === 'puzzletest_multi' && <PuzzleTestMultiSyllableView words={hasMarkings ? uniqueExerciseWords : []} settings={settings} onClose={() => setActiveView('text')} title="Silbenpuzzle 2" activeColor={activeColor} />}
-                    {activeView === 'cloud' && <WordCloudView words={hasMarkings ? uniqueExerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Wortwolke" />}
-                    {activeView === 'carpet' && <SyllableCarpetView words={hasMarkings ? exerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Silbenteppich" />}
-                    {activeView === 'speed_reading' && <SpeedReadingView words={hasMarkings ? uniqueExerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Blitzlesen" />}
-                    {activeView === 'wordSortingByParticiple' && (
-                        <WordPartOfSpeechSortingView
-                            text={text}
-                            processedWords={processedWords}
+                        {activeView === 'wordSorting' && <WordSortingView columnsState={columnsState} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Wörter sortieren" wordColors={wordColors} colorPalette={colorPalette} textCorrections={textCorrections} highlightedIndices={highlightedIndices} hideYellowLetters={hideYellowLetters} />}
+                        {activeView === 'alphabetSorting' && <AlphabetSortingView words={hasMarkings ? uniqueExerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Alphabetisch sortieren" />}
+                        {activeView === 'list' && <WordListView
+                            words={exerciseWords}
+                            columnsState={columnsState}
+                            setColumnsState={setColumnsState}
+                            onClose={() => setActiveView('text')}
                             settings={settings}
                             setSettings={setSettings}
-                            colorPalette={colorPalette}
-                            onClose={() => setActiveView('text')}
-                            highlightedIndices={highlightedIndices}
-                            hideYellowLetters={hideYellowLetters}
+                            updateTimestamp={Object.keys(textCorrections).length + Object.values(textCorrections).join('').length} // Hash-like dependency
                             wordColors={wordColors}
-                        />
-                    )}
+                            colorPalette={colorPalette}
+                            colorHeaders={colorHeaders}
+                            setColorHeaders={setColorHeaders}
+                            groups={wordGroups}
+                            onRemoveWord={(id) => {
+                                if (typeof id === 'string' && id.startsWith('group-')) {
+                                    // REMOVE GROUP
+                                    const idsString = id.replace('group-', '');
+                                    const ids = idsString.split('-').map(Number);
 
-                    {activeView === 'wordSorting' && <WordSortingView columnsState={columnsState} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Wörter sortieren" wordColors={wordColors} colorPalette={colorPalette} textCorrections={textCorrections} highlightedIndices={highlightedIndices} hideYellowLetters={hideYellowLetters} />}
-                    {activeView === 'alphabetSorting' && <AlphabetSortingView words={hasMarkings ? uniqueExerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Alphabetisch sortieren" highlightedIndices={highlightedIndices} wordColors={wordColors} hideYellowLetters={hideYellowLetters} />}
-                    {activeView === 'list' && <WordListView
-                        words={exerciseWords}
-                        columnsState={columnsState}
-                        setColumnsState={setColumnsState}
-                        onClose={() => setActiveView('text')}
-                        settings={settings}
-                        setSettings={setSettings}
-                        updateTimestamp={Object.keys(textCorrections).length + Object.values(textCorrections).join('').length} // Hash-like dependency
-                        wordColors={wordColors}
-                        colorPalette={colorPalette}
-                        colorHeaders={colorHeaders}
-                        setColorHeaders={setColorHeaders}
-                        groups={wordGroups}
-                        onRemoveWord={(id) => {
-                            if (typeof id === 'string' && id.startsWith('group-')) {
-                                // REMOVE GROUP
-                                const idsString = id.replace('group-', '');
-                                const ids = idsString.split('-').map(Number);
+                                    // 1. Remove from Groups
+                                    setWordGroups(prev => prev.filter(g => {
+                                        if (g.ids.length !== ids.length) return true;
+                                        return !g.ids.every((val, index) => val === ids[index]);
+                                    }));
 
-                                // 1. Remove from Groups
-                                setWordGroups(prev => prev.filter(g => {
-                                    if (g.ids.length !== ids.length) return true;
-                                    return !g.ids.every((val, index) => val === ids[index]);
-                                }));
-
-                                // 2. Remove Colors & Highlights for ALL members
-                                setHighlightedIndices(prev => {
-                                    const next = new Set(prev);
-                                    ids.forEach(startIndex => {
-                                        const w = processedWords.find(pw => pw.index === startIndex);
-                                        if (w) {
-                                            for (let i = 0; i < w.word.length; i++) next.delete(startIndex + i);
-                                        }
-                                    });
-                                    return next;
-                                });
-                                setWordColors(prev => {
-                                    const next = { ...prev };
-                                    ids.forEach(idx => delete next[idx]);
-                                    return next;
-                                });
-
-                            } else {
-                                // REMOVE SINGLE WORD
-                                const target = processedWords.find(w => w.id === id);
-                                if (target) {
+                                    // 2. Remove Colors & Highlights for ALL members
                                     setHighlightedIndices(prev => {
                                         const next = new Set(prev);
-                                        for (let i = 0; i < target.word.length; i++) next.delete(target.index + i);
+                                        ids.forEach(startIndex => {
+                                            const w = processedWords.find(pw => pw.index === startIndex);
+                                            if (w) {
+                                                for (let i = 0; i < w.word.length; i++) next.delete(startIndex + i);
+                                            }
+                                        });
                                         return next;
                                     });
                                     setWordColors(prev => {
                                         const next = { ...prev };
-                                        delete next[target.index];
+                                        ids.forEach(idx => delete next[idx]);
                                         return next;
                                     });
-                                }
-                            }
-                        }}
-                        title="Tabelle"
-                        sortByColor={wordListSortByColor}
-                        setSortByColor={setWordListSortByColor}
-                        columnCount={wordListColumnCount}
-                        setColumnCount={setWordListColumnCount}
-                        // New Props for UI Enhancements
-                        activeColor={activeColor}
-                        isTextMarkerMode={isTextMarkerMode}
-                        onToggleLetterMarker={() => {
-                            if (activeColor === 'yellow' && !isTextMarkerMode) {
-                                setActiveColor('neutral');
-                            } else {
-                                setActiveColor('yellow');
-                                setIsTextMarkerMode(false);
-                                if (activeTool === 'pen') setActiveTool(null);
-                            }
-                        }}
-                        toggleHighlights={stableToggleHighlights}
-                        highlightedIndices={highlightedIndices}
-                        onWordUpdate={(wordId, newText) => {
-                            const index = parseInt(wordId.replace('word_', ''), 10);
-                            if (isNaN(index)) return;
-                            const target = processedWords.find(w => w.index === index);
-                            if (!target) return;
 
-                            const lookupKey = `${target.word}_${target.index}`;
-                            setTextCorrections(prev => ({ ...prev, [lookupKey]: newText }));
-                        }}
-                        onUpdateWordColor={(index, color) => {
-                            setWordColors(prev => {
-                                const next = { ...prev };
-                                if (!color) delete next[index];
-                                else next[index] = color;
-                                return next;
-                            });
-                            // Also ensure the character is in highlightedIndices (grey box logic)
-                            setHighlightedIndices(prev => {
-                                const next = new Set(prev);
-                                if (!color) next.delete(index);
-                                else next.add(index);
-                                return next;
-                            });
-                        }}
-                    />}
-                    {activeView === 'sentence' && <SentencePuzzleView text={text} mode="sentence" settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Satzpuzzle" hyphenator={hyphenator} />}
-                    {activeView === 'textpuzzle' && <SentencePuzzleView text={text} mode="text" settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Textpuzzle" hyphenator={hyphenator} />}
-                    {activeView === 'sentenceshuffle' && <SentenceShuffleView text={text} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Schüttelsätze" hyphenator={hyphenator} />}
-                    {activeView === 'staircase' && <StaircaseView words={hasMarkings ? uniqueExerciseWords.map(w => ({ ...w, isHighlighted: highlightedIndices.has(w.index) })) : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Treppenwörter" />}
-                    {activeView === 'split' && <SplitExerciseView words={hasMarkings ? uniqueExerciseWords : []} onClose={() => setActiveView('text')} settings={settings} setSettings={setSettings} title="Wörter trennen" />}
-                    {activeView === 'gapWords' && <GapWordsView words={hasMarkings ? uniqueExerciseWords : []} highlightedIndices={highlightedIndices} wordColors={wordColors} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Lückenwörter" />}
-                    {activeView === 'initialSound' && <GapWordsView words={hasMarkings ? uniqueExerciseWords : []} highlightedIndices={highlightedIndices} wordColors={wordColors} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} isInitialSound={true} title="Anfangsbuchstaben finden" />}
-                    {activeView === 'verbWriting' && <VerbWritingView words={uniqueExerciseWords} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} />}
-                    {activeView === 'adjectiveWriting' && <AdjectiveWritingView words={uniqueExerciseWords} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} />}
-                    {activeView === 'nounWriting' && <NounWritingView words={uniqueExerciseWords} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} />}
-                    {activeView === 'verbPuzzle' && <VerbPuzzleView words={uniqueExerciseWords} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} />}
-                    {activeView === 'gapSentences' && <GapSentencesView text={text} highlightedIndices={highlightedIndices} wordColors={wordColors} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Lückensätze" hyphenator={hyphenator} />}
-                    {activeView === 'gapText' && <GapTextView text={text} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Lückentext" hyphenator={hyphenator} />}
-                    {activeView === 'caseExercise' && <CaseExerciseView text={text} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Groß-/Kleinschreibung" />}
-                    {activeView === 'find_letters' && <FindLettersView text={text} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Buchstaben finden" />}
+                                } else {
+                                    // REMOVE SINGLE WORD
+                                    const target = processedWords.find(w => w.id === id);
+                                    if (target) {
+                                        setHighlightedIndices(prev => {
+                                            const next = new Set(prev);
+                                            for (let i = 0; i < target.word.length; i++) next.delete(target.index + i);
+                                            return next;
+                                        });
+                                        setWordColors(prev => {
+                                            const next = { ...prev };
+                                            delete next[target.index];
+                                            return next;
+                                        });
+                                    }
+                                }
+                            }}
+                            title="Tabelle"
+                            sortByColor={wordListSortByColor}
+                            setSortByColor={setWordListSortByColor}
+                            columnCount={wordListColumnCount}
+                            setColumnCount={setWordListColumnCount}
+                            // New Props for UI Enhancements
+                            activeColor={activeColor}
+                            isTextMarkerMode={isTextMarkerMode}
+                            onToggleLetterMarker={() => {
+                                if (activeColor === 'yellow' && !isTextMarkerMode) {
+                                    setActiveColor('neutral');
+                                } else {
+                                    setActiveColor('yellow');
+                                    setIsTextMarkerMode(false);
+                                    if (activeTool === 'pen') setActiveTool(null);
+                                }
+                            }}
+                            toggleHighlights={stableToggleHighlights}
+                            highlightedIndices={highlightedIndices}
+                            onWordUpdate={(wordId, newText) => {
+                                const index = parseInt(wordId.replace('word_', ''), 10);
+                                if (isNaN(index)) return;
+                                const target = processedWords.find(w => w.index === index);
+                                if (!target) return;
+
+                                const lookupKey = `${target.word}_${target.index}`;
+                                setTextCorrections(prev => ({ ...prev, [lookupKey]: newText }));
+                            }}
+                            onUpdateWordColor={(index, color) => {
+                                setWordColors(prev => {
+                                    const next = { ...prev };
+                                    if (!color) delete next[index];
+                                    else next[index] = color;
+                                    return next;
+                                });
+                                // Also ensure the character is in highlightedIndices (grey box logic)
+                                setHighlightedIndices(prev => {
+                                    const next = new Set(prev);
+                                    if (!color) next.delete(index);
+                                    else next.add(index);
+                                    return next;
+                                });
+                            }}
+                        />}
+                        {activeView === 'sentence' && <SentencePuzzleView text={text} mode="sentence" settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Satzpuzzle" hyphenator={hyphenator} />}
+                        {activeView === 'textpuzzle' && <SentencePuzzleView text={text} mode="text" settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Textpuzzle" hyphenator={hyphenator} />}
+                        {activeView === 'sentenceshuffle' && <SentenceShuffleView text={text} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Schüttelsätze" hyphenator={hyphenator} />}
+                        {activeView === 'staircase' && <StaircaseView words={hasMarkings ? uniqueExerciseWords.map(w => ({ ...w, isHighlighted: highlightedIndices.has(w.index) })) : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Treppenwörter" />}
+                        {activeView === 'split' && <SplitExerciseView words={hasMarkings ? uniqueExerciseWords : []} onClose={() => setActiveView('text')} settings={settings} setSettings={setSettings} title="Wörter trennen" />}
+                        {activeView === 'gapWords' && <GapWordsView words={hasMarkings ? uniqueExerciseWords : []} highlightedIndices={highlightedIndices} wordColors={wordColors} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Lückenwörter" />}
+                        {activeView === 'initialSound' && <GapWordsView words={hasMarkings ? uniqueExerciseWords : []} highlightedIndices={highlightedIndices} wordColors={wordColors} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} isInitialSound={true} title="Anfangsbuchstaben finden" />}
+                        {activeView === 'verbWriting' && <VerbWritingView words={uniqueExerciseWords} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} />}
+                        {activeView === 'adjectiveWriting' && <AdjectiveWritingView words={uniqueExerciseWords} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} />}
+                        {activeView === 'nounWriting' && <NounWritingView words={uniqueExerciseWords} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} />}
+                        {activeView === 'verbPuzzle' && <VerbPuzzleView words={uniqueExerciseWords} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} />}
+                        {activeView === 'gapSentences' && <GapSentencesView text={text} highlightedIndices={highlightedIndices} wordColors={wordColors} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Lückensätze" hyphenator={hyphenator} />}
+                        {activeView === 'gapText' && <GapTextView text={text} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Lückentext" hyphenator={hyphenator} />}
+                        {activeView === 'caseExercise' && <CaseExerciseView text={text} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Groß-/Kleinschreibung" />}
+                        {activeView === 'find_letters' && <FindLettersView text={text} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Buchstaben finden" />}
+                    </Suspense>
                 </>
             )}
 
@@ -1935,7 +1956,7 @@ const App = () => {
                 wordListSortByColor: wordListSortByColor ? true : undefined,
                 // colorHeaders integrated into columnsState above
             })} onClose={() => setShowQR(false)} />}
-            {showScanner && <QRScannerModal onClose={() => setShowScanner(false)} onScanSuccess={(decodedText) => {
+            {showScanner && <Suspense fallback={<LazyFallback />}><QRScannerModal onClose={() => setShowScanner(false)} onScanSuccess={(decodedText) => {
                 setShowScanner(false);
                 const trimmed = decodedText.trim();
 
@@ -1998,7 +2019,7 @@ const App = () => {
                         }
                     }
                 }
-            }} />}
+            }} /></Suspense>}
             {isImageZoomed && (
                 <div
                     className="fixed inset-0 z-[100] bg-slate-900/90 backdrop-blur-md flex items-center justify-center p-4 md:p-12 cursor-zoom-out animate-in fade-in duration-300"
@@ -2029,11 +2050,16 @@ const App = () => {
                     <ExerciseHintModal
                         exerciseKey={showExerciseHint}
                         onClose={() => setShowExerciseHint(null)}
+                        settings={settings}
                     />
                 </div>
             )}
 
-            {activeView === 'qrcode' && <QRCodePrintView text={JSON.stringify(generateExportData())} settings={settings} title={qrPrintTitle} />}
+            {activeView === 'qrcode' && (
+                <Suspense fallback={<div className="print-content">Lade QR-Code Script...</div>}>
+                    <QRCodePrintView text={JSON.stringify(generateExportData())} settings={settings} title={qrPrintTitle} />
+                </Suspense>
+            )}
         </div>
     );
 };

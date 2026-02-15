@@ -2,9 +2,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Icons } from './Icons';
 import { EmptyStateMessage } from './EmptyStateMessage';
 import { speak } from '../utils/speech';
-import availableSyllables from '../utils/available_syllables.json';
+// import availableSyllables from '../utils/available_syllables.json'; // DEACTIVATED PER USER REQUEST
 
-const syllableSet = new Set(availableSyllables);
+const syllableSet = new Set(); // Empty set, no local audio
 
 import { ProgressBar } from './ProgressBar';
 import { RewardModal } from './shared/RewardModal';
@@ -22,7 +22,20 @@ export const SyllableCarpetView = ({ words, settings, setSettings, onClose, titl
     const [timer, setTimer] = useState(0);
     const [timerActive, setTimerActive] = useState(false);
 
-    const uniqueSyllables = useMemo(() => { const set = new Set(); words.forEach(w => { if (w.syllables) w.syllables.forEach(s => set.add(s.toLowerCase().trim())); }); return Array.from(set).sort((a, b) => a.localeCompare(b, 'de')); }, [JSON.stringify(words)]);
+    const [forceLowercase, setForceLowercase] = useState(false);
+
+    const uniqueSyllables = useMemo(() => {
+        const set = new Set();
+        words.forEach(w => {
+            if (w.syllables) w.syllables.forEach(s => {
+                const text = typeof s === 'string' ? s : s.text;
+                if (!text) return;
+                set.add(forceLowercase ? text.toLowerCase().trim() : text.trim());
+            });
+        });
+        return Array.from(set).sort((a, b) => a.localeCompare(b, 'de'));
+    }, [JSON.stringify(words), forceLowercase]);
+
     useEffect(() => { setShuffledSyllables(uniqueSyllables); }, [uniqueSyllables]);
     useEffect(() => { let interval; if (timerActive) { interval = setInterval(() => setTimer(t => t + 1), 1000); } return () => clearInterval(interval); }, [timerActive]);
 
@@ -82,11 +95,21 @@ export const SyllableCarpetView = ({ words, settings, setSettings, onClose, titl
                         )}
                         <button
                             onClick={() => setIsFingerMode(!isFingerMode)}
-                            className={`p-2.5 rounded-xl transition-all flex items-center justify-center border-2 mr-2 ${isFingerMode ? 'bg-orange-500 text-white border-orange-600 shadow-inner' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 shadow-sm'}`}
+                            className={`p-2.5 rounded-xl transition-all flex items-center justify-center border-2 ${isFingerMode ? 'bg-orange-500 text-white border-orange-600 shadow-inner' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 shadow-sm'}`}
                             title="Lese-Modus (Finger)"
                         >
                             <Icons.Hand size={28} />
                         </button>
+
+                        {/* Casing Toggle */}
+                        <button
+                            onClick={() => setForceLowercase(!forceLowercase)}
+                            className={`w-16 h-12 flex items-center justify-center rounded-xl transition-all border mr-2 ${forceLowercase ? 'bg-blue-600 border-blue-700 shadow-inner' : 'bg-slate-100 border-slate-200 text-slate-500 hover:bg-white hover:shadow-sm'}`}
+                            title={forceLowercase ? "Nur Kleinbuchstaben (aktiv)" : "Original Schreibung"}
+                        >
+                            <Icons.SyllableCasingCorrection size={38} className={forceLowercase ? 'text-white' : 'text-slate-600'} />
+                        </button>
+
                         <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 h-10 rounded-lg no-print">
                             <span className="text-xs font-bold text-slate-500">A</span>
                             <input type="range" min="16" max="120" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-32 accent-blue-600 rounded-lg cursor-pointer" />
@@ -128,7 +151,7 @@ export const SyllableCarpetView = ({ words, settings, setSettings, onClose, titl
                                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSyllableClick(syl); } }}
                                 key={idx}
                                 onClick={() => handleSyllableClick(syl)}
-                                className={`px-4 py-2 rounded-lg ${audioClass} ${boxClass} ${textClass} font-medium select-none text-center flex items-center justify-center transition-all duration-200 lowercase relative ${!isFingerMode && !isGameMode ? 'cursor-pointer hover:bg-slate-200 hover:text-slate-800 hover:border-slate-300' : ''} ${isGameMode && !isCompleted && !isFingerMode ? 'cursor-pointer active:scale-95 hover:shadow-md' : ''} ${isFingerMode ? 'cursor-default' : ''}`}
+                                className={`px-4 py-2 rounded-lg ${audioClass} ${boxClass} ${textClass} font-medium select-none text-center flex items-center justify-center transition-all duration-200 ${forceLowercase ? 'lowercase' : ''} relative ${!isFingerMode && !isGameMode ? 'cursor-pointer hover:bg-slate-200 hover:text-slate-800 hover:border-slate-300' : ''} ${isGameMode && !isCompleted && !isFingerMode ? 'cursor-pointer active:scale-95 hover:shadow-md' : ''} ${isFingerMode ? 'cursor-default' : ''}`}
                                 style={{ fontFamily: settings.fontFamily, fontSize: `${settings.fontSize}px`, minHeight: `${settings.fontSize * 1.5}px` }}
                             >
                                 {syl}

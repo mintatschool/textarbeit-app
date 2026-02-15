@@ -19,6 +19,8 @@ export const QRCodePrintView = ({ text, settings, title }) => {
         }
     }, [text]);
 
+    const displayTitle = (title && title.trim().length > 0) ? title : "Titel";
+
     const { qrValues, errorLevel } = useMemo(() => {
         if (!parsedData || !parsedData.text) {
             return { qrValues: [], errorLevel: 'M' };
@@ -52,6 +54,38 @@ export const QRCodePrintView = ({ text, settings, title }) => {
 
     return (
         <div className="print-content hidden qr-print-wrapper">
+            <style>
+                {`
+                @media print {
+                    @page {
+                        size: auto;
+                        margin: 0mm;
+                    }
+                    html, body {
+                        margin: 0;
+                        padding: 0;
+                    }
+                    .qr-print-wrapper {
+                        display: block !important;
+                        width: 100% !important;
+                        height: auto !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                    }
+                    .qr-print-page {
+                        width: 100%;
+                        /* min-height removed to let content dictate size, preventing forced overflow */
+                        position: relative;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: flex-start;
+                        padding: 2cm;
+                        box-sizing: border-box;
+                    }
+                }
+                `}
+            </style>
             {qrValues.map((val, idx) => (
                 <QRItem
                     key={idx}
@@ -59,48 +93,15 @@ export const QRCodePrintView = ({ text, settings, title }) => {
                     errorLevel={errorLevel}
                     index={idx + 1}
                     total={qrValues.length}
-                    title={title ? (qrValues.length > 1 ? `${title} (${idx + 1}/${qrValues.length})` : title) : (qrValues.length > 1 ? `QR-Code (${idx + 1}/${qrValues.length})` : '')}
+                    title={qrValues.length > 1 ? `${displayTitle} (${idx + 1}/${qrValues.length})` : displayTitle}
+                    isLast={idx === qrValues.length - 1}
                 />
             ))}
-            <style>
-                {`
-                @media screen {
-                    .print-content {
-                        display: none !important;
-                    }
-                }
-                @media print {
-                    .qr-print-wrapper {
-                        display: block !important;
-                        position: static !important;
-                        width: 100% !important;
-                        height: auto !important;
-                        margin: 0 !important;
-                        padding: 0 !important;
-                        overflow: visible !important;
-                    }
-                    .qr-print-page {
-                        page-break-after: always;
-                        page-break-inside: avoid;
-                        width: 100%;
-                        height: 100vh;
-                        position: relative;
-                        overflow: hidden;
-                        margin: 0;
-                        padding: 0;
-                        box-sizing: border-box;
-                    }
-                    .qr-print-page:last-child {
-                        page-break-after: avoid;
-                    }
-                }
-                `}
-            </style>
         </div>
     );
 };
 
-const QRItem = ({ value, errorLevel, index, total, title }) => {
+const QRItem = ({ value, errorLevel, index, total, title, isLast }) => {
     const canvasRef = useRef(null);
     const [imgSrc, setImgSrc] = useState(null);
 
@@ -110,39 +111,40 @@ const QRItem = ({ value, errorLevel, index, total, title }) => {
         new QRious({
             element: canvas,
             value: value,
-            size: 600,
+            size: 2000,
             level: errorLevel,
-            padding: 20
+            padding: 0
         });
         setImgSrc(canvas.toDataURL('image/png'));
     }, [value, errorLevel]);
 
     return (
-        <div className="qr-print-page">
-            {/* Title at fixed top position */}
-            {(title && title.trim().length > 0) && (
-                <div style={{ position: 'absolute', top: '8%', left: '0', width: '100%', textAlign: 'center', padding: '0 2rem' }}>
-                    <h1 className="text-4xl font-black text-slate-900 leading-tight">
-                        {title}
-                    </h1>
-                </div>
-            )}
+        <div className="qr-print-page" style={{ pageBreakAfter: isLast ? 'auto' : 'always' }}>
+            <h1 className="text-4xl font-black text-slate-900 leading-tight text-center mb-8 w-full break-words">
+                {title}
+            </h1>
 
-            {/* QR Code exactly centered - use img for reliable print rendering */}
-            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
+            <div className="w-full flex justify-center">
                 {imgSrc ? (
-                    <img src={imgSrc} alt={`QR Code ${index}`} style={{ width: '500px', height: '500px' }} />
+                    <img
+                        src={imgSrc}
+                        alt={`QR Code ${index}`}
+                        style={{
+                            width: '100%',
+                            height: 'auto',
+                            maxWidth: '100%',
+                            aspectRatio: '1/1',
+                            objectFit: 'contain'
+                        }}
+                    />
                 ) : (
-                    <canvas ref={canvasRef} style={{ width: '500px', height: '500px' }} />
+                    <canvas ref={canvasRef} style={{ width: '100%', height: 'auto' }} />
                 )}
             </div>
 
-            {/* Part Info at fixed bottom position */}
             {total > 1 && (
-                <div style={{ position: 'absolute', bottom: '8%', left: '0', width: '100%', textAlign: 'center' }}>
-                    <div className="text-xl font-bold text-slate-800">
-                        Teil {index} von {total}
-                    </div>
+                <div className="text-xl font-bold text-slate-800 mt-6 text-center">
+                    Teil {index} von {total}
                 </div>
             )}
         </div>

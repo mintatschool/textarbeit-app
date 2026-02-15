@@ -12,6 +12,7 @@ export const SettingsModal = ({ settings, setSettings, onExport, onImport, logo,
     const [showClusterManager, setShowClusterManager] = useState(false);
     const [newCluster, setNewCluster] = useState('');
     const [qrTitle, setQrTitle] = useState('');
+    const [showTermManager, setShowTermManager] = useState(false);
 
     // Close on ESC
     useEffect(() => {
@@ -301,6 +302,29 @@ export const SettingsModal = ({ settings, setSettings, onExport, onImport, logo,
                                     <div className={`w-5 h-5 bg-white rounded-full shadow-lg transform transition-transform ${settings.reduceMenu ? 'translate-x-7' : 'translate-x-0'}`}></div>
                                 </button>
                             </label>
+
+                            <div className="border-t border-slate-50 my-2"></div>
+
+                            <label className="flex items-center justify-between cursor-pointer group">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-slate-50 rounded-xl group-hover:bg-blue-50 transition-colors">
+                                        <Icons.Type size={18} className="text-slate-400 group-hover:text-blue-500" />
+                                    </div>
+                                    <div className="text-sm font-bold text-slate-700">Fachwörter ersetzen <span className="text-[10px] font-normal block text-slate-400">(z. B. Namenwörter statt Substantive)</span></div>
+                                </div>
+                                <button onClick={() => setSettings({ ...settings, replaceTechnicalTerms: !settings.replaceTechnicalTerms })} className={`w-14 h-7 rounded-full p-1 transition-all min-touch-target ${settings.replaceTechnicalTerms ? 'bg-green-500' : 'bg-slate-200'}`}>
+                                    <div className={`w-5 h-5 bg-white rounded-full shadow-lg transform transition-transform ${settings.replaceTechnicalTerms ? 'translate-x-7' : 'translate-x-0'}`}></div>
+                                </button>
+                            </label>
+
+                            {settings.replaceTechnicalTerms && (
+                                <button
+                                    onClick={() => setShowTermManager(true)}
+                                    className="ml-11 flex items-center gap-2 text-sm font-bold text-blue-600 hover:text-blue-700 transition-colors py-2 px-3 bg-blue-50 rounded-lg w-fit"
+                                >
+                                    <Icons.Edit2 size={16} /> Begriffe anpassen
+                                </button>
+                            )}
                         </div>
                     </section>
 
@@ -374,7 +398,7 @@ export const SettingsModal = ({ settings, setSettings, onExport, onImport, logo,
                                                 type="text"
                                                 value={qrTitle}
                                                 onChange={(e) => setQrTitle(e.target.value)}
-                                                placeholder="z.B. Hausaufgabe Mathe"
+                                                placeholder="Titel"
                                                 className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm font-bold text-slate-800 outline-none focus:border-blue-500"
                                             />
                                         </div>
@@ -511,6 +535,84 @@ export const SettingsModal = ({ settings, setSettings, onExport, onImport, logo,
                         <div className="p-4 bg-slate-50 border-t border-slate-100">
                             <button
                                 onClick={() => setShowClusterManager(false)}
+                                className="w-full py-3 bg-slate-800 text-white rounded-xl font-black shadow-lg hover:bg-slate-900 transition-all"
+                            >
+                                FERTIG
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Term Manager Overlay */}
+            {showTermManager && (
+                <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setShowTermManager(false)}>
+                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md flex flex-col max-h-[80vh] overflow-hidden border border-slate-200 animate-in fade-in zoom-in duration-200" onClick={e => e.stopPropagation()}>
+                        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+                            <h3 className="text-lg font-black text-slate-800">Begriffe anpassen</h3>
+                            <button onClick={() => setShowTermManager(false)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                                <Icons.X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="p-6 overflow-y-auto custom-scroll space-y-4">
+                            <div className="text-sm text-slate-500 mb-2">
+                                Hier kannst du festlegen, welche Begriffe statt der Fachwörter angezeigt werden sollen.
+                            </div>
+
+                            {/* Terms List */}
+                            <div className="space-y-3">
+                                {(settings.termReplacements || [
+                                    { technical: "Vokale", simple: "Selbstlaute" },
+                                    { technical: "Konsonanten", simple: "Mitlaute" },
+                                    { technical: "Substantive", simple: "Namenwörter" },
+                                    { technical: "Verben", simple: "Tunwörter" },
+                                    { technical: "Adjektive", simple: "Wiewörter" }
+                                ]).map((pair, index) => (
+                                    <div key={pair.technical} className="flex flex-col gap-1 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                        <div className="text-xs font-bold text-slate-400 uppercase tracking-wide">{pair.technical}</div>
+                                        <input
+                                            type="text"
+                                            value={pair.simple}
+                                            onChange={(e) => {
+                                                const newReplacements = [...(settings.termReplacements || [
+                                                    { technical: "Vokale", simple: "Selbstlaute" },
+                                                    { technical: "Konsonanten", simple: "Mitlaute" },
+                                                    { technical: "Substantive", simple: "Namenwörter" },
+                                                    { technical: "Verben", simple: "Tunwörter" },
+                                                    { technical: "Adjektive", simple: "Wiewörter" }
+                                                ])];
+                                                newReplacements[index] = { ...pair, simple: e.target.value };
+                                                setSettings({ ...settings, termReplacements: newReplacements });
+                                            }}
+                                            className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-base font-bold text-slate-800 outline-none focus:border-blue-500 transition-all"
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="pt-4 border-t border-slate-50">
+                                <button
+                                    onClick={() => {
+                                        const defaults = [
+                                            { technical: "Vokale", simple: "Selbstlaute" },
+                                            { technical: "Konsonanten", simple: "Mitlaute" },
+                                            { technical: "Substantive", simple: "Namenwörter" },
+                                            { technical: "Verben", simple: "Tunwörter" },
+                                            { technical: "Adjektive", simple: "Wiewörter" }
+                                        ];
+                                        setSettings({ ...settings, termReplacements: defaults });
+                                    }}
+                                    className="text-xs font-bold text-slate-400 hover:text-blue-500 transition-colors uppercase tracking-wider"
+                                >
+                                    Standard wiederherstellen
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="p-4 bg-slate-50 border-t border-slate-100">
+                            <button
+                                onClick={() => setShowTermManager(false)}
                                 className="w-full py-3 bg-slate-800 text-white rounded-xl font-black shadow-lg hover:bg-slate-900 transition-all"
                             >
                                 FERTIG

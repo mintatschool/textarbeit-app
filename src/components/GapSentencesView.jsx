@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Word } from './Word';
 import { Icons } from './Icons';
 import { shuffleArray } from '../utils/arrayUtils';
-import { Minus, Plus } from 'lucide-react';
+
 import { EmptyStateMessage } from './EmptyStateMessage';
 import { HorizontalLines } from './shared/UIComponents';
 import { usePreventTouchScroll } from '../hooks/usePreventTouchScroll';
@@ -413,7 +413,7 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
                                 className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 active:scale-90 transition-all shadow-sm disabled:opacity-20 ml-1"
                                 disabled={pendingItemsCount <= 2}
                             >
-                                <Minus className="w-4 h-4" />
+                                <Icons.Minus size={16} />
                             </button>
                             <div className="flex flex-col items-center min-w-[24px]">
                                 <span className={`text-xl font-black transition-colors leading-none ${pendingItemsCount !== itemsPerStage ? 'text-orange-500' : 'text-slate-800'}`}>
@@ -425,7 +425,7 @@ export const GapSentencesView = ({ text, highlightedIndices = new Set(), wordCol
                                 className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 active:scale-90 transition-all shadow-sm disabled:opacity-20 mr-1"
                                 disabled={pendingItemsCount >= 10}
                             >
-                                <Plus className="w-4 h-4" />
+                                <Icons.Plus size={16} />
                             </button>
                             <HorizontalLines count={5} />
                         </div>

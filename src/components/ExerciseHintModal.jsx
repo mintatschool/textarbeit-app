@@ -1,7 +1,9 @@
 import React from 'react';
 import { Icons } from './Icons';
 
-const EXERCISE_HINTS = {
+import { getTerm } from '../utils/terminology';
+
+const getHints = (settings) => ({
     // Buchstaben
     findLetters: {
         title: 'Buchstaben finden',
@@ -127,39 +129,39 @@ const EXERCISE_HINTS = {
         requirements: [
             { text: 'Grauen Kasten wählen' },
             { text: 'Mindestens 2 verschiedene Wortarten markieren' },
-            { text: '(z.B. Substantive und Verben)' }
+            { text: `(z.B. ${getTerm("Substantive", settings)} und ${getTerm("Verben", settings)})` }
         ]
     },
     nounWriting: {
-        title: 'Substantive schreiben',
+        title: `${getTerm("Substantive", settings)} schreiben`,
         icon: Icons.Edit2,
         requirements: [
             { text: 'Grauen Kasten wählen' },
-            { text: 'Substantive mit Pluralformen im Text markieren' }
+            { text: `${getTerm("Substantive", settings)} mit Pluralformen im Text markieren` }
         ]
     },
     verbWriting: {
-        title: 'Verben schreiben',
+        title: `${getTerm("Verben", settings)} schreiben`,
         icon: Icons.Edit2,
         requirements: [
             { text: 'Grauen Kasten wählen' },
-            { text: 'Verben im Text markieren' }
+            { text: `${getTerm("Verben", settings)} im Text markieren` }
         ]
     },
     adjectiveWriting: {
-        title: 'Adjektive schreiben',
+        title: `${getTerm("Adjektive", settings)} schreiben`,
         icon: Icons.Edit2,
         requirements: [
             { text: 'Grauen Kasten wählen' },
-            { text: 'Adjektive im Text markieren' }
+            { text: `${getTerm("Adjektive", settings)} im Text markieren` }
         ]
     },
     verbPuzzle: {
-        title: 'Verben puzzlen',
+        title: `${getTerm("Verben", settings)} puzzlen`,
         icon: Icons.VerbPuzzle,
         requirements: [
             { text: 'Grauen Kasten wählen' },
-            { text: 'Verben im Text markieren' }
+            { text: `${getTerm("Verben", settings)} im Text markieren` }
         ]
     },
 
@@ -214,10 +216,10 @@ const EXERCISE_HINTS = {
             { text: 'Klicke auf "Starten"' }
         ]
     }
-};
+});
 
-export const ExerciseHintModal = ({ onClose, exerciseKey }) => {
-    const hint = EXERCISE_HINTS[exerciseKey];
+export const ExerciseHintModal = ({ onClose, exerciseKey, settings }) => {
+    const hint = getHints(settings)[exerciseKey];
 
     if (!hint) {
         // Fallback for unknown exercises

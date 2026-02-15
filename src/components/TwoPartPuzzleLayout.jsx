@@ -1,13 +1,6 @@
 
 import React, { useMemo } from 'react';
-import {
-    Volume2,
-    VolumeX,
-    ChevronRight,
-    Minus,
-    Plus,
-    AlertCircle
-} from 'lucide-react';
+
 import { Icons } from './Icons';
 import { EmptyStateMessage } from './EmptyStateMessage';
 import { ProgressBar } from './ProgressBar';
@@ -106,7 +99,9 @@ export const TwoPartPuzzleLayout = ({
     skipStageConfirmation = false, // New prop to skip stage complete modal
     maxWordsPerStage, // New prop to limit the max value of words per stage
     hideStageFeedback = false, // New prop to hide success UI and auto-advance
-    forceWhiteText = false // New prop to pass down to pieces
+    forceWhiteText = false, // New prop to pass down to pieces
+    forceLowercase = false, // New prop for casing toggle
+    customControls = null // New prop for injecting buttons into header
 }) => {
     const { gameStatus } = gameState;
 
@@ -208,8 +203,8 @@ export const TwoPartPuzzleLayout = ({
     return (
         <div className="fixed inset-0 bg-blue-50 z-[100] flex flex-col font-sans no-select select-none">
             {/* Header */}
-            <header className="bg-white border-b-2 border-blue-100 px-6 py-3 flex justify-between items-center z-20 shadow-md shrink-0">
-                <div className="flex items-center gap-4">
+            <header className="bg-white border-b-2 border-blue-100 px-5 py-3 flex justify-between items-center z-20 shadow-md shrink-0">
+                <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2">
                         <HeaderIcon className="text-blue-600 w-8 h-8" />
                         <span className="text-2xl font-bold text-slate-800 hidden md:inline">{title}</span>
@@ -228,18 +223,18 @@ export const TwoPartPuzzleLayout = ({
                             className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${audioEnabled ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-400'}`}
                             title={audioEnabled ? 'Audio an' : 'Audio aus'}
                         >
-                            {audioEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
+                            {audioEnabled ? <Icons.Volume2 size={20} /> : <Icons.VolumeX size={20} />}
                         </button>
                     )}
 
                     {/* Mode Selector */}
-                    <div className="flex items-center gap-0.5 bg-slate-100/80 p-1.5 rounded-[1.25rem] border border-slate-200 hidden md:flex">
+                    <div className="flex items-center gap-0 bg-slate-100/80 p-0.5 rounded-[1.25rem] border border-slate-200 hidden md:flex scale-[0.8] origin-center -mr-3">
                         {['both-empty', 'left-filled', 'right-filled'].map((m) => (
                             <button
                                 key={m}
                                 onClick={() => handleModeChange(m)}
                                 className={`
-                                    relative px-2 py-1.5 rounded-xl transition-all duration-300
+                                    relative px-2 py-1 rounded-xl transition-all duration-300
                                     ${gameState.gameMode === m
                                         ? 'bg-white shadow-lg scale-105 border border-blue-100'
                                         : 'hover:bg-white/50 border border-transparent'}
@@ -247,7 +242,7 @@ export const TwoPartPuzzleLayout = ({
                                 `}
                                 title={m === 'both-empty' ? 'Beide Teile finden' : m === 'left-filled' ? 'Zweiten Teil finden' : 'Ersten Teil finden'}
                             >
-                                <div className="transform scale-75 origin-center">
+                                <div className="transform origin-center">
                                     <ModeIcon mode={m} active={gameState.gameMode === m} />
                                 </div>
                             </button>
@@ -262,10 +257,10 @@ export const TwoPartPuzzleLayout = ({
                             className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 active:scale-90 transition-all shadow-sm disabled:opacity-20 ml-1"
                             disabled={pendingWordsCount <= 2}
                         >
-                            <Minus className="w-4 h-4" />
+                            <Icons.Minus size={16} />
                         </button>
                         <div className="flex flex-col items-center min-w-[24px] relative group">
-                            <span className={`text-xl font-black transition-colors leading-none ${pendingWordsCount !== gameState.wordsPerStage ? 'text-orange-500' : 'text-slate-800'}`}>
+                            <span className={`text-xl font-bold transition-colors leading-none ${pendingWordsCount !== gameState.wordsPerStage ? 'text-orange-500' : 'text-slate-800'}`}>
                                 {pendingWordsCount}
                             </span>
                             {maxWordsPerStage && (
@@ -279,10 +274,13 @@ export const TwoPartPuzzleLayout = ({
                             className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 active:scale-90 transition-all shadow-sm disabled:opacity-20 mr-1 disabled:cursor-not-allowed"
                             disabled={pendingWordsCount >= 8 || (maxWordsPerStage !== undefined && pendingWordsCount >= maxWordsPerStage)}
                         >
-                            <Plus className="w-4 h-4" />
+                            <Icons.Plus size={16} />
                         </button>
                         <HorizontalLines count={5} />
                     </div>
+
+                    {/* Custom Controls (Injected) */}
+                    {customControls}
 
                     {/* Scale Slider */}
                     <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 h-10 rounded-lg">
@@ -343,6 +341,7 @@ export const TwoPartPuzzleLayout = ({
                                         fontFamily={settings.fontFamily}
                                         isSelected={isSelected}
                                         forceWhiteText={forceWhiteText}
+                                        forceLowercase={forceLowercase}
                                     />
                                 </div>
                             </div>
@@ -359,12 +358,12 @@ export const TwoPartPuzzleLayout = ({
                         {gameStatus === 'stage-complete' && skipStageConfirmation && !hideStageFeedback ? (
                             <div className="flex flex-col items-center gap-6 animate-in zoom-in duration-300 py-8">
                                 <Icons.Check className="w-16 h-16 text-green-500 mb-2" />
-                                <h2 className="text-2xl font-black text-slate-800">Level geschafft!</h2>
+                                <h2 className="text-2xl font-bold text-slate-800">Level geschafft!</h2>
                                 <button
                                     onClick={advanceToNextStage}
                                     className="bg-blue-600 hover:bg-blue-700 text-white pl-6 pr-4 py-3 rounded-2xl font-bold shadow-xl text-lg hover:scale-105 transition-all flex items-center gap-2 ring-4 ring-white/50"
                                 >
-                                    Weiter <ChevronRight size={24} />
+                                    Weiter <Icons.ChevronRight size={24} />
                                 </button>
                             </div>
                         ) : (
@@ -394,7 +393,7 @@ export const TwoPartPuzzleLayout = ({
                                                         height: `${110 * scale}px`,
                                                         // Animate margin if snapped. Use a larger overlap (e.g. +52) to pull them together tightly.
                                                         marginLeft: idx === 0 ? 0 : `-${(isSnapped && pieceText ? (overlap + 52) : overlap) * scale}px`,
-                                                        zIndex: idx === 0 ? 2 : 1,
+                                                        zIndex: idx === 0 ? 1 : 2,
                                                         transform: 'none',
                                                         filter: 'none'
                                                     }}
@@ -418,6 +417,7 @@ export const TwoPartPuzzleLayout = ({
                                                                 fontFamily={settings.fontFamily}
                                                                 isSelected={!pieceText && selectedPiece && selectedPiece.type === (role === 'left' ? leftType : rightType)}
                                                                 forceWhiteText={forceWhiteText}
+                                                                forceLowercase={forceLowercase}
                                                             />
                                                         </div>
                                                     )}
@@ -440,6 +440,7 @@ export const TwoPartPuzzleLayout = ({
                                                                 showSeamLine={true}
                                                                 fontFamily={settings.fontFamily}
                                                                 forceWhiteText={forceWhiteText}
+                                                                forceLowercase={forceLowercase}
                                                             />
                                                         </div>
                                                     )}
@@ -450,7 +451,8 @@ export const TwoPartPuzzleLayout = ({
 
                                     {/* Success Checkmark & Audio Group - Now strictly to the right of the Pieces Group */}
                                     {/* We wrap it in a container that has the same height-center alignment */}
-                                    <div className="flex flex-col items-center gap-4 ml-2 self-center mt-8 relative">
+                                    <div className="flex flex-col items-center gap-4 ml-10 self-center mt-2 relative">
+
                                         <div className="flex items-center gap-5">
                                             {/* Speaker */}
                                             {audioEnabled && (
@@ -459,7 +461,7 @@ export const TwoPartPuzzleLayout = ({
                                                     className="w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all ring-4 ring-white/50 shrink-0 z-10"
                                                     title="Anhören"
                                                 >
-                                                    <Volume2 className="w-7 h-7" />
+                                                    <Icons.Volume2 size={28} />
                                                 </button>
                                             )}
 
@@ -481,7 +483,7 @@ export const TwoPartPuzzleLayout = ({
                                                     onClick={handleNextItem}
                                                     className="bg-blue-600 hover:bg-blue-700 text-white pl-6 pr-4 py-3 rounded-2xl font-bold shadow-xl text-lg hover:scale-105 transition-all flex items-center gap-2 ring-4 ring-white/50 whitespace-nowrap"
                                                 >
-                                                    Weiter <ChevronRight size={24} />
+                                                    Weiter <Icons.ChevronRight size={24} />
                                                 </button>
                                             </div>
                                         )}
@@ -522,6 +524,7 @@ export const TwoPartPuzzleLayout = ({
                                         fontFamily={settings.fontFamily}
                                         isSelected={isSelected}
                                         forceWhiteText={forceWhiteText}
+                                        forceLowercase={forceLowercase}
                                     />
                                 </div>
                             </div>
@@ -550,6 +553,7 @@ export const TwoPartPuzzleLayout = ({
                             fontFamily={settings.fontFamily}
                             showSeamLine={true} // Always show seams in dragging
                             forceWhiteText={forceWhiteText}
+                            forceLowercase={forceLowercase}
                         />
                     </div>
                 </div>

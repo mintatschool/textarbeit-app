@@ -14,7 +14,8 @@ export const WordListCell = React.memo(({
     onWordUpdate,
     onRemoveWord,
     highlightedIndices,
-    onUpdateWordColor, // New prop
+    onUpdateWordColor,
+    colorPalette,
     pointerDrag,
     draggables
 }, ref) => {
@@ -108,6 +109,16 @@ export const WordListCell = React.memo(({
         } else {
             console.log("Ignored click:", { interactionMode, absCharIndex });
         }
+    };
+
+    const resolveColor = (colorCode) => {
+        if (!colorCode) return 'transparent';
+        if (colorCode === 'yellow') return 'yellow';
+        if (typeof colorCode === 'string' && colorCode.startsWith('palette-')) {
+            const idx = parseInt(colorCode.split('-')[1], 10);
+            return colorPalette && colorPalette[idx] ? colorPalette[idx] : 'transparent';
+        }
+        return colorCode; // Legacy hex
     };
 
     const containerRef = useRef(null);
@@ -241,6 +252,8 @@ export const WordListCell = React.memo(({
                                         const isNaNIndex = isNaN(absCharIndex);
 
                                         const isCharHighlighted = (wordColors && wordColors[absCharIndex] === 'yellow');
+                                        const charColorCode = wordColors && wordColors[absCharIndex];
+                                        const resolvedCharColor = resolveColor(charColorCode);
 
                                         let rounded = 'rounded px-[2px]';
                                         let customClasses = '!cursor-pointer hover:bg-slate-200 transition-colors active:bg-slate-300 prevent-pan';
@@ -251,6 +264,18 @@ export const WordListCell = React.memo(({
                                         if (isNaNIndex) {
                                             style.border = '2px solid red';
                                             style.backgroundColor = '#fee2e2';
+                                        } else if (resolvedCharColor && resolvedCharColor !== 'transparent') {
+                                            // Generic Color Marker Logic (e.g. Peach, Green)
+                                            style = {
+                                                transition: 'none',
+                                                backgroundColor: resolvedCharColor,
+                                                paddingTop: '0.05em',
+                                                paddingBottom: '0.10em',
+                                                marginTop: '-0.05em',
+                                                marginBottom: '-0.10em',
+                                            };
+                                            // Make it look like a marker block
+                                            rounded = 'rounded-none px-[2px]';
                                         }
 
                                         if (isCharHighlighted) {
@@ -267,17 +292,18 @@ export const WordListCell = React.memo(({
                                             const hasLeft = (wordColors && wordColors[absCharIndex - 1] === 'yellow');
                                             const hasRight = (wordColors && wordColors[absCharIndex + 1] === 'yellow');
 
+
                                             if (hasLeft && hasRight) {
-                                                rounded = 'rounded-none';
+                                                rounded = 'rounded-none px-[2px]';
                                                 customClasses += ' shadow-border-yellow-mid';
                                             } else if (hasLeft) {
-                                                rounded = 'rounded-r-md rounded-l-none';
+                                                rounded = 'rounded-r-md rounded-l-none px-[2px]';
                                                 customClasses += ' shadow-border-yellow-right';
                                             } else if (hasRight) {
-                                                rounded = 'rounded-l-md rounded-r-none';
+                                                rounded = 'rounded-l-md rounded-r-none px-[2px]';
                                                 customClasses += ' shadow-border-yellow-left';
                                             } else {
-                                                rounded = 'rounded-md';
+                                                rounded = 'rounded-md px-[2px]';
                                                 customClasses += ' shadow-border-yellow';
                                             }
                                         }

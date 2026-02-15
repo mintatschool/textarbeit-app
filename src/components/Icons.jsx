@@ -83,6 +83,12 @@ export const Icons = {
     Arcs: (p) => <Icon {...p} path={<><path d="M7 16c2-4 5-4 7 0" /><path d="M13 16c2-4 5-4 7 0" /></>} />,
     Printer: (p) => <Icon {...p} path={<><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></>} />,
     Volume2: (p) => <Icon {...p} path={<><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></>} />,
+    VolumeX: (p) => <Icon {...p} path={<><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></>} />,
+    Minus: (p) => <Icon {...p} path={<line x1="5" y1="12" x2="19" y2="12" />} />,
+    ChevronsUpDown: (p) => <Icon {...p} path={<><polyline points="7 15 12 20 17 15" /><polyline points="17 9 12 4 7 9" /></>} />,
+    Maximize2: (p) => <Icon {...p} path={<><polyline points="15 3 21 3 21 9" /><polyline points="9 21 3 21 3 15" /><line x1="21" y1="3" x2="14" y2="10" /><line x1="3" y1="21" x2="10" y2="14" /></>} />,
+    AlertCircle: (p) => <Icon {...p} path={<><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></>} />,
+    RotateCcw: (p) => <Icon {...p} path={<><polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" /></>} />,
     Play: (p) => <Icon {...p} path={<><polygon points="5 3 19 12 5 21 5 3"></polygon></>} />,
     Pause: (p) => <Icon {...p} path={<><rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" /></>} />,
     Shuffle: (p) => <Icon {...p} path={<><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></>} />,
@@ -196,8 +202,7 @@ export const Icons = {
         <line x1="14" y1="19" x2="17" y2="7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
 
         {/* Lowercase a */}
-        <circle cx="21" cy="15.5" r="2.5" stroke="currentColor" strokeWidth="2.5" />
-        <line x1="23.5" y1="12" x2="23.5" y2="18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+        <path d="M 18.5 15.5 a 2.5 2.5 0 1 0 5 0 a 2.5 2.5 0 1 0 -5 0 M 23.5 13.5 v 4.5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
     </g>} />,
     Group: ({ size = 24, className = "" }) => (
         <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -378,4 +383,78 @@ export const Icons = {
         </svg>
     ),
     Share: (p) => <Icon {...p} path={<><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" /></>} />,
+    WordCasingCorrection: (p) => (
+        <svg width={p.size || 48} height={(p.size || 48) * 0.5} viewBox="0 0 120 60" fill="none" className={p.className}>
+            {/* Uppercase gray D */}
+            <path
+                d="M 10 10 V 50 H 22 C 48 50 48 10 22 10 Z M 20 18 H 22 C 38 18 38 42 22 42 H 20 Z"
+                fill="#9ca3af"
+            />
+            {/* Lowercase red d (overlapping) */}
+            <path
+                d="M 12 40 a 11 11 0 1 0 22 0 a 11 11 0 1 0 -22 0 M 34 10 v 40"
+                stroke="#ef4444"
+                strokeWidth="8"
+                fill="none"
+                strokeLinecap="round"
+            />
+            {/* Lowercase black a (round body, short stem) */}
+            <path
+                d="M 52 40 a 10 10 0 1 0 20 0 a 10 10 0 1 0 -20 0 M 72 32 v 18"
+                stroke="currentColor"
+                strokeWidth="7"
+                fill="none"
+                strokeLinecap="round"
+            />
+            {/* Lowercase black s (aligned with a, smooth curves) */}
+            <path
+                d="M 102 34 C 102 27 88 27 88 34 C 88 40 102 40 102 46 C 102 53 88 53 88 46"
+                stroke="currentColor"
+                strokeWidth="7"
+                fill="none"
+                strokeLinecap="round"
+            />
+        </svg>
+    ),
+    SortByColorColumns: (p) => <Icon {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" path={<>
+        <rect x="3" y="4" width="18" height="16" rx="2" strokeWidth="2" />
+        <line x1="9" y1="4" x2="9" y2="20" strokeWidth="2" />
+        <line x1="15" y1="4" x2="15" y2="20" strokeWidth="2" />
+        <line x1="3" y1="9" x2="21" y2="9" strokeWidth="2" />
+        <rect x="4" y="5" width="4" height="3" fill="#3b82f6" stroke="none" rx="0.5" />
+        <rect x="10" y="5" width="4" height="3" fill="#ef4444" stroke="none" rx="0.5" />
+        <rect x="16" y="5" width="4" height="3" fill="#22c55e" stroke="none" rx="0.5" />
+    </>} />,
+    SyllableCasingCorrection: (p) => (
+        <svg width={p.size || 48} height={(p.size || 48) * 0.5} viewBox="0 0 100 60" fill="none" className={p.className}>
+            <g transform="translate(50, 30) scale(1.55) translate(-36.5, -30)">
+                {/* Uppercase gray M */}
+                <path
+                    d="M 10 50 V 10 L 22 35 L 34 10 V 50"
+                    stroke="#9ca3af"
+                    strokeWidth="7"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                />
+                {/* Lowercase red m (overlapping) */}
+                <path
+                    d="M 12 50 V 30 a 5 5 0 0 1 10 0 V 50 m 0 -20 a 5 5 0 0 1 10 0 V 50"
+                    stroke="#ef4444"
+                    strokeWidth="6"
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                />
+                {/* Lowercase black a (round body, short stem) */}
+                <path
+                    d="M 45 40 a 9 9 0 1 0 18 0 a 9 9 0 1 0 -18 0 M 63 32 v 18"
+                    stroke="currentColor"
+                    strokeWidth="6"
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                />
+            </g>
+        </svg>
+    ),
 };

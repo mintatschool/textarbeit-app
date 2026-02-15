@@ -1,4 +1,6 @@
-import availableSyllables from './available_syllables.json';
+// DEACTIVATED PER USER REQUEST (2025-02-15)
+// import availableSyllables from './available_syllables.json';
+const availableSyllables = []; // Empty fallback
 
 const rawSyllables = (availableSyllables && Array.isArray(availableSyllables) ? availableSyllables : (availableSyllables?.default || []));
 const syllableSet = new Set(Array.isArray(rawSyllables) ? rawSyllables.map(s => s.toLowerCase().trim()) : []);
@@ -11,6 +13,10 @@ export const getAudioListSize = () => syllableSet.size;
  * Checks if a syllable has a local MP3 file available.
  */
 export const hasAudio = (text) => {
+    // DEACTIVATED PER USER REQUEST (2025-02-15) - Always return false
+    return false;
+
+    /* Original logic:
     if (!text || typeof text !== 'string') return false;
     // Replace soft hyphens and other non-alphabetical characters
     const normalized = text.toLowerCase().trim()
@@ -19,6 +25,7 @@ export const hasAudio = (text) => {
 
     const exists = syllableSet.has(normalized);
     return exists;
+    */
 };
 
 let currentAudio = null;
@@ -43,6 +50,7 @@ export const speak = (text) => {
         .replace(/\u00AD/g, '') // Remove soft hyphens
         .replace(/[^a-zäöüß]/g, ''); // Match hasAudio logic
 
+    /* DEACTIVATED PER USER REQUEST (2025-02-15)
     if (syllableSet.has(normalized)) {
         const audioPath = `${BASE_PATH}audio/syllables/${normalized}.mp3`.replace(/\/+/g, '/');
         const audio = new Audio(audioPath);
@@ -59,6 +67,7 @@ export const speak = (text) => {
         });
         return;
     }
+    */
 
     // 2. Fallback to speech synthesis
     speakSynthesis(text);

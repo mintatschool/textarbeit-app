@@ -1,16 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import {
-    Maximize2,
-    AlertCircle,
-    RotateCcw,
-    Volume2,
-    VolumeX,
-    Minus,
-    Plus,
-    ArrowRight,
-    Check
-} from 'lucide-react';
+
 import { Icons } from './Icons';
 import { ProgressBar } from './ProgressBar';
 import PuzzleTestPiece from './PuzzleTestPiece';
@@ -43,6 +33,8 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
     const [pendingWordsCount, setPendingWordsCount] = useState(3);
     const debounceTimerRef = useRef(null);
     const [activeLengths, setActiveLengths] = useState([]);
+    const [forceLowercase, setForceLowercase] = useState(false);
+
 
     // State for Pieces & Slots
     // scrambledPieces: Array of { id, text, type, color, ... }
@@ -220,7 +212,8 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
 
     useEffect(() => {
         startNewGame();
-    }, []);
+    }, [startNewGame]);
+
 
 
     // --------------------------------------------------------------------------------
@@ -539,6 +532,20 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
     const middleVisible = scrambledPieces.middle.filter(p => !allPlacedIds.has(p.id));
 
 
+
+
+
+    // Casing Toggle Button
+    const casingToggleButton = (
+        <button
+            onClick={() => setForceLowercase(!forceLowercase)}
+            className={`w-12 h-10 flex items-center justify-center rounded-lg transition-all border mr-2 ${forceLowercase ? 'bg-blue-600 border-blue-700 shadow-inner' : 'bg-slate-100 border-slate-200 text-slate-500 hover:bg-white hover:shadow-sm'}`}
+            title={forceLowercase ? "Nur Kleinbuchstaben (aktiv)" : "Original Schreibung"}
+        >
+            <Icons.SyllableCasingCorrection size={28} className={forceLowercase ? 'text-white' : 'text-slate-600'} />
+        </button>
+    );
+
     return (
         <div className="fixed inset-0 bg-blue-50 z-[100] flex flex-col font-sans no-select select-none">
             {/* HEADER */}
@@ -554,19 +561,21 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                 showSlider={false}
                 customControls={
                     <>
+                        {casingToggleButton}
+
                         {/* Words Count Control */}
                         <div className="flex items-center gap-2 bg-slate-50 px-2 py-1 rounded-2xl border border-slate-200 hidden lg:flex">
                             <HorizontalLines count={2} />
                             <button onClick={() => handleWordsCountChange(-1)} disabled={pendingWordsCount <= 2} className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 active:scale-90 transition-all shadow-sm disabled:opacity-20 ml-1">
-                                <Minus className="w-5 h-5" />
+                                <Icons.Minus size={20} />
                             </button>
                             <div className="flex flex-col items-center min-w-[24px]">
-                                <span className={`text-xl font-black transition-colors leading-none ${pendingWordsCount !== gameState.wordsPerStage ? 'text-orange-500' : 'text-slate-800'}`}>
+                                <span className={`text-xl font-bold transition-colors leading-none ${pendingWordsCount !== gameState.wordsPerStage ? 'text-orange-500' : 'text-slate-800'}`}>
                                     {pendingWordsCount}
                                 </span>
                             </div>
                             <button onClick={() => handleWordsCountChange(1)} disabled={pendingWordsCount >= 6} className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 active:scale-90 transition-all shadow-sm disabled:opacity-20 mr-1">
-                                <Plus className="w-5 h-5" />
+                                <Icons.Plus size={20} />
                             </button>
                             <HorizontalLines count={5} />
                         </div>
@@ -612,7 +621,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                                     {...getDragProps(p, p.id)}
                                 >
                                     <div className={`transition-all duration-200 rounded-xl`}>
-                                        <PuzzleTestPiece label={p.text} type="zigzag-left" colorClass={getPieceColor(p.color, activeColor)} scale={gameState.pieceScale * 0.8} fontFamily={settings.fontFamily} isSelected={isSelected} />
+                                        <PuzzleTestPiece label={p.text} type="zigzag-left" colorClass={getPieceColor(p.color, activeColor)} scale={gameState.pieceScale * 0.8} fontFamily={settings.fontFamily} isSelected={isSelected} forceLowercase={forceLowercase} />
                                     </div>
                                 </div>
                             );
@@ -645,7 +654,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                                             {...getDragProps(p, p.id)}
                                         >
                                             <div className={`transition-all duration-200 rounded-xl`}>
-                                                <PuzzleTestPiece label={p.text} type="zigzag-middle" colorClass={getPieceColor(p.color, activeColor)} scale={gameState.pieceScale * 0.8} fontFamily={settings.fontFamily} isSelected={isSelected} />
+                                                <PuzzleTestPiece label={p.text} type="zigzag-middle" colorClass={getPieceColor(p.color, activeColor)} scale={gameState.pieceScale * 0.8} fontFamily={settings.fontFamily} isSelected={isSelected} forceLowercase={forceLowercase} />
                                             </div>
                                         </div>
                                     );
@@ -666,7 +675,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                                 ? (currentStage.items.find(t => t.id === solvedId)?.full || target.full)
                                 : target.full;
 
-                            const SNAP_OFFSET = 20;
+                            const SNAP_OFFSET = 25;
                             // Width calculation
                             let totalOverlapReduction = 0;
                             if (target.parts.length > 1) {
@@ -682,9 +691,9 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                             const totalWidth = (target.parts.length * 200) - totalOverlapReduction;
 
                             return (
-                                <div key={target.id} className={`flex items-center gap-2 transition-all duration-500 ${isComplete ? 'opacity-80 scale-95' : ''}`}>
+                                <div key={target.id} className={`flex items-center gap-2 transition-all duration-500 ${isComplete ? 'opacity-80' : ''}`}>
                                     {/* Slot Row */}
-                                    <div className="relative flex items-center justify-center transition-all duration-500 will-change-[width]"
+                                    <div className="relative flex items-center justify-center transition-all duration-500 will-change-[width] overflow-visible"
                                         style={{
                                             height: 110 * (gameState.pieceScale * 0.85),
                                             width: totalWidth * (gameState.pieceScale * 0.85)
@@ -696,6 +705,8 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                                                 const isStart = idx === 0;
                                                 const isEnd = idx === target.parts.length - 1;
 
+                                                const SNAP_OFFSET = 25;
+                                                // Width calculation (Restored original snap-to-fit)
                                                 let overlap = idx === 0 ? 0 : (idx === 1 ? 90 : 60);
                                                 if (!isComplete && idx > 0) {
                                                     overlap -= SNAP_OFFSET;
@@ -715,7 +726,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                                                         style={{
                                                             width: 200, height: 110,
                                                             marginLeft: marginLeft,
-                                                            zIndex: 10 + idx,
+                                                            zIndex: 50 - idx,
                                                             filter: 'none'
                                                         }}
                                                         onClick={() => {
@@ -724,7 +735,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                                                     >
                                                         {!piece && (
                                                             <div className={`pointer-events-none transition-all duration-200 rounded-xl ${slotIsTarget ? 'opacity-100' : 'opacity-40'}`}>
-                                                                <PuzzleTestPiece label="" type={targetType} isGhost scale={1} fontFamily={settings.fontFamily} isSelected={slotIsTarget} />
+                                                                <PuzzleTestPiece label="" type={targetType} isGhost scale={1} fontFamily={settings.fontFamily} isSelected={slotIsTarget} forceLowercase={forceLowercase} />
                                                             </div>
                                                         )}
                                                         {piece && (
@@ -744,6 +755,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                                                                     showSeamLine={true}
                                                                     fontFamily={settings.fontFamily}
                                                                     forceWhiteText={true}
+                                                                    forceLowercase={forceLowercase}
                                                                 />
                                                             </div>
                                                         )}
@@ -754,7 +766,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                                     </div>
 
                                     {/* Audio, Checkmark & Manual Advance Group */}
-                                    <div className="flex flex-col items-center gap-2 shrink-0 relative">
+                                    <div className="flex flex-col items-center gap-2 ml-10 shrink-0 relative">
                                         <div className="flex items-center gap-2 min-h-[56px]">
                                             {/* Speaker */}
                                             {audioEnabled && (
@@ -763,7 +775,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                                                     className="w-[70px] h-[70px] bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg transition-all ring-4 ring-white/50 hover:scale-105 active:scale-95 z-10 shrink-0"
                                                     title="Anhören"
                                                 >
-                                                    <Volume2 size={30} />
+                                                    <Icons.Volume2 size={30} />
                                                 </button>
                                             )}
 
@@ -782,7 +794,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                                                     onClick={handleManualAdvance}
                                                     className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl font-bold shadow-xl text-xl hover:scale-105 transition-all flex items-center gap-2 ring-4 ring-white/50 whitespace-nowrap"
                                                 >
-                                                    Weiter <ArrowRight size={30} />
+                                                    Weiter <Icons.ArrowRight size={30} />
                                                 </button>
                                             </div>
                                         )}
@@ -825,6 +837,7 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                                         fontFamily={settings.fontFamily}
                                         isSelected={isSelected}
                                         forceWhiteText={true}
+                                        forceLowercase={forceLowercase}
                                     />
                                 </div>
                             </div>

@@ -4,6 +4,7 @@ import { EmptyStateMessage } from './EmptyStateMessage';
 import { ProgressBar } from './ProgressBar';
 import { speak } from '../utils/speech';
 import { shuffleArray } from '../utils/arrayUtils';
+import { getTerm } from '../utils/terminology';
 import { ExerciseHeader } from './ExerciseHeader';
 import { RewardModal } from './shared/RewardModal';
 
@@ -75,7 +76,7 @@ export const SplitExerciseView = ({ words, onClose, settings, setSettings, title
                         onClick={() => setShowVowels(!showVowels)}
                         className={`px-4 py-2 rounded-xl font-bold text-lg border transition-all min-touch-target ${showVowels ? 'bg-yellow-400 text-yellow-900 border-yellow-500 shadow-[0_2px_0_0_#eab308]' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}
                     >
-                        Vokale
+                        {getTerm("Vokale", settings)}
                     </button>
                 }
             />

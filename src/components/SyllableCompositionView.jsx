@@ -83,8 +83,8 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [], ti
             if (cleanSyl.length < 2) return;
             if (seen.has(lowerSyl)) return;
 
-            // Must have audio
-            if (!hasAudio(lowerSyl)) return;
+            // Must have audio - DEACTIVATED PER USER REQUEST (2025-02-15)
+            // if (!hasAudio(lowerSyl)) return;
 
             // Must consist of (Letter/Cluster) + (Letter/Cluster)
             let foundSplit = null;
@@ -133,6 +133,19 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [], ti
         }
     };
 
+    const [forceLowercase, setForceLowercase] = React.useState(false);
+
+    // Casing Toggle Button
+    const casingToggleButton = (
+        <button
+            onClick={() => setForceLowercase(!forceLowercase)}
+            className={`w-12 h-10 flex items-center justify-center rounded-lg transition-all border mr-2 ${forceLowercase ? 'bg-blue-600 border-blue-700 shadow-inner' : 'bg-slate-100 border-slate-200 text-slate-500 hover:bg-white hover:shadow-sm'}`}
+            title={forceLowercase ? "Nur Kleinbuchstaben (aktiv)" : "Original Schreibung"}
+        >
+            <Icons.SyllableCasingCorrection size={28} className={forceLowercase ? 'text-white' : 'text-slate-600'} />
+        </button>
+    );
+
     return (
         <TwoPartPuzzleLayout
             {...puzzleState}
@@ -147,12 +160,15 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [], ti
             renderModeIcon={ArrowModeIcon}
             activeColor={activeColor}
             onSpeak={handleSpeak}
-            emptyMessage="Keine passenden Silben gefunden."
+            // emptyMessage="Keine passenden Silben gefunden." // ARCHIVED PER USER REQUEST
+            emptyHint="Wörter markieren."
+            /* Original Hint:
             emptyHint={<>
                 Passende Wörter markieren!
                 <br />
                 <span className="block mt-1 text-sm font-normal text-slate-400">Für diese Übung werden sehr häufige und einfache Silben benötigt.</span>
             </>}
+            */
             allCompleteMessage="Alle Silben gebaut!"
             stageCompleteMessage="Level geschafft!"
             hideSpeakerToggle={true}
@@ -160,6 +176,8 @@ export const SyllableCompositionView = ({ onClose, settings = {}, words = [], ti
             manualAdvance={true}
             maxWordsPerStage={validItems.length}
             forceWhiteText={true}
+            forceLowercase={forceLowercase}
+            customControls={casingToggleButton}
         />
     );
 };

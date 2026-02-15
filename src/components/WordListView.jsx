@@ -3,6 +3,7 @@ import { Icons } from './Icons';
 import { EmptyStateMessage } from './EmptyStateMessage';
 import { WordListCell } from './WordListCell';
 import { usePreventTouchScroll } from '../hooks/usePreventTouchScroll';
+import { getCorrectCasing } from '../utils/wordCasingUtils';
 import { polyfill } from 'mobile-drag-drop';
 import { scrollBehaviourDragImageTranslateOverride } from 'mobile-drag-drop/scroll-behaviour';
 polyfill({ dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride });
@@ -12,8 +13,9 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
     const dragItemRef = useRef(null);
     const prevWordsProp = useRef(null);
 
-    const [interactionMode, setInteractionMode] = useState('case');
+    const [interactionMode, setInteractionMode] = useState('mark');
     const [showSortAlert, setShowSortAlert] = useState(false);
+    const [autoCorrectCasing, setAutoCorrectCasing] = useState(false);
 
     // Sync interactionMode if activeColor/isTextMarkerMode changes from outside (Toolbar)
     useEffect(() => {
@@ -161,6 +163,48 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
         sortedInput.forEach(w => {
             if (processedIndices.has(w.index)) return;
 
+            // Apply auto-correction if enabled
+            // 'w.word' in exerciseWords is now corrected by default (App.jsx)
+            // 'w.originalWord' is the exact text from the source
+            let currentWordText = autoCorrectCasing ? w.word : (w.originalWord || w.word);
+            let currentSyllables = w.syllables;
+
+            // If we are NOT auto-correcting, we might need to adjust syllables back to original
+            if (!autoCorrectCasing && w.originalWord && w.originalWord !== w.word) {
+                // If syllables exist, try to revert the first syllable's casing
+                if (currentSyllables && currentSyllables.length > 0) {
+                    currentSyllables = [...currentSyllables];
+                    const firstCharOrig = w.originalWord.charAt(0);
+                    const firstSyl = currentSyllables[0];
+                    if (typeof firstSyl === 'string') {
+                        currentSyllables[0] = firstCharOrig + firstSyl.slice(1);
+                    } else if (firstSyl && firstSyl.text) {
+                        currentSyllables[0] = { ...firstSyl, text: firstCharOrig + firstSyl.text.slice(1) };
+                    }
+                }
+            }
+
+            // The following autoCorrectCasing block is now largely redundant if App.jsx handles it,
+            // but we keep it for robustness if getCorrectCasing differs or for manual corrections.
+            if (autoCorrectCasing) {
+                const corrected = getCorrectCasing(currentWordText);
+                if (corrected !== currentWordText) {
+                    currentWordText = corrected;
+                    // If word changed, we should probably adjust syllables (at least the first one/casing)
+                    // Simple approach: if we have syllables, apply capitalization change to first syllable if it matches first char of word
+                    if (currentSyllables && currentSyllables.length > 0) {
+                        currentSyllables = [...currentSyllables];
+                        const firstCharWord = currentWordText.charAt(0);
+                        const firstSyl = currentSyllables[0];
+                        if (typeof firstSyl === 'string') {
+                            currentSyllables[0] = firstCharWord + firstSyl.slice(1);
+                        } else if (firstSyl && firstSyl.text) {
+                            currentSyllables[0] = { ...firstSyl, text: firstCharWord + firstSyl.text.slice(1) };
+                        }
+                    }
+                }
+            }
+
             const group = groups.find(g => g.ids.includes(w.index));
             if (group) {
                 const groupMembers = group.ids.map(id => sortedInput.find(sw => sw.index === id)).filter(Boolean);
@@ -168,15 +212,30 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                     groupMembers.sort((a, b) => a.index - b.index);
                     const compositeWord = {
                         ...groupMembers[0],
-                        word: groupMembers.map(m => m.word).join(' '),
+                        word: groupMembers.map((m, idx) => {
+                            if (autoCorrectCasing) return m.word;
+                            return m.originalWord || m.word;
+                        }).join(' '),
                         id: `group-${group.ids.join('-')}`,
                         isGroup: true,
                         syllables: groupMembers.flatMap((m, idx) => {
-                            const rawSyls = m.syllables || [m.word];
+                            let rawSyls = m.syllables || [m.word];
+                            let currentMText = autoCorrectCasing ? m.word : (m.originalWord || m.word);
+                            if (currentMText !== m.word) {
+                                const firstCharWord = currentMText.charAt(0);
+                                rawSyls = [...rawSyls];
+                                if (typeof rawSyls[0] === 'string') {
+                                    rawSyls[0] = firstCharWord + rawSyls[0].slice(1);
+                                } else if (rawSyls[0] && rawSyls[0].text) {
+                                    rawSyls[0] = { ...rawSyls[0], text: firstCharWord + rawSyls[0].text.slice(1) };
+                                }
+                            }
+
                             let currentPos = m.index;
                             const mapped = rawSyls.map(s => {
-                                const item = { text: s, sourceId: m.id, sourceWord: m.word, absStartIndex: currentPos };
-                                currentPos += s.length;
+                                const text = typeof s === 'string' ? s : s.text;
+                                const item = { text: text, sourceId: m.id, sourceWord: currentMText, absStartIndex: currentPos };
+                                currentPos += text.length;
                                 return item;
                             });
                             return idx < groupMembers.length - 1 ? [...mapped, { text: ' ', isSpace: true, absStartIndex: currentPos++ }] : mapped;
@@ -186,9 +245,12 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                     result.push(compositeWord);
                 } else {
                     const simpleW = {
-                        ...w, syllables: (w.syllables || [w.word]).reduce((acc, s) => {
+                        ...w,
+                        word: currentWordText,
+                        syllables: (currentSyllables || [currentWordText]).reduce((acc, s) => {
+                            const text = typeof s === 'string' ? s : s.text;
                             const start = acc.length > 0 ? acc[acc.length - 1].absStartIndex + acc[acc.length - 1].text.length : w.index;
-                            acc.push({ text: s, sourceId: w.id, sourceWord: w.word, absStartIndex: start });
+                            acc.push({ text: text, sourceId: w.id, sourceWord: currentWordText, absStartIndex: start });
                             return acc;
                         }, [])
                     };
@@ -197,9 +259,12 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                 }
             } else {
                 const simpleW = {
-                    ...w, syllables: (w.syllables || [w.word]).reduce((acc, s) => {
+                    ...w,
+                    word: currentWordText,
+                    syllables: (currentSyllables || [currentWordText]).reduce((acc, s) => {
+                        const text = typeof s === 'string' ? s : s.text;
                         const start = acc.length > 0 ? acc[acc.length - 1].absStartIndex + acc[acc.length - 1].text.length : w.index;
-                        acc.push({ text: s, sourceId: w.id, sourceWord: w.word, absStartIndex: start });
+                        acc.push({ text: text, sourceId: w.id, sourceWord: currentWordText, absStartIndex: start });
                         return acc;
                     }, [])
                 };
@@ -208,7 +273,7 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
             }
         });
         return result;
-    }, [words, groups]);
+    }, [words, groups, autoCorrectCasing]);
 
     // 1. Initial State Setup
     useEffect(() => {
@@ -323,14 +388,17 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
 
     // 3. Word Content Sync (If text changes while list is open)
     const prevTimestamp = useRef(updateTimestamp);
+    const prevAutoCorrectCasing = useRef(autoCorrectCasing);
     useEffect(() => {
         const wordsChanged = prevWordsProp.current !== words;
         const timestampChanged = prevTimestamp.current !== updateTimestamp;
+        const casingChanged = prevAutoCorrectCasing.current !== autoCorrectCasing;
 
-        if (!wordsChanged && !timestampChanged) return;
+        if (!wordsChanged && !timestampChanged && !casingChanged) return;
 
         prevWordsProp.current = words;
         prevTimestamp.current = updateTimestamp;
+        prevAutoCorrectCasing.current = autoCorrectCasing;
 
         setColumnsState(prevState => {
             const newCols = { ...prevState.cols };
@@ -396,7 +464,7 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
             return hasChanges ? { ...prevState, cols: newCols } : prevState;
         });
 
-    }, [words, displayWords, sortByColor, wordColors, updateTimestamp]);
+    }, [words, displayWords, sortByColor, wordColors, updateTimestamp, autoCorrectCasing]);
 
     // 4. Column Count Change
     useEffect(() => {
@@ -642,19 +710,6 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                     <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
                         <button
                             onClick={() => {
-                                setInteractionMode('case');
-                                if (activeColor === 'yellow' && !isTextMarkerMode) {
-                                    onToggleLetterMarker(); // Toggle OFF if it was yellow
-                                }
-                            }}
-                            className={`w-12 h-10 flex items-center justify-center rounded-lg transition-all ${interactionMode === 'case' ? 'bg-white shadow-sm ring-1 ring-slate-200' : 'text-slate-500 hover:bg-white/50'}`}
-                            title="ersten Buchstaben ändern"
-                        >
-                            <Icons.LetterCaseToggle size={28} className={interactionMode === 'case' ? 'text-blue-600' : 'text-slate-400'} />
-                        </button>
-
-                        <button
-                            onClick={() => {
                                 setInteractionMode('mark');
                                 if (!(activeColor === 'yellow' && !isTextMarkerMode)) {
                                     onToggleLetterMarker(); // Toggle ON if it wasn't yellow
@@ -665,7 +720,29 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                         >
                             <Icons.LetterMarker size={28} className={interactionMode === 'mark' ? 'text-slate-500' : 'text-slate-400'} />
                         </button>
+
+                        <button
+                            onClick={() => {
+                                setInteractionMode('case');
+                                if (activeColor === 'yellow' && !isTextMarkerMode) {
+                                    onToggleLetterMarker(); // Toggle OFF if it was yellow
+                                }
+                            }}
+                            className={`w-12 h-10 flex items-center justify-center rounded-lg transition-all ${interactionMode === 'case' ? 'bg-white shadow-sm ring-1 ring-slate-200' : 'text-slate-500 hover:bg-white/50'}`}
+                            title="ersten Buchstaben ändern"
+                        >
+                            <Icons.LetterCaseToggle size={28} className={interactionMode === 'case' ? 'text-blue-600' : 'text-slate-400'} />
+                        </button>
                     </div>
+
+                    {/* Capitalization Auto-Correction Toggle */}
+                    <button
+                        onClick={() => setAutoCorrectCasing(!autoCorrectCasing)}
+                        className={`w-16 h-12 flex items-center justify-center rounded-xl transition-all border ${autoCorrectCasing ? 'bg-blue-600 border-blue-700 shadow-inner' : 'bg-slate-100 border-slate-200 text-slate-500 hover:bg-white hover:shadow-sm'}`}
+                        title={autoCorrectCasing ? "Eigentliche Schreibung (aktiv)" : "Exakte Schreibung aus dem Text"}
+                    >
+                        <Icons.WordCasingCorrection size={38} className={autoCorrectCasing ? 'text-white' : 'text-slate-600'} />
+                    </button>
 
                     {/* SORT BY COLOR TOGGLE */}
                     <div className="relative">
@@ -680,15 +757,14 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                                 }
                                 setSortByColor(!sortByColor);
                             }}
-                            className={`flex items-center gap-2 px-4 h-12 rounded-xl font-bold transition-all text-sm min-touch-target leading-[1.1] text-center ${sortByColor ? 'bg-indigo-100 text-indigo-700 shadow-inner' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                            className={`flex items-center justify-center w-12 h-12 rounded-xl transition-all border ${sortByColor ? 'bg-indigo-600 border-indigo-700 shadow-inner text-white' : 'bg-slate-100 border-slate-200 text-slate-500 hover:bg-white hover:shadow-sm'}`}
                             title="für jede Farbe eine Spalte erzeugen"
                         >
-                            <Icons.Palette size={20} />
-                            nach Farbe sortieren
+                            <Icons.SortByColorColumns size={34} />
                         </button>
 
                         {showSortAlert && (
-                            <div className="absolute top-full left-0 right-0 mt-2 bg-slate-800 text-white text-[10px] px-2 py-1.5 rounded shadow-lg z-50 text-center whitespace-nowrap">
+                            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-slate-800 text-white text-[10px] px-3 py-1.5 rounded shadow-lg z-50 text-center whitespace-nowrap min-w-[140px]">
                                 Keine Wörter farbig markiert
                                 <div className="absolute -top-1 left-1/2 -translate-x-1/2 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[6px] border-b-slate-800"></div>
                             </div>
@@ -780,6 +856,7 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                                             onRemoveWord={onRemoveWord}
                                             highlightedIndices={highlightedIndices}
                                             onUpdateWordColor={onUpdateWordColor}
+                                            colorPalette={colorPalette}
                                             pointerDrag={{
                                                 onPointerDown: handlePointerDragStart,
                                                 isDragging: pointerDragState?.word?.id === word.id

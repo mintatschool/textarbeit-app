@@ -4,6 +4,7 @@ import { analyzeTextLocalNouns } from '../data/nounDatabase';
 import { findVerbLemma } from '../data/verbDatabase';
 import { findAdjectiveLemma } from '../data/adjectiveDatabase';
 import { getCorrectCasing } from '../utils/wordCasingUtils';
+import { getTerm } from '../utils/terminology';
 
 export const WordPartOfSpeechSortingView = ({
     text,
@@ -22,19 +23,19 @@ export const WordPartOfSpeechSortingView = ({
         const cols = {
             noun: {
                 id: 'noun',
-                title: 'Substantive',
+                title: getTerm('Substantive', settings),
                 color: 'blue',
                 items: []
             },
             verb: {
                 id: 'verb',
-                title: 'Verben',
+                title: getTerm('Verben', settings),
                 color: 'red',
                 items: []
             },
             adjective: {
                 id: 'adjective',
-                title: 'Adjektive',
+                title: getTerm('Adjektive', settings),
                 color: 'green',
                 items: []
             }

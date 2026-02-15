@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Icons } from './Icons';
 import { shuffleArray } from '../utils/arrayUtils';
-import { Minus, Plus } from 'lucide-react';
+
 import { EmptyStateMessage } from './EmptyStateMessage';
 import { speak } from '../utils/speech';
 import { HorizontalLines } from './shared/UIComponents';
 import { usePreventTouchScroll } from '../hooks/usePreventTouchScroll';
 import { ExerciseHeader } from './ExerciseHeader';
 import { RewardModal } from './shared/RewardModal';
+import { getTerm } from '../utils/terminology';
 
 import { usePointerDrag } from '../hooks/usePointerDrag';
 // Removed polyfill import
@@ -404,7 +405,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
     };
 
     const handleWordsCountChange = (delta) => {
-        const next = Math.max(2, Math.min(6, pendingWordsCount + delta));
+        const next = Math.max(2, Math.min(8, pendingWordsCount + delta));
         if (next === pendingWordsCount) return;
 
         setPendingWordsCount(next);
@@ -512,30 +513,30 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                                 <div className="w-px bg-slate-300 my-2 mx-1"></div>
                                 <button
                                     onClick={() => setMode('vowels')}
-                                    className={`px-2 py-2 rounded-lg font-bold text-base transition-all ${mode === 'vowels' ? 'bg-yellow-400 text-yellow-900 border-yellow-500 shadow-[0_2px_0_0_#eab308]' : 'text-slate-500 hover:bg-slate-50'}`}
+                                    className={`px-2 py-2 rounded-lg font-bold text-base transition-all ${mode === 'vowels' ? 'bg-yellow-400 text-yellow-900 border-yellow-500 shadow-[0_2px_0_0_#eab308]' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'}`}
                                 >
-                                    Vokale
+                                    {getTerm("Vokale", settings)}
                                 </button>
                                 <button
                                     onClick={() => setMode('consonants')}
-                                    className={`px-2 py-2 rounded-lg font-bold text-base transition-all ${mode === 'consonants' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}
+                                    className={`px-2 py-2 rounded-lg font-bold text-base transition-all ${mode === 'consonants' ? 'bg-white text-blue-600 shadow-sm' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'}`}
                                 >
-                                    Konsonanten
+                                    {getTerm("Konsonanten", settings)}
                                 </button>
                             </div>
                         )}
                         <div className="flex items-center gap-2 bg-slate-50 px-2 py-1 rounded-2xl border border-slate-200 hidden lg:flex">
                             <HorizontalLines count={2} />
                             <button onClick={() => handleWordsCountChange(-1)} disabled={pendingWordsCount <= 2} className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 active:scale-90 transition-all shadow-sm disabled:opacity-20 ml-1">
-                                <Minus className="w-4 h-4" />
+                                <Icons.Minus size={16} />
                             </button>
                             <div className="flex flex-col items-center min-w-[24px]">
                                 <span className={`text-xl font-black transition-colors leading-none ${pendingWordsCount !== wordsPerStage ? 'text-orange-500' : 'text-slate-800'}`}>
                                     {pendingWordsCount}
                                 </span>
                             </div>
-                            <button onClick={() => handleWordsCountChange(1)} disabled={pendingWordsCount >= 6} className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 active:scale-90 transition-all shadow-sm disabled:opacity-20 mr-1">
-                                <Plus className="w-4 h-4" />
+                            <button onClick={() => handleWordsCountChange(1)} disabled={pendingWordsCount >= 8} className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 active:scale-90 transition-all shadow-sm disabled:opacity-20 mr-1">
+                                <Icons.Plus size={16} />
                             </button>
                             <HorizontalLines count={5} />
                         </div>
@@ -576,18 +577,47 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
 
                                             return (
                                                 <div key={sIdx} className={`relative flex items-baseline ${styleClass}`} style={{ fontSize: `${settings.fontSize}px`, fontFamily: settings.fontFamily }}>
-                                                    {syl.chunks.map((chunk) => {
+                                                    {syl.chunks.map((chunk, chunkIdx) => {
                                                         const isVowelChunk = [...chunk.text.toLowerCase()].some(isVowel);
                                                         const showYellowStatic = (mode === 'consonants' || isInitialSound) && isVowelChunk;
 
-                                                        if (!chunk.isTarget) return (
-                                                            <span
-                                                                key={chunk.id}
-                                                                className={`font-bold ${textClass} ${showYellowStatic ? 'bg-yellow-100 text-slate-900 mx-px px-0.5 rounded-sm' : ''}`}
-                                                            >
-                                                                {chunk.text}
-                                                            </span>
-                                                        );
+                                                        if (!chunk.isTarget) {
+                                                            // Neighbor-aware merging for adjacent yellow vowel chunks
+                                                            if (showYellowStatic) {
+                                                                const prevChunk = chunkIdx > 0 ? syl.chunks[chunkIdx - 1] : null;
+                                                                const nextChunk = chunkIdx < syl.chunks.length - 1 ? syl.chunks[chunkIdx + 1] : null;
+                                                                const prevIsYellow = prevChunk && !prevChunk.isTarget && [...prevChunk.text.toLowerCase()].some(isVowel);
+                                                                const nextIsYellow = nextChunk && !nextChunk.isTarget && [...nextChunk.text.toLowerCase()].some(isVowel);
+
+                                                                let rounded = 'rounded-sm';
+                                                                if (prevIsYellow && nextIsYellow) rounded = 'rounded-none';
+                                                                else if (prevIsYellow) rounded = 'rounded-r-sm rounded-l-none';
+                                                                else if (nextIsYellow) rounded = 'rounded-l-sm rounded-r-none';
+
+                                                                return (
+                                                                    <span
+                                                                        key={chunk.id}
+                                                                        className={`font-bold ${textClass} bg-yellow-100 text-slate-900 ${rounded}`}
+                                                                        style={{
+                                                                            paddingLeft: '0.08em',
+                                                                            paddingRight: '0.08em',
+                                                                            paddingTop: '0.05em',
+                                                                            paddingBottom: '0.08em',
+                                                                        }}
+                                                                    >
+                                                                        {chunk.text}
+                                                                    </span>
+                                                                );
+                                                            }
+                                                            return (
+                                                                <span
+                                                                    key={chunk.id}
+                                                                    className={`font-bold ${textClass}`}
+                                                                >
+                                                                    {chunk.text}
+                                                                </span>
+                                                            );
+                                                        }
                                                         const placed = placedLetters[chunk.id];
 
                                                         // showYellowStyle logic (Existing):

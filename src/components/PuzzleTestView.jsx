@@ -1,9 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-    Maximize2,
-    Maximize2,
-    AlertCircle
-} from 'lucide-react';
+
 import { Icons } from './Icons';
 import PuzzleTestPiece from './PuzzleTestPiece';
 import { speak } from '../utils/speech';
@@ -224,7 +220,7 @@ export const PuzzleTestView = ({ words, onClose }) => {
     if (!activeLengths.length && words && words.length > 0) {
         return (
             <div className="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center p-6 text-center">
-                <AlertCircle className="w-16 h-16 text-blue-500 mb-4" />
+                <Icons.AlertCircle className="w-16 h-16 text-blue-500 mb-4" />
                 <h2 className="text-xl font-bold text-slate-800 mb-2">Keine geeigneten Wörter gefunden.</h2>
                 <p className="text-slate-600 mb-6">Bitte markiere Wörter mit mindestens 2 Silben.</p>
                 <button onClick={onClose} className="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold shadow-lg">Zurück</button>
@@ -246,7 +242,7 @@ export const PuzzleTestView = ({ words, onClose }) => {
                 <div className="flex items-center gap-4">
                     {/* Scale Slider */}
                     <div className="flex items-center gap-3 bg-gray-50 px-4 h-10 rounded-2xl border border-gray-200 hidden sm:flex">
-                        <Maximize2 className="w-4 h-4 text-blue-400" />
+                        <Icons.Maximize2 size={16} className="text-blue-400" />
                         <input type="range" min="0.6" max="1.2" step="0.1" value={scale} onChange={(e) => setScale(parseFloat(e.target.value))} className="w-32 rounded-lg cursor-pointer accent-blue-600" />
                     </div>
 
