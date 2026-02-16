@@ -26,7 +26,7 @@ export const SplitExerciseView = ({ words, onClose, settings, setSettings, title
     const currentWordObj = randomWords[currentIndex];
     const fullWord = currentWordObj ? currentWordObj.word : '';
     const correctSyllables = currentWordObj ? currentWordObj.syllables : [];
-    const progress = ((currentIndex + 1) / (words ? words.length : 1)) * 100;
+    const progress = ((currentIndex) / (words ? words.length : 1)) * 100;
 
     useEffect(() => { setUserSplits(new Set()); setStatus('idle'); }, [currentIndex]);
 

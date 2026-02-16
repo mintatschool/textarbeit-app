@@ -14,6 +14,7 @@ import { usePointerDrag } from '../hooks/usePointerDrag';
 // Removed polyfill import
 export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialSound = false, title, highlightedIndices = new Set(), wordColors = {} }) => {
     const [mode, setMode] = useState('vowels'); // 'vowels', 'consonants', or 'marked'
+    const [showVowels, setShowVowels] = useState(false);
     const [currentGroupIdx, setCurrentGroupIdx] = useState(0);
     const [groups, setGroups] = useState([]);
     const [placedLetters, setPlacedLetters] = useState({}); // { gapId: letterObj }
@@ -490,11 +491,11 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
             />
 
             <ExerciseHeader
-                title={title || (isInitialSound ? 'Anfangsbuchstaben finden' : 'Lückenwörter')}
+                title={title || (isInitialSound ? 'Anfangsbuchstaben' : 'Lückenwörter')}
                 icon={isInitialSound ? Icons.InitialSound : Icons.GapWords}
                 current={currentGroupIdx + 1}
                 total={groups.length}
-                progressPercentage={(groups.length > 0 ? ((currentGroupIdx + 1) / groups.length) * 100 : 0)}
+                progressPercentage={(groups.length > 0 ? ((currentGroupIdx) / groups.length) * 100 : 0)}
                 settings={settings}
                 setSettings={setSettings}
                 onClose={onClose}
@@ -502,6 +503,14 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                 sliderMax={100}
                 customControls={
                     <>
+                        {isInitialSound && (
+                            <button
+                                onClick={() => setShowVowels(!showVowels)}
+                                className={`px-4 py-2 rounded-xl font-bold text-lg border transition-all mr-2 ${showVowels ? 'bg-yellow-400 text-yellow-900 border-yellow-500 shadow-[0_2px_0_0_#eab308]' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}
+                            >
+                                {getTerm("Vokale", settings)}
+                            </button>
+                        )}
                         {!isInitialSound && (
                             <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 mr-2">
                                 <button
@@ -579,7 +588,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                                                 <div key={sIdx} className={`relative flex items-baseline ${styleClass}`} style={{ fontSize: `${settings.fontSize}px`, fontFamily: settings.fontFamily }}>
                                                     {syl.chunks.map((chunk, chunkIdx) => {
                                                         const isVowelChunk = [...chunk.text.toLowerCase()].some(isVowel);
-                                                        const showYellowStatic = (mode === 'consonants' || isInitialSound) && isVowelChunk;
+                                                        const showYellowStatic = (mode === 'consonants' && isVowelChunk) || (isInitialSound && showVowels && isVowelChunk);
 
                                                         if (!chunk.isTarget) {
                                                             // Neighbor-aware merging for adjacent yellow vowel chunks
@@ -621,7 +630,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
                                                         const placed = placedLetters[chunk.id];
 
                                                         // showYellowStyle logic (Existing):
-                                                        const showYellowStyle = (!isInitialSound && mode === 'vowels' && placed) || (mode === 'consonants' && isVowelChunk) || (isInitialSound && placed && isVowelChunk);
+                                                        const showYellowStyle = (!isInitialSound && mode === 'vowels' && placed) || (mode === 'consonants' && isVowelChunk) || (isInitialSound && showVowels && placed && isVowelChunk);
 
                                                         // New Color Logic for Placed Letters:
                                                         // 1. Vowels: "so bleiben wie sie sind" -> showYellowStyle handles yellow bg/etc. Text color? 

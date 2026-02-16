@@ -331,7 +331,8 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
         marginBottom: '-0.10em', // Matches paddingBottom for net zero vertical impact
         marginLeft: '-0.10em',
         marginRight: '-0.10em',
-        lineHeight: '1.1'        // FORCE compact line height to reduce box height
+        lineHeight: '1.1',        // FORCE compact line height to reduce box height
+        verticalAlign: 'middle'   // Ensure proper alignment
     };
 
     const markerStyle = showFrame
@@ -437,9 +438,9 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
 
                     let style = {
                         transition: 'none',
-                        paddingTop: '0em',
+                        paddingTop: '0.05em',
                         paddingBottom: '0.10em',
-                        marginTop: '0em',
+                        marginTop: '-0.05em',
                         marginBottom: '-0.10em',
 
                         // Default (Transparent/Unmarked)
@@ -448,18 +449,19 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                         marginLeft: '0em',
                         marginRight: '0em',
                         zIndex: 0,
-                        position: 'relative'
+                        position: 'relative',
+                        verticalAlign: 'middle'
                     };
 
                     if (resolvedChunkColor && resolvedChunkColor !== 'transparent') {
-                        // Colored Highlight (Aggressive Overlap)
+                        // Colored Highlight (Aggressive Overlap - Narrowed to fixed 1px)
                         style = {
                             ...style,
                             backgroundColor: resolvedChunkColor,
-                            paddingLeft: '0.25em',
-                            paddingRight: '0.25em',
-                            marginLeft: '-0.25em',
-                            marginRight: '-0.25em',
+                            paddingLeft: '1px',
+                            paddingRight: '1px',
+                            marginLeft: '-1px',
+                            marginRight: '-1px',
                             zIndex: 10 // Ensure color layer is above standard text
                         };
                         // Identify as yellow for legacy class logic if needed (e.g. text color black)
@@ -649,9 +651,10 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                                 display: 'inline-block', // Changed to inline-block for better control
                                 paddingBottom: '0.10em', // Match frame padding
                                 lineHeight: '1.0',
+                                verticalAlign: 'middle',
                                 // removed width: 100% to prevent layout issues
                                 boxShadow: 'inset 0 0 0 1px rgba(191, 219, 254, 0.5)' // Inset border replacement (blue-200/50)
-                            } : { display: 'inline-block', paddingBottom: '0.10em', marginLeft: '0', marginRight: '0' }}>
+                            } : { display: 'inline-block', paddingBottom: '0.10em', marginLeft: '0', marginRight: '0', verticalAlign: 'middle' }}>
                                 <span className={`inline-block relative z-10 ${settings.visualType === 'black_gray' ? (isEven ? 'text-black' : 'text-gray-400') : ''}`}>
                                     {(() => {
                                         const chunks = getChunks(syl, settings.smartSelection, settings.clusters);
@@ -683,26 +686,27 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                                             let customClasses = 'cursor-pointer';
                                             let style = {
                                                 transition: 'none',
-                                                paddingTop: '0em',
+                                                paddingTop: '0.05em',
                                                 paddingBottom: '0.10em',
-                                                marginTop: '0em',
+                                                marginTop: '-0.05em',
                                                 marginBottom: '-0.10em',
                                                 paddingLeft: '0.06em',
                                                 paddingRight: '0.06em',
                                                 marginLeft: '-0.06em',
                                                 marginRight: '-0.06em',
                                                 zIndex: 0,
-                                                position: 'relative'
+                                                position: 'relative',
+                                                verticalAlign: 'middle'
                                             };
 
                                             if (resolvedChunkColor && resolvedChunkColor !== 'transparent') {
                                                 style = {
                                                     ...style,
                                                     backgroundColor: resolvedChunkColor,
-                                                    paddingLeft: '0.25em',
-                                                    paddingRight: '0.25em',
-                                                    marginLeft: '-0.25em',
-                                                    marginRight: '-0.25em',
+                                                    paddingLeft: '1px',
+                                                    paddingRight: '1px',
+                                                    marginLeft: '-1px',
+                                                    marginRight: '-1px',
                                                     zIndex: 10
                                                 };
                                                 // Identify as yellow for legacy class logic if needed

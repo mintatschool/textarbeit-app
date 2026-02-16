@@ -282,18 +282,6 @@ export const SettingsModal = ({ settings, setSettings, onExport, onImport, logo,
                             <label className="flex items-center justify-between cursor-pointer group">
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 bg-slate-50 rounded-xl group-hover:bg-blue-50 transition-colors">
-                                        <Icons.Lock size={18} className="text-slate-400 group-hover:text-blue-500" />
-                                    </div>
-                                    <div className="text-sm font-bold text-slate-700">Scroll-Sperre <span className="text-[10px] font-normal block text-slate-400">(Lesemodus / Smartboard)</span></div>
-                                </div>
-                                <button onClick={() => setSettings({ ...settings, lockScroll: !settings.lockScroll })} className={`w-14 h-7 rounded-full p-1 transition-all min-touch-target ${settings.lockScroll ? 'bg-green-500' : 'bg-slate-200'}`}>
-                                    <div className={`w-5 h-5 bg-white rounded-full shadow-lg transform transition-transform ${settings.lockScroll ? 'translate-x-7' : 'translate-x-0'}`}></div>
-                                </button>
-                            </label>
-
-                            <label className="flex items-center justify-between cursor-pointer group">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-slate-50 rounded-xl group-hover:bg-blue-50 transition-colors">
                                         <Icons.Layout size={18} className="text-slate-400 group-hover:text-blue-500" />
                                     </div>
                                     <div className="text-sm font-bold text-slate-700">Menüleiste reduzieren</div>

@@ -241,7 +241,7 @@ export const AdjectiveWritingView = ({ words, settings, setSettings, onClose }) 
                 icon={Icons.VerbWriting || Icons.Edit}
                 current={currentIndex + 1}
                 total={adjItems.length}
-                progressPercentage={((currentIndex + 1) / adjItems.length) * 100}
+                progressPercentage={((currentIndex) / adjItems.length) * 100}
                 settings={settings}
                 setSettings={setSettings}
                 onClose={onClose}
@@ -307,7 +307,13 @@ export const AdjectiveWritingView = ({ words, settings, setSettings, onClose }) 
                                                     isShown ? (
                                                         // View Mode: Show 'am' text if it exists
                                                         displayPrefix ? (
-                                                            <span className="font-bold">{displayPrefix}</span>
+                                                            <Word
+                                                                word={displayPrefix}
+                                                                settings={{ ...settings, visualType: 'none', displayTrigger: 'never' }}
+                                                                forceNoMargin={true}
+                                                                isReadingMode={true}
+                                                                isHeadline={true}
+                                                            />
                                                         ) : null
                                                     ) : (
                                                         // Edit Mode: Show 'am' Input

@@ -178,7 +178,7 @@ export const NounWritingView = ({ words, settings, setSettings, onClose }) => {
                 icon={Icons.Edit}
                 current={currentIndex + 1}
                 total={nounItems.length}
-                progressPercentage={((currentIndex + 1) / nounItems.length) * 100}
+                progressPercentage={((currentIndex) / nounItems.length) * 100}
                 settings={settings}
                 setSettings={setSettings}
                 onClose={onClose}

@@ -184,7 +184,7 @@ export const VerbWritingView = ({ words, settings, setSettings, onClose }) => {
                 icon={Icons.VerbWriting || Icons.Edit}
                 current={currentIndex + 1}
                 total={verbItems.length}
-                progressPercentage={((currentIndex + 1) / verbItems.length) * 100}
+                progressPercentage={((currentIndex) / verbItems.length) * 100}
                 settings={settings}
                 setSettings={setSettings}
                 onClose={onClose}

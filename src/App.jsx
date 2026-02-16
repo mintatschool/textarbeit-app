@@ -77,14 +77,13 @@ const DEFAULT_SETTINGS = {
     fontSize: 48,
     lineHeight: 1.4,
     wordSpacing: 0.5,
-    visualType: 'block',
+    visualType: 'none',
     displayTrigger: 'click',
     fontFamily: "'Patrick Hand', cursive",
     enableCamera: true,
     clickAction: 'yellow_border',
     zoomActive: false,
     zoomScale: 1.2,
-    lockScroll: false,
     centerText: false,
     smartSelection: true,
     textWidth: 83,
@@ -1634,7 +1633,7 @@ const App = () => {
                             ref={mainScrollRef}
                             onMouseDown={handleMainPanMouseDown}
                             onMouseMove={handleMainPanMouseMove}
-                            className={`flex-1 pt-20 pb-4 md:pt-24 md:pb-8 px-4 md:px-8 outline-none print-content ${settings.lockScroll ? 'overflow-hidden touch-none' : 'overflow-y-auto no-scrollbar'} pr-24 transition-all`}
+                            className="flex-1 pt-20 pb-4 md:pt-24 md:pb-8 px-4 md:px-8 outline-none print-content overflow-y-auto no-scrollbar pr-24 transition-all"
                             style={{ maxWidth: `100%` }}
                         >
                             {/* Font Size Slider - Sticky Top Right */}
@@ -1891,7 +1890,7 @@ const App = () => {
                         {activeView === 'staircase' && <StaircaseView words={hasMarkings ? uniqueExerciseWords.map(w => ({ ...w, isHighlighted: highlightedIndices.has(w.index) })) : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Treppenwörter" />}
                         {activeView === 'split' && <SplitExerciseView words={hasMarkings ? uniqueExerciseWords : []} onClose={() => setActiveView('text')} settings={settings} setSettings={setSettings} title="Wörter trennen" />}
                         {activeView === 'gapWords' && <GapWordsView words={hasMarkings ? uniqueExerciseWords : []} highlightedIndices={highlightedIndices} wordColors={wordColors} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Lückenwörter" />}
-                        {activeView === 'initialSound' && <GapWordsView words={hasMarkings ? uniqueExerciseWords : []} highlightedIndices={highlightedIndices} wordColors={wordColors} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} isInitialSound={true} title="Anfangsbuchstaben finden" />}
+                        {activeView === 'initialSound' && <GapWordsView words={hasMarkings ? uniqueExerciseWords : []} highlightedIndices={highlightedIndices} wordColors={wordColors} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} isInitialSound={true} title="Anfangsbuchstaben" />}
                         {activeView === 'verbWriting' && <VerbWritingView words={uniqueExerciseWords} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} />}
                         {activeView === 'adjectiveWriting' && <AdjectiveWritingView words={uniqueExerciseWords} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} />}
                         {activeView === 'nounWriting' && <NounWritingView words={uniqueExerciseWords} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} />}

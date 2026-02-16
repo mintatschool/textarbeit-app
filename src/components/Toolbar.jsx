@@ -557,7 +557,7 @@ export const Toolbar = ({
                     Silbenpuzzle 2
                 </MenuItem>
                 <MenuItem onClick={() => handleExerciseClick('initialSound', () => setShowInitialSound(true))} icon={<Icons.InitialSound size={20} className="text-blue-600" />} inactive={!exerciseActivity.initialSound}>
-                    Anfangsbuchstaben finden
+                    Anfangsbuchstaben
                 </MenuItem>
                 <MenuItem onClick={() => handleExerciseClick('gapWords', () => setShowGapWords(true))} icon={<Icons.GapWords size={20} className="text-blue-600" />} inactive={!exerciseActivity.gapWords}>
                     Lückenwörter

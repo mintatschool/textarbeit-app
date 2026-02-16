@@ -421,7 +421,7 @@ export const PuzzleTestMultiSyllableView = ({ words, settings, onClose, title, a
         if (totalWords === 0) return 0;
         const previousStagesWords = gameState.stages.slice(0, gameState.currentStageIndex).reduce((acc, stage) => acc + stage.items.length, 0);
         const currentStageCompletedCount = Object.keys(completedRows).length;
-        return Math.min(100, ((previousStagesWords + currentStageCompletedCount + 1) / totalWords) * 100);
+        return Math.min(100, ((previousStagesWords + currentStageCompletedCount) / totalWords) * 100);
     }, [gameState.stages, gameState.currentStageIndex, completedRows, totalWords]);
 
     const handleWordsCountChange = (delta) => {
