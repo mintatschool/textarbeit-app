@@ -20,7 +20,7 @@ export const isCompoundTense = (tense) => {
     return [Tense.PERFEKT, Tense.PLUSQUAMPERFEKT, Tense.FUTUR_I].includes(tense);
 };
 
-export const getVerbPuzzleParts = (conjugated, tense) => {
+export const getVerbPuzzleParts = (conjugated, tense, pronoun = null, conjugationData = null) => {
     conjugated = conjugated.trim().toLowerCase();
 
     if (isCompoundTense(tense)) {
@@ -42,6 +42,13 @@ export const getVerbPuzzleParts = (conjugated, tense) => {
 
             // Spezielle Logik für Präteritum (starke Verben schützen)
             if (tense === Tense.PRAETERITUM) {
+                // NEU: Wenn ich-Form und er/sie/es-Form identisch sind, haben sie im Präteritum keine Endung (starke Verben)
+                if (pronoun && conjugationData && (pronoun === 'ich' || pronoun === 'er_sie_es')) {
+                    if (conjugationData.ich === conjugationData.er_sie_es) {
+                        return { fixedBefore: conjugated, target: '', fixedAfter: '' };
+                    }
+                }
+
                 // Regelmäßige Schwache Präteritum-Endungen (te, test...) immer trennen
                 if (['te', 'test', 'ten', 'tet'].includes(suffix)) {
                     return { fixedBefore: stem, target: suffix, fixedAfter: '' };

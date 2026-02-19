@@ -7,7 +7,7 @@ import { getCorrectCasing } from '../utils/wordCasingUtils';
 import { polyfill } from 'mobile-drag-drop';
 import { scrollBehaviourDragImageTranslateOverride } from 'mobile-drag-drop/scroll-behaviour';
 polyfill({ dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride });
-export const WordListView = ({ words, columnsState, setColumnsState, onClose, settings, setSettings, onRemoveWord, onWordUpdate, onUpdateWordColor, wordColors = {}, colorHeaders = {}, setColorHeaders, colorPalette = [], title, groups = [], sortByColor, setSortByColor, columnCount, setColumnCount, updateTimestamp, activeColor, isTextMarkerMode, onToggleLetterMarker, toggleHighlights, highlightedIndices }) => {
+export const WordListView = ({ words, columnsState, setColumnsState, onClose, settings, setSettings, onRemoveWord, onWordUpdate, onUpdateWordColor, wordColors = {}, colorHeaders = {}, setColorHeaders, colorPalette = [], title, groups = [], sortByColor, setSortByColor, columnCount, setColumnCount, updateTimestamp, activeColor, isTextMarkerMode, onToggleLetterMarker, toggleHighlights, highlightedIndices, hideYellowLetters, setCorrectionData, setShowCorrectionModal }) => {
     if (!words || words.length === 0) return (<div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col items-center justify-center modal-animate font-sans"><EmptyStateMessage onClose={onClose} /></div>);
     const [isDragging, setIsDragging] = useState(false);
     const dragItemRef = useRef(null);
@@ -15,7 +15,7 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
 
     const [interactionMode, setInteractionMode] = useState('mark');
     const [showSortAlert, setShowSortAlert] = useState(false);
-    const [autoCorrectCasing, setAutoCorrectCasing] = useState(false);
+    const [autoCorrectCasing, setAutoCorrectCasing] = useState(true);
 
     // Sync interactionMode if activeColor/isTextMarkerMode changes from outside (Toolbar)
     useEffect(() => {
@@ -156,124 +156,24 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
 
     // 0. Pre-process groups - Derived State
     const displayWords = React.useMemo(() => {
-        let result = [];
-        const processedIndices = new Set();
-        const sortedInput = [...words].sort((a, b) => a.index - b.index);
+        if (!autoCorrectCasing) return words;
 
-        sortedInput.forEach(w => {
-            if (processedIndices.has(w.index)) return;
+        return words.map(w => {
+            const corrected = getCorrectCasing(w.word);
+            if (corrected === w.word) return w;
 
-            // Apply auto-correction if enabled
-            // 'w.word' in exerciseWords is now corrected by default (App.jsx)
-            // 'w.originalWord' is the exact text from the source
-            let currentWordText = autoCorrectCasing ? w.word : (w.originalWord || w.word);
-            let currentSyllables = w.syllables;
-
-            // If we are NOT auto-correcting, we might need to adjust syllables back to original
-            if (!autoCorrectCasing && w.originalWord && w.originalWord !== w.word) {
-                // If syllables exist, try to revert the first syllable's casing
-                if (currentSyllables && currentSyllables.length > 0) {
-                    currentSyllables = [...currentSyllables];
-                    const firstCharOrig = w.originalWord.charAt(0);
-                    const firstSyl = currentSyllables[0];
-                    if (typeof firstSyl === 'string') {
-                        currentSyllables[0] = firstCharOrig + firstSyl.slice(1);
-                    } else if (firstSyl && firstSyl.text) {
-                        currentSyllables[0] = { ...firstSyl, text: firstCharOrig + firstSyl.text.slice(1) };
-                    }
-                }
-            }
-
-            // The following autoCorrectCasing block is now largely redundant if App.jsx handles it,
-            // but we keep it for robustness if getCorrectCasing differs or for manual corrections.
-            if (autoCorrectCasing) {
-                const corrected = getCorrectCasing(currentWordText);
-                if (corrected !== currentWordText) {
-                    currentWordText = corrected;
-                    // If word changed, we should probably adjust syllables (at least the first one/casing)
-                    // Simple approach: if we have syllables, apply capitalization change to first syllable if it matches first char of word
-                    if (currentSyllables && currentSyllables.length > 0) {
-                        currentSyllables = [...currentSyllables];
-                        const firstCharWord = currentWordText.charAt(0);
-                        const firstSyl = currentSyllables[0];
-                        if (typeof firstSyl === 'string') {
-                            currentSyllables[0] = firstCharWord + firstSyl.slice(1);
-                        } else if (firstSyl && firstSyl.text) {
-                            currentSyllables[0] = { ...firstSyl, text: firstCharWord + firstSyl.text.slice(1) };
-                        }
-                    }
-                }
-            }
-
-            const group = groups.find(g => g.ids.includes(w.index));
-            if (group) {
-                const groupMembers = group.ids.map(id => sortedInput.find(sw => sw.index === id)).filter(Boolean);
-                if (groupMembers.length > 0) {
-                    groupMembers.sort((a, b) => a.index - b.index);
-                    const compositeWord = {
-                        ...groupMembers[0],
-                        word: groupMembers.map((m, idx) => {
-                            if (autoCorrectCasing) return m.word;
-                            return m.originalWord || m.word;
-                        }).join(' '),
-                        id: `group-${group.ids.join('-')}`,
-                        isGroup: true,
-                        syllables: groupMembers.flatMap((m, idx) => {
-                            let rawSyls = m.syllables || [m.word];
-                            let currentMText = autoCorrectCasing ? m.word : (m.originalWord || m.word);
-                            if (currentMText !== m.word) {
-                                const firstCharWord = currentMText.charAt(0);
-                                rawSyls = [...rawSyls];
-                                if (typeof rawSyls[0] === 'string') {
-                                    rawSyls[0] = firstCharWord + rawSyls[0].slice(1);
-                                } else if (rawSyls[0] && rawSyls[0].text) {
-                                    rawSyls[0] = { ...rawSyls[0], text: firstCharWord + rawSyls[0].text.slice(1) };
-                                }
-                            }
-
-                            let currentPos = m.index;
-                            const mapped = rawSyls.map(s => {
-                                const text = typeof s === 'string' ? s : s.text;
-                                const item = { text: text, sourceId: m.id, sourceWord: currentMText, absStartIndex: currentPos };
-                                currentPos += text.length;
-                                return item;
-                            });
-                            return idx < groupMembers.length - 1 ? [...mapped, { text: ' ', isSpace: true, absStartIndex: currentPos++ }] : mapped;
-                        })
-                    };
-                    group.ids.forEach(id => processedIndices.add(id));
-                    result.push(compositeWord);
-                } else {
-                    const simpleW = {
-                        ...w,
-                        word: currentWordText,
-                        syllables: (currentSyllables || [currentWordText]).reduce((acc, s) => {
-                            const text = typeof s === 'string' ? s : s.text;
-                            const start = acc.length > 0 ? acc[acc.length - 1].absStartIndex + acc[acc.length - 1].text.length : w.index;
-                            acc.push({ text: text, sourceId: w.id, sourceWord: currentWordText, absStartIndex: start });
-                            return acc;
-                        }, [])
-                    };
-                    result.push(simpleW);
-                    processedIndices.add(w.index);
-                }
-            } else {
-                const simpleW = {
-                    ...w,
-                    word: currentWordText,
-                    syllables: (currentSyllables || [currentWordText]).reduce((acc, s) => {
-                        const text = typeof s === 'string' ? s : s.text;
-                        const start = acc.length > 0 ? acc[acc.length - 1].absStartIndex + acc[acc.length - 1].text.length : w.index;
-                        acc.push({ text: text, sourceId: w.id, sourceWord: currentWordText, absStartIndex: start });
-                        return acc;
-                    }, [])
-                };
-                result.push(simpleW);
-                processedIndices.add(w.index);
-            }
+            // If word changed due to auto-correction, we might need to adjust syllables
+            // But App.jsx already handles getCorrectCasing if not manually corrected.
+            // So this is mostly for completeness.
+            return {
+                ...w,
+                word: corrected,
+                text: corrected,
+                // Syllables should technically be re-cached if casing changes significantly
+                // but getCorrectCasing usually just uppercase/lowercase first letter.
+            };
         });
-        return result;
-    }, [words, groups, autoCorrectCasing]);
+    }, [words, autoCorrectCasing]);
 
     // 1. Initial State Setup
     useEffect(() => {
@@ -693,56 +593,17 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
             <div className="bg-white px-6 py-4 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center z-10 shrink-0 no-print">
                 <div className="flex items-center gap-6 w-full md:w-auto justify-between md:justify-start">
                     <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                        <Icons.Table className="text-blue-600" size={32} />
                         {title || "Tabelle"}
                     </h2>
 
                     {/* Column Controls */}
                     <div className={`flex items-center gap-4 ${sortByColor ? 'opacity-50 pointer-events-none grayscale' : ''}`}>
-                        <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-2 py-1 rounded-lg">
+                        <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-2 py-1 rounded-lg h-12">
                             {[1, 2, 3, 4, 5].map(num => (
                                 <button key={num} onClick={() => setColumnCount(num)} className={`w-8 h-8 rounded font-bold text-sm min-touch-target ${columnCount === num ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-200'}`}>{num}</button>
                             ))}
                         </div>
                     </div>
-
-                    {/* INTERACTION MODE TOGGLE (Case Toggle vs Letter Marker) */}
-                    <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
-                        <button
-                            onClick={() => {
-                                setInteractionMode('mark');
-                                if (!(activeColor === 'yellow' && !isTextMarkerMode)) {
-                                    onToggleLetterMarker(); // Toggle ON if it wasn't yellow
-                                }
-                            }}
-                            className={`w-12 h-10 flex items-center justify-center rounded-lg transition-all ${interactionMode === 'mark' ? 'bg-white shadow-sm ring-1 ring-slate-200' : 'text-slate-500 hover:bg-white/50'}`}
-                            title="Buchstaben markieren"
-                        >
-                            <Icons.LetterMarker size={28} className={interactionMode === 'mark' ? 'text-slate-500' : 'text-slate-400'} />
-                        </button>
-
-                        <button
-                            onClick={() => {
-                                setInteractionMode('case');
-                                if (activeColor === 'yellow' && !isTextMarkerMode) {
-                                    onToggleLetterMarker(); // Toggle OFF if it was yellow
-                                }
-                            }}
-                            className={`w-12 h-10 flex items-center justify-center rounded-lg transition-all ${interactionMode === 'case' ? 'bg-white shadow-sm ring-1 ring-slate-200' : 'text-slate-500 hover:bg-white/50'}`}
-                            title="ersten Buchstaben ändern"
-                        >
-                            <Icons.LetterCaseToggle size={28} className={interactionMode === 'case' ? 'text-blue-600' : 'text-slate-400'} />
-                        </button>
-                    </div>
-
-                    {/* Capitalization Auto-Correction Toggle */}
-                    <button
-                        onClick={() => setAutoCorrectCasing(!autoCorrectCasing)}
-                        className={`w-16 h-12 flex items-center justify-center rounded-xl transition-all border ${autoCorrectCasing ? 'bg-blue-600 border-blue-700 shadow-inner' : 'bg-slate-100 border-slate-200 text-slate-500 hover:bg-white hover:shadow-sm'}`}
-                        title={autoCorrectCasing ? "Eigentliche Schreibung (aktiv)" : "Exakte Schreibung aus dem Text"}
-                    >
-                        <Icons.WordCasingCorrection size={38} className={autoCorrectCasing ? 'text-white' : 'text-slate-600'} />
-                    </button>
 
                     {/* SORT BY COLOR TOGGLE */}
                     <div className="relative">
@@ -760,7 +621,7 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                             className={`flex items-center justify-center w-12 h-12 rounded-xl transition-all border ${sortByColor ? 'bg-indigo-600 border-indigo-700 shadow-inner text-white' : 'bg-slate-100 border-slate-200 text-slate-500 hover:bg-white hover:shadow-sm'}`}
                             title="für jede Farbe eine Spalte erzeugen"
                         >
-                            <Icons.SortByColorColumns size={34} />
+                            <Icons.SortByColorColumns size={42} />
                         </button>
 
                         {showSortAlert && (
@@ -771,14 +632,44 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                         )}
                     </div>
 
+                    {/* INTERACTION MODE: Letter Marker Toggle */}
+                    <button
+                        onClick={() => {
+                            onToggleLetterMarker();
+                            setInteractionMode('mark');
+                        }}
+                        className={`w-14 h-12 flex items-center justify-center rounded-xl transition-all border-2 !min-h-0 ${isTextMarkerMode || activeColor === 'yellow' ? 'border-slate-500 bg-white shadow-[0_0_12px_rgba(59,130,246,0.6)] ring-2 ring-blue-400/50 scale-110' : 'bg-slate-100 border-slate-200 text-slate-500 hover:bg-white hover:shadow-sm'}`}
+                        title="Buchstaben markieren"
+                    >
+                        <Icons.LetterMarker size={28} className="text-slate-500" />
+                    </button>
+
+                    {/* Capitalization Auto-Correction Toggle (Das-Button) */}
+                    <button
+                        onClick={() => setAutoCorrectCasing(!autoCorrectCasing)}
+                        className={`w-16 h-12 flex items-center justify-center rounded-xl transition-all border ${autoCorrectCasing ? 'bg-blue-600 border-blue-700 shadow-inner' : 'bg-slate-100 border-slate-200 text-slate-500 hover:bg-white hover:shadow-sm'}`}
+                        title={autoCorrectCasing ? "Eigentliche Schreibung (aktiv)" : "Exakte Schreibung aus dem Text"}
+                    >
+                        <Icons.WordCasingCorrection size={38} className={autoCorrectCasing ? 'text-white' : 'text-slate-600'} />
+                    </button>
+
                 </div>
                 <div className="flex items-center gap-4 ml-auto">
-                    <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 h-10 rounded-lg no-print">
+                    {/* Correction Tool Toggle in Table */}
+                    <button
+                        onClick={() => setInteractionMode(interactionMode === 'correct' ? 'mark' : 'correct')}
+                        className={`w-12 h-12 flex items-center justify-center rounded-xl transition-all border ${interactionMode === 'correct' ? 'bg-teal-600 border-teal-700 shadow-inner text-white' : 'bg-slate-100 border-slate-200 text-slate-500 hover:bg-white hover:shadow-sm'}`}
+                        title="Silben/Schreibung korrigieren"
+                    >
+                        <Icons.SyllableCorrectionPen size={28} />
+                    </button>
+
+                    <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 h-12 rounded-lg no-print">
                         <span className="text-xs font-bold text-slate-500">A</span>
                         <input type="range" min="16" max="96" value={settings.fontSize} onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })} className="w-32 accent-blue-600 rounded-lg cursor-pointer" />
                         <span className="text-xl font-bold text-slate-500">A</span>
                     </div>
-                    <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-10 h-10 shadow-sm transition-transform hover:scale-105 flex items-center justify-center min-touch-target sticky right-0">
+                    <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white rounded-lg w-12 h-12 shadow-sm transition-transform hover:scale-105 flex items-center justify-center min-touch-target sticky right-0">
                         <Icons.X size={24} />
                     </button>
                 </div>
@@ -844,18 +735,23 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                                 <div className="p-3 space-y-2">
                                     {col.items.filter(w => w.word).map((word, idx) => (
                                         <WordListCell
-                                            key={word.id}
-                                            word={word}
+                                            key={`${word.id}-${sortByColor}`}
+                                            word={{
+                                                ...word,
+                                                word: autoCorrectCasing ? word.word : (word.originalWord || word.word),
+                                                syllables: autoCorrectCasing ? word.syllables : (word.originalSyllables || word.syllables)
+                                            }}
                                             colId={colId}
                                             idx={idx}
                                             settings={settings}
                                             wordColors={wordColors}
                                             interactionMode={interactionMode}
+                                            isMarkerActive={isTextMarkerMode || activeColor === 'yellow'}
                                             toggleHighlights={toggleHighlights}
                                             onWordUpdate={onWordUpdate}
                                             onRemoveWord={onRemoveWord}
-                                            highlightedIndices={highlightedIndices}
                                             onUpdateWordColor={onUpdateWordColor}
+                                            highlightedIndices={highlightedIndices}
                                             colorPalette={colorPalette}
                                             pointerDrag={{
                                                 onPointerDown: handlePointerDragStart,
@@ -866,6 +762,11 @@ export const WordListView = ({ words, columnsState, setColumnsState, onClose, se
                                                 onDragEnd: handleDragEnd,
                                                 onDrop: handleDropOnItem,
                                                 onDragOver: (e) => { e.preventDefault(); e.stopPropagation(); }
+                                            }}
+                                            hideYellowLetters={hideYellowLetters}
+                                            onEditMode={(word, key, syls) => {
+                                                setCorrectionData({ word, key, syllables: syls });
+                                                setShowCorrectionModal(true);
                                             }}
                                         />
                                     ))}

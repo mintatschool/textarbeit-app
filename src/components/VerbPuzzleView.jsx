@@ -75,8 +75,7 @@ export const VerbPuzzleView = ({ words, settings, setSettings, onClose }) => {
         let max = 0;
         VERB_PRONOUNS.forEach(({ key: pronoun }) => {
             const conjugated = conjugationData[pronoun];
-            if (!conjugated) return;
-            const parts = getVerbPuzzleParts(conjugated, currentTense);
+            const parts = getVerbPuzzleParts(conjugated, currentTense, pronoun, conjugationData);
             if (parts.target) {
                 max = Math.max(max, parts.target.length);
             }
@@ -101,7 +100,7 @@ export const VerbPuzzleView = ({ words, settings, setSettings, onClose }) => {
             const conjugated = conjugationData[pronoun];
             if (!conjugated) return;
 
-            const parts = getVerbPuzzleParts(conjugated, currentTense);
+            const parts = getVerbPuzzleParts(conjugated, currentTense, pronoun, conjugationData);
 
             // Skip if no target part (e.g. "er ging")
             if (!parts.target) return;
@@ -153,7 +152,7 @@ export const VerbPuzzleView = ({ words, settings, setSettings, onClose }) => {
         const requiredPieces = VERB_PRONOUNS.filter(({ key: pronoun }) => {
             const conjugated = conjugationData[pronoun];
             if (!conjugated) return false;
-            const parts = getVerbPuzzleParts(conjugated, currentTense);
+            const parts = getVerbPuzzleParts(conjugated, currentTense, pronoun, conjugationData);
             return !!parts.target;
         }).length;
 
@@ -178,7 +177,7 @@ export const VerbPuzzleView = ({ words, settings, setSettings, onClose }) => {
             // Check if this pronoun even expects a piece
             const conjugated = conjugationData[pronoun];
             if (!conjugated) return;
-            const parts = getVerbPuzzleParts(conjugated, currentTense);
+            const parts = getVerbPuzzleParts(conjugated, currentTense, pronoun, conjugationData);
 
             // If no target part, it's correct by default (nothing to place)
             if (!parts.target) {
@@ -451,7 +450,7 @@ export const VerbPuzzleView = ({ words, settings, setSettings, onClose }) => {
                                 const pronounObj = VERB_PRONOUNS.find(p => p.key === key);
                                 const label = pronounObj ? pronounObj.label : key;
                                 const conjugated = conjugationData ? conjugationData[key] : '';
-                                const parts = conjugationData ? getVerbPuzzleParts(conjugated, currentTense) : { fixedBefore: '', target: '', fixedAfter: '' };
+                                const parts = conjugationData ? getVerbPuzzleParts(conjugated, currentTense, key, conjugationData) : { fixedBefore: '', target: '', fixedAfter: '' };
                                 const placedPieceId = placedPieces[key];
                                 const piece = piecesRegistry[placedPieceId];
                                 const isCorrect = hasChecked && feedback[key] === 'correct';
@@ -486,13 +485,13 @@ export const VerbPuzzleView = ({ words, settings, setSettings, onClose }) => {
                                                 {/* Only show gap if there is a target part to fill */}
                                                 {parts.target && (
                                                     <div
-                                                        className={`px-2 py-2 border-2 rounded-xl text-left font-bold transition-all mx-1 cursor-pointer
+                                                        className={`px-2 py-2 border-2 rounded-xl text-left font-medium transition-all mx-1 cursor-pointer
                                                                 ${hasChecked && placedPieceId
                                                                 ? (isCorrect
                                                                     ? 'border-green-500 bg-green-50 text-green-700'
                                                                     : 'border-red-500 bg-red-50 text-red-700')
                                                                 : (placedPieceId
-                                                                    ? 'border-slate-300 bg-white text-blue-900'
+                                                                    ? 'border-slate-300 bg-white text-slate-800'
                                                                     : 'border-slate-300 bg-slate-50 hover:bg-slate-100')
                                                             }
                                                                 ${selectedPiece && !placedPieceId ? 'ring-4 ring-blue-100 ring-offset-2 animate-pulse border-blue-500' : ''}
@@ -510,7 +509,7 @@ export const VerbPuzzleView = ({ words, settings, setSettings, onClose }) => {
                                                                 draggable
                                                                 onDragStart={(e) => handleDragStart(e, piece, 'target', key)}
                                                                 onDragEnd={handleDragEnd}
-                                                                className={`font-bold transition-all text-left animate-[popIn_0.3s_ease-out] select-none flex items-center justify-start bg-transparent`}
+                                                                className={`font-medium transition-all text-left animate-[popIn_0.3s_ease-out] select-none flex items-center justify-start bg-transparent`}
                                                             >
                                                                 {piece.text}
                                                             </div>
@@ -617,7 +616,7 @@ export const VerbPuzzleView = ({ words, settings, setSettings, onClose }) => {
             <RewardModal
                 isOpen={showReward}
                 onClose={onClose}
-                message={`Alle ${getTerm("Verben", settings)} gemeistert! Fantastisch!`}
+                message={`Alle ${getTerm("Verben", settings)} geschrieben!`}
             />
         </div >
     );

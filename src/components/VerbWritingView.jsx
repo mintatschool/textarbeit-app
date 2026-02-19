@@ -6,8 +6,9 @@ import { RewardModal } from './shared/RewardModal';
 import { Tense, VERB_PRONOUNS, getVerbPuzzleParts, getInfinitiveStem } from '../utils/verbUtils';
 import { getLocalConjugation, findVerbLemma } from '../data/verbDatabase';
 import { Word } from './Word';
-import { speak } from '../utils/speech';
 import { getTerm } from '../utils/terminology';
+import { CustomKeyboard } from './CustomKeyboard';
+import { speak } from '../utils/speech';
 
 export const VerbWritingView = ({ words, settings, setSettings, onClose }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -20,6 +21,9 @@ export const VerbWritingView = ({ words, settings, setSettings, onClose }) => {
     const [showReward, setShowReward] = useState(false);
     const [audioEnabled, setAudioEnabled] = useState(false);
     const [isTenseMenuOpen, setIsTenseMenuOpen] = useState(false);
+    const [activeField, setActiveField] = useState('ich'); // pronoun key
+    const [activeKey, setActiveKey] = useState(null);
+    const [showKeyboard, setShowKeyboard] = useState(true);
     const tenseMenuRef = useRef(null);
 
     const verbItems = useMemo(() => {
@@ -70,6 +74,8 @@ export const VerbWritingView = ({ words, settings, setSettings, onClose }) => {
         setHasChecked(false);
         setIsComplete(false);
         setIsTenseMenuOpen(false);
+        setActiveField('ich');
+        setShowKeyboard(true);
     }, [currentIndex, currentTense, mode]);
 
     useEffect(() => {
@@ -97,7 +103,7 @@ export const VerbWritingView = ({ words, settings, setSettings, onClose }) => {
 
             if (mode === 'word') return true;
 
-            const parts = getVerbPuzzleParts(conjugated, currentTense);
+            const parts = getVerbPuzzleParts(conjugated, currentTense, pronoun, conjugationData);
             return !!parts.target;
         }).length;
 
@@ -117,7 +123,7 @@ export const VerbWritingView = ({ words, settings, setSettings, onClose }) => {
             if (mode === 'word') {
                 target = conjugated.toLowerCase();
             } else {
-                const parts = getVerbPuzzleParts(conjugated, currentTense);
+                const parts = getVerbPuzzleParts(conjugated, currentTense, pronoun, conjugationData);
                 if (!parts.target) {
                     newFeedback[pronoun] = 'correct';
                     return;
@@ -146,12 +152,33 @@ export const VerbWritingView = ({ words, settings, setSettings, onClose }) => {
         }
     };
 
-    const handleInputChange = (pronoun, value) => {
+    const handleTextInput = (text) => {
+        if (!activeField || (hasChecked && isComplete)) return;
+
+        setEnteredTexts(prev => {
+            const currentVal = prev[activeField] || '';
+            return { ...prev, [activeField]: currentVal + text };
+        });
+
         if (hasChecked && !isComplete) {
             setHasChecked(false);
             setFeedback({});
         }
-        setEnteredTexts(prev => ({ ...prev, [pronoun]: value }));
+    };
+
+    const handleBackspace = () => {
+        if (!activeField || (hasChecked && isComplete)) return;
+
+        setEnteredTexts(prev => {
+            const currentVal = prev[activeField] || '';
+            if (currentVal.length === 0) return prev;
+            return { ...prev, [activeField]: currentVal.slice(0, -1) };
+        });
+
+        if (hasChecked && !isComplete) {
+            setHasChecked(false);
+            setFeedback({});
+        }
     };
 
     const handleMainAction = () => {
@@ -160,9 +187,58 @@ export const VerbWritingView = ({ words, settings, setSettings, onClose }) => {
         } else if (isComplete) {
             if (currentIndex < verbItems.length - 1) {
                 setCurrentIndex(currentIndex + 1);
+                setActiveField(null);
+                setShowKeyboard(false);
             }
         }
     };
+
+    // Hardware Keyboard Support
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (hasChecked && isComplete) {
+                if (e.key === 'Enter') {
+                    handleMainAction();
+                    e.preventDefault();
+                }
+                return;
+            }
+
+            // Alpha-numeric check (including German umlauts)
+            if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                if (/^[a-zA-ZäöüÄÖÜß ]$/.test(e.key)) {
+                    handleTextInput(e.key);
+                    setActiveKey(e.key);
+                    setTimeout(() => setActiveKey(null), 150);
+                }
+            } else if (e.key === 'Backspace') {
+                handleBackspace();
+                setActiveKey('Backspace');
+                setTimeout(() => setActiveKey(null), 150);
+                e.preventDefault();
+            } else if (e.key === 'Enter') {
+                handleMainAction();
+                setActiveKey('Enter');
+                setTimeout(() => setActiveKey(null), 150);
+                e.preventDefault();
+            } else if (e.key === 'Shift') {
+                setActiveKey('Shift');
+            }
+        };
+
+        const handleKeyUp = (e) => {
+            if (e.key === 'Shift') {
+                setActiveKey(null);
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('keyup', handleKeyUp);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('keyup', handleKeyUp);
+        };
+    }, [activeField, enteredTexts, hasChecked, isComplete]);
 
     if (verbItems.length === 0) {
         return (
@@ -178,10 +254,10 @@ export const VerbWritingView = ({ words, settings, setSettings, onClose }) => {
     }
 
     return (
-        <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans select-none overflow-hidden">
+        <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans select-none overflow-hidden safe-area-bottom">
             <ExerciseHeader
                 title={`${getTerm("Verben", settings)} schreiben`}
-                icon={Icons.VerbWriting || Icons.Edit}
+                icon={Icons.Edit2}
                 current={currentIndex + 1}
                 total={verbItems.length}
                 progressPercentage={((currentIndex) / verbItems.length) * 100}
@@ -266,13 +342,13 @@ export const VerbWritingView = ({ words, settings, setSettings, onClose }) => {
                 }
             />
 
-            <div className="flex-1 flex overflow-hidden">
-                <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center justify-start gap-8">
-                    <div className="w-fit min-w-[50%] bg-white p-8 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center">
-                        <div className="flex items-center gap-4 mb-8">
+            <div className="flex-1 flex flex-col overflow-hidden">
+                <div className="flex-1 overflow-y-auto px-4 py-0.5 flex flex-col items-center justify-start gap-1">
+                    <div className="w-full max-w-4xl bg-white p-2 sm:p-4 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center">
+                        <div className="flex items-center gap-4 mb-1">
                             <h3
-                                className="text-5xl text-slate-800 tracking-tight"
-                                style={{ fontFamily: settings.fontFamily, fontSize: `${settings.fontSize * 1.5}px` }}
+                                className="text-3xl text-slate-800 tracking-tight"
+                                style={{ fontFamily: settings.fontFamily, fontSize: `${settings.fontSize * 1.0}px` }}
                             >
                                 {(() => {
                                     const { stem, ending } = getInfinitiveStem(currentVerb.lemma);
@@ -299,7 +375,7 @@ export const VerbWritingView = ({ words, settings, setSettings, onClose }) => {
                                 const pronounObj = VERB_PRONOUNS.find(p => p.key === key);
                                 const label = pronounObj ? pronounObj.label : key;
                                 const conjugated = conjugationData ? conjugationData[key] : '';
-                                const parts = conjugationData ? getVerbPuzzleParts(conjugated, currentTense) : { fixedBefore: '', target: '', fixedAfter: '' };
+                                const parts = conjugationData ? getVerbPuzzleParts(conjugated, currentTense, key, conjugationData) : { fixedBefore: '', target: '', fixedAfter: '' };
                                 const isCorrect = hasChecked && feedback[key] === 'correct';
                                 const isIncorrect = hasChecked && feedback[key] === 'incorrect';
 
@@ -342,21 +418,21 @@ export const VerbWritingView = ({ words, settings, setSettings, onClose }) => {
                                                 )}
 
                                                 {target && (
-                                                    <input
-                                                        type="text"
-                                                        value={enteredTexts[key] || ''}
-                                                        onChange={(e) => handleInputChange(key, e.target.value)}
-                                                        spellCheck="false"
-                                                        placeholder=" "
-                                                        autoComplete="off"
-                                                        autoCorrect="off"
-                                                        autoCapitalize="none"
-                                                        className={`px-4 py-2 border-2 rounded-xl appearance-none text-left font-bold outline-none transition-all placeholder:font-normal placeholder:text-slate-300 bg-white
+                                                    <div
+                                                        onClick={() => {
+                                                            setActiveField(key);
+                                                            setShowKeyboard(true);
+                                                            if (hasChecked && !isComplete) {
+                                                                setHasChecked(false);
+                                                                setFeedback({});
+                                                            }
+                                                        }}
+                                                        className={`px-3 py-0 border-2 rounded-xl text-left font-medium transition-all bg-white inline-flex items-baseline cursor-pointer overflow-hidden
                                                             ${hasChecked
                                                                 ? (isCorrect
                                                                     ? 'border-green-500 bg-green-50 text-green-700'
                                                                     : 'border-red-500 bg-red-50 text-red-700')
-                                                                : 'border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 text-blue-900'
+                                                                : (activeField === key ? 'border-blue-500 ring-4 ring-blue-100 text-slate-800' : 'border-slate-300 hover:border-blue-300 text-slate-500')
                                                             }
                                                         `}
                                                         style={{
@@ -364,8 +440,14 @@ export const VerbWritingView = ({ words, settings, setSettings, onClose }) => {
                                                             width: `${Math.max(target.length, 2) + 1.2}ch`,
                                                             fontSize: `${settings.fontSize}px`,
                                                             fontFamily: settings.fontFamily,
+                                                            lineHeight: '1.2'
                                                         }}
-                                                    />
+                                                    >
+                                                        {enteredTexts[key] || '\u00A0'}
+                                                        {activeField === key && !hasChecked && (
+                                                            <span className="w-0.5 h-[0.7em] bg-blue-500 animate-pulse ml-0.5 self-center shrink-0"></span>
+                                                        )}
+                                                    </div>
                                                 )}
 
                                                 {fixedAfter && (
@@ -398,32 +480,29 @@ export const VerbWritingView = ({ words, settings, setSettings, onClose }) => {
                         </div>
                     </div>
 
-
                 </div>
+
+                {/* Keyboard Area - Fixed Bottom */}
+                {showKeyboard && (
+                    <div className="w-full z-50">
+                        <div className="w-full h-full flex flex-col justify-end">
+                            <CustomKeyboard
+                                onKeyPress={handleTextInput}
+                                onBackspace={handleBackspace}
+                                onEnter={handleMainAction}
+                                settings={settings}
+                                activeKey={activeKey}
+                            />
+                        </div>
+                    </div>
+                )}
             </div>
 
-            {/* Footer Actions */}
-            <div className="px-6 py-3 bg-white border-t border-slate-200 flex justify-end gap-4 shrink-0">
-                <div className="flex-1 flex justify-end">
-                    {allFormsFilled && (
-                        <button
-                            onClick={handleMainAction}
-                            className={`px-8 py-2.5 rounded-xl font-bold text-lg shadow-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-2 min-touch-target bg-blue-600 hover:bg-blue-700 text-white`}
-                        >
-                            {isComplete ? (
-                                <>Weiter <Icons.ArrowRight size={20} /></>
-                            ) : (
-                                <>Prüfen <Icons.Check size={20} /></>
-                            )}
-                        </button>
-                    )}
-                </div>
-            </div>
 
             <RewardModal
                 isOpen={showReward}
                 onClose={onClose}
-                message={`Alle ${getTerm("Verben", settings)} gemeistert! Fantastisch!`}
+                message={`Alle ${getTerm("Verben", settings)} geschrieben!`}
             />
         </div>
     );

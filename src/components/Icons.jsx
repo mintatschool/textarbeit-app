@@ -8,6 +8,12 @@ const Icon = ({ path, size = 24, className = "", viewBox = "0 0 24 24", ...props
 
 export const Icons = {
     Edit2: (p) => <Icon {...p} path={<path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />} />,
+    SyllableCorrectionPen: (p) => (
+        <Icon {...p} viewBox="0 0 24 24" path={<>
+            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+            <path d="M17.5 3.5l3 3L18 9l-3-3 2.5-2.5z" fill="#ef4444" stroke="none" />
+        </>} />
+    ),
     RotateCcw: (p) => <Icon {...p} path={<><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></>} />,
     RefreshCw: (p) => <Icon {...p} path={<><polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" /><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" /></>} />,
     List: (p) => <Icon {...p} path={<><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></>} />,
@@ -71,6 +77,7 @@ export const Icons = {
     // View/Edit Mode
     Eye: (p) => <Icon {...p} path={<><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></>} />,
     Camera: (p) => <Icon {...p} path={<><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" /></>} />,
+    Delete: (p) => <Icon {...p} path={<><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z" /><line x1="18" y1="9" x2="12" y2="15" /><line x1="12" y1="9" x2="18" y2="15" /></>} />,
     Trash2: (p) => <Icon {...p} path={<><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1-2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></>} />,
     ChevronDown: (p) => <Icon {...p} path={<polyline points="6 9 12 15 18 9" />} />,
     ChevronLeft: (p) => <Icon {...p} path={<polyline points="15 18 9 12 15 6" />} />,
@@ -93,6 +100,7 @@ export const Icons = {
     Pause: (p) => <Icon {...p} path={<><rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" /></>} />,
     Shuffle: (p) => <Icon {...p} path={<><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></>} />,
     Clock: (p) => <Icon {...p} path={<><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></>} />,
+    ArrowUp: (p) => <Icon {...p} path={<><line x1="12" y1="19" x2="12" y2="5" /><polyline points="5 12 12 5 19 12" /></>} />,
     ArrowRight: (p) => <Icon {...p} path={<><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></>} />,
     HelpCircle: (p) => <Icon {...p} path={<><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" /></>} />,
     Empty: (p) => <Icon {...p} path={<><circle cx="12" cy="12" r="10" /><line x1="4.93" y1="4.93" x2="19.07" y2="19.07" /></>} />,
@@ -382,6 +390,38 @@ export const Icons = {
             <path d="M 373.48 359.73 L 463.06 359.73 L 463.06 372.82 L 373.48 372.82 L 373.48 359.73 Z" fill="#444444" fillOpacity="1" stroke="#444444" strokeWidth="11.6" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
     ),
+
+    TableFillInstruction: ({ size = 120, className = "" }) => (
+        <svg width={size} height={size} viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg" className={className}>
+            <defs></defs>
+            {/* Table Outline */}
+            <path d="M 200.76 125.39 C 233.19 125.39 240.39 125.39 272.82 125.39 C 305.25 125.39 312.46 125.39 344.89 125.39 C 377.32 125.39 384.52 125.39 416.95 125.39 C 449.38 125.39 456.59 125.39 489.02 125.39 C 521.44 125.39 528.65 125.39 561.08 125.39 C 593.51 125.39 600.72 125.39 633.14 125.39 C 665.57 125.39 705.21 163.50 705.21 194.68 C 705.21 225.86 705.21 232.79 705.21 263.97 C 705.21 295.15 705.21 302.08 705.21 333.25 C 705.21 364.43 705.21 371.36 705.21 402.54 C 705.21 433.72 705.21 440.65 705.21 471.83 C 705.21 503.01 705.21 509.94 705.21 541.12 C 705.21 572.30 705.21 579.23 705.21 610.41 C 705.21 641.59 665.57 679.70 633.14 679.70 C 600.72 679.70 593.51 679.70 561.08 679.70 C 528.65 679.70 521.44 679.70 489.02 679.70 C 456.59 679.70 449.38 679.70 416.95 679.70 C 384.52 679.70 377.32 679.70 344.89 679.70 C 312.46 679.70 305.25 679.70 272.82 679.70 C 240.39 679.70 233.19 679.70 200.76 679.70 C 168.33 679.70 128.69 641.59 128.69 610.41 C 128.69 579.23 128.69 572.30 128.69 541.12 C 128.69 509.94 128.69 503.01 128.69 471.83 C 128.69 440.65 128.69 433.72 128.69 402.54 C 128.69 371.36 128.69 364.43 128.69 333.25 C 128.69 302.08 128.69 295.15 128.69 263.97 C 128.69 232.79 128.69 225.86 128.69 194.68 C 128.69 163.50 168.33 125.39 200.76 125.39 Z" fill="none" fillOpacity="1" stroke="#444444" strokeWidth="11.6" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M 128.69 268.59 L 705.21 268.59" fill="none" fillOpacity="1" stroke="#444444" strokeWidth="11.6" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M 320.86 125.39 L 320.86 679.70" fill="none" fillOpacity="1" stroke="#444444" strokeWidth="11.6" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M 513.04 125.39 L 513.04 679.70" fill="none" fillOpacity="1" stroke="#444444" strokeWidth="11.6" strokeLinecap="round" strokeLinejoin="round" />
+
+            {/* Headers */}
+            <path d="M 181.12 206.59 L 270.70 206.59 L 270.70 223.23 L 181.12 223.23 L 181.12 206.59 Z" fill="#94a3b8" stroke="none" />
+            <path d="M 372.61 205.96 L 462.19 205.96 L 462.19 222.81 L 372.61 222.81 L 372.61 205.96 Z" fill="#94a3b8" stroke="none" />
+            <path d="M 566.27 206.97 L 655.85 206.97 L 655.85 223.81 L 566.27 223.81 L 566.27 206.97 Z" fill="#94a3b8" stroke="none" />
+
+            {/* Filled Content Rows - visualizing filled columns */}
+            {/* Column 1 */}
+            <rect x="160" y="320" width="130" height="20" rx="10" fill="#4ade80" />
+            <rect x="160" y="370" width="130" height="20" rx="10" fill="#4ade80" />
+            <rect x="160" y="420" width="130" height="20" rx="10" fill="#4ade80" />
+
+            {/* Column 2 */}
+            <rect x="350" y="320" width="130" height="20" rx="10" fill="#60a5fa" />
+            <rect x="350" y="450" width="130" height="20" rx="10" fill="#60a5fa" />
+
+            {/* Column 3 */}
+            <rect x="540" y="320" width="130" height="20" rx="10" fill="#f472b6" />
+            <rect x="540" y="370" width="130" height="20" rx="10" fill="#f472b6" />
+            <rect x="540" y="420" width="130" height="20" rx="10" fill="#f472b6" />
+            <rect x="540" y="470" width="130" height="20" rx="10" fill="#f472b6" />
+        </svg>
+    ),
     Share: (p) => <Icon {...p} path={<><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" /></>} />,
     WordCasingCorrection: (p) => (
         <svg width={p.size || 48} height={(p.size || 48) * 0.5} viewBox="0 0 120 60" fill="none" className={p.className}>
@@ -438,7 +478,7 @@ export const Icons = {
                 />
                 {/* Lowercase red m (overlapping) */}
                 <path
-                    d="M 12 50 V 30 a 5 5 0 0 1 10 0 V 50 m 0 -20 a 5 5 0 0 1 10 0 V 50"
+                    d="M 12 50 V 22 m 0 8 a 5 5 0 0 1 10 0 V 50 m 0 -20 a 5 5 0 0 1 10 0 V 50"
                     stroke="#ef4444"
                     strokeWidth="6"
                     fill="none"
@@ -455,6 +495,42 @@ export const Icons = {
                     strokeLinejoin="round"
                 />
             </g>
+        </svg>
+    ),
+    WordHelp: (p) => (
+        <svg width={p.size || 60} height={(p.size || 60) * 0.5} viewBox="0 1 60 28" fill="none" className={p.className}>
+            {/* W - Shifted up by about 1/3 of its height */}
+            <path
+                d="M 4 2 L 10 16 L 15 6 L 20 16 L 26 2"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
+            {/* o - Medium lowercase */}
+            <path
+                d="M 36 21 a 4 4 0 1 1 -8 0 a 4 4 0 1 1 8 0"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
+            {/* r - Small lowercase superscript: arc rotated left by ~10 degrees */}
+            <path
+                d="M 42 6 v 8 M 42 8 c -0.5 -2.5 3 -3.5 4.5 -1"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
+            {/* t - Medium lowercase with bottom curve */}
+            <path
+                d="M 52 12 v 10 c 0 2 1 2 3 2 M 49 16 h 6"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
         </svg>
     ),
 };

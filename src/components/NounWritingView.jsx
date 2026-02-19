@@ -3,9 +3,11 @@ import { Icons } from './Icons';
 
 import { ExerciseHeader } from './ExerciseHeader';
 import { RewardModal } from './shared/RewardModal';
+import { Word } from './Word';
 import { speak } from '../utils/speech';
 import { analyzeTextLocalNouns } from '../data/nounDatabase';
 import { getTerm } from '../utils/terminology';
+import { CustomKeyboard } from './CustomKeyboard';
 
 const NOUN_CATEGORIES = [
     { key: 'plural', label: 'Mehrzahl' },
@@ -14,12 +16,12 @@ const NOUN_CATEGORIES = [
 
 export const NounWritingView = ({ words, settings, setSettings, onClose }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
-
     const [showReward, setShowReward] = useState(false);
-
-    const articleInputRef = React.useRef(null);
-    const singularInputRef = React.useRef(null);
     const [audioEnabled, setAudioEnabled] = useState(false);
+
+    // Active Field State: { part: 'article'|'singular' }
+    const [activeField, setActiveField] = useState(null);
+    const [activeKey, setActiveKey] = useState(null); // For visual feedback on keyboard
 
     // Track state for ALL nouns to support navigation
     // { index: { enteredTexts, feedback, hasChecked, isComplete } }
@@ -67,52 +69,171 @@ export const NounWritingView = ({ words, settings, setSettings, onClose }) => {
 
     const { enteredTexts, feedback, hasChecked, isComplete } = currentState;
 
+    // Set initial active field when a new word is loaded
+    useEffect(() => {
+        if (!activeField && !isComplete && !hasChecked) {
+            setActiveField({ part: 'article' });
+        }
+    }, [currentIndex, isComplete, hasChecked, activeField]);
+
     const updateCurrentHistory = (updates) => {
-        setHistory(prev => ({
-            ...prev,
-            [currentIndex]: {
-                ...currentState,
-                ...updates
-            }
-        }));
+        setHistory(prev => {
+            const currentItem = prev[currentIndex] || {};
+            return {
+                ...prev,
+                [currentIndex]: {
+                    ...currentItem,
+                    ...updates
+                }
+            };
+        });
     };
 
+    const handleTextInput = (text) => {
+        if (!activeField || (hasChecked && isComplete)) return;
 
+        setHistory(prev => {
+            const currentItem = prev[currentIndex] || {};
+            const prevHasChecked = currentItem.hasChecked;
+            const prevEnteredTexts = currentItem.enteredTexts || { article: '', singular: '' };
 
-    useEffect(() => {
-        if (settings.fontSize > 56) {
-            setSettings(prev => ({ ...prev, fontSize: 56 }));
-        }
-    }, [settings.fontSize, setSettings]);
+            const { part } = activeField;
+            const currentVal = prevEnteredTexts[part] || '';
 
-    const handleInputChange = (field, value) => {
-        const newEnteredTexts = { ...enteredTexts, [field]: value };
-        if (hasChecked && !isComplete) {
-            updateCurrentHistory({ enteredTexts: newEnteredTexts, hasChecked: false, feedback: {} });
-        } else {
-            updateCurrentHistory({ enteredTexts: newEnteredTexts });
-        }
+            let newEnteredTexts = { ...prevEnteredTexts };
+            let nextActiveField = activeField;
+
+            // Simple char limit for article
+            if (part === 'article' && currentVal.length >= 4) return prev;
+
+            newEnteredTexts[part] = currentVal + text;
+
+            // If we just finished the article (e.g. "der", "die", "das"), we could auto-jump,
+            // but for nouns it's better to let the user decide or use Enter.
+
+            // If we were in checked state, clear it
+            const newFeedback = prevHasChecked ? {} : currentItem.feedback;
+
+            return {
+                ...prev,
+                [currentIndex]: {
+                    ...currentItem,
+                    enteredTexts: newEnteredTexts,
+                    hasChecked: false,
+                    feedback: newFeedback
+                }
+            };
+        });
+    };
+
+    const handleBackspace = () => {
+        if (!activeField || (hasChecked && isComplete)) return;
+
+        setHistory(prev => {
+            const currentItem = prev[currentIndex] || {};
+            const prevHasChecked = currentItem.hasChecked;
+            const prevEnteredTexts = currentItem.enteredTexts || { article: '', singular: '' };
+
+            const { part } = activeField;
+            const currentVal = prevEnteredTexts[part] || '';
+
+            let newEnteredTexts = { ...prevEnteredTexts };
+            let nextActiveField = activeField;
+
+            if (currentVal.length > 0) {
+                newEnteredTexts[part] = currentVal.slice(0, -1);
+            } else if (part === 'singular') {
+                // If singular is empty and we hit backspace, jump to article
+                nextActiveField = { part: 'article' };
+            }
+
+            // Clear feedback if correcting
+            const newFeedback = prevHasChecked ? {} : currentItem.feedback;
+
+            if (nextActiveField !== activeField) {
+                setActiveField(nextActiveField);
+            }
+
+            return {
+                ...prev,
+                [currentIndex]: {
+                    ...currentItem,
+                    enteredTexts: newEnteredTexts,
+                    hasChecked: false,
+                    feedback: newFeedback
+                }
+            };
+        });
     };
 
     const handleNext = () => {
         if (currentIndex < nounItems.length - 1) {
             setCurrentIndex(currentIndex + 1);
-        }
-    };
-
-    const handleBack = () => {
-        if (currentIndex > 0) {
-            setCurrentIndex(currentIndex - 1);
+            setActiveField(null); // Reset active field
         }
     };
 
     const handleMainAction = () => {
-        if (!hasChecked) {
+        if (!hasChecked || !isComplete) {
             checkAnswers();
         } else if (isComplete) {
             handleNext();
         }
     };
+
+    // Hardware Keyboard Support
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (hasChecked && isComplete) {
+                if (e.key === 'Enter') {
+                    handleNext();
+                    e.preventDefault();
+                }
+                return;
+            }
+
+            // Navigation with Tab
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                setActiveField(prev => prev?.part === 'article' ? { part: 'singular' } : { part: 'article' });
+                return;
+            }
+
+            // Alpha-numeric check (including German umlauts and Space)
+            if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                if (/^[a-zA-ZäöüÄÖÜß ]$/.test(e.key)) {
+                    handleTextInput(e.key);
+                    setActiveKey(e.key);
+                    setTimeout(() => setActiveKey(null), 150);
+                }
+            } else if (e.key === 'Backspace') {
+                handleBackspace();
+                setActiveKey('Backspace');
+                setTimeout(() => setActiveKey(null), 150);
+                e.preventDefault();
+            } else if (e.key === 'Enter') {
+                handleMainAction(); // Check or Next
+                setActiveKey('Enter');
+                setTimeout(() => setActiveKey(null), 150);
+                e.preventDefault();
+            } else if (e.key === 'Shift') {
+                setActiveKey('Shift');
+            }
+        };
+
+        const handleKeyUp = (e) => {
+            if (e.key === 'Shift') {
+                setActiveKey(null);
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('keyup', handleKeyUp);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('keyup', handleKeyUp);
+        };
+    }, [activeField, enteredTexts, hasChecked, isComplete]);
 
     const allFormsFilled = useMemo(() => {
         if (!currentNoun) return false;
@@ -172,10 +293,10 @@ export const NounWritingView = ({ words, settings, setSettings, onClose }) => {
     }
 
     return (
-        <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans select-none overflow-hidden">
+        <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col modal-animate font-sans select-none overflow-hidden safe-area-bottom">
             <ExerciseHeader
                 title={`${getTerm("Substantive", settings)} schreiben`}
-                icon={Icons.Edit}
+                icon={Icons.Edit2}
                 current={currentIndex + 1}
                 total={nounItems.length}
                 progressPercentage={((currentIndex) / nounItems.length) * 100}
@@ -184,7 +305,7 @@ export const NounWritingView = ({ words, settings, setSettings, onClose }) => {
                 onClose={onClose}
                 showSlider={true}
                 sliderMin={24}
-                sliderMax={56}
+                sliderMax={42}
                 customControls={
                     <div className="flex items-center gap-6">
                         <button
@@ -198,129 +319,158 @@ export const NounWritingView = ({ words, settings, setSettings, onClose }) => {
                 }
             />
 
-            <div className="flex-1 flex overflow-hidden">
-                <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center justify-start gap-8">
-                    <div className="w-fit min-w-[60%] bg-white p-12 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center">
-                        <div className="flex flex-col gap-10 w-full px-4 text-left">
+            <div className="flex-1 flex flex-col overflow-hidden">
+                {/* Scrollable Content Area */}
+                <div className="flex-1 overflow-y-auto px-4 py-6 flex flex-col items-center justify-start gap-4">
+
+                    <div className="w-full max-w-4xl bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center">
+                        <div className="flex flex-col gap-6 w-full px-2 text-left">
 
                             {/* PLURAL ROW - REFERENCE */}
-                            <div className="flex items-center gap-12">
-                                <div className="w-48 shrink-0">
-                                    <span className="text-lg font-bold text-blue-700 uppercase tracking-widest leading-none">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-6 border-b border-slate-50 pb-4">
+                                <div className="w-56 shrink-0 mb-1 sm:mb-0">
+                                    <span className="text-sm sm:text-base font-bold text-blue-700 uppercase tracking-widest leading-none">
                                         Mehrzahl
                                     </span>
                                 </div>
-                                <div className="flex-1 flex items-center gap-4" style={{ fontSize: `${settings.fontSize}px`, fontFamily: settings.fontFamily }}>
-                                    {/* Plural Articles/Nouns are shown as read-only reference */}
-                                    <div className="px-4 py-2 border-2 border-transparent text-slate-700 font-bold min-h-[3rem] flex items-center justify-start bg-blue-50 rounded-xl text-left" style={{ width: '4em', minWidth: '120px' }}>
-                                        {currentNoun.pluralArticle || 'die'}
+                                <div className="flex-1 flex items-center gap-6 w-full sm:w-auto ml-2" style={{ fontSize: `${settings.fontSize}px`, fontFamily: settings.fontFamily }}>
+                                    <div className="shrink-0 flex justify-end" style={{ width: '4em' }}>
+                                        <div className="px-3 py-2 border-2 border-transparent min-h-[2.5em] flex items-center justify-center">
+                                            <Word
+                                                word={currentNoun.pluralArticle || 'die'}
+                                                settings={{ ...settings, visualType: 'none', displayTrigger: 'never' }}
+                                                forceNoMargin={true}
+                                                isReadingMode={true}
+                                                isHeadline={true}
+                                            />
+                                        </div>
                                     </div>
-                                    <div className="px-4 py-2 border-2 border-transparent text-slate-700 font-bold min-h-[3rem] flex items-center justify-start bg-blue-50 rounded-xl text-left">
-                                        {currentNoun.plural}
+                                    <div className="flex-1 flex justify-start">
+                                        <div className="pl-3 pr-4 py-2 border-2 border-transparent min-h-[2.5em] flex items-center">
+                                            <Word
+                                                word={currentNoun.plural}
+                                                settings={{ ...settings, visualType: 'none', displayTrigger: 'never' }}
+                                                forceNoMargin={true}
+                                                isReadingMode={true}
+                                            />
+                                        </div>
                                     </div>
 
                                     {audioEnabled && (
-                                        <button
-                                            onClick={() => speak(`${currentNoun.pluralArticle || 'die'} ${currentNoun.plural}`)}
-                                            className="ml-4 w-12 h-12 bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-full flex items-center justify-center transition-all shadow-sm"
-                                        >
-                                            <Icons.Volume2 size={24} />
-                                        </button>
+                                        <div className="ml-2 self-center shrink-0">
+                                            <button
+                                                onClick={() => speak(`${currentNoun.pluralArticle || 'die'} ${currentNoun.plural}`)}
+                                                className="w-10 h-10 bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-full flex items-center justify-center transition-all shadow-sm"
+                                                title="Anhören"
+                                            >
+                                                <Icons.Volume2 size={20} />
+                                            </button>
+                                        </div>
                                     )}
                                 </div>
                             </div>
 
                             {/* SINGULAR ROW - INPUTS */}
-                            <div className="flex items-center gap-12">
-                                <div className="w-48 shrink-0">
-                                    <span className="text-lg font-bold text-blue-700 uppercase tracking-widest leading-none">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-6 pt-2">
+                                <div className="w-56 shrink-0 mb-1 sm:mb-0">
+                                    <span className="text-sm sm:text-base font-bold text-blue-700 uppercase tracking-widest leading-none">
                                         Einzahl
                                     </span>
                                 </div>
-                                <div className="flex-1 flex items-center gap-4" style={{ fontSize: `${settings.fontSize}px`, fontFamily: settings.fontFamily }}>
+                                <div className="flex-1 flex items-center gap-6 w-full sm:w-auto ml-2" style={{ fontSize: `${settings.fontSize}px`, fontFamily: settings.fontFamily }}>
 
-                                    {/* Article Input */}
-                                    <input
-                                        ref={articleInputRef}
-                                        type="text"
-                                        value={enteredTexts.article || ''}
-                                        onChange={(e) => handleInputChange('article', e.target.value)}
-                                        className={`px-4 py-2 border-2 rounded-xl text-left font-bold outline-none transition-all placeholder:font-normal placeholder:text-slate-300
-                                            ${hasChecked
-                                                ? (feedback.article === 'correct'
-                                                    ? 'border-green-500 bg-green-50 text-green-700'
-                                                    : 'border-red-500 bg-red-50 text-red-700')
-                                                : 'border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 text-blue-900 bg-white'
-                                            }
-                                        `}
-                                        style={{ width: '4em', minWidth: '120px' }}
-                                        autoComplete="off"
-                                        autoCorrect="off"
-                                        autoCapitalize="none"
-                                        spellCheck="false"
-                                    />
+                                    {/* Article Interactive Box */}
+                                    <div className="shrink-0 flex justify-end" style={{ width: '4em' }}>
+                                        <div
+                                            onClick={() => {
+                                                setActiveField({ part: 'article' });
+                                                if (hasChecked && !isComplete) {
+                                                    updateCurrentHistory({ hasChecked: false, feedback: {} });
+                                                }
+                                            }}
+                                            className={`px-3 py-2 border-2 rounded-xl text-center font-medium transition-all bg-white min-h-[2.5em] flex items-center justify-center cursor-pointer box-border
+                                                ${hasChecked
+                                                    ? (feedback.article === 'correct' ? 'border-green-500 bg-green-50 text-green-700' : 'border-red-500 bg-red-50 text-red-700')
+                                                    : (activeField?.part === 'article' ? 'border-blue-500 ring-2 ring-blue-100' : 'border-slate-300 hover:border-blue-300')
+                                                }
+                                            `}
+                                            style={{
+                                                minWidth: '4em',
+                                                fontSize: `${settings.fontSize}px`
+                                            }}
+                                        >
+                                            {enteredTexts.article}
+                                            {activeField?.part === 'article' && !hasChecked && (
+                                                <span className="w-0.5 h-[1em] bg-blue-500 animate-pulse ml-0.5"></span>
+                                            )}
+                                        </div>
+                                    </div>
 
-                                    {/* Noun Input */}
-                                    <input
-                                        ref={singularInputRef}
-                                        type="text"
-                                        value={enteredTexts.singular || ''}
-                                        onChange={(e) => handleInputChange('singular', e.target.value)}
-                                        className={`px-4 py-2 border-2 rounded-xl text-left font-bold outline-none transition-all placeholder:font-normal placeholder:text-slate-300
-                                            ${hasChecked
-                                                ? (feedback.singular === 'correct'
-                                                    ? 'border-green-500 bg-green-50 text-green-700'
-                                                    : 'border-red-500 bg-red-50 text-red-700')
-                                                : 'border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 text-blue-900 bg-white'
-                                            }
-                                        `}
-                                        style={{ minWidth: '200px', width: `${Math.max((currentNoun.lemma || '').length, 10)}ch` }}
-                                        autoComplete="off"
-                                        autoCorrect="off"
-                                        autoCapitalize="none"
-                                        spellCheck="false"
-                                    />
+                                    {/* Noun Interactive Box */}
+                                    <div className="flex-1 flex justify-start min-w-0">
+                                        <div
+                                            onClick={() => {
+                                                setActiveField({ part: 'singular' });
+                                                if (hasChecked && !isComplete) {
+                                                    updateCurrentHistory({ hasChecked: false, feedback: {} });
+                                                }
+                                            }}
+                                            className={`pl-3 pr-4 py-2 border-2 rounded-xl text-left font-medium transition-all bg-white min-h-[2.5em] flex items-center w-full cursor-pointer overflow-hidden relative box-border
+                                                ${hasChecked
+                                                    ? (feedback.singular === 'correct' ? 'border-green-500 bg-green-50 text-green-700' : 'border-red-500 bg-red-50 text-red-700')
+                                                    : (activeField?.part === 'singular' ? 'border-blue-500 ring-4 ring-blue-100' : 'border-slate-300 hover:border-blue-300')
+                                                }
+                                            `}
+                                            style={{
+                                                fontSize: `${settings.fontSize}px`,
+                                                fontFamily: settings.fontFamily,
+                                                minWidth: '200px'
+                                            }}
+                                        >
+                                            <span className="flex items-center">
+                                                {enteredTexts.singular}
+                                                {activeField?.part === 'singular' && !hasChecked && (
+                                                    <span className="w-0.5 h-[1em] bg-blue-500 animate-pulse ml-0.5"></span>
+                                                )}
+                                            </span>
+                                        </div>
+                                    </div>
 
                                     {audioEnabled && (
-                                        <button
-                                            onClick={() => speak(`${currentNoun.article} ${currentNoun.lemma}`)}
-                                            className="ml-4 w-12 h-12 bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-full flex items-center justify-center transition-all shadow-sm"
-                                        >
-                                            <Icons.Volume2 size={24} />
-                                        </button>
+                                        <div className="ml-2 self-center shrink-0">
+                                            <button
+                                                onClick={() => speak(`${currentNoun.article} ${currentNoun.lemma}`)}
+                                                className="w-10 h-10 bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-full flex items-center justify-center transition-all shadow-sm"
+                                                title="Anhören"
+                                            >
+                                                <Icons.Volume2 size={20} />
+                                            </button>
+                                        </div>
                                     )}
                                 </div>
                             </div>
-
                         </div>
                     </div>
-
-
                 </div>
-            </div>
 
-            {/* Footer Actions */}
-            <div className="px-6 py-3 bg-white border-t border-slate-200 flex justify-end gap-4 shrink-0">
-                <div className="flex-1 flex justify-end">
-                    {allFormsFilled && (
-                        <button
-                            onClick={handleMainAction}
-                            className={`px-8 py-2.5 rounded-xl font-bold text-lg shadow-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-2 min-touch-target bg-blue-600 hover:bg-blue-700 text-white`}
-                        >
-                            {isComplete ? (
-                                <>Weiter <Icons.ArrowRight size={20} /></>
-                            ) : (
-                                <>Prüfen <Icons.Check size={20} /></>
-                            )}
-                        </button>
-                    )}
+                {/* Keyboard Area - Fixed Bottom */}
+                <div className="w-full z-50">
+                    <div className="w-full h-full flex flex-col justify-end">
+                        <CustomKeyboard
+                            onKeyPress={handleTextInput}
+                            onBackspace={handleBackspace}
+                            onEnter={handleMainAction}
+                            settings={settings}
+                            activeKey={activeKey}
+                        />
+                    </div>
                 </div>
             </div>
 
             <RewardModal
                 isOpen={showReward}
                 onClose={onClose}
-                message={`Alle ${getTerm("Substantive", settings)} gemeistert! Prima!`}
+                message={`Alle ${getTerm("Substantive", settings)} geschrieben!`}
             />
         </div>
     );

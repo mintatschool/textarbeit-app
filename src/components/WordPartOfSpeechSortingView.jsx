@@ -7,8 +7,7 @@ import { getCorrectCasing } from '../utils/wordCasingUtils';
 import { getTerm } from '../utils/terminology';
 
 export const WordPartOfSpeechSortingView = ({
-    text,
-    processedWords,
+    exerciseWords,
     settings,
     setSettings,
     onClose,
@@ -43,12 +42,12 @@ export const WordPartOfSpeechSortingView = ({
 
         const order = ['noun', 'verb', 'adjective'];
 
-        const wordsToCategorize = processedWords;
+        const wordsToCategorize = exerciseWords;
 
         if (wordsToCategorize && wordsToCategorize.length > 0) {
             wordsToCategorize.forEach(w => {
-                if (w.type !== 'word') return;
-
+                // exerciseWords are already filtered and grouped.
+                // We just need to categorize them.
                 const cleanWord = w.word.replace(/[.,/#!$%^&*;:{}=_`~()]/g, "").trim();
                 if (!cleanWord) return;
 
@@ -62,17 +61,13 @@ export const WordPartOfSpeechSortingView = ({
                 else if (isAdjective) targetCol = 'adjective';
 
                 if (targetCol) {
-                    cols[targetCol].items.push({
-                        id: `w_${w.index}`,
-                        word: getCorrectCasing(w.word),
-                        index: w.index,
-                    });
+                    cols[targetCol].items.push(w);
                 }
             });
         }
 
         return { cols, order };
-    }, [processedWords]);
+    }, [exerciseWords, settings]);
 
     return (
         <WordSortingView

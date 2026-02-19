@@ -415,12 +415,14 @@ export const WordSortingView = ({
 
     // Check if table is unconfigured: no headers or no items at all
     const hasAnyHeader = columnsState?.order?.some(id => columnsState.cols[id]?.title?.trim());
-    const hasAnyItems = columnsState?.order?.some(id => columnsState.cols[id]?.items?.length > 0);
+    // STRICTER CHECK: User wants "mindestens in jede Spalte etwas eintragen"
+    // So we check if ALL valid columns have items, not just if ANY has items.
+    const hasAllColumnsFilled = validColumns.length >= 2 && validColumns.every(c => c.items && c.items.length > 0);
 
     // Initial checks for safety
     if (!columnsState || !validColumns) return null;
 
-    if (!hasAnyHeader || !hasAnyItems || validColumns.length < 2) {
+    if (!hasAnyHeader || !hasAllColumnsFilled || validColumns.length < 2) {
         return (
             <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col items-center justify-center modal-animate font-sans">
                 <EmptyStateMessage
@@ -428,10 +430,9 @@ export const WordSortingView = ({
                     message="Die Tabelle ist noch nicht gefüllt!"
                     IconComponent={null}
                     steps={[
-                        { text: "Markiere Wörter!", icon: Icons.GhostHighlight },
-                        { text: "Öffne die Tabelle!", icon: Icons.TableInstruction },
-                        { text: "Erzeuge Spalten und benenne sie!", icon: Icons.TableColumnsInstruction },
-                        { text: "Verschiebe Wörter!" }
+                        { text: "In Tabelle Spalten anlegen", icon: Icons.TableInstruction },
+                        { text: "Spalten benennen", icon: Icons.TableColumnsInstruction },
+                        { text: "Mindestens in jede Spalte etwas eintragen", icon: Icons.TableFillInstruction }
                     ]}
                 />
             </div>
@@ -681,8 +682,8 @@ export const WordSortingView = ({
 
                 {/* TABLE COLUMNS - Matching WordListView styling */}
                 <div
-                    className="flex-1 overflow-auto p-6"
-                    style={{ paddingBottom: `${beltHeight + 20}px` }}
+                    className="flex-1 overflow-auto px-6"
+                    style={{ paddingBottom: `${beltHeight + 100}px` }}
                 >
                     <div className="flex gap-6 min-h-full">
                         {validColumns.map(col => {
@@ -716,7 +717,7 @@ export const WordSortingView = ({
                                 >
                                     {/* Column Header - matches WordListView */}
                                     <div
-                                        className="p-3 rounded-t-xl text-center font-bold shadow-sm"
+                                        className="p-3 rounded-t-xl text-center font-bold shadow-sm sticky top-0 z-40"
                                         style={{
                                             backgroundColor: finalBg,
                                             color: textColor,
@@ -731,7 +732,7 @@ export const WordSortingView = ({
                                     {/* Column Items - sorted words appear here */}
                                     <div
                                         ref={(el) => { itemsContainerRefs.current[col.id] = el; }}
-                                        className="p-3 space-y-2 flex-1 relative min-h-[100px] overflow-y-auto no-scrollbar max-h-[calc(100vh-350px)] flex flex-col"
+                                        className="p-3 pt-6 pb-6 space-y-2 flex-1 relative min-h-[100px] flex flex-col"
                                     >
 
                                         {/* Click feedback overlay for selected column */}
@@ -757,6 +758,7 @@ export const WordSortingView = ({
                                                         settings={{ ...settings, fontSize: settings.fontSize * 0.85 }}
                                                         isReadingMode={true}
                                                         forceShowSyllables={true}
+                                                        manualSyllables={word.syllables}
                                                         wordColors={wordColors}
                                                         highlightedIndices={highlightedIndices}
                                                         hideYellowLetters={hideYellowLetters}
@@ -931,6 +933,7 @@ export const WordSortingView = ({
                                     settings={{ ...settings, fontSize: settings.fontSize * 0.85 }}
                                     isReadingMode={true}
                                     forceShowSyllables={true}
+                                    manualSyllables={currentWord.syllables}
                                     wordColors={wordColors}
                                     highlightedIndices={highlightedIndices}
                                     hideYellowLetters={hideYellowLetters}
@@ -957,6 +960,7 @@ export const WordSortingView = ({
                                     settings={{ ...settings, fontSize: settings.fontSize * 0.85 }}
                                     isReadingMode={true}
                                     forceShowSyllables={true}
+                                    manualSyllables={currentWord.syllables}
                                     wordColors={wordColors}
                                     highlightedIndices={highlightedIndices}
                                     hideYellowLetters={hideYellowLetters}

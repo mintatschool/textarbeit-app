@@ -42,6 +42,7 @@ const WordSortingView = lazy(() => import('./components/WordSortingView').then(m
 const AlphabetSortingView = lazy(() => import('./components/AlphabetSortingView').then(m => ({ default: m.AlphabetSortingView })));
 const QRCodePrintView = lazy(() => import('./components/QRCodePrintView').then(m => ({ default: m.QRCodePrintView })));
 const WordPartOfSpeechSortingView = lazy(() => import('./components/WordPartOfSpeechSortingView').then(m => ({ default: m.WordPartOfSpeechSortingView })));
+const WordWritingView = lazy(() => import('./components/WordWritingView').then(m => ({ default: m.WordWritingView })));
 import { findVerbLemma } from './data/verbDatabase';
 import { findAdjectiveLemma } from './data/adjectiveDatabase';
 import { analyzeTextLocalNouns } from './data/nounDatabase';
@@ -363,9 +364,49 @@ const App = () => {
         }
 
         let result = wordsOnly;
+        const processedIndices = new Set();
+        const sortedInput = [...wordsOnly].sort((a, b) => a.index - b.index);
+
+        const compositeWords = [];
+        sortedInput.forEach(w => {
+            if (processedIndices.has(w.index)) return;
+
+            const group = wordGroups.find(g => g.ids.includes(w.index));
+            if (group) {
+                const groupMembers = group.ids.map(id => sortedInput.find(sw => sw.index === id)).filter(Boolean);
+                if (groupMembers.length > 0) {
+                    groupMembers.sort((a, b) => a.index - b.index);
+                    const compositeWord = {
+                        ...groupMembers[0],
+                        word: groupMembers.map(m => getCorrectCasing(m.word)).join(' '),
+                        id: `group-${group.ids.join('-')}`,
+                        isGroup: true,
+                        originalWord: groupMembers.map(m => m.word).join(' '),
+                        syllables: groupMembers.flatMap((m, idx) => {
+                            const rawWord = getCorrectCasing(m.word);
+                            const rawSyls = getCachedSyllables(rawWord, hyphenator);
+                            return idx < groupMembers.length - 1 ? [...rawSyls, { text: ' ', isSpace: true }] : rawSyls;
+                        })
+                    };
+                    group.ids.forEach(id => processedIndices.add(id));
+                    compositeWords.push(compositeWord);
+                    return;
+                }
+            }
+            compositeWords.push(w);
+            processedIndices.add(w.index);
+        });
+
+        result = compositeWords;
 
         if (hasHighlights) {
             result = result.filter(w => {
+                if (w.isGroup) {
+                    // If any part of the group is highlighted, keep the whole group
+                    // or maybe it should only be kept if it matches the 'markings' filter?
+                    // Usually connection implies they are one unit.
+                    return true;
+                }
                 // Check yellow highlights
                 for (let i = 0; i < w.word.length; i++) {
                     if (highlightedIndices.has(w.index + i)) return true;
@@ -375,6 +416,8 @@ const App = () => {
         }
 
         return result.map(w => {
+            if (w.isGroup) return w; // Already processed
+
             // Apply text corrections if available
             const lookupKey = `${w.word}_${w.index}`;
             let finalWord = w.word;
@@ -389,10 +432,11 @@ const App = () => {
                 originalWord: w.word, // Preserve original text casing
                 word: finalWord,
                 text: finalWord,
-                syllables: getCachedSyllables(finalWord, hyphenator)
+                syllables: getCachedSyllables(finalWord, hyphenator),
+                originalSyllables: getCachedSyllables(w.word, hyphenator)
             };
         });
-    }, [wordsOnly, highlightedIndices, wordColors, textCorrections, hyphenator]);
+    }, [wordsOnly, highlightedIndices, wordColors, textCorrections, hyphenator, wordGroups]);
 
     const uniqueExerciseWords = useMemo(() => {
         const unique = [];
@@ -523,6 +567,7 @@ const App = () => {
             splitExercise: hasWords,
 
             // Part of Speech Based - require marked words of specific types
+            wordWriting: hasWords,
             verbWriting: hasVerbs,
             verbPuzzle: hasVerbs,
             adjectiveWriting: hasAdjectives,
@@ -1081,6 +1126,10 @@ const App = () => {
     }, []);
 
     const handleCorrectionSave = (newSyllables) => {
+        const newWord = newSyllables.join('');
+        if (newWord !== correctionData.word) {
+            setTextCorrections(prev => ({ ...prev, [correctionData.key]: newWord }));
+        }
         setManualCorrections(prev => ({ ...prev, [correctionData.key]: newSyllables }));
         setShowCorrectionModal(false); setCorrectionData(null); setActiveTool(null);
     };
@@ -1483,6 +1532,7 @@ const App = () => {
                     setShowCloud={(v) => v && setActiveView('cloud')}
                     setShowSentencePuzzle={(v) => v && setActiveView('sentence')}
                     setShowSplitExercise={(v) => v && setActiveView('split')}
+                    setShowWordWriting={(v) => v && setActiveView('wordWriting')}
                     onShowExerciseHint={setShowExerciseHint}
                 />
             )}
@@ -1762,13 +1812,24 @@ const App = () => {
                         {activeView === 'syllable_composition' && <SyllableCompositionView words={hasMarkings ? uniqueExerciseWords : []} settings={settings} onClose={() => setActiveView('text')} title="Silbenbau 1" activeColor={activeColor} />}
                         {activeView === 'syllable_composition_extension' && <SyllableCompositionExtensionView words={hasMarkings ? uniqueExerciseWords : []} settings={settings} onClose={() => setActiveView('text')} title="Silbenbau 2" activeColor={activeColor} />}
                         {activeView === 'puzzletest_multi' && <PuzzleTestMultiSyllableView words={hasMarkings ? uniqueExerciseWords : []} settings={settings} onClose={() => setActiveView('text')} title="Silbenpuzzle 2" activeColor={activeColor} />}
-                        {activeView === 'cloud' && <WordCloudView words={hasMarkings ? uniqueExerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Wortwolke" />}
+                        {activeView === 'cloud' && <WordCloudView words={hasMarkings ? uniqueExerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Schüttelwörter" />}
+                        {activeView === 'wordWriting' && (
+                            <Suspense fallback={<LazyFallback />}>
+                                <WordWritingView
+                                    words={exerciseWords}
+                                    settings={settings}
+                                    setSettings={setSettings}
+                                    onClose={() => setActiveView('text')}
+                                    hyphenator={hyphenator}
+                                    title="Wörter schreiben"
+                                />
+                            </Suspense>
+                        )}
                         {activeView === 'carpet' && <SyllableCarpetView words={hasMarkings ? exerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Silbenteppich" />}
                         {activeView === 'speed_reading' && <SpeedReadingView words={hasMarkings ? uniqueExerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Blitzlesen" />}
                         {activeView === 'wordSortingByParticiple' && (
                             <WordPartOfSpeechSortingView
-                                text={text}
-                                processedWords={processedWords}
+                                exerciseWords={exerciseWords}
                                 settings={settings}
                                 setSettings={setSettings}
                                 colorPalette={colorPalette}
@@ -1794,6 +1855,7 @@ const App = () => {
                             colorHeaders={colorHeaders}
                             setColorHeaders={setColorHeaders}
                             groups={wordGroups}
+                            hideYellowLetters={hideYellowLetters}
                             onRemoveWord={(id) => {
                                 if (typeof id === 'string' && id.startsWith('group-')) {
                                     // REMOVE GROUP
@@ -1859,6 +1921,8 @@ const App = () => {
                             }}
                             toggleHighlights={stableToggleHighlights}
                             highlightedIndices={highlightedIndices}
+                            setCorrectionData={setCorrectionData}
+                            setShowCorrectionModal={setShowCorrectionModal}
                             onWordUpdate={(wordId, newText) => {
                                 const index = parseInt(wordId.replace('word_', ''), 10);
                                 if (isNaN(index)) return;

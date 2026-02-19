@@ -112,6 +112,7 @@ export const Toolbar = ({
     setShowWordSorting,    // New: Word sorting exercise
     setShowWordSortingByParticiple, // New: Word sorting by part of speech
     setShowAlphabetSorting, // New: Alphabet sorting exercise
+    setShowWordWriting,    // New: Word writing exercise
 
 
     // Color Props
@@ -569,6 +570,9 @@ export const Toolbar = ({
                 <MenuItem onClick={() => handleExerciseClick('cloud', () => setShowCloud(true))} icon={<Icons.Cloud size={20} className="text-blue-600" />} inactive={!exerciseActivity.cloud}>
                     Schüttelwörter
                 </MenuItem>
+                <MenuItem onClick={() => handleExerciseClick('wordWriting', () => setShowWordWriting(true))} icon={<Icons.Edit2 size={20} className="text-blue-600" />} inactive={!exerciseActivity.wordWriting}>
+                    Wörter schreiben
+                </MenuItem>
                 <MenuItem onClick={() => handleExerciseClick('splitExercise', () => setShowSplitExercise(true))} icon={<Icons.Scissors size={20} className="text-blue-600 -rotate-90" />} inactive={!exerciseActivity.splitExercise}>
                     Wörter trennen
                 </MenuItem>
@@ -774,7 +778,7 @@ export const Toolbar = ({
                 {!settings?.reduceMenu && (
                     <ToolbarButton
                         title="Silben korrigieren"
-                        icon={Icons.SilbenKorrigieren}
+                        icon={Icons.SyllableCorrectionPen}
                         onClick={() => onToolChange(activeTool === 'split' ? null : 'split')}
                         active={activeTool === 'split'}
                         activeColor="teal"

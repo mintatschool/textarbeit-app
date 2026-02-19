@@ -60,8 +60,17 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         runtimeCaching: [
           {
-            // Cache all local assets with NetworkFirst strategy for offline support
-            urlPattern: ({ request, sameOrigin }) => sameOrigin && request.destination !== 'document',
+            // Cache local assets (JS, CSS, images) but EXCLUDE service worker files
+            // to ensure the browser always checks for new SW versions
+            urlPattern: ({ request, sameOrigin, url }) => {
+              if (!sameOrigin) return false;
+              if (request.destination === 'document') return false;
+              // Never cache service worker or workbox files in runtime cache
+              if (url.pathname.endsWith('sw.js') || url.pathname.includes('workbox-')) return false;
+              // Never cache the manifest
+              if (url.pathname.endsWith('manifest.webmanifest') || url.pathname.endsWith('manifest.json')) return false;
+              return true;
+            },
             handler: 'CacheFirst',
             options: {
               cacheName: 'local-assets-cache',

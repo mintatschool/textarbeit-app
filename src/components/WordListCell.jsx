@@ -1,7 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { Icons } from './Icons'; // Assuming Icons exists here if needed, or remove if unused. Used for X button.
-
-const CLUSTERS = ['sch', 'ei', 'ie', 'au', 'eu', 'ch', 'pf', 'st', 'sp', 'qu', 'ai', 'oi', 'äu'];
+import { CLUSTERS, getChunks } from '../utils/syllables';
 
 export const WordListCell = React.memo(({
     word,
@@ -10,6 +9,7 @@ export const WordListCell = React.memo(({
     settings,
     wordColors,
     interactionMode,
+    isMarkerActive,
     toggleHighlights,
     onWordUpdate,
     onRemoveWord,
@@ -17,7 +17,9 @@ export const WordListCell = React.memo(({
     onUpdateWordColor,
     colorPalette,
     pointerDrag,
-    draggables
+    draggables,
+    hideYellowLetters,
+    onEditMode
 }, ref) => {
     const { onDragStart, onDragEnd, onDrop, onDragOver } = draggables;
     const { onPointerDown, isDragging: isBeingDragged } = pointerDrag || {};
@@ -27,36 +29,33 @@ export const WordListCell = React.memo(({
         if (!settings.smartSelection) return [clickedGlobalIndex];
 
         const relativeIndex = clickedGlobalIndex - startIndex;
-        let currentSylStart = 0;
-        let targetSylIndex = -1;
-        let indexInSyl = -1;
-
-        for (let i = 0; i < syllables.length; i++) {
-            const sylLen = syllables[i].length;
-            if (relativeIndex >= currentSylStart && relativeIndex < currentSylStart + sylLen) {
-                targetSylIndex = i;
-                indexInSyl = relativeIndex - currentSylStart;
-                break;
-            }
-            currentSylStart += sylLen;
-        }
-
-        if (targetSylIndex === -1) return [clickedGlobalIndex];
-
-        const sylText = syllables[targetSylIndex].toLowerCase();
         const activeClusters = settings.clusters || CLUSTERS;
 
+        // Reconstruct the full word from syllables (if present) to perform a whole-word search
+        // This ensures "sch" across syllables or at any position is found consistently.
+        const wordText = syllables.join('').toLowerCase();
+
+        // Calculate Syllable Start Indices (for st/sp rule)
+        const syllableStarts = new Set();
+        let acc = 0;
+        syllables.forEach(s => { syllableStarts.add(acc); acc += s.length; });
+
+        // Iterate over all clusters to see if the click falls into one
         for (let cluster of activeClusters) {
-            const len = cluster.length;
-            for (let offset = 0; offset < len; offset++) {
-                const start = indexInSyl - offset;
-                if (start < 0 || start + len > sylText.length) continue;
-
-                if ((cluster === 'st' || cluster === 'sp') && start !== 0) continue;
-
-                if (sylText.substring(start, start + len) === cluster) {
-                    return Array.from({ length: len }, (_, k) => startIndex + currentSylStart + start + k);
+            let idx = wordText.indexOf(cluster);
+            while (idx !== -1) {
+                // Special Rule for 'st' and 'sp': Only valid if at the START of a syllable
+                if ((cluster === 'st' || cluster === 'sp') && !syllableStarts.has(idx)) {
+                    idx = wordText.indexOf(cluster, idx + 1);
+                    continue;
                 }
+
+                // Check if click is within this occurrence
+                if (relativeIndex >= idx && relativeIndex < idx + cluster.length) {
+                    return Array.from({ length: cluster.length }, (_, k) => startIndex + idx + k);
+                }
+
+                idx = wordText.indexOf(cluster, idx + 1);
             }
         }
         return [clickedGlobalIndex];
@@ -71,7 +70,7 @@ export const WordListCell = React.memo(({
     // For now: Always show if 'always'. Show if 'click' (user can see it). Never if 'never'.
     // "Click" in WordListView usually means "Show".
     const showSyllables = hasLetters
-        && (settings.displayTrigger === 'always' || settings.displayTrigger === 'click' || interactionMode === 'mark' || interactionMode === 'case')
+        && (settings.displayTrigger === 'always' || settings.displayTrigger === 'click' || interactionMode === 'mark')
         && settings.visualType !== 'none'
         && word.syllables;
 
@@ -79,15 +78,7 @@ export const WordListCell = React.memo(({
         // console.log('Cell Click:', { mode: interactionMode, idx: absCharIndex, wordIndex: word.index, toggleHighlights: !!toggleHighlights });
         e.stopPropagation();
 
-        if (interactionMode === 'case') {
-            // Logic copied from WordListView
-            if (cIdx === 0 && sylObj.sourceId && !sylObj.isSpace) {
-                const firstChar = sylObj.sourceWord.charAt(0);
-                const isUpper = firstChar === firstChar.toUpperCase();
-                const newWord = (isUpper ? firstChar.toLowerCase() : firstChar.toUpperCase()) + sylObj.sourceWord.slice(1);
-                if (onWordUpdate) onWordUpdate(sylObj.sourceId, newWord);
-            }
-        } else if (interactionMode === 'mark' && absCharIndex !== null) {
+        if (interactionMode === 'mark' && absCharIndex !== null && isMarkerActive) {
             // Smart Selection Logic
             const sylStrings = word.syllables.map(s => typeof s === 'string' ? s : s.text);
             const wordStartIndex = word.index;
@@ -105,6 +96,11 @@ export const WordListCell = React.memo(({
             } else if (toggleHighlights) {
                 // Fallback (Legacy)
                 toggleHighlights(indicesToToggle);
+            }
+        } else if (interactionMode === 'correct') {
+            if (onEditMode) {
+                const syls = word.syllables ? word.syllables.map(s => typeof s === 'string' ? s : s.text) : [word.word];
+                onEditMode(word.word, word.id, syls);
             }
         } else {
             console.log("Ignored click:", { interactionMode, absCharIndex });
@@ -244,82 +240,114 @@ export const WordListCell = React.memo(({
                         }
 
                         return (
-                            <span key={i} className={`inline-block relative leading-none ${styleClass}`} style={{ overflow: 'hidden' }}>
-                                <span className="relative z-10">
-                                    {textContent.split('').map((char, cIdx) => {
-                                        const baseIndex = (typeof sylObj.absStartIndex === 'number') ? sylObj.absStartIndex : currentGlobalIndex;
-                                        const absCharIndex = baseIndex + cIdx;
-                                        const isNaNIndex = isNaN(absCharIndex);
+                            <span key={i} className={`inline-block relative leading-none ${styleClass}`} style={{ overflow: 'visible' }}>
+                                <span className="relative z-30">
+                                    {(() => {
+                                        const chunks = getChunks(textContent, settings.smartSelection, settings.clusters || CLUSTERS);
 
-                                        const isCharHighlighted = (wordColors && wordColors[absCharIndex] === 'yellow');
-                                        const charColorCode = wordColors && wordColors[absCharIndex];
-                                        const resolvedCharColor = resolveColor(charColorCode);
+                                        let charOffset = 0;
+                                        return chunks.map((chunk, cIdx) => {
+                                            const baseIndex = (typeof sylObj.absStartIndex === 'number') ? sylObj.absStartIndex : currentGlobalIndex;
+                                            const absCharIndex = baseIndex + charOffset;
+                                            charOffset += chunk.length;
 
-                                        let rounded = 'rounded px-[2px]';
-                                        let customClasses = '!cursor-pointer hover:bg-slate-200 transition-colors active:bg-slate-300 prevent-pan';
-                                        let style = {
-                                            transition: 'none',
-                                        };
-
-                                        if (isNaNIndex) {
-                                            style.border = '2px solid red';
-                                            style.backgroundColor = '#fee2e2';
-                                        } else if (resolvedCharColor && resolvedCharColor !== 'transparent') {
-                                            // Generic Color Marker Logic (e.g. Peach, Green)
-                                            style = {
-                                                transition: 'none',
-                                                backgroundColor: resolvedCharColor,
-                                                paddingTop: '0.05em',
-                                                paddingBottom: '0.10em',
-                                                marginTop: '-0.05em',
-                                                marginBottom: '-0.10em',
+                                            // Check Highlight/Color
+                                            const getNormalizedColor = (idx) => {
+                                                const code = wordColors && wordColors[idx];
+                                                const resolved = resolveColor(code);
+                                                if (code === 'yellow' || resolved === 'yellow') return '#fef08a';
+                                                return resolved;
                                             };
-                                            // Make it look like a marker block
-                                            rounded = 'rounded-none px-[2px]';
-                                        }
 
-                                        if (isCharHighlighted) {
-                                            style = {
-                                                ...style,
-                                                backgroundColor: '#fef08a',
-                                                paddingTop: '0.05em',
-                                                paddingBottom: '0.10em',
-                                                marginTop: '-0.05em',
-                                                marginBottom: '-0.10em',
-                                            };
-                                            customClasses = '!cursor-pointer bg-yellow-200 prevent-pan';
-
-                                            const hasLeft = (wordColors && wordColors[absCharIndex - 1] === 'yellow');
-                                            const hasRight = (wordColors && wordColors[absCharIndex + 1] === 'yellow');
-
-
-                                            if (hasLeft && hasRight) {
-                                                rounded = 'rounded-none px-[2px]';
-                                                customClasses += ' shadow-border-yellow-mid';
-                                            } else if (hasLeft) {
-                                                rounded = 'rounded-r-md rounded-l-none px-[2px]';
-                                                customClasses += ' shadow-border-yellow-right';
-                                            } else if (hasRight) {
-                                                rounded = 'rounded-l-md rounded-r-none px-[2px]';
-                                                customClasses += ' shadow-border-yellow-left';
-                                            } else {
-                                                rounded = 'rounded-md px-[2px]';
-                                                customClasses += ' shadow-border-yellow';
+                                            let resolvedChunkColor = 'transparent';
+                                            for (let k = 0; k < chunk.length; k++) {
+                                                const c = getNormalizedColor(absCharIndex + k);
+                                                if (c && c !== 'transparent' && c !== 'rgba(0,0,0,0)') {
+                                                    resolvedChunkColor = c;
+                                                    break;
+                                                }
                                             }
-                                        }
 
-                                        return (
-                                            <span
-                                                key={cIdx}
-                                                className={`${textClass} ${customClasses} ${rounded} inline-block leading-none`}
-                                                style={style}
-                                                onClick={(e) => handleCharClick(e, absCharIndex, sylObj, cIdx)}
-                                                title={`Index: ${absCharIndex}`}
-                                            >
-                                                {char}
-                                            </span>
-                                        );
-                                    })}
+                                            let rounded = 'rounded';
+                                            let customClasses = '!cursor-pointer transition-none duration-0 active:bg-slate-300 prevent-pan';
+                                            // Desktop hover only
+                                            if (window.matchMedia('(hover: hover)').matches) {
+                                                customClasses += ' hover:bg-slate-200';
+                                            }
+
+                                            let style = {
+                                                transition: 'none',
+                                                paddingTop: '0.05em',
+                                                paddingBottom: '0.10em',
+                                                marginTop: '-0.05em',
+                                                marginBottom: '-0.10em',
+                                                paddingLeft: '0em',
+                                                paddingRight: '0em',
+                                                marginLeft: '0em',
+                                                marginRight: '0em',
+                                                zIndex: 0,
+                                                position: 'relative',
+                                                verticalAlign: 'middle'
+                                            };
+
+                                            if (resolvedChunkColor && resolvedChunkColor !== 'transparent') {
+                                                // AGGRESSIVE MERGING STRATEGY (Matched with Word.jsx)
+                                                style = {
+                                                    ...style,
+                                                    backgroundColor: resolvedChunkColor,
+                                                    paddingLeft: '1px',
+                                                    paddingRight: '1px',
+                                                    marginLeft: '-1px',
+                                                    marginRight: '-1px',
+                                                    zIndex: 10
+                                                };
+
+                                                if (resolvedChunkColor === '#fef08a' || resolvedChunkColor === 'yellow') {
+                                                    customClasses += ' bg-yellow-200';
+                                                }
+
+                                                // Neighbor check for same color connections
+                                                const colorLeft = getNormalizedColor(absCharIndex - 1);
+                                                const colorRight = getNormalizedColor(absCharIndex + chunk.length);
+
+                                                const matchLeft = colorLeft !== 'transparent' && colorLeft === resolvedChunkColor;
+                                                const matchRight = colorRight !== 'transparent' && colorRight === resolvedChunkColor;
+
+                                                if (matchLeft && matchRight) {
+                                                    rounded = 'rounded-none';
+                                                    if (resolvedChunkColor === '#fef08a' || resolvedChunkColor === 'yellow') customClasses += ' shadow-border-yellow-mid';
+                                                } else if (matchLeft) {
+                                                    rounded = 'rounded-r-md rounded-l-none';
+                                                    if (resolvedChunkColor === '#fef08a' || resolvedChunkColor === 'yellow') customClasses += ' shadow-border-yellow-right';
+                                                } else if (matchRight) {
+                                                    rounded = 'rounded-l-md rounded-r-none';
+                                                    if (resolvedChunkColor === '#fef08a' || resolvedChunkColor === 'yellow') customClasses += ' shadow-border-yellow-left';
+                                                } else {
+                                                    rounded = 'rounded-md';
+                                                    if (resolvedChunkColor === '#fef08a' || resolvedChunkColor === 'yellow') customClasses += ' shadow-border-yellow';
+                                                }
+                                            }
+
+                                            const shouldHideLetter = (resolvedChunkColor === '#fef08a' || resolvedChunkColor === 'yellow') && hideYellowLetters;
+                                            return (
+                                                <span
+                                                    key={cIdx}
+                                                    className={`${textClass} ${customClasses} ${rounded} inline-block leading-none select-none touch-manipulation ${shouldHideLetter ? 'blur-letter' : ''}`}
+                                                    style={style}
+                                                    onClick={(e) => handleCharClick(e, absCharIndex, sylObj, charOffset)}
+                                                    onPointerDown={(e) => {
+                                                        if (interactionMode === 'mark') {
+                                                            e.stopPropagation();
+                                                        }
+                                                    }}
+                                                    role="button"
+                                                    title={`Index: ${absCharIndex}`}
+                                                >
+                                                    {chunk}
+                                                </span>
+                                            );
+                                        });
+                                    })()}
                                 </span>
                                 {showSyllables && settings.visualType === 'arc' && !sylObj.isSpace && (
                                     <svg className="arc-svg pointer-events-none" style={{ zIndex: 20 }} viewBox="0 0 100 20" preserveAspectRatio="none"><path d="M 2 2 Q 50 20 98 2" fill="none" stroke={isEven ? '#2563eb' : '#dc2626'} strokeWidth="3" strokeLinecap="round" /></svg>
@@ -358,7 +386,9 @@ export const WordListCell = React.memo(({
     if (prev.toggleHighlights !== next.toggleHighlights) return false;
     if (prev.onWordUpdate !== next.onWordUpdate) return false;
     if (prev.onRemoveWord !== next.onRemoveWord) return false;
-    if (prev.onUpdateWordColor !== next.onUpdateWordColor) return false; // New prop comparison
+    if (prev.onUpdateWordColor !== next.onUpdateWordColor) return false;
+    if (prev.isMarkerActive !== next.isMarkerActive) return false;
+    if (prev.hideYellowLetters !== next.hideYellowLetters) return false;
 
     // Check Colors - Only return false (re-render) if relevant colors changed
     if (prev.wordColors !== next.wordColors) {

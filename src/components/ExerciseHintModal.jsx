@@ -59,10 +59,12 @@ const getHints = (settings) => ({
     },
     wordSorting: {
         title: 'Wörter sortieren',
-        icon: Icons.WordSorting,
+        icon: null, // Custom icons per step
         requirements: [
-            { text: 'Grauen Kasten wählen' },
-            { text: 'Wörter im Text markieren' }
+            { text: 'Markiere Wörter!', icon: Icons.GhostHighlight },
+            { text: 'In Tabelle Spalten anlegen', icon: Icons.TableInstruction },
+            { text: 'Spalten benennen', icon: Icons.TableColumnsInstruction },
+            { text: 'Mindestens in jede Spalte etwas eintragen', icon: Icons.TableFillInstruction }
         ]
     },
     alphabetSorting: {
@@ -285,6 +287,7 @@ export const ExerciseHintModal = ({ onClose, exerciseKey, settings }) => {
                                     {idx + 1}
                                 </span>
                                 <span className="flex-1">{req.text}</span>
+                                {req.icon && <req.icon size={48} className="text-slate-400 ml-auto shrink-0" />}
                             </div>
                         );
                     })}

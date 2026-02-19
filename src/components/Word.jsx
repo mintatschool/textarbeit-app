@@ -2,7 +2,7 @@ import React, { useMemo, useCallback, useState, useRef, useEffect } from 'react'
 import { Icons } from './Icons';
 import { getCachedSyllables, CLUSTERS, getChunks } from '../utils/syllables';
 
-const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, highlightedIndices = new Set(), isHidden, toggleHighlights, toggleHidden, hideYellowLetters, activeTool, activeColor, onEditMode, manualSyllables, hyphenator, settings, isReadingMode, wordColors = {}, colorPalette, domRef, isGrouped, isSelection, hidePunctuation, onMouseEnter, onMouseDown, onTouchStart, isTextMarkerMode, drawings = [], onUpdateDrawings, forceNoMargin, forceShowSyllables, isHeadline, hideSelectionFrame }) => {
+const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, highlightedIndices = new Set(), isHidden, toggleHighlights, toggleHidden, hideYellowLetters, activeTool, activeColor, onEditMode, manualSyllables, hyphenator, settings, isReadingMode, wordColors = {}, colorPalette, domRef, isGrouped, isSelection, hidePunctuation, onMouseEnter, onMouseDown, onTouchStart, isTextMarkerMode, drawings = [], onUpdateDrawings, forceNoMargin, forceShowSyllables, isHeadline, hideSelectionFrame, customFontSize }) => {
     const wordKey = `${word}_${startIndex}`;
     const syllables = useMemo(() => manualSyllables || getCachedSyllables(word, hyphenator), [word, manualSyllables, hyphenator]);
 
@@ -16,7 +16,6 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
     // If domRef changes (it does in App.jsx), we need to update.
     // So [domRef, startIndex] is correct IF domRef identity changes.
     // App.jsx creates new domRef function every render.
-    // So this IS updating.
     // But maybe we need to be deeper?
 
     // Helpers
@@ -156,7 +155,9 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
     }
     const zoomScale = settings.zoomScale || 1.2;
 
-    const currentFontSize = isZoomed ? settings.fontSize * zoomScale : settings.fontSize;
+    const currentFontSize = customFontSize !== undefined
+        ? customFontSize
+        : (isZoomed ? settings.fontSize * zoomScale : settings.fontSize);
 
     const wordSpacingStyle = {
         marginRight: (isTextMarkerMode || forceNoMargin) ? '0px' : `${(settings.wordSpacing ?? 0)}em`,
@@ -634,12 +635,23 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                     });
 
                     return syllables.map((syl, sIdx) => {
+                        const sylObj = (typeof syl === 'object' && syl !== null) ? syl : { text: String(syl || "") };
+                        const textContent = sylObj.text;
+
                         const currentStart = charCounter;
-                        charCounter += syl.length;
+                        charCounter += textContent.length;
 
                         const vIdx = visualIndices[sIdx];
                         const isVisualSyllable = vIdx !== -1;
                         const isEven = isVisualSyllable ? vIdx % 2 === 0 : false;
+
+                        if (sylObj.isSpace) {
+                            return (
+                                <span key={sIdx} className="bg-transparent mx-1 border-none inline-block w-5 text-transparent select-none">
+                                    {" "}
+                                </span>
+                            );
+                        }
 
                         let arcColor = isEven ? '#2563eb' : '#dc2626';
                         let bgClass = isEven ? 'bg-blue-100' : 'bg-blue-200';
@@ -657,7 +669,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                             } : { display: 'inline-block', paddingBottom: '0.10em', marginLeft: '0', marginRight: '0', verticalAlign: 'middle' }}>
                                 <span className={`inline-block relative z-10 ${settings.visualType === 'black_gray' ? (isEven ? 'text-black' : 'text-gray-400') : ''}`}>
                                     {(() => {
-                                        const chunks = getChunks(syl, settings.smartSelection, settings.clusters);
+                                        const chunks = getChunks(textContent, settings.smartSelection, settings.clusters);
                                         let sylCharOffset = 0;
                                         return chunks.map((chunk, cIdx) => {
                                             const chunkStartInSyl = sylCharOffset;

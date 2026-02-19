@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Icons } from './Icons';
 import { shuffleArray } from '../utils/arrayUtils';
+import { CLUSTERS, isVowel } from '../utils/syllables';
 
 import { EmptyStateMessage } from './EmptyStateMessage';
 import { speak } from '../utils/speech';
@@ -35,11 +36,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
         speak(text);
     };
 
-    // Letter Cluster Definition (German common clusters)
-    const clusters = ['sch', 'chs', 'ch', 'qu', 'st', 'sp', 'ei', 'ie', 'au', 'eu', 'äu', 'ck', 'ng', 'nk', 'pf', 'th'];
-
-    // Helper to check for clusters and vowels
-    const isVowel = (char) => /[aeiouyäöüAEIOUYÄÖÜ]/.test(char);
+    // Cluster Definition moved to central syllables.js
 
     // Improved Char Logic: Handle clusters
     const getWordChunks = (word, mode, isFirstSyllable = false, isWordStart = false, globalOffset = 0) => {
@@ -59,7 +56,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
             // Check for clusters (3 chars then 2 chars) at index 0
             for (let len = 3; len >= 2; len--) {
                 const sub = text.substring(0, len);
-                if (clusters.includes(sub)) {
+                if (CLUSTERS.includes(sub)) {
                     clusterLen = len;
                     break;
                 }
@@ -101,7 +98,7 @@ export const GapWordsView = ({ words, settings, setSettings, onClose, isInitialS
             // Check for clusters (3 chars then 2 chars)
             for (let len = 3; len >= 2; len--) {
                 const sub = text.substring(i, i + len);
-                if (clusters.includes(sub)) {
+                if (CLUSTERS.includes(sub)) {
                     const originalSub = word.substring(i, i + len);
                     let isTarget = false;
                     if (mode === 'vowels') {

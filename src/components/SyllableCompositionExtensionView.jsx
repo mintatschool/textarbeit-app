@@ -561,8 +561,6 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                 showSlider={false}
                 customControls={
                     <>
-                        {casingToggleButton}
-
                         {/* Words Count Control */}
                         <div className="flex items-center gap-2 bg-slate-50 px-2 py-1 rounded-2xl border border-slate-200 hidden lg:flex">
                             <HorizontalLines count={2} />
@@ -579,6 +577,8 @@ export const SyllableCompositionExtensionView = ({ words, settings, onClose, tit
                             </button>
                             <HorizontalLines count={5} />
                         </div>
+
+                        {casingToggleButton}
 
                         {/* Scale Control */}
                         <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 h-10 rounded-lg ml-2">
