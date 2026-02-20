@@ -30,15 +30,128 @@ const createSeparableVerb = (prefix, stem, infinitiveStem) => {
 
 export const COMMON_VERBS_DB = {
   // --- A ---
+  'abfahren': {
+    [Tense.PRAESENS]: { ich: 'fahre ab', du: 'fährst ab', er_sie_es: 'fährt ab', wir: 'fahren ab', ihr: 'fahrt ab', sie_Sie: 'fahren ab' },
+    [Tense.PRAETERITUM]: { ich: 'fuhr ab', du: 'fuhrst ab', er_sie_es: 'fuhr ab', wir: 'fuhren ab', ihr: 'fuhrt ab', sie_Sie: 'fuhren ab' },
+    [Tense.PERFEKT]: { ich: 'bin abgefahren', du: 'bist abgefahren', er_sie_es: 'ist abgefahren', wir: 'sind abgefahren', ihr: 'seid abgefahren', sie_Sie: 'sind abgefahren' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'war abgefahren', du: 'warst abgefahren', er_sie_es: 'war abgefahren', wir: 'waren abgefahren', ihr: 'wart abgefahren', sie_Sie: 'waren abgefahren' },
+    [Tense.FUTUR_I]: { ich: 'werde abfahren', du: 'wirst abfahren', er_sie_es: 'wird abfahren', wir: 'werden abfahren', ihr: 'werdet abfahren', sie_Sie: 'werden abfahren' },
+  },
+  'abgeben': {
+    [Tense.PRAESENS]: { ich: 'gebe ab', du: 'gibst ab', er_sie_es: 'gibt ab', wir: 'geben ab', ihr: 'gebt ab', sie_Sie: 'geben ab' },
+    [Tense.PRAETERITUM]: { ich: 'gab ab', du: 'gabst ab', er_sie_es: 'gab ab', wir: 'gaben ab', ihr: 'gabt ab', sie_Sie: 'gaben ab' },
+    [Tense.PERFEKT]: { ich: 'habe abgegeben', du: 'hast abgegeben', er_sie_es: 'hat abgegeben', wir: 'haben abgegeben', ihr: 'habt abgegeben', sie_Sie: 'haben abgegeben' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte abgegeben', du: 'hattest abgegeben', er_sie_es: 'hatte abgegeben', wir: 'hatten abgegeben', ihr: 'hattet abgegeben', sie_Sie: 'hatten abgegeben' },
+    [Tense.FUTUR_I]: { ich: 'werde abgeben', du: 'wirst abgeben', er_sie_es: 'wird abgeben', wir: 'werden abgeben', ihr: 'werdet abgeben', sie_Sie: 'werden abgeben' },
+  },
   'abholen': createSeparableVerb('ab', 'hol', 'hol'),
+  'ablehnen': createSeparableVerb('ab', 'lehn', 'lehn'),
+  'abmachen': createSeparableVerb('ab', 'mach', 'mach'),
+  'abnehmen': {
+    [Tense.PRAESENS]: { ich: 'nehme ab', du: 'nimmst ab', er_sie_es: 'nimmt ab', wir: 'nehmen ab', ihr: 'nehmt ab', sie_Sie: 'nehmen ab' },
+    [Tense.PRAETERITUM]: { ich: 'nahm ab', du: 'nahmst ab', er_sie_es: 'nahm ab', wir: 'nahmen ab', ihr: 'nahmt ab', sie_Sie: 'nahmen ab' },
+    [Tense.PERFEKT]: { ich: 'habe abgenommen', du: 'hast abgenommen', er_sie_es: 'hat abgenommen', wir: 'haben abgenommen', ihr: 'habt abgenommen', sie_Sie: 'haben abgenommen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte abgenommen', du: 'hattest abgenommen', er_sie_es: 'hatte abgenommen', wir: 'hatten abgenommen', ihr: 'hattet abgenommen', sie_Sie: 'hatten abgenommen' },
+    [Tense.FUTUR_I]: { ich: 'werde abnehmen', du: 'wirst abnehmen', er_sie_es: 'wird abnehmen', wir: 'werden abnehmen', ihr: 'werdet abnehmen', sie_Sie: 'werden abnehmen' },
+  },
+  'absagen': createSeparableVerb('ab', 'sag', 'sag'),
+  'abschließen': {
+    [Tense.PRAESENS]: { ich: 'schließe ab', du: 'schließt ab', er_sie_es: 'schließt ab', wir: 'schließen ab', ihr: 'schließt ab', sie_Sie: 'schließen ab' },
+    [Tense.PRAETERITUM]: { ich: 'schloss ab', du: 'schlossest ab', er_sie_es: 'schloss ab', wir: 'schlossen ab', ihr: 'schlosst ab', sie_Sie: 'schlossen ab' },
+    [Tense.PERFEKT]: { ich: 'habe abgeschlossen', du: 'hast abgeschlossen', er_sie_es: 'hat abgeschlossen', wir: 'haben abgeschlossen', ihr: 'habt abgeschlossen', sie_Sie: 'haben abgeschlossen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte abgeschlossen', du: 'hattest abgeschlossen', er_sie_es: 'hatte abgeschlossen', wir: 'hatten abgeschlossen', ihr: 'hattet abgeschlossen', sie_Sie: 'hatten abgeschlossen' },
+    [Tense.FUTUR_I]: { ich: 'werde abschließen', du: 'wirst abschließen', er_sie_es: 'wird abschließen', wir: 'werden abschließen', ihr: 'werdet abschließen', sie_Sie: 'werden abschließen' },
+  },
   'achten': createRegularVerb('acht'),
-  'angeln': createRegularVerb('angel'),
-  'ändern': createRegularVerb('änder'),
   'ahnen': createRegularVerb('ahn'),
+  'akzeptieren': createRegularVerb('akzeptier'),
+  'anbieten': {
+    [Tense.PRAESENS]: { ich: 'biete an', du: 'bietest an', er_sie_es: 'bietet an', wir: 'bieten an', ihr: 'bietet an', sie_Sie: 'bieten an' },
+    [Tense.PRAETERITUM]: { ich: 'bot an', du: 'botst an', er_sie_es: 'bot an', wir: 'boten an', ihr: 'botet an', sie_Sie: 'boten an' },
+    [Tense.PERFEKT]: { ich: 'habe angeboten', du: 'hast angeboten', er_sie_es: 'hat angeboten', wir: 'haben angeboten', ihr: 'habt angeboten', sie_Sie: 'haben angeboten' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte angeboten', du: 'hattest angeboten', er_sie_es: 'hatte angeboten', wir: 'hatten angeboten', ihr: 'hattet angeboten', sie_Sie: 'hatten angeboten' },
+    [Tense.FUTUR_I]: { ich: 'werde anbieten', du: 'wirst anbieten', er_sie_es: 'wird anbieten', wir: 'werden anbieten', ihr: 'werdet anbieten', sie_Sie: 'werden anbieten' },
+  },
+  // --- Ä ---
+  'ändern': createRegularVerb('änder'),
+  // --- A ---
+  'anerkennen': createSeparableVerb('an', 'erkenn', 'erkenn'), // Vereinfacht für Offline
+  'anfangen': {
+    [Tense.PRAESENS]: { ich: 'fange an', du: 'fängst an', er_sie_es: 'fängt an', wir: 'fangen an', ihr: 'fangt an', sie_Sie: 'fangen an' },
+    [Tense.PRAETERITUM]: { ich: 'fing an', du: 'fingst an', er_sie_es: 'fing an', wir: 'fingen an', ihr: 'fingt an', sie_Sie: 'fingen an' },
+    [Tense.PERFEKT]: { ich: 'habe angefangen', du: 'hast angefangen', er_sie_es: 'hat angefangen', wir: 'haben angefangen', ihr: 'habt angefangen', sie_Sie: 'haben angefangen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte angefangen', du: 'hattest angefangen', er_sie_es: 'hatte angefangen', wir: 'hatten angefangen', ihr: 'hattet angefangen', sie_Sie: 'hatten angefangen' },
+    [Tense.FUTUR_I]: { ich: 'werde anfangen', du: 'wirst anfangen', er_sie_es: 'wird anfangen', wir: 'werden anfangen', ihr: 'werdet anfangen', sie_Sie: 'werden anfangen' },
+  },
+  'angeln': createRegularVerb('angel'),
+  'ankommen': {
+    [Tense.PRAESENS]: { ich: 'komme an', du: 'kommst an', er_sie_es: 'kommt an', wir: 'kommen an', ihr: 'kommt an', sie_Sie: 'kommen an' },
+    [Tense.PRAETERITUM]: { ich: 'kam an', du: 'kamst an', er_sie_es: 'kam an', wir: 'kamen an', ihr: 'kamt an', sie_Sie: 'kamen an' },
+    [Tense.PERFEKT]: { ich: 'bin angekommen', du: 'bist angekommen', er_sie_es: 'ist angekommen', wir: 'sind angekommen', ihr: 'seid angekommen', sie_Sie: 'sind angekommen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'war angekommen', du: 'warst angekommen', er_sie_es: 'war angekommen', wir: 'waren angekommen', ihr: 'wart angekommen', sie_Sie: 'waren angekommen' },
+    [Tense.FUTUR_I]: { ich: 'werde ankommen', du: 'wirst ankommen', er_sie_es: 'wird ankommen', wir: 'werden ankommen', ihr: 'werdet ankommen', sie_Sie: 'werden ankommen' },
+  },
+  'anmelden': createSeparableVerb('an', 'meld', 'meld'),
+  'annehmen': {
+    [Tense.PRAESENS]: { ich: 'nehme an', du: 'nimmst an', er_sie_es: 'nimmt an', wir: 'nehmen an', ihr: 'nehmt an', sie_Sie: 'nehmen an' },
+    [Tense.PRAETERITUM]: { ich: 'nahm an', du: 'nahmst an', er_sie_es: 'nahm an', wir: 'nahmen an', ihr: 'nahmt an', sie_Sie: 'nahmen an' },
+    [Tense.PERFEKT]: { ich: 'habe angenommen', du: 'hast angenommen', er_sie_es: 'hat angenommen', wir: 'haben angenommen', ihr: 'habt angenommen', sie_Sie: 'haben angenommen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte angenommen', du: 'hattest angenommen', er_sie_es: 'hatte angenommen', wir: 'hatten angenommen', ihr: 'hattet angenommen', sie_Sie: 'hatten angenommen' },
+    [Tense.FUTUR_I]: { ich: 'werde annehmen', du: 'wirst annehmen', er_sie_es: 'wird annehmen', wir: 'werden annehmen', ihr: 'werdet annehmen', sie_Sie: 'werden annehmen' },
+  },
+  'anrufen': {
+    [Tense.PRAESENS]: { ich: 'rufe an', du: 'rufst an', er_sie_es: 'ruft an', wir: 'rufen an', ihr: 'ruft an', sie_Sie: 'rufen an' },
+    [Tense.PRAETERITUM]: { ich: 'rief an', du: 'riefst an', er_sie_es: 'rief an', wir: 'riefen an', ihr: 'rieft an', sie_Sie: 'riefen an' },
+    [Tense.PERFEKT]: { ich: 'habe angerufen', du: 'hast angerufen', er_sie_es: 'hat angerufen', wir: 'haben angerufen', ihr: 'habt angerufen', sie_Sie: 'haben angerufen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte angerufen', du: 'hattest angerufen', er_sie_es: 'hatte angerufen', wir: 'hatten angerufen', ihr: 'hattet angerufen', sie_Sie: 'hatten angerufen' },
+    [Tense.FUTUR_I]: { ich: 'werde anrufen', du: 'wirst anrufen', er_sie_es: 'wird anrufen', wir: 'werden anrufen', ihr: 'werdet anrufen', sie_Sie: 'werden anrufen' },
+  },
+  'ansehen': {
+    [Tense.PRAESENS]: { ich: 'sehe an', du: 'siehst an', er_sie_es: 'sieht an', wir: 'sehen an', ihr: 'seht an', sie_Sie: 'sehen an' },
+    [Tense.PRAETERITUM]: { ich: 'sah an', du: 'sahst an', er_sie_es: 'sah an', wir: 'sahen an', ihr: 'saht an', sie_Sie: 'sahen an' },
+    [Tense.PERFEKT]: { ich: 'habe angesehen', du: 'hast angesehen', er_sie_es: 'hat angesehen', wir: 'haben angesehen', ihr: 'habt angesehen', sie_Sie: 'haben angesehen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte angesehen', du: 'hattest angesehen', er_sie_es: 'hatte angesehen', wir: 'hatten angesehen', ihr: 'hattet angesehen', sie_Sie: 'hatten angesehen' },
+    [Tense.FUTUR_I]: { ich: 'werde ansehen', du: 'wirst ansehen', er_sie_es: 'wird ansehen', wir: 'werden ansehen', ihr: 'werdet ansehen', sie_Sie: 'werden ansehen' },
+  },
   'antworten': createRegularVerb('antwort'),
+  'anziehen': {
+    [Tense.PRAESENS]: { ich: 'ziehe an', du: 'ziehst an', er_sie_es: 'zieht an', wir: 'ziehen an', ihr: 'zieht an', sie_Sie: 'ziehen an' },
+    [Tense.PRAETERITUM]: { ich: 'zog an', du: 'zogst an', er_sie_es: 'zog an', wir: 'zogen an', ihr: 'zogt an', sie_Sie: 'zogen an' },
+    [Tense.PERFEKT]: { ich: 'habe angezogen', du: 'hast angezogen', er_sie_es: 'hat angezogen', wir: 'haben angezogen', ihr: 'habt angezogen', sie_Sie: 'haben angezogen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte angezogen', du: 'hattest angezogen', er_sie_es: 'hatte angezogen', wir: 'hatten angezogen', ihr: 'hattet angezogen', sie_Sie: 'hatten angezogen' },
+    [Tense.FUTUR_I]: { ich: 'werde anziehen', du: 'wirst anziehen', er_sie_es: 'wird anziehen', wir: 'werden anziehen', ihr: 'werdet anziehen', sie_Sie: 'werden anziehen' },
+  },
   'arbeiten': createRegularVerb('arbeit'),
+  // --- Ä ---
+  'ärgern': createRegularVerb('ärger'),
+  // --- A ---
   'atmen': createRegularVerb('atm'),
+  'aufbauen': createSeparableVerb('auf', 'bau', 'bau'),
+  'auffallen': {
+    [Tense.PRAESENS]: { ich: 'falle auf', du: 'fällst auf', er_sie_es: 'fällt auf', wir: 'fallen auf', ihr: 'fallt auf', sie_Sie: 'fallen auf' },
+    [Tense.PRAETERITUM]: { ich: 'fiel auf', du: 'fielst auf', er_sie_es: 'fiel auf', wir: 'fielen auf', ihr: 'fielt auf', sie_Sie: 'fielen auf' },
+    [Tense.PERFEKT]: { ich: 'bin aufgefallen', du: 'bist aufgefallen', er_sie_es: 'ist aufgefallen', wir: 'sind aufgefallen', ihr: 'seid aufgefallen', sie_Sie: 'sind aufgefallen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'war aufgefallen', du: 'warst aufgefallen', er_sie_es: 'war aufgefallen', wir: 'waren aufgefallen', ihr: 'wart aufgefallen', sie_Sie: 'waren aufgefallen' },
+    [Tense.FUTUR_I]: { ich: 'werde auffallen', du: 'wirst auffallen', er_sie_es: 'wird auffallen', wir: 'werden auffallen', ihr: 'werdet auffallen', sie_Sie: 'werden auffallen' },
+  },
+  'aufgeben': {
+    [Tense.PRAESENS]: { ich: 'gebe auf', du: 'gibst auf', er_sie_es: 'gibt auf', wir: 'geben auf', ihr: 'gebt auf', sie_Sie: 'geben auf' },
+    [Tense.PRAETERITUM]: { ich: 'gab auf', du: 'gabst auf', er_sie_es: 'gab auf', wir: 'gaben auf', ihr: 'gabt auf', sie_Sie: 'gaben auf' },
+    [Tense.PERFEKT]: { ich: 'habe aufgegeben', du: 'hast aufgegeben', er_sie_es: 'hat aufgegeben', wir: 'haben aufgegeben', ihr: 'habt aufgegeben', sie_Sie: 'haben aufgegeben' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte aufgegeben', du: 'hattest aufgegeben', er_sie_es: 'hatte aufgegeben', wir: 'hatten aufgegeben', ihr: 'hattet aufgegeben', sie_Sie: 'hatten aufgegeben' },
+    [Tense.FUTUR_I]: { ich: 'werde aufgeben', du: 'wirst aufgeben', er_sie_es: 'wird aufgeben', wir: 'werden aufgeben', ihr: 'werdet aufgeben', sie_Sie: 'werden aufgeben' },
+  },
+  'aufheben': {
+    [Tense.PRAESENS]: { ich: 'hebe auf', du: 'hebst auf', er_sie_es: 'hebt auf', wir: 'heben auf', ihr: 'hebt auf', sie_Sie: 'heben auf' },
+    [Tense.PRAETERITUM]: { ich: 'hob auf', du: 'hobst auf', er_sie_es: 'hob auf', wir: 'hoben auf', ihr: 'hobt auf', sie_Sie: 'hoben auf' },
+    [Tense.PERFEKT]: { ich: 'habe aufgehoben', du: 'hast aufgehoben', er_sie_es: 'hat aufgehoben', wir: 'haben aufgehoben', ihr: 'habt aufgehoben', sie_Sie: 'haben aufgehoben' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte aufgehoben', du: 'hattest aufgehoben', er_sie_es: 'hatte aufgehoben', wir: 'hatten aufgehoben', ihr: 'hattet aufgehoben', sie_Sie: 'hatten aufgehoben' },
+    [Tense.FUTUR_I]: { ich: 'werde aufheben', du: 'wirst aufheben', er_sie_es: 'wird aufheben', wir: 'werden aufheben', ihr: 'werdet aufheben', sie_Sie: 'werden aufheben' },
+  },
+  'aufhören': createSeparableVerb('auf', 'hör', 'hör'),
+  'aufpassen': createSeparableVerb('auf', 'pass', 'pass'),
   'aufräumen': createSeparableVerb('auf', 'räum', 'räum'),
+  'aufregen': createSeparableVerb('auf', 'reg', 'reg'),
   'aufstehen': { // Stark + Trennbar
     [Tense.PRAESENS]: { ich: 'stehe auf', du: 'stehst auf', er_sie_es: 'steht auf', wir: 'stehen auf', ihr: 'steht auf', sie_Sie: 'stehen auf' },
     [Tense.PRAETERITUM]: { ich: 'stand auf', du: 'standst auf', er_sie_es: 'stand auf', wir: 'standen auf', ihr: 'standet auf', sie_Sie: 'standen auf' },
@@ -46,12 +159,74 @@ export const COMMON_VERBS_DB = {
     [Tense.PLUSQUAMPERFEKT]: { ich: 'war aufgestanden', du: 'warst aufgestanden', er_sie_es: 'war aufgestanden', wir: 'waren aufgestanden', ihr: 'wart aufgestanden', sie_Sie: 'waren aufgestanden' },
     [Tense.FUTUR_I]: { ich: 'werde aufstehen', du: 'wirst aufstehen', er_sie_es: 'wird aufstehen', wir: 'werden aufstehen', ihr: 'werdet aufstehen', sie_Sie: 'werden aufstehen' },
   },
+  'aufwachen': createSeparableVerb('auf', 'wach', 'wach'),
+  'ausdrucken': createSeparableVerb('aus', 'druck', 'druck'),
+  'ausfallen': {
+    [Tense.PRAESENS]: { ich: 'falle aus', du: 'fällst aus', er_sie_es: 'fällt aus', wir: 'fallen aus', ihr: 'fallt aus', sie_Sie: 'fallen aus' },
+    [Tense.PRAETERITUM]: { ich: 'fiel aus', du: 'fielst aus', er_sie_es: 'fiel aus', wir: 'fielen aus', ihr: 'fielt aus', sie_Sie: 'fielen aus' },
+    [Tense.PERFEKT]: { ich: 'bin ausgefallen', du: 'bist ausgefallen', er_sie_es: 'ist ausgefallen', wir: 'sind ausgefallen', ihr: 'seid ausgefallen', sie_Sie: 'sind ausgefallen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'war ausgefallen', du: 'warst ausgefallen', er_sie_es: 'war ausgefallen', wir: 'waren ausgefallen', ihr: 'wart ausgefallen', sie_Sie: 'waren ausgefallen' },
+    [Tense.FUTUR_I]: { ich: 'werde ausfallen', du: 'wirst ausfallen', er_sie_es: 'wird ausfallen', wir: 'werden ausfallen', ihr: 'werdet ausfallen', sie_Sie: 'werden ausfallen' },
+  },
+  'ausfüllen': createSeparableVerb('aus', 'füll', 'füll'),
+  'ausgeben': {
+    [Tense.PRAESENS]: { ich: 'gebe aus', du: 'gibst aus', er_sie_es: 'gibt aus', wir: 'geben aus', ihr: 'gebt aus', sie_Sie: 'geben aus' },
+    [Tense.PRAETERITUM]: { ich: 'gab aus', du: 'gabst aus', er_sie_es: 'gab aus', wir: 'gaben aus', ihr: 'gabt aus', sie_Sie: 'gaben aus' },
+    [Tense.PERFEKT]: { ich: 'habe ausgegeben', du: 'hast ausgegeben', er_sie_es: 'hat ausgegeben', wir: 'haben ausgegeben', ihr: 'habt ausgegeben', sie_Sie: 'haben ausgegeben' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte ausgegeben', du: 'hattest ausgegeben', er_sie_es: 'hatte ausgegeben', wir: 'hatten ausgegeben', ihr: 'hattet ausgegeben', sie_Sie: 'hatten ausgegeben' },
+    [Tense.FUTUR_I]: { ich: 'werde ausgeben', du: 'wirst ausgeben', er_sie_es: 'wird ausgeben', wir: 'werden ausgeben', ihr: 'werdet ausgeben', sie_Sie: 'werden ausgeben' },
+  },
+  'ausgehen': {
+    [Tense.PRAESENS]: { ich: 'gehe aus', du: 'gehst aus', er_sie_es: 'geht aus', wir: 'gehen aus', ihr: 'geht aus', sie_Sie: 'gehen aus' },
+    [Tense.PRAETERITUM]: { ich: 'ging aus', du: 'gingst aus', er_sie_es: 'ging aus', wir: 'gingen aus', ihr: 'gingt aus', sie_Sie: 'gingen aus' },
+    [Tense.PERFEKT]: { ich: 'bin ausgegangen', du: 'bist ausgegangen', er_sie_es: 'ist ausgegangen', wir: 'sind ausgegangen', ihr: 'seid ausgegangen', sie_Sie: 'sind ausgegangen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'war ausgegangen', du: 'warst ausgegangen', er_sie_es: 'war ausgegangen', wir: 'waren ausgegangen', ihr: 'wart ausgegangen', sie_Sie: 'waren ausgegangen' },
+    [Tense.FUTUR_I]: { ich: 'werde ausgehen', du: 'wirst ausgehen', er_sie_es: 'wird ausgehen', wir: 'werden ausgehen', ihr: 'werdet ausgehen', sie_Sie: 'werden ausgehen' },
+  },
+  'ausmachen': createSeparableVerb('aus', 'mach', 'mach'),
+  'ausruhen': createSeparableVerb('aus', 'ruh', 'ruh'),
+  'aussehen': {
+    [Tense.PRAESENS]: { ich: 'sehe aus', du: 'siehst aus', er_sie_es: 'sieht aus', wir: 'sehen aus', ihr: 'seht aus', sie_Sie: 'sehen aus' },
+    [Tense.PRAETERITUM]: { ich: 'sah aus', du: 'sahst aus', er_sie_es: 'sah aus', wir: 'sahen aus', ihr: 'saht aus', sie_Sie: 'sahen aus' },
+    [Tense.PERFEKT]: { ich: 'habe ausgesehen', du: 'hast ausgesehen', er_sie_es: 'hat ausgesehen', wir: 'haben ausgesehen', ihr: 'habt ausgesehen', sie_Sie: 'haben ausgesehen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte ausgesehen', du: 'hattest ausgesehen', er_sie_es: 'hatte ausgesehen', wir: 'hatten ausgesehen', ihr: 'hattet ausgesehen', sie_Sie: 'hatten ausgesehen' },
+    [Tense.FUTUR_I]: { ich: 'werde aussehen', du: 'wirst aussehen', er_sie_es: 'wird aussehen', wir: 'werden aussehen', ihr: 'werdet aussehen', sie_Sie: 'werden aussehen' },
+  },
+  'aussprechen': {
+    [Tense.PRAESENS]: { ich: 'spreche aus', du: 'sprichst aus', er_sie_es: 'spricht aus', wir: 'sprechen aus', ihr: 'sprecht aus', sie_Sie: 'sprechen aus' },
+    [Tense.PRAETERITUM]: { ich: 'sprach aus', du: 'sprachst aus', er_sie_es: 'sprach aus', wir: 'sprachen aus', ihr: 'spracht aus', sie_Sie: 'sprachen aus' },
+    [Tense.PERFEKT]: { ich: 'habe ausgesprochen', du: 'hast ausgesprochen', er_sie_es: 'hat ausgesprochen', wir: 'haben ausgesprochen', ihr: 'habt ausgesprochen', sie_Sie: 'haben ausgesprochen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte ausgesprochen', du: 'hattest ausgesprochen', er_sie_es: 'hatte ausgesprochen', wir: 'hatten ausgesprochen', ihr: 'hattet ausgesprochen', sie_Sie: 'hatten ausgesprochen' },
+    [Tense.FUTUR_I]: { ich: 'werde aussprechen', du: 'wirst aussprechen', er_sie_es: 'wird aussprechen', wir: 'werden aussprechen', ihr: 'werdet aussprechen', sie_Sie: 'werden aussprechen' },
+  },
+  'aussteigen': {
+    [Tense.PRAESENS]: { ich: 'steige aus', du: 'steigst aus', er_sie_es: 'steigt aus', wir: 'steigen aus', ihr: 'steigt aus', sie_Sie: 'steigen aus' },
+    [Tense.PRAETERITUM]: { ich: 'stieg aus', du: 'stiegst aus', er_sie_es: 'stieg aus', wir: 'stiegen aus', ihr: 'stiegt aus', sie_Sie: 'stiegen aus' },
+    [Tense.PERFEKT]: { ich: 'bin ausgestiegen', du: 'bist ausgestiegen', er_sie_es: 'ist ausgestiegen', wir: 'sind ausgestiegen', ihr: 'seid ausgestiegen', sie_Sie: 'sind ausgestiegen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'war ausgestiegen', du: 'warst ausgestiegen', er_sie_es: 'war ausgestiegen', wir: 'waren ausgestiegen', ihr: 'wart ausgestiegen', sie_Sie: 'waren ausgestiegen' },
+    [Tense.FUTUR_I]: { ich: 'werde aussteigen', du: 'wirst aussteigen', er_sie_es: 'wird aussteigen', wir: 'werden aussteigen', ihr: 'werdet aussteigen', sie_Sie: 'werden aussteigen' },
+  },
+  'ausziehen': {
+    [Tense.PRAESENS]: { ich: 'ziehe aus', du: 'ziehst aus', er_sie_es: 'zieht aus', wir: 'ziehen aus', ihr: 'zieht aus', sie_Sie: 'ziehen aus' },
+    [Tense.PRAETERITUM]: { ich: 'zog aus', du: 'zogst aus', er_sie_es: 'zog aus', wir: 'zogen aus', ihr: 'zogt aus', sie_Sie: 'zogen aus' },
+    [Tense.PERFEKT]: { ich: 'bin ausgezogen', du: 'bist ausgezogen', er_sie_es: 'ist ausgezogen', wir: 'sind ausgezogen', ihr: 'seid ausgezogen', sie_Sie: 'sind ausgezogen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'war ausgezogen', du: 'warst ausgezogen', er_sie_es: 'war ausgezogen', wir: 'waren ausgezogen', ihr: 'wart ausgezogen', sie_Sie: 'waren ausgezogen' },
+    [Tense.FUTUR_I]: { ich: 'werde ausziehen', du: 'wirst ausziehen', er_sie_es: 'wird ausziehen', wir: 'werden ausziehen', ihr: 'werdet ausziehen', sie_Sie: 'werden ausziehen' },
+  },
   // --- B ---
   'backen': createRegularVerb('back'),
   'baden': createRegularVerb('bad'),
+  'basteln': createRegularVerb('bastel'),
   'bauen': createRegularVerb('bau'),
-  'beben': createRegularVerb('beb'),
   'bedeuten': createRegularVerb('bedeut'),
+  'bedienen': createRegularVerb('bedien'),
+  'befinden': {
+    [Tense.PRAESENS]: { ich: 'befinde', du: 'befindest', er_sie_es: 'befindet', wir: 'befinden', ihr: 'befindet', sie_Sie: 'befinden' },
+    [Tense.PRAETERITUM]: { ich: 'befand', du: 'befandest', er_sie_es: 'befand', wir: 'befanden', ihr: 'befandet', sie_Sie: 'befanden' },
+    [Tense.PERFEKT]: { ich: 'habe befunden', du: 'hast befunden', er_sie_es: 'hat befunden', wir: 'haben befunden', ihr: 'habt befunden', sie_Sie: 'haben befunden' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte befunden', du: 'hattest befunden', er_sie_es: 'hatte befunden', wir: 'hatten befunden', ihr: 'hattet befunden', sie_Sie: 'hatten befunden' },
+    [Tense.FUTUR_I]: { ich: 'werde befinden', du: 'wirst befinden', er_sie_es: 'wird befinden', wir: 'werden befinden', ihr: 'werdet befinden', sie_Sie: 'werden befinden' },
+  },
   'beginnen': { // Stark
     [Tense.PRAESENS]: { ich: 'beginne', du: 'beginnst', er_sie_es: 'beginnt', wir: 'beginnen', ihr: 'beginnt', sie_Sie: 'beginnen' },
     [Tense.PRAETERITUM]: { ich: 'begann', du: 'begannst', er_sie_es: 'begann', wir: 'begannen', ihr: 'begannt', sie_Sie: 'begannen' },
@@ -66,7 +241,6 @@ export const COMMON_VERBS_DB = {
     [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte gebissen', du: 'hattest gebissen', er_sie_es: 'hatte gebissen', wir: 'hatten gebissen', ihr: 'hattet gebissen', sie_Sie: 'hatten gebissen' },
     [Tense.FUTUR_I]: { ich: 'werde beißen', du: 'wirst beißen', er_sie_es: 'wird beißen', wir: 'werden beißen', ihr: 'werdet beißen', sie_Sie: 'werden beißen' },
   },
-  'bellen': createRegularVerb('bell'),
   'bekommen': { // Stark
     [Tense.PRAESENS]: { ich: 'bekomme', du: 'bekommst', er_sie_es: 'bekommt', wir: 'bekommen', ihr: 'bekommt', sie_Sie: 'bekommen' },
     [Tense.PRAETERITUM]: { ich: 'bekam', du: 'bekamst', er_sie_es: 'bekam', wir: 'bekamen', ihr: 'bekamt', sie_Sie: 'bekamen' },
@@ -74,17 +248,64 @@ export const COMMON_VERBS_DB = {
     [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte bekommen', du: 'hattest bekommen', er_sie_es: 'hatte bekommen', wir: 'hatten bekommen', ihr: 'hattet bekommen', sie_Sie: 'hatten bekommen' },
     [Tense.FUTUR_I]: { ich: 'werde bekommen', du: 'wirst bekommen', er_sie_es: 'wird bekommen', wir: 'werden bekommen', ihr: 'werdet bekommen', sie_Sie: 'werden bekommen' },
   },
-  'besuchen': createRegularVerb('besuch'),
-  'bezahlen': createRegularVerb('bezahl'),
-  'bleiben': { // Stark
-    [Tense.PRAESENS]: { ich: 'bleibe', du: 'bleibst', er_sie_es: 'bleibt', wir: 'bleiben', ihr: 'bleibt', sie_Sie: 'bleiben' },
-    [Tense.PRAETERITUM]: { ich: 'blieb', du: 'bliebst', er_sie_es: 'blieb', wir: 'blieben', ihr: 'bliebt', sie_Sie: 'blieben' },
-    [Tense.PERFEKT]: { ich: 'bin geblieben', du: 'bist geblieben', er_sie_es: 'ist geblieben', wir: 'sind geblieben', ihr: 'seid geblieben', sie_Sie: 'sind geblieben' },
-    [Tense.PLUSQUAMPERFEKT]: { ich: 'war geblieben', du: 'warst geblieben', er_sie_es: 'war geblieben', wir: 'waren geblieben', ihr: 'wart geblieben', sie_Sie: 'waren geblieben' },
-    [Tense.FUTUR_I]: { ich: 'werde bleiben', du: 'wirst bleiben', er_sie_es: 'wird bleiben', wir: 'werden bleiben', ihr: 'werdet bleiben', sie_Sie: 'werden bleiben' },
+  'bellen': createRegularVerb('bell'),
+  'beschreiben': {
+    [Tense.PRAESENS]: { ich: 'beschreibe', du: 'beschreibst', er_sie_es: 'beschreibt', wir: 'beschreiben', ihr: 'beschreibt', sie_Sie: 'beschreiben' },
+    [Tense.PRAETERITUM]: { ich: 'beschrieb', du: 'beschriebst', er_sie_es: 'beschrieb', wir: 'beschrieben', ihr: 'beschriebt', sie_Sie: 'beschrieben' },
+    [Tense.PERFEKT]: { ich: 'habe beschrieben', du: 'hast beschrieben', er_sie_es: 'hat beschrieben', wir: 'haben beschrieben', ihr: 'habt beschrieben', sie_Sie: 'haben beschrieben' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte beschrieben', du: 'hattest beschrieben', er_sie_es: 'hatte beschrieben', wir: 'hatten beschrieben', ihr: 'hattet beschrieben', sie_Sie: 'hatten beschrieben' },
+    [Tense.FUTUR_I]: { ich: 'werde beschreiben', du: 'wirst beschreiben', er_sie_es: 'wird beschreiben', wir: 'werden beschreiben', ihr: 'werdet beschreiben', sie_Sie: 'werden beschreiben' },
   },
-  'blicken': createRegularVerb('blick'),
+  'beschweren': createRegularVerb('beschwer'),
+  'besichtigen': createRegularVerb('besichtig'),
+  'bestehen': {
+    [Tense.PRAESENS]: { ich: 'bestehe', du: 'bestehst', er_sie_es: 'besteht', wir: 'bestehen', ihr: 'besteht', sie_Sie: 'bestehen' },
+    [Tense.PRAETERITUM]: { ich: 'bestand', du: 'bestandest', er_sie_es: 'bestand', wir: 'bestanden', ihr: 'bestandet', sie_Sie: 'bestanden' },
+    [Tense.PERFEKT]: { ich: 'habe bestanden', du: 'hast bestanden', er_sie_es: 'hat bestanden', wir: 'haben bestanden', ihr: 'habt bestanden', sie_Sie: 'haben bestanden' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte bestanden', du: 'hattest bestanden', er_sie_es: 'hatte bestanden', wir: 'hatten bestanden', ihr: 'hattet bestanden', sie_Sie: 'hatten bestanden' },
+    [Tense.FUTUR_I]: { ich: 'werde bestehen', du: 'wirst bestehen', er_sie_es: 'wird bestehen', wir: 'werden bestehen', ihr: 'werdet bestehen', sie_Sie: 'werden bestehen' },
+  },
+  'bestellen': createRegularVerb('bestell'),
+  'besuchen': createRegularVerb('besuch'),
+  'beten': createRegularVerb('bet'),
+  'betragen': {
+    [Tense.PRAESENS]: { ich: 'betrage', du: 'beträgst', er_sie_es: 'beträgt', wir: 'betragen', ihr: 'betragt', sie_Sie: 'betragen' },
+    [Tense.PRAETERITUM]: { ich: 'betrug', du: 'betrugst', er_sie_es: 'betrug', wir: 'betrugen', ihr: 'betrugt', sie_Sie: 'betrugen' },
+    [Tense.PERFEKT]: { ich: 'habe betragen', du: 'hast betragen', er_sie_es: 'hat betragen', wir: 'haben betragen', ihr: 'habt betragen', sie_Sie: 'haben betragen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte betragen', du: 'hattest betragen', er_sie_es: 'hatte betragen', wir: 'hatten betragen', ihr: 'hattet betragen', sie_Sie: 'hatten betragen' },
+    [Tense.FUTUR_I]: { ich: 'werde betragen', du: 'wirst betragen', er_sie_es: 'wird betragen', wir: 'werden betragen', ihr: 'werdet betragen', sie_Sie: 'werden betragen' },
+  },
+  'bewegen': createRegularVerb('beweg'), // "Bewog" wird selten genutzt, meist nur metaphorisch
+  'bezahlen': createRegularVerb('bezahl'),
+  'biegen': {
+    [Tense.PRAESENS]: { ich: 'biege', du: 'biegst', er_sie_es: 'biegt', wir: 'biegen', ihr: 'biegt', sie_Sie: 'biegen' },
+    [Tense.PRAETERITUM]: { ich: 'bog', du: 'bogst', er_sie_es: 'bog', wir: 'bogen', ihr: 'bogt', sie_Sie: 'bogen' },
+    [Tense.PERFEKT]: { ich: 'habe gebogen', du: 'hast gebogen', er_sie_es: 'hat gebogen', wir: 'haben gebogen', ihr: 'habt gebogen', sie_Sie: 'haben gebogen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte gebogen', du: 'hattest gebogen', er_sie_es: 'hatte gebogen', wir: 'hatten gebogen', ihr: 'hattet gebogen', sie_Sie: 'hatten gebogen' },
+    [Tense.FUTUR_I]: { ich: 'werde biegen', du: 'wirst biegen', er_sie_es: 'wird biegen', wir: 'werden biegen', ihr: 'werdet biegen', sie_Sie: 'werden biegen' },
+  },
+  'braten': {
+    [Tense.PRAESENS]: { ich: 'brate', du: 'brätst', er_sie_es: 'brät', wir: 'braten', ihr: 'bratet', sie_Sie: 'braten' },
+    [Tense.PRAETERITUM]: { ich: 'briet', du: 'brietest', er_sie_es: 'briet', wir: 'brieten', ihr: 'brietet', sie_Sie: 'brieten' },
+    [Tense.PERFEKT]: { ich: 'habe gebraten', du: 'hast gebraten', er_sie_es: 'hat gebraten', wir: 'haben gebraten', ihr: 'habt gebraten', sie_Sie: 'haben gebraten' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte gebraten', du: 'hattest gebraten', er_sie_es: 'hatte gebraten', wir: 'hatten gebraten', ihr: 'hattet gebraten', sie_Sie: 'hatten gebraten' },
+    [Tense.FUTUR_I]: { ich: 'werde braten', du: 'wirst braten', er_sie_es: 'wird braten', wir: 'werden braten', ihr: 'werdet braten', sie_Sie: 'werden braten' },
+  },
   'brauchen': createRegularVerb('brauch'),
+  'brechen': {
+    [Tense.PRAESENS]: { ich: 'breche', du: 'brichst', er_sie_es: 'bricht', wir: 'brechen', ihr: 'brecht', sie_Sie: 'brechen' },
+    [Tense.PRAETERITUM]: { ich: 'brach', du: 'brachst', er_sie_es: 'brach', wir: 'brachen', ihr: 'bracht', sie_Sie: 'brachen' },
+    [Tense.PERFEKT]: { ich: 'habe gebrochen', du: 'hast gebrochen', er_sie_es: 'hat gebrochen', wir: 'haben gebrochen', ihr: 'habt gebrochen', sie_Sie: 'haben gebrochen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte gebrochen', du: 'hattest gebrochen', er_sie_es: 'hatte gebrochen', wir: 'hatten gebrochen', ihr: 'hattet gebrochen', sie_Sie: 'hatten gebrochen' },
+    [Tense.FUTUR_I]: { ich: 'werde brechen', du: 'wirst brechen', er_sie_es: 'wird brechen', wir: 'werden brechen', ihr: 'werdet brechen', sie_Sie: 'werden brechen' },
+  },
+  'brennen': {
+    [Tense.PRAESENS]: { ich: 'brenne', du: 'brennst', er_sie_es: 'brennt', wir: 'brennen', ihr: 'brennt', sie_Sie: 'brennen' },
+    [Tense.PRAETERITUM]: { ich: 'brannte', du: 'branntest', er_sie_es: 'brannte', wir: 'brannten', ihr: 'branntet', sie_Sie: 'brannten' },
+    [Tense.PERFEKT]: { ich: 'habe gebrannt', du: 'hast gebrannt', er_sie_es: 'hat gebrannt', wir: 'haben gebrannt', ihr: 'habt gebrannt', sie_Sie: 'haben gebrannt' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte gebrannt', du: 'hattest gebrannt', er_sie_es: 'hatte gebrannt', wir: 'hatten gebrannt', ihr: 'hattet gebrannt', sie_Sie: 'hatten gebrannt' },
+    [Tense.FUTUR_I]: { ich: 'werde brennen', du: 'wirst brennen', er_sie_es: 'wird brennen', wir: 'werden brennen', ihr: 'werdet brennen', sie_Sie: 'werden brennen' },
+  },
   'bringen': {
     [Tense.PRAESENS]: { ich: 'bringe', du: 'bringst', er_sie_es: 'bringt', wir: 'bringen', ihr: 'bringt', sie_Sie: 'bringen' },
     [Tense.PRAETERITUM]: { ich: 'brachte', du: 'brachtest', er_sie_es: 'brachte', wir: 'brachten', ihr: 'brachtet', sie_Sie: 'brachten' },
@@ -93,8 +314,12 @@ export const COMMON_VERBS_DB = {
     [Tense.FUTUR_I]: { ich: 'werde bringen', du: 'wirst bringen', er_sie_es: 'wird bringen', wir: 'werden bringen', ihr: 'werdet bringen', sie_Sie: 'werden bringen' },
   },
   'brüllen': createRegularVerb('brüll'),
+  // --- C ---
+  'checken': createRegularVerb('check'),
   // --- D ---
   'danken': createRegularVerb('dank'),
+  'dauern': createRegularVerb('dauer'),
+  'decken': createRegularVerb('deck'),
   'denken': {
     [Tense.PRAESENS]: { ich: 'denke', du: 'denkst', er_sie_es: 'denkt', wir: 'denken', ihr: 'denkt', sie_Sie: 'denken' },
     [Tense.PRAETERITUM]: { ich: 'dachte', du: 'dachtest', er_sie_es: 'dachte', wir: 'dachten', ihr: 'dachtet', sie_Sie: 'dachten' },
@@ -102,8 +327,10 @@ export const COMMON_VERBS_DB = {
     [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte gedacht', du: 'hattest gedacht', er_sie_es: 'hatte gedacht', wir: 'hatten gedacht', ihr: 'hattet gedacht', sie_Sie: 'hatten gedacht' },
     [Tense.FUTUR_I]: { ich: 'werde denken', du: 'wirst denken', er_sie_es: 'wird denken', wir: 'werden denken', ihr: 'werdet denken', sie_Sie: 'werden denken' },
   },
-  'diskutieren': createRegularVerb('diskutier'),
   'deuten': createRegularVerb('deut'),
+  'diskutieren': createRegularVerb('diskutier'),
+  'drehen': createRegularVerb('dreh'),
+  'drucken': createRegularVerb('druck'),
   'drücken': createRegularVerb('drück'),
   'dürfen': {
     [Tense.PRAESENS]: { ich: 'darf', du: 'darfst', er_sie_es: 'darf', wir: 'dürfen', ihr: 'dürft', sie_Sie: 'dürfen' },
@@ -113,7 +340,181 @@ export const COMMON_VERBS_DB = {
     [Tense.FUTUR_I]: { ich: 'werde dürfen', du: 'wirst dürfen', er_sie_es: 'wird dürfen', wir: 'werden dürfen', ihr: 'werdet dürfen', sie_Sie: 'werden dürfen' },
   },
   // --- E ---
+  'ehren': createRegularVerb('ehr'),
+  'eignen': createRegularVerb('eign'),
+  'eilen': createRegularVerb('eil'),
+  'einbauen': createSeparableVerb('ein', 'bau', 'bau'),
+  'einbrechen': { // Stark + Trennbar
+    [Tense.PRAESENS]: { ich: 'breche ein', du: 'brichst ein', er_sie_es: 'bricht ein', wir: 'brechen ein', ihr: 'brecht ein', sie_Sie: 'brechen ein' },
+    [Tense.PRAETERITUM]: { ich: 'brach ein', du: 'brachst ein', er_sie_es: 'brach ein', wir: 'brachen ein', ihr: 'bracht ein', sie_Sie: 'brachen ein' },
+    [Tense.PERFEKT]: { ich: 'bin eingebrochen', du: 'bist eingebrochen', er_sie_es: 'ist eingebrochen', wir: 'sind eingebrochen', ihr: 'seid eingebrochen', sie_Sie: 'sind eingebrochen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'war eingebrochen', du: 'warst eingebrochen', er_sie_es: 'war eingebrochen', wir: 'waren eingebrochen', ihr: 'wart eingebrochen', sie_Sie: 'waren eingebrochen' },
+    [Tense.FUTUR_I]: { ich: 'werde einbrechen', du: 'wirst einbrechen', er_sie_es: 'wird einbrechen', wir: 'werden einbrechen', ihr: 'werdet einbrechen', sie_Sie: 'werden einbrechen' },
+  },
+  'eindeutig': createRegularVerb('eindeutig'),
+  'eindringen': { // Stark + Trennbar
+    [Tense.PRAESENS]: { ich: 'dringe ein', du: 'dringst ein', er_sie_es: 'dringt ein', wir: 'dringen ein', ihr: 'dringt ein', sie_Sie: 'dringen ein' },
+    [Tense.PRAETERITUM]: { ich: 'drang ein', du: 'drangst ein', er_sie_es: 'drang ein', wir: 'drangen ein', ihr: 'drangt ein', sie_Sie: 'drangen ein' },
+    [Tense.PERFEKT]: { ich: 'bin eingedrungen', du: 'bist eingedrungen', er_sie_es: 'ist eingedrungen', wir: 'sind eingedrungen', ihr: 'seid eingedrungen', sie_Sie: 'sind eingedrungen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'war eingedrungen', du: 'warst eingedrungen', er_sie_es: 'war eingedrungen', wir: 'waren eingedrungen', ihr: 'wart eingedrungen', sie_Sie: 'waren eingedrungen' },
+    [Tense.FUTUR_I]: { ich: 'werde eindringen', du: 'wirst eindringen', er_sie_es: 'wird eindringen', wir: 'werden eindringen', ihr: 'werdet eindringen', sie_Sie: 'werden eindringen' },
+  },
+  'einfallen': { // Stark + Trennbar
+    [Tense.PRAESENS]: { ich: 'falle ein', du: 'fällst ein', er_sie_es: 'fällt ein', wir: 'fallen ein', ihr: 'fallt ein', sie_Sie: 'fallen ein' },
+    [Tense.PRAETERITUM]: { ich: 'fiel ein', du: 'fielst ein', er_sie_es: 'fiel ein', wir: 'fielen ein', ihr: 'fielt ein', sie_Sie: 'fielen ein' },
+    [Tense.PERFEKT]: { ich: 'bin eingefallen', du: 'bist eingefallen', er_sie_es: 'ist eingefallen', wir: 'sind eingefallen', ihr: 'seid eingefallen', sie_Sie: 'sind eingefallen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'war eingefallen', du: 'warst eingefallen', er_sie_es: 'war eingefallen', wir: 'waren eingefallen', ihr: 'wart eingefallen', sie_Sie: 'waren eingefallen' },
+    [Tense.FUTUR_I]: { ich: 'werde einfallen', du: 'wirst einfallen', er_sie_es: 'wird einfallen', wir: 'werden einfallen', ihr: 'werdet einfallen', sie_Sie: 'werden einfallen' },
+  },
+  'einführen': createSeparableVerb('ein', 'führ', 'führ'),
+  'eingehen': { // Stark + Trennbar
+    [Tense.PRAESENS]: { ich: 'gehe ein', du: 'gehst ein', er_sie_es: 'geht ein', wir: 'gehen ein', ihr: 'geht ein', sie_Sie: 'gehen ein' },
+    [Tense.PRAETERITUM]: { ich: 'ging ein', du: 'gingst ein', er_sie_es: 'ging ein', wir: 'gingen ein', ihr: 'gingt ein', sie_Sie: 'gingen ein' },
+    [Tense.PERFEKT]: { ich: 'bin eingegangen', du: 'bist eingegangen', er_sie_es: 'ist eingegangen', wir: 'sind eingegangen', ihr: 'seid eingegangen', sie_Sie: 'sind eingegangen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'war eingegangen', du: 'warst eingegangen', er_sie_es: 'war eingegangen', wir: 'waren eingegangen', ihr: 'wart eingegangen', sie_Sie: 'waren eingegangen' },
+    [Tense.FUTUR_I]: { ich: 'werde eingehen', du: 'wirst eingehen', er_sie_es: 'wird eingehen', wir: 'werden eingehen', ihr: 'werdet eingehen', sie_Sie: 'werden eingehen' },
+  },
+  'einkaufen': createSeparableVerb('ein', 'kauf', 'kauf'),
+  'einladen': { // Stark + Trennbar
+    [Tense.PRAESENS]: { ich: 'lade ein', du: 'lädst ein', er_sie_es: 'lädt ein', wir: 'laden ein', ihr: 'ladet ein', sie_Sie: 'laden ein' },
+    [Tense.PRAETERITUM]: { ich: 'lud ein', du: 'ludst ein', er_sie_es: 'lud ein', wir: 'luden ein', ihr: 'ludet ein', sie_Sie: 'luden ein' },
+    [Tense.PERFEKT]: { ich: 'habe eingeladen', du: 'hast eingeladen', er_sie_es: 'hat eingeladen', wir: 'haben eingeladen', ihr: 'habt eingeladen', sie_Sie: 'haben eingeladen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte eingeladen', du: 'hattest eingeladen', er_sie_es: 'hatte eingeladen', wir: 'hatten eingeladen', ihr: 'hattet eingeladen', sie_Sie: 'hatten eingeladen' },
+    [Tense.FUTUR_I]: { ich: 'werde einladen', du: 'wirst einladen', er_sie_es: 'wird einladen', wir: 'werden einladen', ihr: 'werdet einladen', sie_Sie: 'werden einladen' },
+  },
+  'einnehmen': { // Stark + Trennbar
+    [Tense.PRAESENS]: { ich: 'nehme ein', du: 'nimmst ein', er_sie_es: 'nimmt ein', wir: 'nehmen ein', ihr: 'nehmt ein', sie_Sie: 'nehmen ein' },
+    [Tense.PRAETERITUM]: { ich: 'nahm ein', du: 'nahmst ein', er_sie_es: 'nahm ein', wir: 'nahmen ein', ihr: 'nahmt ein', sie_Sie: 'nahmen ein' },
+    [Tense.PERFEKT]: { ich: 'habe eingenommen', du: 'hast eingenommen', er_sie_es: 'hat eingenommen', wir: 'haben eingenommen', ihr: 'habt eingenommen', sie_Sie: 'haben eingenommen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte eingenommen', du: 'hattest eingenommen', er_sie_es: 'hatte eingenommen', wir: 'hatten eingenommen', ihr: 'hattet eingenommen', sie_Sie: 'hatten eingenommen' },
+    [Tense.FUTUR_I]: { ich: 'werde einnehmen', du: 'wirst einnehmen', er_sie_es: 'wird einnehmen', wir: 'werden einnehmen', ihr: 'werdet einnehmen', sie_Sie: 'werden einnehmen' },
+  },
+  'einpacken': createSeparableVerb('ein', 'pack', 'pack'),
+  'einrichten': createSeparableVerb('ein', 'richt', 'richt'),
+  'einschlafen': { // Stark + Trennbar
+    [Tense.PRAESENS]: { ich: 'schlafe ein', du: 'schläfst ein', er_sie_es: 'schläft ein', wir: 'schlafen ein', ihr: 'schlaft ein', sie_Sie: 'schlafen ein' },
+    [Tense.PRAETERITUM]: { ich: 'schlief ein', du: 'schliefst ein', er_sie_es: 'schlief ein', wir: 'schliefen ein', ihr: 'schlieft ein', sie_Sie: 'schliefen ein' },
+    [Tense.PERFEKT]: { ich: 'bin eingeschlafen', du: 'bist eingeschlafen', er_sie_es: 'ist eingeschlafen', wir: 'sind eingeschlafen', ihr: 'seid eingeschlafen', sie_Sie: 'sind eingeschlafen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'war eingeschlafen', du: 'warst eingeschlafen', er_sie_es: 'war eingeschlafen', wir: 'waren eingeschlafen', ihr: 'wart eingeschlafen', sie_Sie: 'waren eingeschlafen' },
+    [Tense.FUTUR_I]: { ich: 'werde einschlafen', du: 'wirst einschlafen', er_sie_es: 'wird einschlafen', wir: 'werden einschlafen', ihr: 'werdet einschlafen', sie_Sie: 'werden einschlafen' },
+  },
+  'einsteigen': { // Stark + Trennbar
+    [Tense.PRAESENS]: { ich: 'steige ein', du: 'steigst ein', er_sie_es: 'steigt ein', wir: 'steigen ein', ihr: 'steigt ein', sie_Sie: 'steigen ein' },
+    [Tense.PRAETERITUM]: { ich: 'stieg ein', du: 'stiegst ein', er_sie_es: 'stieg ein', wir: 'stiegen ein', ihr: 'stiegt ein', sie_Sie: 'stiegen ein' },
+    [Tense.PERFEKT]: { ich: 'bin eingestiegen', du: 'bist eingestiegen', er_sie_es: 'ist eingestiegen', wir: 'sind eingestiegen', ihr: 'seid eingestiegen', sie_Sie: 'sind eingestiegen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'war eingestiegen', du: 'warst eingestiegen', er_sie_es: 'war eingestiegen', wir: 'waren eingestiegen', ihr: 'wart eingestiegen', sie_Sie: 'waren eingestiegen' },
+    [Tense.FUTUR_I]: { ich: 'werde einsteigen', du: 'wirst einsteigen', er_sie_es: 'wird einsteigen', wir: 'werden einsteigen', ihr: 'werdet einsteigen', sie_Sie: 'werden einsteigen' },
+  },
+  'eintreten': { // Stark + Trennbar
+    [Tense.PRAESENS]: { ich: 'trete ein', du: 'trittst ein', er_sie_es: 'tritt ein', wir: 'treten ein', ihr: 'tretet ein', sie_Sie: 'treten ein' },
+    [Tense.PRAETERITUM]: { ich: 'trat ein', du: 'tratst ein', er_sie_es: 'trat ein', wir: 'traten ein', ihr: 'tratet ein', sie_Sie: 'traten ein' },
+    [Tense.PERFEKT]: { ich: 'bin eingetreten', du: 'bist eingetreten', er_sie_es: 'ist eingetreten', wir: 'sind eingetreten', ihr: 'seid eingetreten', sie_Sie: 'sind eingetreten' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'war eingetreten', du: 'warst eingetreten', er_sie_es: 'war eingetreten', wir: 'waren eingetreten', ihr: 'wart eingetreten', sie_Sie: 'waren eingetreten' },
+    [Tense.FUTUR_I]: { ich: 'werde eintreten', du: 'wirst eintreten', er_sie_es: 'wird eintreten', wir: 'werden eintreten', ihr: 'werdet eintreten', sie_Sie: 'werden eintreten' },
+  },
+  'einziehen': { // Stark + Trennbar
+    [Tense.PRAESENS]: { ich: 'ziehe ein', du: 'ziehst ein', er_sie_es: 'zieht ein', wir: 'ziehen ein', ihr: 'zieht ein', sie_Sie: 'ziehen ein' },
+    [Tense.PRAETERITUM]: { ich: 'zog ein', du: 'zogst ein', er_sie_es: 'zog ein', wir: 'zogen ein', ihr: 'zogt ein', sie_Sie: 'zogen ein' },
+    [Tense.PERFEKT]: { ich: 'bin eingezogen', du: 'bist eingezogen', er_sie_es: 'ist eingezogen', wir: 'sind eingezogen', ihr: 'seid eingezogen', sie_Sie: 'sind eingezogen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'war eingezogen', du: 'warst eingezogen', er_sie_es: 'war eingezogen', wir: 'waren eingezogen', ihr: 'wart eingezogen', sie_Sie: 'waren eingezogen' },
+    [Tense.FUTUR_I]: { ich: 'werde einziehen', du: 'wirst einziehen', er_sie_es: 'wird einziehen', wir: 'werden einziehen', ihr: 'werdet einziehen', sie_Sie: 'werden einziehen' },
+  },
+  'empfangen': {
+    [Tense.PRAESENS]: { ich: 'empfange', du: 'empfängst', er_sie_es: 'empfängt', wir: 'empfangen', ihr: 'empfangt', sie_Sie: 'empfangen' },
+    [Tense.PRAETERITUM]: { ich: 'empfing', du: 'empfingst', er_sie_es: 'empfing', wir: 'empfingen', ihr: 'empfingt', sie_Sie: 'empfingen' },
+    [Tense.PERFEKT]: { ich: 'habe empfangen', du: 'hast empfangen', er_sie_es: 'hat empfangen', wir: 'haben empfangen', ihr: 'habt empfangen', sie_Sie: 'haben empfangen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte empfangen', du: 'hattest empfangen', er_sie_es: 'hatte empfangen', wir: 'hatten empfangen', ihr: 'hattet empfangen', sie_Sie: 'hatten empfangen' },
+    [Tense.FUTUR_I]: { ich: 'werde empfangen', du: 'wirst empfangen', er_sie_es: 'wird empfangen', wir: 'werden empfangen', ihr: 'werdet empfangen', sie_Sie: 'werden empfangen' },
+  },
+  'empfehlen': {
+    [Tense.PRAESENS]: { ich: 'empfehle', du: 'empfiehlst', er_sie_es: 'empfiehlt', wir: 'empfehlen', ihr: 'empfehlt', sie_Sie: 'empfehlen' },
+    [Tense.PRAETERITUM]: { ich: 'empfahl', du: 'empfahlst', er_sie_es: 'empfahl', wir: 'empfahlen', ihr: 'empfahlt', sie_Sie: 'empfahlen' },
+    [Tense.PERFEKT]: { ich: 'habe empfohlen', du: 'hast empfohlen', er_sie_es: 'hat empfohlen', wir: 'haben empfohlen', ihr: 'habt empfohlen', sie_Sie: 'haben empfohlen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte empfohlen', du: 'hattest empfohlen', er_sie_es: 'hatte empfohlen', wir: 'hatten empfohlen', ihr: 'hattet empfohlen', sie_Sie: 'hatten empfohlen' },
+    [Tense.FUTUR_I]: { ich: 'werde empfehlen', du: 'wirst empfehlen', er_sie_es: 'wird empfehlen', wir: 'werden empfehlen', ihr: 'werdet empfehlen', sie_Sie: 'werden empfehlen' },
+  },
+  'enden': createRegularVerb('end'),
+  'entdecken': createRegularVerb('entdeck'),
+  'entfernen': createRegularVerb('entfern'),
+  'entgegenkommen': { // Stark + Trennbar
+    [Tense.PRAESENS]: { ich: 'komme entgegen', du: 'kommst entgegen', er_sie_es: 'kommt entgegen', wir: 'kommen entgegen', ihr: 'kommt entgegen', sie_Sie: 'kommen entgegen' },
+    [Tense.PRAETERITUM]: { ich: 'kam entgegen', du: 'kamst entgegen', er_sie_es: 'kam entgegen', wir: 'kamen entgegen', ihr: 'kamt entgegen', sie_Sie: 'kamen entgegen' },
+    [Tense.PERFEKT]: { ich: 'bin entgegengekommen', du: 'bist entgegengekommen', er_sie_es: 'ist entgegengekommen', wir: 'sind entgegengekommen', ihr: 'seid entgegengekommen', sie_Sie: 'sind entgegengekommen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'war entgegengekommen', du: 'warst entgegengekommen', er_sie_es: 'war entgegengekommen', wir: 'waren entgegengekommen', ihr: 'wart entgegengekommen', sie_Sie: 'waren entgegengekommen' },
+    [Tense.FUTUR_I]: { ich: 'werde entgegenkommen', du: 'wirst entgegenkommen', er_sie_es: 'wird entgegenkommen', wir: 'werden entgegenkommen', ihr: 'werdet entgegenkommen', sie_Sie: 'werden entgegenkommen' },
+  },
+  'enthalten': {
+    [Tense.PRAESENS]: { ich: 'enthalte', du: 'enthältst', er_sie_es: 'enthält', wir: 'enthalten', ihr: 'enthaltet', sie_Sie: 'enthalten' },
+    [Tense.PRAETERITUM]: { ich: 'hielt', du: 'hieltest', er_sie_es: 'hielt', wir: 'hielten', ihr: 'hieltet', sie_Sie: 'hielten' },
+    [Tense.PERFEKT]: { ich: 'habe enthalten', du: 'hast enthalten', er_sie_es: 'hat enthalten', wir: 'haben enthalten', ihr: 'habt enthalten', sie_Sie: 'haben enthalten' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte enthalten', du: 'hattest enthalten', er_sie_es: 'hatte enthalten', wir: 'hatten enthalten', ihr: 'hattet enthalten', sie_Sie: 'hatten enthalten' },
+    [Tense.FUTUR_I]: { ich: 'werde enthalten', du: 'wirst enthalten', er_sie_es: 'wird enthalten', wir: 'werden enthalten', ihr: 'werdet enthalten', sie_Sie: 'werden enthalten' },
+  },
+  'entscheiden': {
+    [Tense.PRAESENS]: { ich: 'entscheide', du: 'entscheidest', er_sie_es: 'entscheidet', wir: 'entscheiden', ihr: 'entscheidet', sie_Sie: 'entscheiden' },
+    [Tense.PRAETERITUM]: { ich: 'entschied', du: 'entschiedest', er_sie_es: 'entschied', wir: 'entschieden', ihr: 'entschiedet', sie_Sie: 'entschieden' },
+    [Tense.PERFEKT]: { ich: 'habe entschieden', du: 'hast entschieden', er_sie_es: 'hat entschieden', wir: 'haben entschieden', ihr: 'habt entschieden', sie_Sie: 'haben entschieden' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte entschieden', du: 'hattest entschieden', er_sie_es: 'hatte entschieden', wir: 'hatten entschieden', ihr: 'hattet entschieden', sie_Sie: 'hatten entschieden' },
+    [Tense.FUTUR_I]: { ich: 'werde entscheiden', du: 'wirst entscheiden', er_sie_es: 'wird entscheiden', wir: 'werden entscheiden', ihr: 'werdet entscheiden', sie_Sie: 'werden entscheiden' },
+  },
+  'entschuldigen': createRegularVerb('entschuldig'),
+  'entspannen': createRegularVerb('entspann'),
+  'entstehen': {
+    [Tense.PRAESENS]: { ich: 'entstehe', du: 'entstehst', er_sie_es: 'entsteht', wir: 'entstehen', ihr: 'entsteht', sie_Sie: 'entstehen' },
+    [Tense.PRAETERITUM]: { ich: 'entstand', du: 'entstandest', er_sie_es: 'entstand', wir: 'entstanden', ihr: 'entstandet', sie_Sie: 'entstanden' },
+    [Tense.PERFEKT]: { ich: 'ist entstanden', du: 'bist entstanden', er_sie_es: 'ist entstanden', wir: 'sind entstanden', ihr: 'seid entstanden', sie_Sie: 'sind entstanden' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'war entstanden', du: 'warst entstanden', er_sie_es: 'war entstanden', wir: 'waren entstanden', ihr: 'wart entstanden', sie_Sie: 'waren entstanden' },
+    [Tense.FUTUR_I]: { ich: 'werde entstehen', du: 'wirst entstehen', er_sie_es: 'wird entstehen', wir: 'werden entstehen', ihr: 'werdet entstehen', sie_Sie: 'werden entstehen' },
+  },
+  'entwickeln': createRegularVerb('entwickel'),
+  'erfahren': {
+    [Tense.PRAESENS]: { ich: 'erfahre', du: 'erfährst', er_sie_es: 'erfährt', wir: 'erfahren', ihr: 'erfahrt', sie_Sie: 'erfahren' },
+    [Tense.PRAETERITUM]: { ich: 'erfuhr', du: 'erfuhrst', er_sie_es: 'erfuhr', wir: 'erfuhren', ihr: 'erfuhrt', sie_Sie: 'erfuhren' },
+    [Tense.PERFEKT]: { ich: 'habe erfahren', du: 'hast erfahren', er_sie_es: 'hat erfahren', wir: 'haben erfahren', ihr: 'habt erfahren', sie_Sie: 'haben erfahren' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte erfahren', du: 'hattest erfahren', er_sie_es: 'hatte erfahren', wir: 'hatten erfahren', ihr: 'hattet erfahren', sie_Sie: 'hatten erfahren' },
+    [Tense.FUTUR_I]: { ich: 'werde erfahren', du: 'wirst erfahren', er_sie_es: 'wird erfahren', wir: 'werden erfahren', ihr: 'werdet erfahren', sie_Sie: 'werden erfahren' },
+  },
+  'erfinden': {
+    [Tense.PRAESENS]: { ich: 'erfinde', du: 'erfindest', er_sie_es: 'erfindet', wir: 'erfinden', ihr: 'erfindet', sie_Sie: 'erfinden' },
+    [Tense.PRAETERITUM]: { ich: 'erfand', du: 'erfandest', er_sie_es: 'erfand', wir: 'erfanden', ihr: 'erfandet', sie_Sie: 'erfanden' },
+    [Tense.PERFEKT]: { ich: 'habe erfunden', du: 'hast erfunden', er_sie_es: 'hat erfunden', wir: 'haben erfunden', ihr: 'habt erfunden', sie_Sie: 'haben erfunden' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte erfunden', du: 'hattest erfunden', er_sie_es: 'hatte erfunden', wir: 'hatten erfunden', ihr: 'hattet erfunden', sie_Sie: 'hatten erfunden' },
+    [Tense.FUTUR_I]: { ich: 'werde erfinden', du: 'wirst erfinden', er_sie_es: 'wird erfinden', wir: 'werden erfinden', ihr: 'werdet erfinden', sie_Sie: 'werden erfinden' },
+  },
+  'ergeben': {
+    [Tense.PRAESENS]: { ich: 'ergebe', du: 'ergibst', er_sie_es: 'ergibt', wir: 'ergeben', ihr: 'ergebt', sie_Sie: 'ergeben' },
+    [Tense.PRAETERITUM]: { ich: 'ergab', du: 'ergabst', er_sie_es: 'ergab', wir: 'ergaben', ihr: 'ergabt', sie_Sie: 'ergaben' },
+    [Tense.PERFEKT]: { ich: 'habe ergeben', du: 'hast ergeben', er_sie_es: 'hat ergeben', wir: 'haben ergeben', ihr: 'habt ergeben', sie_Sie: 'haben ergeben' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte ergeben', du: 'hattest ergeben', er_sie_es: 'hatte ergeben', wir: 'hatten ergeben', ihr: 'hattet ergeben', sie_Sie: 'hatten ergeben' },
+    [Tense.FUTUR_I]: { ich: 'werde ergeben', du: 'wirst ergeben', er_sie_es: 'wird ergeben', wir: 'werden ergeben', ihr: 'werdet ergeben', sie_Sie: 'werden ergeben' },
+  },
+  'erhalten': {
+    [Tense.PRAESENS]: { ich: 'erhalte', du: 'erhältst', er_sie_es: 'erhält', wir: 'erhalten', ihr: 'erhaltet', sie_Sie: 'erhalten' },
+    [Tense.PRAETERITUM]: { ich: 'erhielt', du: 'erhieltest', er_sie_es: 'erhielt', wir: 'erhielten', ihr: 'erhieltet', sie_Sie: 'erhielten' },
+    [Tense.PERFEKT]: { ich: 'habe erhalten', du: 'hast erhalten', er_sie_es: 'hat erhalten', wir: 'haben erhalten', ihr: 'habt erhalten', sie_Sie: 'haben erhalten' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte erhalten', du: 'hattest erhalten', er_sie_es: 'hatte erhalten', wir: 'hatten erhalten', ihr: 'hattet erhalten', sie_Sie: 'hatten erhalten' },
+    [Tense.FUTUR_I]: { ich: 'werde erhalten', du: 'wirst erhalten', er_sie_es: 'wird erhalten', wir: 'werden erhalten', ihr: 'werdet erhalten', sie_Sie: 'werden erhalten' },
+  },
+  'erinnern': createRegularVerb('erinner'),
+  'erkennen': {
+    [Tense.PRAESENS]: { ich: 'erkenne', du: 'erkennst', er_sie_es: 'erkennt', wir: 'erkennen', ihr: 'erkennt', sie_Sie: 'erkennen' },
+    [Tense.PRAETERITUM]: { ich: 'erkannte', du: 'erkanntest', er_sie_es: 'erkannte', wir: 'erkannten', ihr: 'erkanntet', sie_Sie: 'erkannten' },
+    [Tense.PERFEKT]: { ich: 'habe erkannt', du: 'hast erkannt', er_sie_es: 'hat erkannt', wir: 'haben erkannt', ihr: 'habt erkannt', sie_Sie: 'haben erkannt' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte erkannt', du: 'hattest erkannt', er_sie_es: 'hatte erkannt', wir: 'hatten erkannt', ihr: 'hattet erkannt', sie_Sie: 'hatten erkannt' },
+    [Tense.FUTUR_I]: { ich: 'werde erkennen', du: 'wirst erkennen', er_sie_es: 'wird erkennen', wir: 'werden erkennen', ihr: 'werdet erkennen', sie_Sie: 'werden erkennen' },
+  },
   'erklären': createRegularVerb('erklär'),
+  'erleben': createRegularVerb('erleb'),
+  'erledigen': createRegularVerb('erledig'),
+  'erreichen': createRegularVerb('erreich'),
+  'erschrecken': { // Stark (intransitiv, sich erschrecken)
+    [Tense.PRAESENS]: { ich: 'erschrecke', du: 'erschrickst', er_sie_es: 'erschrickt', wir: 'erschrecken', ihr: 'erschreckt', sie_Sie: 'erschrecken' },
+    [Tense.PRAETERITUM]: { ich: 'erschrak', du: 'erschrakst', er_sie_es: 'erschrak', wir: 'erschraken', ihr: 'erschrakt', sie_Sie: 'erschraken' },
+    [Tense.PERFEKT]: { ich: 'bin erschrocken', du: 'bist erschrocken', er_sie_es: 'ist erschrocken', wir: 'sind erschrocken', ihr: 'seid erschrocken', sie_Sie: 'sind erschrocken' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'war erschrocken', du: 'warst erschrocken', er_sie_es: 'war erschrocken', wir: 'waren erschrocken', ihr: 'wart erschrocken', sie_Sie: 'waren erschrocken' },
+    [Tense.FUTUR_I]: { ich: 'werde erschrecken', du: 'wirst erschrecken', er_sie_es: 'wird erschrecken', wir: 'werden erschrecken', ihr: 'werdet erschrecken', sie_Sie: 'werden erschrecken' },
+  },
+  'erwarten': createRegularVerb('erwart'),
   'erzählen': createRegularVerb('erzähl'),
   'essen': {
     [Tense.PRAESENS]: { ich: 'esse', du: 'isst', er_sie_es: 'isst', wir: 'essen', ihr: 'esst', sie_Sie: 'essen' },
@@ -126,7 +527,7 @@ export const COMMON_VERBS_DB = {
   'fahren': {
     [Tense.PRAESENS]: { ich: 'fahre', du: 'fährst', er_sie_es: 'fährt', wir: 'fahren', ihr: 'fahrt', sie_Sie: 'fahren' },
     [Tense.PRAETERITUM]: { ich: 'fuhr', du: 'fuhrst', er_sie_es: 'fuhr', wir: 'fuhren', ihr: 'fuhrt', sie_Sie: 'fuhren' },
-    [Tense.PERFEKT]: { ich: 'bin gefahren', du: 'bist gefahren', er_sie_es: 'ist gefahren', wir: 'sind gefahren', ihr: 'seid gefahren', sie_Sie: 'sind gefahren' },
+    [Tense.PERFEKT]: { ich: 'bin gefahren', du: 'bist gefahren', er_sie_es: 'ist gefahren', wir: 'sind gefahren', ihr: 'seid gefahren', sie_Sie: 'sind gefahren' }, // Hilfsverb oft 'sein', auch 'haben' mögl., hier 'sein' primär
     [Tense.PLUSQUAMPERFEKT]: { ich: 'war gefahren', du: 'warst gefahren', er_sie_es: 'war gefahren', wir: 'waren gefahren', ihr: 'wart gefahren', sie_Sie: 'waren gefahren' },
     [Tense.FUTUR_I]: { ich: 'werde fahren', du: 'wirst fahren', er_sie_es: 'wird fahren', wir: 'werden fahren', ihr: 'werdet fahren', sie_Sie: 'werden fahren' },
   },
@@ -137,6 +538,7 @@ export const COMMON_VERBS_DB = {
     [Tense.PLUSQUAMPERFEKT]: { ich: 'war gefallen', du: 'warst gefallen', er_sie_es: 'war gefallen', wir: 'waren gefallen', ihr: 'wart gefallen', sie_Sie: 'waren gefallen' },
     [Tense.FUTUR_I]: { ich: 'werde fallen', du: 'wirst fallen', er_sie_es: 'wird fallen', wir: 'werden fallen', ihr: 'werdet fallen', sie_Sie: 'werden fallen' },
   },
+  'falten': createRegularVerb('falt'),
   'fangen': {
     [Tense.PRAESENS]: { ich: 'fange', du: 'fängst', er_sie_es: 'fängt', wir: 'fangen', ihr: 'fangt', sie_Sie: 'fangen' },
     [Tense.PRAETERITUM]: { ich: 'fing', du: 'fingst', er_sie_es: 'fing', wir: 'fingen', ihr: 'fingt', sie_Sie: 'fingen' },
@@ -144,8 +546,25 @@ export const COMMON_VERBS_DB = {
     [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte gefangen', du: 'hattest gefangen', er_sie_es: 'hatte gefangen', wir: 'hatten gefangen', ihr: 'hattet gefangen', sie_Sie: 'hatten gefangen' },
     [Tense.FUTUR_I]: { ich: 'werde fangen', du: 'wirst fangen', er_sie_es: 'wird fangen', wir: 'werden fangen', ihr: 'werdet fangen', sie_Sie: 'werden fangen' },
   },
+  'fassen': createRegularVerb('fass'),
   'fehlen': createRegularVerb('fehl'),
   'feiern': createRegularVerb('feier'),
+  'ferngucken': createSeparableVerb('fern', 'guck', 'guck'),
+  'fernsehen': {
+    [Tense.PRAESENS]: { ich: 'sehe fern', du: 'siehst fern', er_sie_es: 'sieht fern', wir: 'sehen fern', ihr: 'seht fern', sie_Sie: 'sehen fern' },
+    [Tense.PRAETERITUM]: { ich: 'sah fern', du: 'sahst fern', er_sie_es: 'sah fern', wir: 'sahen fern', ihr: 'saht fern', sie_Sie: 'sahen fern' },
+    [Tense.PERFEKT]: { ich: 'habe ferngesehen', du: 'hast ferngesehen', er_sie_es: 'hat ferngesehen', wir: 'haben ferngesehen', ihr: 'habt ferngesehen', sie_Sie: 'haben ferngesehen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte ferngesehen', du: 'hattest ferngesehen', er_sie_es: 'hatte ferngesehen', wir: 'hatten ferngesehen', ihr: 'hattet ferngesehen', sie_Sie: 'hatten ferngesehen' },
+    [Tense.FUTUR_I]: { ich: 'werde fernsehen', du: 'wirst fernsehen', er_sie_es: 'wird fernsehen', wir: 'werden fernsehen', ihr: 'werdet fernsehen', sie_Sie: 'werden fernsehen' },
+  },
+  'festhalten': {
+    [Tense.PRAESENS]: { ich: 'halte fest', du: 'hältst fest', er_sie_es: 'hält fest', wir: 'halten fest', ihr: 'haltet fest', sie_Sie: 'halten fest' },
+    [Tense.PRAETERITUM]: { ich: 'hielt fest', du: 'hieltest fest', er_sie_es: 'hielt fest', wir: 'hielten fest', ihr: 'hieltet fest', sie_Sie: 'hielten fest' },
+    [Tense.PERFEKT]: { ich: 'habe festgehalten', du: 'hast festgehalten', er_sie_es: 'hat festgehalten', wir: 'haben festgehalten', ihr: 'habt festgehalten', sie_Sie: 'haben festgehalten' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte festgehalten', du: 'hattest festgehalten', er_sie_es: 'hatte festgehalten', wir: 'hatten festgehalten', ihr: 'hattet festgehalten', sie_Sie: 'hatten festgehalten' },
+    [Tense.FUTUR_I]: { ich: 'werde festhalten', du: 'wirst festhalten', er_sie_es: 'wird festhalten', wir: 'werden festhalten', ihr: 'werdet festhalten', sie_Sie: 'werden festhalten' },
+  },
+  'feststellen': createSeparableVerb('fest', 'stell', 'stell'),
   'finden': {
     [Tense.PRAESENS]: { ich: 'finde', du: 'findest', er_sie_es: 'findet', wir: 'finden', ihr: 'findet', sie_Sie: 'finden' },
     [Tense.PRAETERITUM]: { ich: 'fand', du: 'fandest', er_sie_es: 'fand', wir: 'fanden', ihr: 'fandet', sie_Sie: 'fanden' },
@@ -160,27 +579,59 @@ export const COMMON_VERBS_DB = {
     [Tense.PLUSQUAMPERFEKT]: { ich: 'war geflogen', du: 'warst geflogen', er_sie_es: 'war geflogen', wir: 'waren geflogen', ihr: 'wart geflogen', sie_Sie: 'waren geflogen' },
     [Tense.FUTUR_I]: { ich: 'werde fliegen', du: 'wirst fliegen', er_sie_es: 'wird fliegen', wir: 'werden fliegen', ihr: 'werdet fliegen', sie_Sie: 'werden fliegen' },
   },
-  'flüstern': createRegularVerb('flüster'),
-  'folgen': createRegularVerb('folg'),
+  'fliehen': {
+    [Tense.PRAESENS]: { ich: 'fliehe', du: 'fliehst', er_sie_es: 'flieht', wir: 'fliehen', ihr: 'flieht', sie_Sie: 'fliehen' },
+    [Tense.PRAETERITUM]: { ich: 'floh', du: 'flohst', er_sie_es: 'floh', wir: 'flohen', ihr: 'floht', sie_Sie: 'flohen' },
+    [Tense.PERFEKT]: { ich: 'bin geflohen', du: 'bist geflohen', er_sie_es: 'ist geflohen', wir: 'sind geflohen', ihr: 'seid geflohen', sie_Sie: 'sind geflohen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'war geflohen', du: 'warst geflohen', er_sie_es: 'war geflohen', wir: 'waren geflohen', ihr: 'wart geflohen', sie_Sie: 'waren geflohen' },
+    [Tense.FUTUR_I]: { ich: 'werde fliehen', du: 'wirst fliehen', er_sie_es: 'wird fliehen', wir: 'werden fliehen', ihr: 'werdet fliehen', sie_Sie: 'werden fliehen' },
+  },
+  'fließen': {
+    [Tense.PRAESENS]: { ich: 'fließe', du: 'fließt', er_sie_es: 'fließt', wir: 'fließen', ihr: 'fließt', sie_Sie: 'fließen' },
+    [Tense.PRAETERITUM]: { ich: 'floss', du: 'flossest', er_sie_es: 'floss', wir: 'flossen', ihr: 'flosst', sie_Sie: 'flossen' },
+    [Tense.PERFEKT]: { ich: 'ist geflossen', du: 'bist geflossen', er_sie_es: 'ist geflossen', wir: 'sind geflossen', ihr: 'seid geflossen', sie_Sie: 'sind geflossen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'war geflossen', du: 'warst geflossen', er_sie_es: 'war geflossen', wir: 'waren geflossen', ihr: 'wart geflossen', sie_Sie: 'waren geflossen' },
+    [Tense.FUTUR_I]: { ich: 'werde fließen', du: 'wirst fließen', er_sie_es: 'wird fließen', wir: 'werden fließen', ihr: 'werdet fließen', sie_Sie: 'werden fließen' },
+  },
   'fragen': createRegularVerb('frag'),
   'fressen': {
     [Tense.PRAESENS]: { ich: 'fresse', du: 'frisst', er_sie_es: 'frisst', wir: 'fressen', ihr: 'fresst', sie_Sie: 'fressen' },
     [Tense.PRAETERITUM]: { ich: 'fraß', du: 'fraßest', er_sie_es: 'fraß', wir: 'fraßen', ihr: 'fraßt', sie_Sie: 'fraßen' },
     [Tense.PERFEKT]: { ich: 'habe gefressen', du: 'hast gefressen', er_sie_es: 'hat gefressen', wir: 'haben gefressen', ihr: 'habt gefressen', sie_Sie: 'haben gefressen' },
     [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte gefressen', du: 'hattest gefressen', er_sie_es: 'hatte gefressen', wir: 'hatten gefressen', ihr: 'hattet gefressen', sie_Sie: 'hatten gefressen' },
-    [Tense.FUTUR_I]: { ich: 'werde fressen', du: 'wirst fressen', er_sie_es: 'wird fressen', wir: 'werden fressen', ihr: 'werdet fressen', sie_Sie: 'werden fressen' },
+    [Tense.FUTUR_I]: { ich: 'werde fressen', du: 'wirst fressen', er_sie_es: 'wird fressen', wir: 'fressen', ihr: 'werdet fressen', sie_Sie: 'werden fressen' },
   },
   'freuen': createRegularVerb('freu'),
+  'frieren': {
+    [Tense.PRAESENS]: { ich: 'friere', du: 'frierst', er_sie_es: 'friert', wir: 'frieren', ihr: 'friert', sie_Sie: 'frieren' },
+    [Tense.PRAETERITUM]: { ich: 'fror', du: 'frorst', er_sie_es: 'fror', wir: 'froren', ihr: 'frort', sie_Sie: 'froren' },
+    [Tense.PERFEKT]: { ich: 'habe gefroren', du: 'hast gefroren', er_sie_es: 'hat gefroren', wir: 'haben gefroren', ihr: 'habt gefroren', sie_Sie: 'haben gefroren' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte gefroren', du: 'hattest gefroren', er_sie_es: 'hatte gefroren', wir: 'hatten gefroren', ihr: 'hattet gefroren', sie_Sie: 'hatten gefroren' },
+    [Tense.FUTUR_I]: { ich: 'werde frieren', du: 'wirst frieren', er_sie_es: 'wird frieren', wir: 'werden frieren', ihr: 'werdet frieren', sie_Sie: 'werden frieren' },
+  },
+  'frühstücken': createRegularVerb('frühstück'),
   'fühlen': createRegularVerb('fühl'),
-  'fürchten': createRegularVerb('fürcht'),
-  'füttern': createRegularVerb('fütter'),
+  'führen': createRegularVerb('führ'),
+  'füllen': createRegularVerb('füll'),
+  'funkeln': createRegularVerb('funkel'),
+  'funktionieren': createRegularVerb('funktionier'),
   // --- G ---
+  'gähnen': createRegularVerb('gähn'),
+  'garantieren': createRegularVerb('garantier'),
   'geben': {
     [Tense.PRAESENS]: { ich: 'gebe', du: 'gibst', er_sie_es: 'gibt', wir: 'geben', ihr: 'gebt', sie_Sie: 'geben' },
     [Tense.PRAETERITUM]: { ich: 'gab', du: 'gabst', er_sie_es: 'gab', wir: 'gaben', ihr: 'gabt', sie_Sie: 'gaben' },
     [Tense.PERFEKT]: { ich: 'habe gegeben', du: 'hast gegeben', er_sie_es: 'hat gegeben', wir: 'haben gegeben', ihr: 'habt gegeben', sie_Sie: 'haben gegeben' },
     [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte gegeben', du: 'hattest gegeben', er_sie_es: 'hatte gegeben', wir: 'hatten gegeben', ihr: 'hattet gegeben', sie_Sie: 'hatten gegeben' },
     [Tense.FUTUR_I]: { ich: 'werde geben', du: 'wirst geben', er_sie_es: 'wird geben', wir: 'werden geben', ihr: 'werdet geben', sie_Sie: 'werden geben' },
+  },
+  'gebrauchen': createRegularVerb('gebrauch'),
+  'gefallen': {
+    [Tense.PRAESENS]: { ich: 'gefalle', du: 'gefällst', er_sie_es: 'gefällt', wir: 'gefallen', ihr: 'gefallt', sie_Sie: 'gefallen' },
+    [Tense.PRAETERITUM]: { ich: 'gefiel', du: 'gefielst', er_sie_es: 'gefiel', wir: 'gefielen', ihr: 'gefielt', sie_Sie: 'gefielen' },
+    [Tense.PERFEKT]: { ich: 'habe gefallen', du: 'hast gefallen', er_sie_es: 'hat gefallen', wir: 'haben gefallen', ihr: 'habt gefallen', sie_Sie: 'haben gefallen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte gefallen', du: 'hattest gefallen', er_sie_es: 'hatte gefallen', wir: 'hatten gefallen', ihr: 'hattet gefallen', sie_Sie: 'hatten gefallen' },
+    [Tense.FUTUR_I]: { ich: 'werde gefallen', du: 'wirst gefallen', er_sie_es: 'wird gefallen', wir: 'werden gefallen', ihr: 'werdet gefallen', sie_Sie: 'werden gefallen' },
   },
   'gehen': {
     [Tense.PRAESENS]: { ich: 'gehe', du: 'gehst', er_sie_es: 'geht', wir: 'gehen', ihr: 'geht', sie_Sie: 'gehen' },
@@ -190,6 +641,34 @@ export const COMMON_VERBS_DB = {
     [Tense.FUTUR_I]: { ich: 'werde gehen', du: 'wirst gehen', er_sie_es: 'wird gehen', wir: 'werden gehen', ihr: 'werdet gehen', sie_Sie: 'werden gehen' },
   },
   'gehören': createRegularVerb('gehör'),
+  'gelingen': { // Stark (unpersönlicher Gebrauch möglich, hier vollständig)
+    [Tense.PRAESENS]: { ich: 'gelinge', du: 'gelingst', er_sie_es: 'gelingt', wir: 'gelingen', ihr: 'gelingt', sie_Sie: 'gelingen' },
+    [Tense.PRAETERITUM]: { ich: 'gelang', du: 'gelangst', er_sie_es: 'gelang', wir: 'gelangen', ihr: 'gelangt', sie_Sie: 'gelangen' },
+    [Tense.PERFEKT]: { ich: 'bin gelungen', du: 'bist gelungen', er_sie_es: 'ist gelungen', wir: 'sind gelungen', ihr: 'seid gelungen', sie_Sie: 'sind gelungen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'war gelungen', du: 'warst gelungen', er_sie_es: 'war gelungen', wir: 'waren gelungen', ihr: 'wart gelungen', sie_Sie: 'waren gelungen' },
+    [Tense.FUTUR_I]: { ich: 'werde gelingen', du: 'wirst gelingen', er_sie_es: 'wird gelingen', wir: 'werden gelingen', ihr: 'werdet gelingen', sie_Sie: 'werden gelingen' },
+  },
+  'gelten': {
+    [Tense.PRAESENS]: { ich: 'gelte', du: 'giltst', er_sie_es: 'gilt', wir: 'gelten', ihr: 'geltet', sie_Sie: 'gelten' },
+    [Tense.PRAETERITUM]: { ich: 'galt', du: 'galtest', er_sie_es: 'galt', wir: 'galten', ihr: 'galtet', sie_Sie: 'galten' },
+    [Tense.PERFEKT]: { ich: 'habe gegolten', du: 'hast gegolten', er_sie_es: 'hat gegolten', wir: 'haben gegolten', ihr: 'habt gegolten', sie_Sie: 'haben gegolten' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte gegolten', du: 'hattest gegolten', er_sie_es: 'hatte gegolten', wir: 'hatten gegolten', ihr: 'hattet gegolten', sie_Sie: 'hatten gegolten' },
+    [Tense.FUTUR_I]: { ich: 'werde gelten', du: 'wirst gelten', er_sie_es: 'wird gelten', wir: 'werden gelten', ihr: 'werdet gelten', sie_Sie: 'werden gelten' },
+  },
+  'genießen': {
+    [Tense.PRAESENS]: { ich: 'genieße', du: 'genießt', er_sie_es: 'genießt', wir: 'genießen', ihr: 'genießt', sie_Sie: 'genießen' },
+    [Tense.PRAETERITUM]: { ich: 'genoss', du: 'genossest', er_sie_es: 'genoss', wir: 'genossen', ihr: 'genosst', sie_Sie: 'genossen' },
+    [Tense.PERFEKT]: { ich: 'habe genossen', du: 'hast genossen', er_sie_es: 'hat genossen', wir: 'haben genossen', ihr: 'habt genossen', sie_Sie: 'haben genossen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte genossen', du: 'hattest genossen', er_sie_es: 'hatte genossen', wir: 'hatten genossen', ihr: 'hattet genossen', sie_Sie: 'hatten genossen' },
+    [Tense.FUTUR_I]: { ich: 'werde genießen', du: 'wirst genießen', er_sie_es: 'wird genießen', wir: 'werden genießen', ihr: 'werdet genießen', sie_Sie: 'werden genießen' },
+  },
+  'geschehen': { // Unpersönlich (es geschieht)
+    [Tense.PRAESENS]: { ich: 'geschehe', du: 'geschiehst', er_sie_es: 'geschieht', wir: 'geschehen', ihr: 'gescheht', sie_Sie: 'geschehen' },
+    [Tense.PRAETERITUM]: { ich: 'geschah', du: 'geschahst', er_sie_es: 'geschah', wir: 'geschahen', ihr: 'geschaht', sie_Sie: 'geschahen' },
+    [Tense.PERFEKT]: { ich: 'bin geschehen', du: 'bist geschehen', er_sie_es: 'ist geschehen', wir: 'sind geschehen', ihr: 'seid geschehen', sie_Sie: 'sind geschehen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'war geschehen', du: 'warst geschehen', er_sie_es: 'war geschehen', wir: 'waren geschehen', ihr: 'wart geschehen', sie_Sie: 'waren geschehen' },
+    [Tense.FUTUR_I]: { ich: 'werde geschehen', du: 'wirst geschehen', er_sie_es: 'wird geschehen', wir: 'werden geschehen', ihr: 'werdet geschehen', sie_Sie: 'werden geschehen' },
+  },
   'gewinnen': {
     [Tense.PRAESENS]: { ich: 'gewinne', du: 'gewinnst', er_sie_es: 'gewinnt', wir: 'gewinnen', ihr: 'gewinnt', sie_Sie: 'gewinnen' },
     [Tense.PRAETERITUM]: { ich: 'gewann', du: 'gewannst', er_sie_es: 'gewann', wir: 'gewannen', ihr: 'gewannt', sie_Sie: 'gewannen' },
@@ -197,7 +676,40 @@ export const COMMON_VERBS_DB = {
     [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte gewonnen', du: 'hattest gewonnen', er_sie_es: 'hatte gewonnen', wir: 'hatten gewonnen', ihr: 'hattet gewonnen', sie_Sie: 'hatten gewonnen' },
     [Tense.FUTUR_I]: { ich: 'werde gewinnen', du: 'wirst gewinnen', er_sie_es: 'wird gewinnen', wir: 'werden gewinnen', ihr: 'werdet gewinnen', sie_Sie: 'werden gewinnen' },
   },
+  'gewöhnen': createRegularVerb('gewöhn'),
+  'gießen': {
+    [Tense.PRAESENS]: { ich: 'gieße', du: 'gießt', er_sie_es: 'gießt', wir: 'gießen', ihr: 'gießt', sie_Sie: 'gießen' },
+    [Tense.PRAETERITUM]: { ich: 'goss', du: 'gossest', er_sie_es: 'goss', wir: 'gossen', ihr: 'gosst', sie_Sie: 'gossen' },
+    [Tense.PERFEKT]: { ich: 'habe gegossen', du: 'hast gegossen', er_sie_es: 'hat gegossen', wir: 'haben gegossen', ihr: 'habt gegossen', sie_Sie: 'haben gegossen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte gegossen', du: 'hattest gegossen', er_sie_es: 'hatte gegossen', wir: 'hatten gegossen', ihr: 'hattet gegossen', sie_Sie: 'hatten gegossen' },
+    [Tense.FUTUR_I]: { ich: 'werde gießen', du: 'wirst gießen', er_sie_es: 'wird gießen', wir: 'werden gießen', ihr: 'werdet gießen', sie_Sie: 'werden gießen' },
+  },
   'glauben': createRegularVerb('glaub'),
+  'gleiten': {
+    [Tense.PRAESENS]: { ich: 'gleite', du: 'gleitest', er_sie_es: 'gleitet', wir: 'gleiten', ihr: 'gleitet', sie_Sie: 'gleiten' },
+    [Tense.PRAETERITUM]: { ich: 'glitt', du: 'glittest', er_sie_es: 'glitt', wir: 'glitten', ihr: 'glittet', sie_Sie: 'glitten' },
+    [Tense.PERFEKT]: { ich: 'bin geglitten', du: 'bist geglitten', er_sie_es: 'ist geglitten', wir: 'sind geglitten', ihr: 'seid geglitten', sie_Sie: 'sind geglitten' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'war geglitten', du: 'warst geglitten', er_sie_es: 'war geglitten', wir: 'waren geglitten', ihr: 'wart geglitten', sie_Sie: 'waren geglitten' },
+    [Tense.FUTUR_I]: { ich: 'werde gleiten', du: 'wirst gleiten', er_sie_es: 'wird gleiten', wir: 'werden gleiten', ihr: 'werdet gleiten', sie_Sie: 'werden gleiten' },
+  },
+  'graben': {
+    [Tense.PRAESENS]: { ich: 'grabe', du: 'gräbst', er_sie_es: 'gräbt', wir: 'graben', ihr: 'grabt', sie_Sie: 'graben' },
+    [Tense.PRAETERITUM]: { ich: 'grub', du: 'grubst', er_sie_es: 'grub', wir: 'gruben', ihr: 'grubt', sie_Sie: 'gruben' },
+    [Tense.PERFEKT]: { ich: 'habe gegraben', du: 'hast gegraben', er_sie_es: 'hat gegraben', wir: 'haben gegraben', ihr: 'habt gegraben', sie_Sie: 'haben gegraben' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte gegraben', du: 'hattest gegraben', er_sie_es: 'hatte gegraben', wir: 'hatten gegraben', ihr: 'hattet gegraben', sie_Sie: 'hatten gegraben' },
+    [Tense.FUTUR_I]: { ich: 'werde graben', du: 'wirst graben', er_sie_es: 'wird graben', wir: 'werden graben', ihr: 'werdet graben', sie_Sie: 'werden graben' },
+  },
+  'gratulieren': createRegularVerb('gratulier'),
+  'greifen': {
+    [Tense.PRAESENS]: { ich: 'greife', du: 'greifst', er_sie_es: 'greift', wir: 'greifen', ihr: 'greift', sie_Sie: 'greifen' },
+    [Tense.PRAETERITUM]: { ich: 'griff', du: 'griffst', er_sie_es: 'griff', wir: 'griffen', ihr: 'grifft', sie_Sie: 'griffen' },
+    [Tense.PERFEKT]: { ich: 'habe gegriffen', du: 'hast gegriffen', er_sie_es: 'hat gegriffen', wir: 'haben gegriffen', ihr: 'habt gegriffen', sie_Sie: 'haben gegriffen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte gegriffen', du: 'hattest gegriffen', er_sie_es: 'hatte gegriffen', wir: 'hatten gegriffen', ihr: 'hattet gegriffen', sie_Sie: 'hatten gegriffen' },
+    [Tense.FUTUR_I]: { ich: 'werde greifen', du: 'wirst greifen', er_sie_es: 'wird greifen', wir: 'werden greifen', ihr: 'werdet greifen', sie_Sie: 'werden greifen' },
+  },
+  'grillen': createRegularVerb('grill'),
+  'gründen': createRegularVerb('gründ'),
+  'grüßen': createRegularVerb('grüß'),
   // --- H ---
   'haben': {
     [Tense.PRAESENS]: { ich: 'habe', du: 'hast', er_sie_es: 'hat', wir: 'haben', ihr: 'habt', sie_Sie: 'haben' },
@@ -208,11 +720,29 @@ export const COMMON_VERBS_DB = {
   },
   'halten': {
     [Tense.PRAESENS]: { ich: 'halte', du: 'hältst', er_sie_es: 'hält', wir: 'halten', ihr: 'haltet', sie_Sie: 'halten' },
-    [Tense.PRAETERITUM]: { ich: 'hielt', du: 'hieltst', er_sie_es: 'hielt', wir: 'hielten', ihr: 'hieltet', sie_Sie: 'hielten' },
+    [Tense.PRAETERITUM]: { ich: 'hielt', du: 'hieltest', er_sie_es: 'hielt', wir: 'hielten', ihr: 'hieltet', sie_Sie: 'hielten' },
     [Tense.PERFEKT]: { ich: 'habe gehalten', du: 'hast gehalten', er_sie_es: 'hat gehalten', wir: 'haben gehalten', ihr: 'habt gehalten', sie_Sie: 'haben gehalten' },
     [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte gehalten', du: 'hattest gehalten', er_sie_es: 'hatte gehalten', wir: 'hatten gehalten', ihr: 'hattet gehalten', sie_Sie: 'hatten gehalten' },
     [Tense.FUTUR_I]: { ich: 'werde halten', du: 'wirst halten', er_sie_es: 'wird halten', wir: 'werden halten', ihr: 'werdet halten', sie_Sie: 'werden halten' },
   },
+  'handeln': createRegularVerb('handel'),
+  'hängen': { // Kann schwach oder stark sein. Hier primär schwach (aufhängen), aber oft stark gemischt. Hier stark für "in der Luft hängen"
+    [Tense.PRAESENS]: { ich: 'hänge', du: 'hängst', er_sie_es: 'hängt', wir: 'hängen', ihr: 'hängt', sie_Sie: 'hängen' },
+    [Tense.PRAETERITUM]: { ich: 'hing', du: 'hingst', er_sie_es: 'hing', wir: 'hingen', ihr: 'hingt', sie_Sie: 'hingen' },
+    [Tense.PERFEKT]: { ich: 'habe gehangen', du: 'hast gehangen', er_sie_es: 'hat gehangen', wir: 'haben gehangen', ihr: 'habt gehangen', sie_Sie: 'haben gehangen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte gehangen', du: 'hattest gehangen', er_sie_es: 'hatte gehangen', wir: 'hatten gehangen', ihr: 'hattet gehangen', sie_Sie: 'hatten gehangen' },
+    [Tense.FUTUR_I]: { ich: 'werde hängen', du: 'wirst hängen', er_sie_es: 'wird hängen', wir: 'werden hängen', ihr: 'werdet hängen', sie_Sie: 'werden hängen' },
+  },
+  'hassen': createRegularVerb('hass'),
+  'hauen': createRegularVerb('hau'),
+  'heben': {
+    [Tense.PRAESENS]: { ich: 'hebe', du: 'hebst', er_sie_es: 'hebt', wir: 'heben', ihr: 'hebt', sie_Sie: 'heben' },
+    [Tense.PRAETERITUM]: { ich: 'hob', du: 'hobst', er_sie_es: 'hob', wir: 'hoben', ihr: 'hobt', sie_Sie: 'hoben' },
+    [Tense.PERFEKT]: { ich: 'habe gehoben', du: 'hast gehoben', er_sie_es: 'hat gehoben', wir: 'haben gehoben', ihr: 'habt gehoben', sie_Sie: 'haben gehoben' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte gehoben', du: 'hattest gehoben', er_sie_es: 'hatte gehoben', wir: 'hatten gehoben', ihr: 'hattet gehoben', sie_Sie: 'hatten gehoben' },
+    [Tense.FUTUR_I]: { ich: 'werde heben', du: 'wirst heben', er_sie_es: 'wird heben', wir: 'werden heben', ihr: 'werdet heben', sie_Sie: 'werden heben' },
+  },
+  'heiraten': createRegularVerb('heirat'),
   'heißen': {
     [Tense.PRAESENS]: { ich: 'heiße', du: 'heißt', er_sie_es: 'heißt', wir: 'heißen', ihr: 'heißt', sie_Sie: 'heißen' },
     [Tense.PRAETERITUM]: { ich: 'hieß', du: 'hießest', er_sie_es: 'hieß', wir: 'hießen', ihr: 'hießt', sie_Sie: 'hießen' },
@@ -227,14 +757,41 @@ export const COMMON_VERBS_DB = {
     [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte geholfen', du: 'hattest geholfen', er_sie_es: 'hatte geholfen', wir: 'hatten geholfen', ihr: 'hattet geholfen', sie_Sie: 'hatten geholfen' },
     [Tense.FUTUR_I]: { ich: 'werde helfen', du: 'wirst helfen', er_sie_es: 'wird helfen', wir: 'werden helfen', ihr: 'werdet helfen', sie_Sie: 'werden helfen' },
   },
+  'herstellen': createSeparableVerb('her', 'stell', 'stell'),
   'hoffen': createRegularVerb('hoff'),
   'holen': createRegularVerb('hol'),
   'hören': createRegularVerb('hör'),
   'hüpfen': createRegularVerb('hüpf'),
+  'husten': createRegularVerb('hust'),
+  // --- I ---
+  'ignorieren': createRegularVerb('ignorier'),
+  'impfen': createRegularVerb('impf'),
+  'importieren': createRegularVerb('importier'),
+  'informieren': createRegularVerb('informier'),
+  'inhalieren': createRegularVerb('inhalier'),
+  'innehalten': {
+    [Tense.PRAESENS]: { ich: 'halte inne', du: 'hältst inne', er_sie_es: 'hält inne', wir: 'halten inne', ihr: 'haltet inne', sie_Sie: 'halten inne' },
+    [Tense.PRAETERITUM]: { ich: 'hielt inne', du: 'hieltest inne', er_sie_es: 'hielt inne', wir: 'hielten inne', ihr: 'hieltet inne', sie_Sie: 'hielten inne' },
+    [Tense.PERFEKT]: { ich: 'habe innegehalten', du: 'hast innegehalten', er_sie_es: 'hat innegehalten', wir: 'haben innegehalten', ihr: 'habt innegehalten', sie_Sie: 'haben innegehalten' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte innegehalten', du: 'hattest innegehalten', er_sie_es: 'hatte innegehalten', wir: 'hatten innegehalten', ihr: 'hattet innegehalten', sie_Sie: 'hatten innegehalten' },
+    [Tense.FUTUR_I]: { ich: 'werde innehalten', du: 'wirst innehalten', er_sie_es: 'wird innehalten', wir: 'werden innehalten', ihr: 'werdet innehalten', sie_Sie: 'werden innehalten' },
+  },
+  'installieren': createRegularVerb('installier'),
+  'integrieren': createRegularVerb('integrier'),
+  'interessieren': createRegularVerb('interessier'),
+  'investieren': createRegularVerb('investier'),
+  'irren': createRegularVerb('irr'),
+  'isolieren': createRegularVerb('isolier'),
+  // --- J ---
+  'jagen': createRegularVerb('jag'),
+  'jammern': createRegularVerb('jammer'),
+  'joggen': createRegularVerb('jogg'),
+  'jonglieren': createRegularVerb('jonglier'),
+  'jubeln': createRegularVerb('jubel'),
   // --- K ---
   'kämmen': createRegularVerb('kämm'),
-  'kaufen': createRegularVerb('kauf'),
   'kauen': createRegularVerb('kau'),
+  'kaufen': createRegularVerb('kauf'),
   'kehren': createRegularVerb('kehr'),
   'kennen': {
     [Tense.PRAESENS]: { ich: 'kenne', du: 'kennst', er_sie_es: 'kennt', wir: 'kennen', ihr: 'kennt', sie_Sie: 'kennen' },
@@ -294,11 +851,10 @@ export const COMMON_VERBS_DB = {
     [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte gelegen', du: 'hattest gelegen', er_sie_es: 'hatte gelegen', wir: 'hatten gelegen', ihr: 'hattet gelegen', sie_Sie: 'hatten gelegen' },
     [Tense.FUTUR_I]: { ich: 'werde liegen', du: 'wirst liegen', er_sie_es: 'wird liegen', wir: 'werden liegen', ihr: 'werdet liegen', sie_Sie: 'werden liegen' },
   },
-  'lächeln': createRegularVerb('lächel'),
   // --- M ---
   'machen': createRegularVerb('mach'),
-  'malen': createRegularVerb('mal'),
   'mähen': createRegularVerb('mäh'),
+  'malen': createRegularVerb('mal'),
   'mögen': {
     [Tense.PRAESENS]: { ich: 'mag', du: 'magst', er_sie_es: 'mag', wir: 'mögen', ihr: 'mögt', sie_Sie: 'mögen' },
     [Tense.PRAETERITUM]: { ich: 'mochte', du: 'mochtest', er_sie_es: 'mochte', wir: 'mochten', ihr: 'mochtet', sie_Sie: 'mochten' },
@@ -330,10 +886,16 @@ export const COMMON_VERBS_DB = {
     [Tense.FUTUR_I]: { ich: 'werde nennen', du: 'wirst nennen', er_sie_es: 'wird nennen', wir: 'werden nennen', ihr: 'werdet nennen', sie_Sie: 'werden nennen' },
   },
   'niesen': createRegularVerb('nies'),
-  // --- O ---
+  // --- Ö ---
   'öffnen': createRegularVerb('öffn'),
+  // --- O ---
+  'operieren': createRegularVerb('operier'),
+  'ordnen': createRegularVerb('ordn'),
+  'organisieren': createRegularVerb('organisier'),
   // --- P ---
   'packen': createRegularVerb('pack'),
+  'parken': createRegularVerb('park'),
+  'passen': createRegularVerb('pass'),
   'passieren': createRegularVerb('passier'),
   'pfeifen': {
     [Tense.PRAESENS]: { ich: 'pfeife', du: 'pfeifst', er_sie_es: 'pfeift', wir: 'pfeifen', ihr: 'pfeift', sie_Sie: 'pfeifen' },
@@ -342,17 +904,48 @@ export const COMMON_VERBS_DB = {
     [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte gepfiffen', du: 'hattest gepfiffen', er_sie_es: 'hatte gepfiffen', wir: 'hatten gepfiffen', ihr: 'hattet gepfiffen', sie_Sie: 'hatten gepfiffen' },
     [Tense.FUTUR_I]: { ich: 'werde pfeifen', du: 'wirst pfeifen', er_sie_es: 'wird pfeifen', wir: 'werden pfeifen', ihr: 'werdet pfeifen', sie_Sie: 'werden pfeifen' },
   },
+  'pflanzen': createRegularVerb('pflanz'),
+  'pflegen': createRegularVerb('pfleg'),
   'planen': createRegularVerb('plan'),
   'probieren': createRegularVerb('probier'),
+  'prüfen': createRegularVerb('prüf'),
   'putzen': createRegularVerb('putz'),
   // --- Q ---
   'quaken': createRegularVerb('quak'),
   'quälen': createRegularVerb('quäl'),
+  'qualmen': createRegularVerb('qualm'),
   'quatschen': createRegularVerb('quatsch'),
   // --- R ---
+  'radfahren': {
+    [Tense.PRAESENS]: { ich: 'fahre rad', du: 'fährst rad', er_sie_es: 'fährt rad', wir: 'fahren rad', ihr: 'fahrt rad', sie_Sie: 'fahren rad' },
+    [Tense.PRAETERITUM]: { ich: 'fuhr rad', du: 'fuhrst rad', er_sie_es: 'fuhr rad', wir: 'fuhren rad', ihr: 'fuhrt rad', sie_Sie: 'fuhren rad' },
+    [Tense.PERFEKT]: { ich: 'bin radgefahren', du: 'bist radgefahren', er_sie_es: 'ist radgefahren', wir: 'sind radgefahren', ihr: 'seid radgefahren', sie_Sie: 'sind radgefahren' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'war radgefahren', du: 'warst radgefahren', er_sie_es: 'war radgefahren', wir: 'waren radgefahren', ihr: 'wart radgefahren', sie_Sie: 'waren radgefahren' },
+    [Tense.FUTUR_I]: { ich: 'werde radfahren', du: 'wirst radfahren', er_sie_es: 'wird radfahren', wir: 'werden radfahren', ihr: 'werdet radfahren', sie_Sie: 'werden radfahren' },
+  },
+  'raten': {
+    [Tense.PRAESENS]: { ich: 'rate', du: 'rätst', er_sie_es: 'rät', wir: 'raten', ihr: 'ratet', sie_Sie: 'raten' },
+    [Tense.PRAETERITUM]: { ich: 'riet', du: 'rietest', er_sie_es: 'riet', wir: 'rieten', ihr: 'rietet', sie_Sie: 'rieten' },
+    [Tense.PERFEKT]: { ich: 'habe geraten', du: 'hast geraten', er_sie_es: 'hat geraten', wir: 'haben geraten', ihr: 'habt geraten', sie_Sie: 'haben geraten' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte geraten', du: 'hattest geraten', er_sie_es: 'hatte geraten', wir: 'hatten geraten', ihr: 'hattet geraten', sie_Sie: 'hatten geraten' },
+    [Tense.FUTUR_I]: { ich: 'werde raten', du: 'wirst raten', er_sie_es: 'wird raten', wir: 'werden raten', ihr: 'werdet raten', sie_Sie: 'werden raten' },
+  },
+  'rauchen': createRegularVerb('rauch'),
+  'reagieren': createRegularVerb('reagier'),
+  'realisieren': createRegularVerb('realisier'),
+  'recherchieren': createRegularVerb('recherchier'),
+  'rechnen': createRegularVerb('rechn'),
   'reden': createRegularVerb('red'),
   'regnen': createRegularVerb('regn'),
-  'rechnen': createRegularVerb('rechn'),
+  'reiben': {
+    [Tense.PRAESENS]: { ich: 'reibe', du: 'reibst', er_sie_es: 'reibt', wir: 'reiben', ihr: 'reibt', sie_Sie: 'reiben' },
+    [Tense.PRAETERITUM]: { ich: 'rieb', du: 'riebst', er_sie_es: 'rieb', wir: 'rieben', ihr: 'riebt', sie_Sie: 'rieben' },
+    [Tense.PERFEKT]: { ich: 'habe gerieben', du: 'hast gerieben', er_sie_es: 'hat gerieben', wir: 'haben gerieben', ihr: 'habt gerieben', sie_Sie: 'haben gerieben' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte gerieben', du: 'hattest gerieben', er_sie_es: 'hatte gerieben', wir: 'hatten gerieben', ihr: 'hattet gerieben', sie_Sie: 'hatten gerieben' },
+    [Tense.FUTUR_I]: { ich: 'werde reiben', du: 'wirst reiben', er_sie_es: 'wird reiben', wir: 'werden reiben', ihr: 'werdet reiben', sie_Sie: 'werden reiben' },
+  },
+  'reichen': createRegularVerb('reich'),
+  'reinigen': createRegularVerb('reinig'),
   'reisen': createRegularVerb('reis'),
   'reiten': {
     [Tense.PRAESENS]: { ich: 'reite', du: 'reitest', er_sie_es: 'reitet', wir: 'reiten', ihr: 'reitet', sie_Sie: 'reiten' },
@@ -368,6 +961,17 @@ export const COMMON_VERBS_DB = {
     [Tense.PLUSQUAMPERFEKT]: { ich: 'war gerannt', du: 'warst gerannt', er_sie_es: 'war gerannt', wir: 'waren gerannt', ihr: 'wart gerannt', sie_Sie: 'waren gerannt' },
     [Tense.FUTUR_I]: { ich: 'werde rennen', du: 'wirst rennen', er_sie_es: 'wird rennen', wir: 'werden rennen', ihr: 'werdet rennen', sie_Sie: 'werden rennen' },
   },
+  'reparieren': createRegularVerb('reparier'),
+  'reservieren': createRegularVerb('reservier'),
+  'retten': createRegularVerb('rett'),
+  'riechen': {
+    [Tense.PRAESENS]: { ich: 'rieche', du: 'riechst', er_sie_es: 'riecht', wir: 'riechen', ihr: 'riecht', sie_Sie: 'riechen' },
+    [Tense.PRAETERITUM]: { ich: 'roch', du: 'rochst', er_sie_es: 'roch', wir: 'rochen', ihr: 'rocht', sie_Sie: 'rochen' },
+    [Tense.PERFEKT]: { ich: 'habe gerochen', du: 'hast gerochen', er_sie_es: 'hat gerochen', wir: 'haben gerochen', ihr: 'habt gerochen', sie_Sie: 'haben gerochen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte gerochen', du: 'hattest gerochen', er_sie_es: 'hatte gerochen', wir: 'hatten gerochen', ihr: 'hattet gerochen', sie_Sie: 'hatten gerochen' },
+    [Tense.FUTUR_I]: { ich: 'werde riechen', du: 'wirst riechen', er_sie_es: 'wird riechen', wir: 'werden riechen', ihr: 'werdet riechen', sie_Sie: 'werden riechen' },
+  },
+  'rollen': createRegularVerb('roll'),
   'rufen': {
     [Tense.PRAESENS]: { ich: 'rufe', du: 'rufst', er_sie_es: 'ruft', wir: 'rufen', ihr: 'ruft', sie_Sie: 'rufen' },
     [Tense.PRAETERITUM]: { ich: 'rief', du: 'riefst', er_sie_es: 'rief', wir: 'riefen', ihr: 'rieft', sie_Sie: 'riefen' },
@@ -377,6 +981,8 @@ export const COMMON_VERBS_DB = {
   },
   // --- S ---
   'sagen': createRegularVerb('sag'),
+  'sammeln': createRegularVerb('sammel'),
+  'schauen': createRegularVerb('schau'),
   'scheinen': {
     [Tense.PRAESENS]: { ich: 'scheine', du: 'scheinst', er_sie_es: 'scheint', wir: 'scheinen', ihr: 'scheint', sie_Sie: 'scheinen' },
     [Tense.PRAETERITUM]: { ich: 'schien', du: 'schienst', er_sie_es: 'schien', wir: 'schienen', ihr: 'schient', sie_Sie: 'schienen' },
@@ -384,6 +990,23 @@ export const COMMON_VERBS_DB = {
     [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte geschienen', du: 'hattest geschienen', er_sie_es: 'hatte geschienen', wir: 'hatten geschienen', ihr: 'hattet geschienen', sie_Sie: 'hatten geschienen' },
     [Tense.FUTUR_I]: { ich: 'werde scheinen', du: 'wirst scheinen', er_sie_es: 'wird scheinen', wir: 'werden scheinen', ihr: 'werdet scheinen', sie_Sie: 'werden scheinen' },
   },
+  'schenken': createRegularVerb('schenk'),
+  'schicken': createRegularVerb('schick'),
+  'schieben': {
+    [Tense.PRAESENS]: { ich: 'schiebe', du: 'schiebst', er_sie_es: 'schiebt', wir: 'schieben', ihr: 'schiebt', sie_Sie: 'schieben' },
+    [Tense.PRAETERITUM]: { ich: 'schob', du: 'schobst', er_sie_es: 'schob', wir: 'schoben', ihr: 'schobt', sie_Sie: 'schoben' },
+    [Tense.PERFEKT]: { ich: 'habe geschoben', du: 'hast geschoben', er_sie_es: 'hat geschoben', wir: 'haben geschoben', ihr: 'habt geschoben', sie_Sie: 'haben geschoben' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte geschoben', du: 'hattest geschoben', er_sie_es: 'hatte geschoben', wir: 'hatten geschoben', ihr: 'hattet geschoben', sie_Sie: 'hatten geschoben' },
+    [Tense.FUTUR_I]: { ich: 'werde schieben', du: 'wirst schieben', er_sie_es: 'wird schieben', wir: 'werden schieben', ihr: 'werdet schieben', sie_Sie: 'werden schieben' },
+  },
+  'schießen': {
+    [Tense.PRAESENS]: { ich: 'schieße', du: 'schießt', er_sie_es: 'schießt', wir: 'schießen', ihr: 'schießt', sie_Sie: 'schießen' },
+    [Tense.PRAETERITUM]: { ich: 'schoss', du: 'schossest', er_sie_es: 'schoss', wir: 'schossen', ihr: 'schosst', sie_Sie: 'schossen' },
+    [Tense.PERFEKT]: { ich: 'habe geschossen', du: 'hast geschossen', er_sie_es: 'hat geschossen', wir: 'haben geschossen', ihr: 'habt geschossen', sie_Sie: 'haben geschossen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte geschossen', du: 'hattest geschossen', er_sie_es: 'hatte geschossen', wir: 'hatten geschossen', ihr: 'hattet geschossen', sie_Sie: 'hatten geschossen' },
+    [Tense.FUTUR_I]: { ich: 'werde schießen', du: 'wirst schießen', er_sie_es: 'wird schießen', wir: 'werden schießen', ihr: 'werdet schießen', sie_Sie: 'werden schießen' },
+  },
+  'schimpfen': createRegularVerb('schimpf'),
   'schlafen': {
     [Tense.PRAESENS]: { ich: 'schlafe', du: 'schläfst', er_sie_es: 'schläft', wir: 'schlafen', ihr: 'schlaft', sie_Sie: 'schlafen' },
     [Tense.PRAETERITUM]: { ich: 'schlief', du: 'schliefst', er_sie_es: 'schlief', wir: 'schliefen', ihr: 'schlieft', sie_Sie: 'schliefen' },
@@ -406,6 +1029,14 @@ export const COMMON_VERBS_DB = {
     [Tense.FUTUR_I]: { ich: 'werde schließen', du: 'wirst schließen', er_sie_es: 'wird schließen', wir: 'werden schließen', ihr: 'werdet schließen', sie_Sie: 'werden schließen' },
   },
   'schmecken': createRegularVerb('schmeck'),
+  'schmelzen': {
+    [Tense.PRAESENS]: { ich: 'schmelze', du: 'schmilzt', er_sie_es: 'schmilzt', wir: 'schmelzen', ihr: 'schmelzt', sie_Sie: 'schmelzen' },
+    [Tense.PRAETERITUM]: { ich: 'schmolz', du: 'schmolzest', er_sie_es: 'schmolz', wir: 'schmolzen', ihr: 'schmolzt', sie_Sie: 'schmolzen' },
+    [Tense.PERFEKT]: { ich: 'bin geschmolzen', du: 'bist geschmolzen', er_sie_es: 'ist geschmolzen', wir: 'sind geschmolzen', ihr: 'seid geschmolzen', sie_Sie: 'sind geschmolzen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'war geschmolzen', du: 'warst geschmolzen', er_sie_es: 'war geschmolzen', wir: 'waren geschmolzen', ihr: 'wart geschmolzen', sie_Sie: 'waren geschmolzen' },
+    [Tense.FUTUR_I]: { ich: 'werde schmelzen', du: 'wirst schmelzen', er_sie_es: 'wird schmelzen', wir: 'werden schmelzen', ihr: 'werdet schmelzen', sie_Sie: 'werden schmelzen' },
+  },
+  'schmücken': createRegularVerb('schmück'),
   'schneiden': {
     [Tense.PRAESENS]: { ich: 'schneide', du: 'schneidest', er_sie_es: 'schneidet', wir: 'schneiden', ihr: 'schneidet', sie_Sie: 'schneiden' },
     [Tense.PRAETERITUM]: { ich: 'schnitt', du: 'schnittest', er_sie_es: 'schnitt', wir: 'schnitten', ihr: 'schnittet', sie_Sie: 'schnitten' },
@@ -413,6 +1044,7 @@ export const COMMON_VERBS_DB = {
     [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte geschnitten', du: 'hattest geschnitten', er_sie_es: 'hatte geschnitten', wir: 'hatten geschnitten', ihr: 'hattet geschnitten', sie_Sie: 'hatten geschnitten' },
     [Tense.FUTUR_I]: { ich: 'werde schneiden', du: 'wirst schneiden', er_sie_es: 'wird schneiden', wir: 'werden schneiden', ihr: 'werdet schneiden', sie_Sie: 'werden schneiden' },
   },
+  'schneien': createRegularVerb('schnei'),
   'schreiben': {
     [Tense.PRAESENS]: { ich: 'schreibe', du: 'schreibst', er_sie_es: 'schreibt', wir: 'schreiben', ihr: 'schreibt', sie_Sie: 'schreiben' },
     [Tense.PRAETERITUM]: { ich: 'schrieb', du: 'schriebst', er_sie_es: 'schrieb', wir: 'schrieben', ihr: 'schriebt', sie_Sie: 'schrieben' },
@@ -427,6 +1059,14 @@ export const COMMON_VERBS_DB = {
     [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte geschrien', du: 'hattest geschrien', er_sie_es: 'hatte geschrien', wir: 'hatten geschrien', ihr: 'hattet geschrien', sie_Sie: 'hatten geschrien' },
     [Tense.FUTUR_I]: { ich: 'werde schreien', du: 'wirst schreien', er_sie_es: 'wird schreien', wir: 'werden schreien', ihr: 'werdet schreien', sie_Sie: 'werden schreien' },
   },
+  'schützen': createRegularVerb('schütz'),
+  'schweigen': {
+    [Tense.PRAESENS]: { ich: 'schweige', du: 'schweigst', er_sie_es: 'schweigt', wir: 'schweigen', ihr: 'schweigt', sie_Sie: 'schweigen' },
+    [Tense.PRAETERITUM]: { ich: 'schwieg', du: 'schwiegst', er_sie_es: 'schwieg', wir: 'schwiegen', ihr: 'schwiegt', sie_Sie: 'schwiegen' },
+    [Tense.PERFEKT]: { ich: 'habe geschwiegen', du: 'hast geschwiegen', er_sie_es: 'hat geschwiegen', wir: 'haben geschwiegen', ihr: 'habt geschwiegen', sie_Sie: 'haben geschwiegen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte geschwiegen', du: 'hattest geschwiegen', er_sie_es: 'hatte geschwiegen', wir: 'hatten geschwiegen', ihr: 'hattet geschwiegen', sie_Sie: 'hatten geschwiegen' },
+    [Tense.FUTUR_I]: { ich: 'werde schweigen', du: 'wirst schweigen', er_sie_es: 'wird schweigen', wir: 'werden schweigen', ihr: 'werdet schweigen', sie_Sie: 'werden schweigen' },
+  },
   'schwimmen': {
     [Tense.PRAESENS]: { ich: 'schwimme', du: 'schwimmst', er_sie_es: 'schwimmt', wir: 'schwimmen', ihr: 'schwimmt', sie_Sie: 'schwimmen' },
     [Tense.PRAETERITUM]: { ich: 'schwamm', du: 'schwammst', er_sie_es: 'schwamm', wir: 'schwammen', ihr: 'schwammt', sie_Sie: 'schwammen' },
@@ -434,6 +1074,8 @@ export const COMMON_VERBS_DB = {
     [Tense.PLUSQUAMPERFEKT]: { ich: 'war geschwommen', du: 'warst geschwommen', er_sie_es: 'war geschwommen', wir: 'waren geschwommen', ihr: 'wart geschwommen', sie_Sie: 'waren geschwommen' },
     [Tense.FUTUR_I]: { ich: 'werde schwimmen', du: 'wirst schwimmen', er_sie_es: 'wird schwimmen', wir: 'werden schwimmen', ihr: 'werdet schwimmen', sie_Sie: 'werden schwimmen' },
   },
+  'schwitzen': createRegularVerb('schwitz'),
+  'segeln': createRegularVerb('segel'),
   'sehen': {
     [Tense.PRAESENS]: { ich: 'sehe', du: 'siehst', er_sie_es: 'sieht', wir: 'sehen', ihr: 'seht', sie_Sie: 'sehen' },
     [Tense.PRAETERITUM]: { ich: 'sah', du: 'sahst', er_sie_es: 'sah', wir: 'sahen', ihr: 'saht', sie_Sie: 'sahen' },
@@ -441,6 +1083,7 @@ export const COMMON_VERBS_DB = {
     [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte gesehen', du: 'hattest gesehen', er_sie_es: 'hatte gesehen', wir: 'hatten gesehen', ihr: 'hattet gesehen', sie_Sie: 'hatten gesehen' },
     [Tense.FUTUR_I]: { ich: 'werde sehen', du: 'wirst sehen', er_sie_es: 'wird sehen', wir: 'werden sehen', ihr: 'werdet sehen', sie_Sie: 'werden sehen' },
   },
+  'sehnen': createRegularVerb('sehn'),
   'sein': {
     [Tense.PRAESENS]: { ich: 'bin', du: 'bist', er_sie_es: 'ist', wir: 'sind', ihr: 'seid', sie_Sie: 'sind' },
     [Tense.PRAETERITUM]: { ich: 'war', du: 'warst', er_sie_es: 'war', wir: 'waren', ihr: 'wart', sie_Sie: 'waren' },
@@ -448,13 +1091,29 @@ export const COMMON_VERBS_DB = {
     [Tense.PLUSQUAMPERFEKT]: { ich: 'war gewesen', du: 'warst gewesen', er_sie_es: 'war gewesen', wir: 'waren gewesen', ihr: 'wart gewesen', sie_Sie: 'waren gewesen' },
     [Tense.FUTUR_I]: { ich: 'werde sein', du: 'wirst sein', er_sie_es: 'wird sein', wir: 'werden sein', ihr: 'werdet sein', sie_Sie: 'werden sein' },
   },
+  'senden': {
+    [Tense.PRAESENS]: { ich: 'sende', du: 'sendest', er_sie_es: 'sendet', wir: 'senden', ihr: 'sendet', sie_Sie: 'senden' },
+    [Tense.PRAETERITUM]: { ich: 'sandte', du: 'sandtest', er_sie_es: 'sandte', wir: 'sandten', ihr: 'sandtet', sie_Sie: 'sandten' },
+    [Tense.PERFEKT]: { ich: 'habe gesandt', du: 'hast gesandt', er_sie_es: 'hat gesandt', wir: 'haben gesandt', ihr: 'habt gesandt', sie_Sie: 'haben gesandt' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte gesandt', du: 'hattest gesandt', er_sie_es: 'hatte gesandt', wir: 'hatten gesandt', ihr: 'hattet gesandt', sie_Sie: 'hatten gesandt' },
+    [Tense.FUTUR_I]: { ich: 'werde senden', du: 'wirst senden', er_sie_es: 'wird senden', wir: 'werden senden', ihr: 'werdet senden', sie_Sie: 'werden senden' },
+  },
   'setzen': createRegularVerb('setz'),
+  'seufzen': createRegularVerb('seufz'),
+  'siegen': createRegularVerb('sieg'),
   'singen': {
     [Tense.PRAESENS]: { ich: 'singe', du: 'singst', er_sie_es: 'singt', wir: 'singen', ihr: 'singt', sie_Sie: 'singen' },
     [Tense.PRAETERITUM]: { ich: 'sang', du: 'sangst', er_sie_es: 'sang', wir: 'sangen', ihr: 'sangt', sie_Sie: 'sangen' },
     [Tense.PERFEKT]: { ich: 'habe gesungen', du: 'hast gesungen', er_sie_es: 'hat gesungen', wir: 'haben gesungen', ihr: 'habt gesungen', sie_Sie: 'haben gesungen' },
     [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte gesungen', du: 'hattest gesungen', er_sie_es: 'hatte gesungen', wir: 'hatten gesungen', ihr: 'hattet gesungen', sie_Sie: 'hatten gesungen' },
     [Tense.FUTUR_I]: { ich: 'werde singen', du: 'wirst singen', er_sie_es: 'wird singen', wir: 'werden singen', ihr: 'werdet singen', sie_Sie: 'werden singen' },
+  },
+  'sinken': {
+    [Tense.PRAESENS]: { ich: 'sinke', du: 'sinkst', er_sie_es: 'sinkt', wir: 'sinken', ihr: 'sinkt', sie_Sie: 'sinken' },
+    [Tense.PRAETERITUM]: { ich: 'sank', du: 'sankst', er_sie_es: 'sank', wir: 'sanken', ihr: 'sankt', sie_Sie: 'sanken' },
+    [Tense.PERFEKT]: { ich: 'bin gesunken', du: 'bist gesunken', er_sie_es: 'ist gesunken', wir: 'sind gesunken', ihr: 'seid gesunken', sie_Sie: 'sind gesunken' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'war gesunken', du: 'warst gesunken', er_sie_es: 'war gesunken', wir: 'waren gesunken', ihr: 'wart gesunken', sie_Sie: 'waren gesunken' },
+    [Tense.FUTUR_I]: { ich: 'werde sinken', du: 'wirst sinken', er_sie_es: 'wird sinken', wir: 'werden sinken', ihr: 'werdet sinken', sie_Sie: 'werden sinken' },
   },
   'sitzen': {
     [Tense.PRAESENS]: { ich: 'sitze', du: 'sitzt', er_sie_es: 'sitzt', wir: 'sitzen', ihr: 'sitzt', sie_Sie: 'sitzen' },
@@ -470,6 +1129,8 @@ export const COMMON_VERBS_DB = {
     [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte gesollt', du: 'hattest gesollt', er_sie_es: 'hatte gesollt', wir: 'hatten gesollt', ihr: 'hattet gesollt', sie_Sie: 'hatten gesollt' },
     [Tense.FUTUR_I]: { ich: 'werde sollen', du: 'wirst sollen', er_sie_es: 'wird sollen', wir: 'werden sollen', ihr: 'werdet sollen', sie_Sie: 'werden sollen' },
   },
+  'sparen': createRegularVerb('spar'),
+  'spazieren': createRegularVerb('spazier'),
   'spielen': createRegularVerb('spiel'),
   'sprechen': {
     [Tense.PRAESENS]: { ich: 'spreche', du: 'sprichst', er_sie_es: 'spricht', wir: 'sprechen', ihr: 'sprecht', sie_Sie: 'sprechen' },
@@ -485,13 +1146,37 @@ export const COMMON_VERBS_DB = {
     [Tense.PLUSQUAMPERFEKT]: { ich: 'war gesprungen', du: 'warst gesprungen', er_sie_es: 'war gesprungen', wir: 'waren gesprungen', ihr: 'wart gesprungen', sie_Sie: 'waren gesprungen' },
     [Tense.FUTUR_I]: { ich: 'werde springen', du: 'wirst springen', er_sie_es: 'wird springen', wir: 'werden springen', ihr: 'werdet springen', sie_Sie: 'werden springen' },
   },
+  'spüren': createRegularVerb('spür'),
+  'stammen': createRegularVerb('stamm'),
+  'starren': createRegularVerb('starr'),
+  'stattfinden': {
+    [Tense.PRAESENS]: { ich: 'finde statt', du: 'findest statt', er_sie_es: 'findet statt', wir: 'finden statt', ihr: 'findet statt', sie_Sie: 'finden statt' },
+    [Tense.PRAETERITUM]: { ich: 'fand statt', du: 'fandest statt', er_sie_es: 'fand statt', wir: 'fanden statt', ihr: 'fandet statt', sie_Sie: 'fanden statt' },
+    [Tense.PERFEKT]: { ich: 'habe stattgefunden', du: 'hast stattgefunden', er_sie_es: 'hat stattgefunden', wir: 'haben stattgefunden', ihr: 'habt stattgefunden', sie_Sie: 'haben stattgefunden' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte stattgefunden', du: 'hattest stattgefunden', er_sie_es: 'hatte stattgefunden', wir: 'hatten stattgefunden', ihr: 'hattet stattgefunden', sie_Sie: 'hatten stattgefunden' },
+    [Tense.FUTUR_I]: { ich: 'werde stattfinden', du: 'wirst stattfinden', er_sie_es: 'wird stattfinden', wir: 'werden stattfinden', ihr: 'werdet stattfinden', sie_Sie: 'werden stattfinden' },
+  },
   'staunen': createRegularVerb('staun'),
+  'stechen': {
+    [Tense.PRAESENS]: { ich: 'steche', du: 'stichst', er_sie_es: 'sticht', wir: 'stechen', ihr: 'stecht', sie_Sie: 'stechen' },
+    [Tense.PRAETERITUM]: { ich: 'stach', du: 'stachst', er_sie_es: 'stach', wir: 'stachen', ihr: 'stacht', sie_Sie: 'stachen' },
+    [Tense.PERFEKT]: { ich: 'habe gestochen', du: 'hast gestochen', er_sie_es: 'hat gestochen', wir: 'haben gestochen', ihr: 'habt gestochen', sie_Sie: 'haben gestochen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte gestochen', du: 'hattest gestochen', er_sie_es: 'hatte gestochen', wir: 'hatten gestochen', ihr: 'hattet gestochen', sie_Sie: 'hatten gestochen' },
+    [Tense.FUTUR_I]: { ich: 'werde stechen', du: 'wirst stechen', er_sie_es: 'wird stechen', wir: 'werden stechen', ihr: 'werdet stechen', sie_Sie: 'werden stechen' },
+  },
   'stehen': {
     [Tense.PRAESENS]: { ich: 'stehe', du: 'stehst', er_sie_es: 'steht', wir: 'stehen', ihr: 'steht', sie_Sie: 'stehen' },
     [Tense.PRAETERITUM]: { ich: 'stand', du: 'standst', er_sie_es: 'stand', wir: 'standen', ihr: 'standet', sie_Sie: 'standen' },
     [Tense.PERFEKT]: { ich: 'bin gestanden', du: 'bist gestanden', er_sie_es: 'ist gestanden', wir: 'sind gestanden', ihr: 'seid gestanden', sie_Sie: 'sind gestanden' },
     [Tense.PLUSQUAMPERFEKT]: { ich: 'war gestanden', du: 'warst gestanden', er_sie_es: 'war gestanden', wir: 'waren gestanden', ihr: 'wart gestanden', sie_Sie: 'waren gestanden' },
     [Tense.FUTUR_I]: { ich: 'werde stehen', du: 'wirst stehen', er_sie_es: 'wird stehen', wir: 'werden stehen', ihr: 'werdet stehen', sie_Sie: 'werden stehen' },
+  },
+  'stehlen': {
+    [Tense.PRAESENS]: { ich: 'stehle', du: 'stiehlst', er_sie_es: 'stiehlt', wir: 'stehlen', ihr: 'stehlt', sie_Sie: 'stehlen' },
+    [Tense.PRAETERITUM]: { ich: 'stahl', du: 'stahlst', er_sie_es: 'stahl', wir: 'stahlen', ihr: 'stahlt', sie_Sie: 'stahlen' },
+    [Tense.PERFEKT]: { ich: 'habe gestohlen', du: 'hast gestohlen', er_sie_es: 'hat gestohlen', wir: 'haben gestohlen', ihr: 'habt gestohlen', sie_Sie: 'haben gestohlen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte gestohlen', du: 'hattest gestohlen', er_sie_es: 'hatte gestohlen', wir: 'hatten gestohlen', ihr: 'hattet gestohlen', sie_Sie: 'hatten gestohlen' },
+    [Tense.FUTUR_I]: { ich: 'werde stehlen', du: 'wirst stehlen', er_sie_es: 'wird stehlen', wir: 'werden stehlen', ihr: 'werdet stehlen', sie_Sie: 'werden stehlen' },
   },
   'steigen': {
     [Tense.PRAESENS]: { ich: 'steige', du: 'steigst', er_sie_es: 'steigt', wir: 'steigen', ihr: 'steigt', sie_Sie: 'steigen' },
@@ -509,6 +1194,22 @@ export const COMMON_VERBS_DB = {
     [Tense.FUTUR_I]: { ich: 'werde sterben', du: 'wirst sterben', er_sie_es: 'wird sterben', wir: 'werden sterben', ihr: 'werdet sterben', sie_Sie: 'werden sterben' },
   },
   'stimmen': createRegularVerb('stimm'),
+  'stinken': {
+    [Tense.PRAESENS]: { ich: 'stinke', du: 'stinkst', er_sie_es: 'stinkt', wir: 'stinken', ihr: 'stinkt', sie_Sie: 'stinken' },
+    [Tense.PRAETERITUM]: { ich: 'stank', du: 'stankst', er_sie_es: 'stank', wir: 'stanken', ihr: 'stankt', sie_Sie: 'stanken' },
+    [Tense.PERFEKT]: { ich: 'habe gestunken', du: 'hast gestunken', er_sie_es: 'hat gestunken', wir: 'haben gestunken', ihr: 'habt gestunken', sie_Sie: 'haben gestunken' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte gestunken', du: 'hattest gestunken', er_sie_es: 'hatte gestunken', wir: 'hatten gestunken', ihr: 'hattet gestunken', sie_Sie: 'hatten gestunken' },
+    [Tense.FUTUR_I]: { ich: 'werde stinken', du: 'wirst stinken', er_sie_es: 'wird stinken', wir: 'werden stinken', ihr: 'werdet stinken', sie_Sie: 'werden stinken' },
+  },
+  'stören': createRegularVerb('stör'),
+  'stoßen': {
+    [Tense.PRAESENS]: { ich: 'stoße', du: 'stößt', er_sie_es: 'stößt', wir: 'stoßen', ihr: 'stoßt', sie_Sie: 'stoßen' },
+    [Tense.PRAETERITUM]: { ich: 'stieß', du: 'stießest', er_sie_es: 'stieß', wir: 'stießen', ihr: 'stießt', sie_Sie: 'stießen' },
+    [Tense.PERFEKT]: { ich: 'habe gestoßen', du: 'hast gestoßen', er_sie_es: 'hat gestoßen', wir: 'haben gestoßen', ihr: 'habt gestoßen', sie_Sie: 'haben gestoßen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte gestoßen', du: 'hattest gestoßen', er_sie_es: 'hatte gestoßen', wir: 'hatten gestoßen', ihr: 'hattet gestoßen', sie_Sie: 'hatten gestoßen' },
+    [Tense.FUTUR_I]: { ich: 'werde stoßen', du: 'wirst stoßen', er_sie_es: 'wird stoßen', wir: 'werden stoßen', ihr: 'werdet stoßen', sie_Sie: 'werden stoßen' },
+  },
+  'strahlen': createRegularVerb('strahl'),
   'streiten': {
     [Tense.PRAESENS]: { ich: 'streite', du: 'streitest', er_sie_es: 'streitet', wir: 'streiten', ihr: 'streitet', sie_Sie: 'streiten' },
     [Tense.PRAETERITUM]: { ich: 'stritt', du: 'strittest', er_sie_es: 'stritt', wir: 'stritten', ihr: 'strittet', sie_Sie: 'stritten' },
@@ -516,10 +1217,22 @@ export const COMMON_VERBS_DB = {
     [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte gestritten', du: 'hattest gestritten', er_sie_es: 'hatte gestritten', wir: 'hatten gestritten', ihr: 'hattet gestritten', sie_Sie: 'hatten gestritten' },
     [Tense.FUTUR_I]: { ich: 'werde streiten', du: 'wirst streiten', er_sie_es: 'wird streiten', wir: 'werden streiten', ihr: 'werdet streiten', sie_Sie: 'werden streiten' },
   },
+  'strengen': createRegularVerb('streng'),
+  'stricken': createRegularVerb('strick'),
+  'studieren': createRegularVerb('studier'),
+  'stürzen': createRegularVerb('stürz'),
+  'stützen': createRegularVerb('stütz'),
   'suchen': createRegularVerb('such'),
   // --- T ---
+  'tanken': createRegularVerb('tank'),
   'tanzen': createRegularVerb('tanz'),
+  'tasten': createRegularVerb('tast'),
   'tauchen': createRegularVerb('tauch'),
+  'teilen': createRegularVerb('teil'),
+  'telefonieren': createRegularVerb('telefonier'),
+  'testen': createRegularVerb('test'),
+  'tippen': createRegularVerb('tipp'),
+  'traben': createRegularVerb('trab'),
   'tragen': {
     [Tense.PRAESENS]: { ich: 'trage', du: 'trägst', er_sie_es: 'trägt', wir: 'tragen', ihr: 'tragt', sie_Sie: 'tragen' },
     [Tense.PRAETERITUM]: { ich: 'trug', du: 'trugst', er_sie_es: 'trug', wir: 'trugen', ihr: 'trugt', sie_Sie: 'trugen' },
@@ -527,6 +1240,8 @@ export const COMMON_VERBS_DB = {
     [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte getragen', du: 'hattest getragen', er_sie_es: 'hatte getragen', wir: 'hatten getragen', ihr: 'hattet getragen', sie_Sie: 'hatten getragen' },
     [Tense.FUTUR_I]: { ich: 'werde tragen', du: 'wirst tragen', er_sie_es: 'wird tragen', wir: 'werden tragen', ihr: 'werdet tragen', sie_Sie: 'werden tragen' },
   },
+  'trainieren': createRegularVerb('trainier'),
+  'trauen': createRegularVerb('trau'),
   'träumen': createRegularVerb('träum'),
   'treffen': {
     [Tense.PRAESENS]: { ich: 'treffe', du: 'triffst', er_sie_es: 'trifft', wir: 'treffen', ihr: 'trefft', sie_Sie: 'treffen' },
@@ -535,6 +1250,21 @@ export const COMMON_VERBS_DB = {
     [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte getroffen', du: 'hattest getroffen', er_sie_es: 'hatte getroffen', wir: 'hatten getroffen', ihr: 'hattet getroffen', sie_Sie: 'hatten getroffen' },
     [Tense.FUTUR_I]: { ich: 'werde treffen', du: 'wirst treffen', er_sie_es: 'wird treffen', wir: 'werden treffen', ihr: 'werdet treffen', sie_Sie: 'werden treffen' },
   },
+  'treiben': {
+    [Tense.PRAESENS]: { ich: 'treibe', du: 'treibst', er_sie_es: 'treibt', wir: 'treiben', ihr: 'treibt', sie_Sie: 'treiben' },
+    [Tense.PRAETERITUM]: { ich: 'trieb', du: 'triebst', er_sie_es: 'trieb', wir: 'trieben', ihr: 'triebt', sie_Sie: 'trieben' },
+    [Tense.PERFEKT]: { ich: 'habe getrieben', du: 'hast getrieben', er_sie_es: 'hat getrieben', wir: 'haben getrieben', ihr: 'habt getrieben', sie_Sie: 'haben getrieben' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte getrieben', du: 'hattest getrieben', er_sie_es: 'hatte getrieben', wir: 'hatten getrieben', ihr: 'hattet getrieben', sie_Sie: 'hatten getrieben' },
+    [Tense.FUTUR_I]: { ich: 'werde treiben', du: 'wirst treiben', er_sie_es: 'wird treiben', wir: 'werden treiben', ihr: 'werdet treiben', sie_Sie: 'werden treiben' },
+  },
+  'treten': {
+    [Tense.PRAESENS]: { ich: 'trete', du: 'trittst', er_sie_es: 'tritt', wir: 'treten', ihr: 'tretet', sie_Sie: 'treten' },
+    [Tense.PRAETERITUM]: { ich: 'trat', du: 'tratest', er_sie_es: 'trat', wir: 'traten', ihr: 'tratet', sie_Sie: 'traten' },
+    [Tense.PERFEKT]: { ich: 'bin getreten', du: 'bist getreten', er_sie_es: 'ist getreten', wir: 'sind getreten', ihr: 'seid getreten', sie_Sie: 'sind getreten' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'war getreten', du: 'warst getreten', er_sie_es: 'war getreten', wir: 'waren getreten', ihr: 'wart getreten', sie_Sie: 'waren getreten' },
+    [Tense.FUTUR_I]: { ich: 'werde treten', du: 'wirst treten', er_sie_es: 'wird treten', wir: 'werden treten', ihr: 'werdet treten', sie_Sie: 'werden treten' },
+  },
+  'tricksen': createRegularVerb('tricks'),
   'trinken': {
     [Tense.PRAESENS]: { ich: 'trinke', du: 'trinkst', er_sie_es: 'trinkt', wir: 'trinken', ihr: 'trinkt', sie_Sie: 'trinken' },
     [Tense.PRAETERITUM]: { ich: 'trank', du: 'trankst', er_sie_es: 'trank', wir: 'tranken', ihr: 'trankt', sie_Sie: 'tranken' },
@@ -542,6 +1272,8 @@ export const COMMON_VERBS_DB = {
     [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte getrunken', du: 'hattest getrunken', er_sie_es: 'hatte getrunken', wir: 'hatten getrunken', ihr: 'hattet getrunken', sie_Sie: 'hatten getrunken' },
     [Tense.FUTUR_I]: { ich: 'werde trinken', du: 'wirst trinken', er_sie_es: 'wird trinken', wir: 'werden trinken', ihr: 'werdet trinken', sie_Sie: 'werden trinken' },
   },
+  'trocknen': createRegularVerb('trockn'),
+  'trösten': createRegularVerb('tröst'),
   'tun': {
     [Tense.PRAESENS]: { ich: 'tue', du: 'tust', er_sie_es: 'tut', wir: 'tun', ihr: 'tut', sie_Sie: 'tun' },
     [Tense.PRAETERITUM]: { ich: 'tat', du: 'tatest', er_sie_es: 'tat', wir: 'taten', ihr: 'tatet', sie_Sie: 'taten' },
@@ -549,7 +1281,71 @@ export const COMMON_VERBS_DB = {
     [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte getan', du: 'hattest getan', er_sie_es: 'hatte getan', wir: 'hatten getan', ihr: 'hattet getan', sie_Sie: 'hatten getan' },
     [Tense.FUTUR_I]: { ich: 'werde tun', du: 'wirst tun', er_sie_es: 'wird tun', wir: 'werden tun', ihr: 'werdet tun', sie_Sie: 'werden tun' },
   },
+  'turnen': createRegularVerb('turn'),
+  // --- Ü ---
+  'üben': createRegularVerb('üb'),
+  'überlegen': createRegularVerb('überleg'),
+  'übernehmen': {
+    [Tense.PRAESENS]: { ich: 'übernehme', du: 'übernimmst', er_sie_es: 'übernimmt', wir: 'übernehmen', ihr: 'übernehmt', sie_Sie: 'übernehmen' },
+    [Tense.PRAETERITUM]: { ich: 'übernahm', du: 'übernahmst', er_sie_es: 'übernahm', wir: 'übernahmen', ihr: 'übernahmt', sie_Sie: 'übernahmen' },
+    [Tense.PERFEKT]: { ich: 'habe übernommen', du: 'hast übernommen', er_sie_es: 'hat übernommen', wir: 'haben übernommen', ihr: 'habt übernommen', sie_Sie: 'haben übernommen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte übernommen', du: 'hattest übernommen', er_sie_es: 'hatte übernommen', wir: 'hatten übernommen', ihr: 'hattet übernommen', sie_Sie: 'hatten übernommen' },
+    [Tense.FUTUR_I]: { ich: 'werde übernehmen', du: 'wirst übernehmen', er_sie_es: 'wird übernehmen', wir: 'werden übernehmen', ihr: 'werdet übernehmen', sie_Sie: 'werden übernehmen' },
+  },
+  'überraschen': createRegularVerb('überrasch'),
+  'übersetzen': createRegularVerb('übersetz'),
+  'überweisen': {
+    [Tense.PRAESENS]: { ich: 'überweise', du: 'überweist', er_sie_es: 'überweist', wir: 'überweisen', ihr: 'überweist', sie_Sie: 'überweisen' },
+    [Tense.PRAETERITUM]: { ich: 'überwies', du: 'überwiesest', er_sie_es: 'überwies', wir: 'überwiesen', ihr: 'überwiest', sie_Sie: 'überwiesen' },
+    [Tense.PERFEKT]: { ich: 'habe überwiesen', du: 'hast überwiesen', er_sie_es: 'hat überwiesen', wir: 'haben überwiesen', ihr: 'habt überwiesen', sie_Sie: 'haben überwiesen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte überwiesen', du: 'hattest überwiesen', er_sie_es: 'hatte überwiesen', wir: 'hatten überwiesen', ihr: 'hattet überwiesen', sie_Sie: 'hatten überwiesen' },
+    [Tense.FUTUR_I]: { ich: 'werde überweisen', du: 'wirst überweisen', er_sie_es: 'wird überweisen', wir: 'werden überweisen', ihr: 'werdet überweisen', sie_Sie: 'werden überweisen' },
+  },
+  'überzeugen': createRegularVerb('überzeug'),
+  // --- U ---
+  'umarmen': createRegularVerb('umarm'),
+  'umdrehen': createSeparableVerb('um', 'dreh', 'dreh'),
+  'umziehen': {
+    [Tense.PRAESENS]: { ich: 'ziehe um', du: 'ziehst um', er_sie_es: 'zieht um', wir: 'ziehen um', ihr: 'zieht um', sie_Sie: 'ziehen um' },
+    [Tense.PRAETERITUM]: { ich: 'zog um', du: 'zogst um', er_sie_es: 'zog um', wir: 'zogen um', ihr: 'zogt um', sie_Sie: 'zogen um' },
+    [Tense.PERFEKT]: { ich: 'bin umgezogen', du: 'bist umgezogen', er_sie_es: 'ist umgezogen', wir: 'sind umgezogen', ihr: 'seid umgezogen', sie_Sie: 'sind umgezogen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'war umgezogen', du: 'warst umgezogen', er_sie_es: 'war umgezogen', wir: 'waren umgezogen', ihr: 'wart umgezogen', sie_Sie: 'waren umgezogen' },
+    [Tense.FUTUR_I]: { ich: 'werde umziehen', du: 'wirst umziehen', er_sie_es: 'wird umziehen', wir: 'werden umziehen', ihr: 'werdet umziehen', sie_Sie: 'werden umziehen' },
+  },
+  'unternehmen': {
+    [Tense.PRAESENS]: { ich: 'unternehme', du: 'unternimmst', er_sie_es: 'unternimmt', wir: 'unternehmen', ihr: 'unternehmt', sie_Sie: 'unternehmen' },
+    [Tense.PRAETERITUM]: { ich: 'unternahm', du: 'unternahmst', er_sie_es: 'unternahm', wir: 'unternahmen', ihr: 'unternahmt', sie_Sie: 'unternahmen' },
+    [Tense.PERFEKT]: { ich: 'habe unternommen', du: 'hast unternommen', er_sie_es: 'hat unternommen', wir: 'haben unternommen', ihr: 'habt unternommen', sie_Sie: 'haben unternommen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte unternommen', du: 'hattest unternommen', er_sie_es: 'hatte unternommen', wir: 'hatten unternommen', ihr: 'hattet unternommen', sie_Sie: 'hatten unternommen' },
+    [Tense.FUTUR_I]: { ich: 'werde unternehmen', du: 'wirst unternehmen', er_sie_es: 'wird unternehmen', wir: 'werden unternehmen', ihr: 'werdet unternehmen', sie_Sie: 'werden unternehmen' },
+  },
+  'unterschreiben': {
+    [Tense.PRAESENS]: { ich: 'unterschreibe', du: 'unterschreibst', er_sie_es: 'unterschreibt', wir: 'unterschreiben', ihr: 'unterschreibt', sie_Sie: 'unterschreiben' },
+    [Tense.PRAETERITUM]: { ich: 'unterschrieb', du: 'unterschriebst', er_sie_es: 'unterschrieb', wir: 'unterschrieben', ihr: 'unterschriebt', sie_Sie: 'unterschrieben' },
+    [Tense.PERFEKT]: { ich: 'habe unterschrieben', du: 'hast unterschrieben', er_sie_es: 'hat unterschrieben', wir: 'haben unterschrieben', ihr: 'habt unterschrieben', sie_Sie: 'haben unterschrieben' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte unterschrieben', du: 'hattest unterschrieben', er_sie_es: 'hatte unterschrieben', wir: 'hatten unterschrieben', ihr: 'hattet unterschrieben', sie_Sie: 'hatten unterschrieben' },
+    [Tense.FUTUR_I]: { ich: 'werde unterschreiben', du: 'wirst unterschreiben', er_sie_es: 'wird unterschreiben', wir: 'werden unterschreiben', ihr: 'werdet unterschreiben', sie_Sie: 'werden unterschreiben' },
+  },
+  'unterstützen': createRegularVerb('unterstütz'),
   // --- V ---
+  'verabschieden': createRegularVerb('verabschied'),
+  'verbessern': createRegularVerb('verbesser'),
+  'verbinden': {
+    [Tense.PRAESENS]: { ich: 'verbinde', du: 'verbindest', er_sie_es: 'verbindet', wir: 'verbinden', ihr: 'verbindet', sie_Sie: 'verbinden' },
+    [Tense.PRAETERITUM]: { ich: 'verband', du: 'verbandst', er_sie_es: 'verband', wir: 'verbanden', ihr: 'verbandet', sie_Sie: 'verbanden' },
+    [Tense.PERFEKT]: { ich: 'habe verbunden', du: 'hast verbunden', er_sie_es: 'hat verbunden', wir: 'haben verbunden', ihr: 'habt verbunden', sie_Sie: 'haben verbunden' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte verbunden', du: 'hattest verbunden', er_sie_es: 'hatte verbunden', wir: 'hatten verbunden', ihr: 'hattet verbunden', sie_Sie: 'hatten verbunden' },
+    [Tense.FUTUR_I]: { ich: 'werde verbinden', du: 'wirst verbinden', er_sie_es: 'wird verbinden', wir: 'werden verbinden', ihr: 'werdet verbinden', sie_Sie: 'werden verbinden' },
+  },
+  'verbringen': {
+    [Tense.PRAESENS]: { ich: 'verbringe', du: 'verbringst', er_sie_es: 'verbringt', wir: 'verbringen', ihr: 'verbringt', sie_Sie: 'verbringen' },
+    [Tense.PRAETERITUM]: { ich: 'verbrachte', du: 'verbrachtest', er_sie_es: 'verbrachte', wir: 'verbrachten', ihr: 'verbrachtet', sie_Sie: 'verbrachten' },
+    [Tense.PERFEKT]: { ich: 'habe verbracht', du: 'hast verbracht', er_sie_es: 'hat verbracht', wir: 'haben verbracht', ihr: 'habt verbracht', sie_Sie: 'haben verbracht' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte verbracht', du: 'hattest verbracht', er_sie_es: 'hatte verbracht', wir: 'hatten verbracht', ihr: 'hattet verbracht', sie_Sie: 'hatten verbracht' },
+    [Tense.FUTUR_I]: { ich: 'werde verbringen', du: 'wirst verbringen', er_sie_es: 'wird verbringen', wir: 'werden verbringen', ihr: 'werdet verbringen', sie_Sie: 'werden verbringen' },
+  },
+  'verdienen': createRegularVerb('verdien'),
+  'vereinbaren': createRegularVerb('vereinbar'),
   'vergessen': {
     [Tense.PRAESENS]: { ich: 'vergesse', du: 'vergisst', er_sie_es: 'vergisst', wir: 'vergessen', ihr: 'vergesst', sie_Sie: 'vergessen' },
     [Tense.PRAETERITUM]: { ich: 'vergaß', du: 'vergaßest', er_sie_es: 'vergaß', wir: 'vergaßen', ihr: 'vergaßt', sie_Sie: 'vergaßen' },
@@ -557,7 +1353,27 @@ export const COMMON_VERBS_DB = {
     [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte vergessen', du: 'hattest vergessen', er_sie_es: 'hatte vergessen', wir: 'hatten vergessen', ihr: 'hattet vergessen', sie_Sie: 'hatten vergessen' },
     [Tense.FUTUR_I]: { ich: 'werde vergessen', du: 'wirst vergessen', er_sie_es: 'wird vergessen', wir: 'werden vergessen', ihr: 'werdet vergessen', sie_Sie: 'werden vergessen' },
   },
+  'vergleichen': {
+    [Tense.PRAESENS]: { ich: 'vergleiche', du: 'vergleichst', er_sie_es: 'vergleicht', wir: 'vergleichen', ihr: 'vergleicht', sie_Sie: 'vergleichen' },
+    [Tense.PRAETERITUM]: { ich: 'verglich', du: 'verglichst', er_sie_es: 'verglich', wir: 'verglichen', ihr: 'verglicht', sie_Sie: 'verglichen' },
+    [Tense.PERFEKT]: { ich: 'habe verglichen', du: 'hast verglichen', er_sie_es: 'hat verglichen', wir: 'haben verglichen', ihr: 'habt verglichen', sie_Sie: 'haben verglichen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte verglichen', du: 'hattest verglichen', er_sie_es: 'hatte verglichen', wir: 'hatten verglichen', ihr: 'hattet verglichen', sie_Sie: 'hatten verglichen' },
+    [Tense.FUTUR_I]: { ich: 'werde vergleichen', du: 'wirst vergleichen', er_sie_es: 'wird vergleichen', wir: 'werden vergleichen', ihr: 'werdet vergleichen', sie_Sie: 'werden vergleichen' },
+  },
+  'vergrößern': createRegularVerb('vergrößer'),
+  'verhaften': createRegularVerb('verhaft'),
+  'verhandeln': createRegularVerb('verhandel'),
+  'verheimlichen': createRegularVerb('verheimlich'),
+  'verhindern': createRegularVerb('verhinder'),
   'verkaufen': createRegularVerb('verkauf'),
+  'verlängern': createRegularVerb('verlänger'),
+  'verlassen': {
+    [Tense.PRAESENS]: { ich: 'verlasse', du: 'verlässt', er_sie_es: 'verlässt', wir: 'verlassen', ihr: 'verlasst', sie_Sie: 'verlassen' },
+    [Tense.PRAETERITUM]: { ich: 'verließ', du: 'verließest', er_sie_es: 'verließ', wir: 'verließen', ihr: 'verließt', sie_Sie: 'verließen' },
+    [Tense.PERFEKT]: { ich: 'habe verlassen', du: 'hast verlassen', er_sie_es: 'hat verlassen', wir: 'haben verlassen', ihr: 'habt verlassen', sie_Sie: 'haben verlassen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte verlassen', du: 'hattest verlassen', er_sie_es: 'hatte verlassen', wir: 'hatten verlassen', ihr: 'hattet verlassen', sie_Sie: 'hatten verlassen' },
+    [Tense.FUTUR_I]: { ich: 'werde verlassen', du: 'wirst verlassen', er_sie_es: 'wird verlassen', wir: 'werden verlassen', ihr: 'werdet verlassen', sie_Sie: 'werden verlassen' },
+  },
   'verlieren': {
     [Tense.PRAESENS]: { ich: 'verliere', du: 'verlierst', er_sie_es: 'verliert', wir: 'verlieren', ihr: 'verliert', sie_Sie: 'verlieren' },
     [Tense.PRAETERITUM]: { ich: 'verlor', du: 'verlorst', er_sie_es: 'verlor', wir: 'verloren', ihr: 'verlort', sie_Sie: 'verloren' },
@@ -565,20 +1381,86 @@ export const COMMON_VERBS_DB = {
     [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte verloren', du: 'hattest verloren', er_sie_es: 'hatte verloren', wir: 'hatten verloren', ihr: 'hattet verloren', sie_Sie: 'hatten verloren' },
     [Tense.FUTUR_I]: { ich: 'werde verlieren', du: 'wirst verlieren', er_sie_es: 'wird verlieren', wir: 'werden verlieren', ihr: 'werdet verlieren', sie_Sie: 'werden verlieren' },
   },
+  'vermissen': createRegularVerb('vermiss'),
+  'vermuten': createRegularVerb('vermut'),
+  'verpacken': createRegularVerb('verpack'),
+  'verpassen': createRegularVerb('verpass'),
+  'verreisen': createRegularVerb('verreis'),
+  'verschieben': {
+    [Tense.PRAESENS]: { ich: 'verschiebe', du: 'verschiebst', er_sie_es: 'verschiebt', wir: 'verschieben', ihr: 'verschiebt', sie_Sie: 'verschieben' },
+    [Tense.PRAETERITUM]: { ich: 'verschob', du: 'verschobst', er_sie_es: 'verschob', wir: 'verschoben', ihr: 'verschobt', sie_Sie: 'verschoben' },
+    [Tense.PERFEKT]: { ich: 'habe verschoben', du: 'hast verschoben', er_sie_es: 'hat verschoben', wir: 'haben verschoben', ihr: 'habt verschoben', sie_Sie: 'haben verschoben' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte verschoben', du: 'hattest verschoben', er_sie_es: 'hatte verschoben', wir: 'hatten verschoben', ihr: 'hattet verschoben', sie_Sie: 'hatten verschoben' },
+    [Tense.FUTUR_I]: { ich: 'werde verschieben', du: 'wirst verschieben', er_sie_es: 'wird verschieben', wir: 'werden verschieben', ihr: 'werdet verschieben', sie_Sie: 'werden verschieben' },
+  },
+  'verschlafen': {
+    [Tense.PRAESENS]: { ich: 'verschlafe', du: 'verschläfst', er_sie_es: 'verschläft', wir: 'verschlafen', ihr: 'verschlaft', sie_Sie: 'verschlafen' },
+    [Tense.PRAETERITUM]: { ich: 'verschlief', du: 'verschliefst', er_sie_es: 'verschlief', wir: 'verschliefen', ihr: 'verschlieft', sie_Sie: 'verschliefen' },
+    [Tense.PERFEKT]: { ich: 'habe verschlafen', du: 'hast verschlafen', er_sie_es: 'hat verschlafen', wir: 'haben verschlafen', ihr: 'habt verschlafen', sie_Sie: 'haben verschlafen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte verschlafen', du: 'hattest verschlafen', er_sie_es: 'hatte verschlafen', wir: 'hatten verschlafen', ihr: 'hattet verschlafen', sie_Sie: 'hatten verschlafen' },
+    [Tense.FUTUR_I]: { ich: 'werde verschlafen', du: 'wirst verschlafen', er_sie_es: 'wird verschlafen', wir: 'werden verschlafen', ihr: 'werdet verschlafen', sie_Sie: 'werden verschlafen' },
+  },
+  'versprechen': {
+    [Tense.PRAESENS]: { ich: 'verspreche', du: 'versprichst', er_sie_es: 'verspricht', wir: 'versprechen', ihr: 'versprecht', sie_Sie: 'versprechen' },
+    [Tense.PRAETERITUM]: { ich: 'versprach', du: 'versprachst', er_sie_es: 'versprach', wir: 'versprachen', ihr: 'verspracht', sie_Sie: 'versprachen' },
+    [Tense.PERFEKT]: { ich: 'habe versprochen', du: 'hast versprochen', er_sie_es: 'hat versprochen', wir: 'haben versprochen', ihr: 'habt versprochen', sie_Sie: 'haben versprochen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte versprochen', du: 'hattest versprochen', er_sie_es: 'hatte versprochen', wir: 'hatten versprochen', ihr: 'hattet versprochen', sie_Sie: 'hatten versprochen' },
+    [Tense.FUTUR_I]: { ich: 'werde versprechen', du: 'wirst versprechen', er_sie_es: 'wird versprechen', wir: 'werden versprechen', ihr: 'werdet versprechen', sie_Sie: 'werden versprechen' },
+  },
+  'verstecken': createRegularVerb('versteck'),
   'verstehen': {
     [Tense.PRAESENS]: { ich: 'verstehe', du: 'verstehst', er_sie_es: 'versteht', wir: 'verstehen', ihr: 'versteht', sie_Sie: 'verstehen' },
-    [Tense.PRAETERITUM]: { ich: 'verstand', du: 'verstandest', er_sie_es: 'verstand', wir: 'verstanden', ihr: 'verstandet', sie_Sie: 'verstanden' },
+    [Tense.PRAETERITUM]: { ich: 'verstand', du: 'verstandst', er_sie_es: 'verstand', wir: 'verstanden', ihr: 'verstandet', sie_Sie: 'verstanden' },
     [Tense.PERFEKT]: { ich: 'habe verstanden', du: 'hast verstanden', er_sie_es: 'hat verstanden', wir: 'haben verstanden', ihr: 'habt verstanden', sie_Sie: 'haben verstanden' },
     [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte verstanden', du: 'hattest verstanden', er_sie_es: 'hatte verstanden', wir: 'hatten verstanden', ihr: 'hattet verstanden', sie_Sie: 'hatten verstanden' },
     [Tense.FUTUR_I]: { ich: 'werde verstehen', du: 'wirst verstehen', er_sie_es: 'wird verstehen', wir: 'werden verstehen', ihr: 'werdet verstehen', sie_Sie: 'werden verstehen' },
   },
+  'versuchen': createRegularVerb('versuch'),
+  'verteidigen': createRegularVerb('verteidig'),
+  'verteilen': createRegularVerb('verteil'),
+  'vertrauen': createRegularVerb('vertrau'),
+  'vertreten': {
+    [Tense.PRAESENS]: { ich: 'vertrete', du: 'vertrittst', er_sie_es: 'vertritt', wir: 'vertreten', ihr: 'vertretet', sie_Sie: 'vertreten' },
+    [Tense.PRAETERITUM]: { ich: 'vertrat', du: 'vertratest', er_sie_es: 'vertrat', wir: 'vertraten', ihr: 'vertratet', sie_Sie: 'vertraten' },
+    [Tense.PERFEKT]: { ich: 'habe vertreten', du: 'hast vertreten', er_sie_es: 'hat vertreten', wir: 'haben vertreten', ihr: 'habt vertreten', sie_Sie: 'haben vertreten' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte vertreten', du: 'hattest vertreten', er_sie_es: 'hatte vertreten', wir: 'hatten vertreten', ihr: 'hattet vertreten', sie_Sie: 'hatten vertreten' },
+    [Tense.FUTUR_I]: { ich: 'werde vertreten', du: 'wirst vertreten', er_sie_es: 'wird vertreten', wir: 'werden vertreten', ihr: 'werdet vertreten', sie_Sie: 'werden vertreten' },
+  },
+  'verursachen': createRegularVerb('verursach'),
+  'verwandeln': createRegularVerb('verwandel'),
+  'verwechseln': createRegularVerb('verwechsel'),
+  'verwenden': createRegularVerb('verwend'),
   'verzeihen': {
     [Tense.PRAESENS]: { ich: 'verzeihe', du: 'verzeihst', er_sie_es: 'verzeiht', wir: 'verzeihen', ihr: 'verzeiht', sie_Sie: 'verzeihen' },
-    [Tense.PRAETERITUM]: { ich: 'verzieh', du: 'verziehest', er_sie_es: 'verzieh', wir: 'verziehen', ihr: 'verziehet', sie_Sie: 'verziehen' },
+    [Tense.PRAETERITUM]: { ich: 'verzieh', du: 'verziehst', er_sie_es: 'verzieh', wir: 'verziehen', ihr: 'verzieht', sie_Sie: 'verziehen' },
     [Tense.PERFEKT]: { ich: 'habe verziehen', du: 'hast verziehen', er_sie_es: 'hat verziehen', wir: 'haben verziehen', ihr: 'habt verziehen', sie_Sie: 'haben verziehen' },
     [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte verziehen', du: 'hattest verziehen', er_sie_es: 'hatte verziehen', wir: 'hatten verziehen', ihr: 'hattet verziehen', sie_Sie: 'hatten verziehen' },
     [Tense.FUTUR_I]: { ich: 'werde verzeihen', du: 'wirst verzeihen', er_sie_es: 'wird verzeihen', wir: 'werden verzeihen', ihr: 'werdet verzeihen', sie_Sie: 'werden verzeihen' },
   },
+  'verzichten': createRegularVerb('verzicht'),
+  'vorbereiten': createSeparableVerb('vor', 'bereit', 'bereit'),
+  'vorhaben': {
+    [Tense.PRAESENS]: { ich: 'habe vor', du: 'hast vor', er_sie_es: 'hat vor', wir: 'haben vor', ihr: 'habt vor', sie_Sie: 'haben vor' },
+    [Tense.PRAETERITUM]: { ich: 'hatte vor', du: 'hattest vor', er_sie_es: 'hatte vor', wir: 'hatten vor', ihr: 'hattet vor', sie_Sie: 'hatten vor' },
+    [Tense.PERFEKT]: { ich: 'habe vorgehabt', du: 'hast vorgehabt', er_sie_es: 'hat vorgehabt', wir: 'haben vorgehabt', ihr: 'habt vorgehabt', sie_Sie: 'haben vorgehabt' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte vorgehabt', du: 'hattest vorgehabt', er_sie_es: 'hatte vorgehabt', wir: 'hatten vorgehabt', ihr: 'hattet vorgehabt', sie_Sie: 'hatten vorgehabt' },
+    [Tense.FUTUR_I]: { ich: 'werde vorhaben', du: 'wirst vorhaben', er_sie_es: 'wird vorhaben', wir: 'werden vorhaben', ihr: 'werdet vorhaben', sie_Sie: 'werden vorhaben' },
+  },
+  'vorlesen': {
+    [Tense.PRAESENS]: { ich: 'lese vor', du: 'liest vor', er_sie_es: 'liest vor', wir: 'lesen vor', ihr: 'lest vor', sie_Sie: 'lesen vor' },
+    [Tense.PRAETERITUM]: { ich: 'las vor', du: 'lasest vor', er_sie_es: 'las vor', wir: 'lasen vor', ihr: 'last vor', sie_Sie: 'lasen vor' },
+    [Tense.PERFEKT]: { ich: 'habe vorgelesen', du: 'hast vorgelesen', er_sie_es: 'hat vorgelesen', wir: 'haben vorgelesen', ihr: 'habt vorgelesen', sie_Sie: 'haben vorgelesen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte vorgelesen', du: 'hattest vorgelesen', er_sie_es: 'hatte vorgelesen', wir: 'hatten vorgelesen', ihr: 'hattet vorgelesen', sie_Sie: 'hatten vorgelesen' },
+    [Tense.FUTUR_I]: { ich: 'werde vorlesen', du: 'wirst vorlesen', er_sie_es: 'wird vorlesen', wir: 'werden vorlesen', ihr: 'werdet vorlesen', sie_Sie: 'werden vorlesen' },
+  },
+  'vorschlagen': {
+    [Tense.PRAESENS]: { ich: 'schlage vor', du: 'schlägst vor', er_sie_es: 'schlägt vor', wir: 'schlagen vor', ihr: 'schlagt vor', sie_Sie: 'schlagen vor' },
+    [Tense.PRAETERITUM]: { ich: 'schlug vor', du: 'schlugst vor', er_sie_es: 'schlug vor', wir: 'schlugen vor', ihr: 'schlugt vor', sie_Sie: 'schlugen vor' },
+    [Tense.PERFEKT]: { ich: 'habe vorgeschlagen', du: 'hast vorgeschlagen', er_sie_es: 'hat vorgeschlagen', wir: 'haben vorgeschlagen', ihr: 'habt vorgeschlagen', sie_Sie: 'haben vorgeschlagen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte vorgeschlagen', du: 'hattest vorgeschlagen', er_sie_es: 'hatte vorgeschlagen', wir: 'hatten vorgeschlagen', ihr: 'hattet vorgeschlagen', sie_Sie: 'hatten vorgeschlagen' },
+    [Tense.FUTUR_I]: { ich: 'werde vorschlagen', du: 'wirst vorschlagen', er_sie_es: 'wird vorschlagen', wir: 'werden vorschlagen', ihr: 'werdet vorschlagen', sie_Sie: 'werden vorschlagen' },
+  },
+  'vorstellen': createSeparableVerb('vor', 'stell', 'stell'),
   // --- W ---
   'wachsen': {
     [Tense.PRAESENS]: { ich: 'wachse', du: 'wächst', er_sie_es: 'wächst', wir: 'wachsen', ihr: 'wachst', sie_Sie: 'wachsen' },
@@ -587,6 +1469,10 @@ export const COMMON_VERBS_DB = {
     [Tense.PLUSQUAMPERFEKT]: { ich: 'war gewachsen', du: 'warst gewachsen', er_sie_es: 'war gewachsen', wir: 'waren gewachsen', ihr: 'wart gewachsen', sie_Sie: 'waren gewachsen' },
     [Tense.FUTUR_I]: { ich: 'werde wachsen', du: 'wirst wachsen', er_sie_es: 'wird wachsen', wir: 'werden wachsen', ihr: 'werdet wachsen', sie_Sie: 'werden wachsen' },
   },
+  'wägen': createRegularVerb('wäg'),
+  'wählen': createRegularVerb('wähl'),
+  'wandern': createRegularVerb('wander'),
+  'warnen': createRegularVerb('warn'),
   'warten': createRegularVerb('wart'),
   'waschen': {
     [Tense.PRAESENS]: { ich: 'wasche', du: 'wäschst', er_sie_es: 'wäscht', wir: 'waschen', ihr: 'wascht', sie_Sie: 'waschen' },
@@ -595,7 +1481,31 @@ export const COMMON_VERBS_DB = {
     [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte gewaschen', du: 'hattest gewaschen', er_sie_es: 'hatte gewaschen', wir: 'hatten gewaschen', ihr: 'hattet gewaschen', sie_Sie: 'hatten gewaschen' },
     [Tense.FUTUR_I]: { ich: 'werde waschen', du: 'wirst waschen', er_sie_es: 'wird waschen', wir: 'werden waschen', ihr: 'werdet waschen', sie_Sie: 'werden waschen' },
   },
+  'wechseln': createRegularVerb('wechsel'),
+  'wecken': createRegularVerb('weck'),
+  'weggehen': {
+    [Tense.PRAESENS]: { ich: 'gehe weg', du: 'gehst weg', er_sie_es: 'geht weg', wir: 'gehen weg', ihr: 'geht weg', sie_Sie: 'gehen weg' },
+    [Tense.PRAETERITUM]: { ich: 'ging weg', du: 'gingst weg', er_sie_es: 'ging weg', wir: 'gingen weg', ihr: 'gingt weg', sie_Sie: 'gingen weg' },
+    [Tense.PERFEKT]: { ich: 'bin weggegangen', du: 'bist weggegangen', er_sie_es: 'ist weggegangen', wir: 'sind weggegangen', ihr: 'seid weggegangen', sie_Sie: 'sind weggegangen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'war weggegangen', du: 'warst weggegangen', er_sie_es: 'war weggegangen', wir: 'waren weggegangen', ihr: 'wart weggegangen', sie_Sie: 'waren weggegangen' },
+    [Tense.FUTUR_I]: { ich: 'werde weggehen', du: 'wirst weggehen', er_sie_es: 'wird weggehen', wir: 'werden weggehen', ihr: 'werdet weggehen', sie_Sie: 'werden weggehen' },
+  },
+  'wegwerfen': {
+    [Tense.PRAESENS]: { ich: 'werfe weg', du: 'wirfst weg', er_sie_es: 'wirft weg', wir: 'werfen weg', ihr: 'werft weg', sie_Sie: 'werfen weg' },
+    [Tense.PRAETERITUM]: { ich: 'warf weg', du: 'warfst weg', er_sie_es: 'warf weg', wir: 'warfen weg', ihr: 'warft weg', sie_Sie: 'warfen weg' },
+    [Tense.PERFEKT]: { ich: 'habe weggeworfen', du: 'hast weggeworfen', er_sie_es: 'hat weggeworfen', wir: 'haben weggeworfen', ihr: 'habt weggeworfen', sie_Sie: 'haben weggeworfen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte weggeworfen', du: 'hattest weggeworfen', er_sie_es: 'hatte weggeworfen', wir: 'hatten weggeworfen', ihr: 'hattet weggeworfen', sie_Sie: 'hatten weggeworfen' },
+    [Tense.FUTUR_I]: { ich: 'werde wegwerfen', du: 'wirst wegwerfen', er_sie_es: 'wird wegwerfen', wir: 'werden wegwerfen', ihr: 'werdet wegwerfen', sie_Sie: 'werden wegwerfen' },
+  },
+  'wehren': createRegularVerb('wehr'),
   'weinen': createRegularVerb('wein'),
+  'wenden': {
+    [Tense.PRAESENS]: { ich: 'wende', du: 'wendest', er_sie_es: 'wendet', wir: 'wenden', ihr: 'wendet', sie_Sie: 'wenden' },
+    [Tense.PRAETERITUM]: { ich: 'wandte', du: 'wandtest', er_sie_es: 'wandte', wir: 'wandten', ihr: 'wandtet', sie_Sie: 'wandten' },
+    [Tense.PERFEKT]: { ich: 'habe gewandt', du: 'hast gewandt', er_sie_es: 'hat gewandt', wir: 'haben gewandt', ihr: 'habt gewandt', sie_Sie: 'haben gewandt' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte gewandt', du: 'hattest gewandt', er_sie_es: 'hatte gewandt', wir: 'hatten gewandt', ihr: 'hattet gewandt', sie_Sie: 'hatten gewandt' },
+    [Tense.FUTUR_I]: { ich: 'werde wenden', du: 'wirst wenden', er_sie_es: 'wird wenden', wir: 'werden wenden', ihr: 'werdet wenden', sie_Sie: 'werden wenden' },
+  },
   'werden': {
     [Tense.PRAESENS]: { ich: 'werde', du: 'wirst', er_sie_es: 'wird', wir: 'werden', ihr: 'werdet', sie_Sie: 'werden' },
     [Tense.PRAETERITUM]: { ich: 'wurde', du: 'wurdest', er_sie_es: 'wurde', wir: 'wurden', ihr: 'wurdet', sie_Sie: 'wurden' },
@@ -610,6 +1520,15 @@ export const COMMON_VERBS_DB = {
     [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte geworfen', du: 'hattest geworfen', er_sie_es: 'hatte geworfen', wir: 'hatten geworfen', ihr: 'hattet geworfen', sie_Sie: 'hatten geworfen' },
     [Tense.FUTUR_I]: { ich: 'werde werfen', du: 'wirst werfen', er_sie_es: 'wird werfen', wir: 'werden werfen', ihr: 'werdet werfen', sie_Sie: 'werden werfen' },
   },
+  'wiegen': {
+    [Tense.PRAESENS]: { ich: 'wiege', du: 'wiegst', er_sie_es: 'wiegt', wir: 'wiegen', ihr: 'wiegt', sie_Sie: 'wiegen' },
+    [Tense.PRAETERITUM]: { ich: 'wog', du: 'wogst', er_sie_es: 'wog', wir: 'wogen', ihr: 'wogt', sie_Sie: 'wogen' },
+    [Tense.PERFEKT]: { ich: 'habe gewogen', du: 'hast gewogen', er_sie_es: 'hat gewogen', wir: 'haben gewogen', ihr: 'habt gewogen', sie_Sie: 'haben gewogen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte gewogen', du: 'hattest gewogen', er_sie_es: 'hatte gewogen', wir: 'hatten gewogen', ihr: 'hattet gewogen', sie_Sie: 'hatten gewogen' },
+    [Tense.FUTUR_I]: { ich: 'werde wiegen', du: 'wirst wiegen', er_sie_es: 'wird wiegen', wir: 'werden wiegen', ihr: 'werdet wiegen', sie_Sie: 'werden wiegen' },
+  },
+  'wildern': createRegularVerb('wilder'),
+  'winken': createRegularVerb('wink'),
   'wissen': {
     [Tense.PRAESENS]: { ich: 'weiß', du: 'weißt', er_sie_es: 'weiß', wir: 'wissen', ihr: 'wisst', sie_Sie: 'wissen' },
     [Tense.PRAETERITUM]: { ich: 'wusste', du: 'wusstest', er_sie_es: 'wusste', wir: 'wussten', ihr: 'wusstet', sie_Sie: 'wussten' },
@@ -618,10 +1537,21 @@ export const COMMON_VERBS_DB = {
     [Tense.FUTUR_I]: { ich: 'werde wissen', du: 'wirst wissen', er_sie_es: 'wird wissen', wir: 'werden wissen', ihr: 'werdet wissen', sie_Sie: 'werden wissen' },
   },
   'wohnen': createRegularVerb('wohn'),
+  'wollen': {
+    [Tense.PRAESENS]: { ich: 'will', du: 'willst', er_sie_es: 'will', wir: 'wollen', ihr: 'wollt', sie_Sie: 'wollen' },
+    [Tense.PRAETERITUM]: { ich: 'wollte', du: 'wolltest', er_sie_es: 'wollte', wir: 'wollten', ihr: 'wolltet', sie_Sie: 'wollten' },
+    [Tense.PERFEKT]: { ich: 'habe gewollt', du: 'hast gewollt', er_sie_es: 'hat gewollt', wir: 'haben gewollt', ihr: 'habt gewollt', sie_Sie: 'haben gewollt' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte gewollt', du: 'hattest gewollt', er_sie_es: 'hatte gewollt', wir: 'hatten gewollt', ihr: 'hattet gewollt', sie_Sie: 'hatten gewollt' },
+    [Tense.FUTUR_I]: { ich: 'werde wollen', du: 'wirst wollen', er_sie_es: 'wird wollen', wir: 'werden wollen', ihr: 'werdet wollen', sie_Sie: 'werden wollen' },
+  },
+  'wundern': createRegularVerb('wunder'),
   'wünschen': createRegularVerb('wünsch'),
+  'würfeln': createRegularVerb('würfel'),
   // --- Z ---
   'zahlen': createRegularVerb('zahl'),
+  'zählen': createRegularVerb('zähl'),
   'zaubern': createRegularVerb('zauber'),
+  'zeichnen': createRegularVerb('zeichn'),
   'zeigen': createRegularVerb('zeig'),
   'zelten': createRegularVerb('zelt'),
   'zerstören': createRegularVerb('zerstör'),
@@ -632,8 +1562,35 @@ export const COMMON_VERBS_DB = {
     [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte gezogen', du: 'hattest gezogen', er_sie_es: 'hatte gezogen', wir: 'hatten gezogen', ihr: 'hattet gezogen', sie_Sie: 'hatten gezogen' },
     [Tense.FUTUR_I]: { ich: 'werde ziehen', du: 'wirst ziehen', er_sie_es: 'wird ziehen', wir: 'werden ziehen', ihr: 'werdet ziehen', sie_Sie: 'werden ziehen' },
   },
+  'zielen': createRegularVerb('ziel'),
+  'zittern': createRegularVerb('zitter'),
+  'zubereiten': createSeparableVerb('zu', 'bereit', 'bereit'),
   'zuhören': createSeparableVerb('zu', 'hör', 'hör'),
+  'zumachen': createSeparableVerb('zu', 'mach', 'mach'),
+  'zünden': createRegularVerb('zünd'),
   'zupfen': createRegularVerb('zupf'),
+  'zurechtfinden': {
+    [Tense.PRAESENS]: { ich: 'finde zurecht', du: 'findest zurecht', er_sie_es: 'findet zurecht', wir: 'finden zurecht', ihr: 'findet zurecht', sie_Sie: 'finden zurecht' },
+    [Tense.PRAETERITUM]: { ich: 'fand zurecht', du: 'fandest zurecht', er_sie_es: 'fand zurecht', wir: 'fanden zurecht', ihr: 'fandet zurecht', sie_Sie: 'fanden zurecht' },
+    [Tense.PERFEKT]: { ich: 'habe zurechtgefunden', du: 'hast zurechtgefunden', er_sie_es: 'hat zurechtgefunden', wir: 'haben zurechtgefunden', ihr: 'habt zurechtgefunden', sie_Sie: 'haben zurechtgefunden' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte zurechtgefunden', du: 'hattest zurechtgefunden', er_sie_es: 'hatte zurechtgefunden', wir: 'hatten zurechtgefunden', ihr: 'hattet zurechtgefunden', sie_Sie: 'hatten zurechtgefunden' },
+    [Tense.FUTUR_I]: { ich: 'werde zurechtfinden', du: 'wirst zurechtfinden', er_sie_es: 'wird zurechtfinden', wir: 'werden zurechtfinden', ihr: 'werdet zurechtfinden', sie_Sie: 'werden zurechtfinden' },
+  },
+  'zurückgeben': {
+    [Tense.PRAESENS]: { ich: 'gebe zurück', du: 'gibst zurück', er_sie_es: 'gibt zurück', wir: 'geben zurück', ihr: 'gebt zurück', sie_Sie: 'geben zurück' },
+    [Tense.PRAETERITUM]: { ich: 'gab zurück', du: 'gabst zurück', er_sie_es: 'gab zurück', wir: 'gaben zurück', ihr: 'gabt zurück', sie_Sie: 'gaben zurück' },
+    [Tense.PERFEKT]: { ich: 'habe zurückgegeben', du: 'hast zurückgegeben', er_sie_es: 'hat zurückgegeben', wir: 'haben zurückgegeben', ihr: 'habt zurückgegeben', sie_Sie: 'haben zurückgegeben' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'hatte zurückgegeben', du: 'hattest zurückgegeben', er_sie_es: 'hatte zurückgegeben', wir: 'hatten zurückgegeben', ihr: 'hattet zurückgegeben', sie_Sie: 'hatten zurückgegeben' },
+    [Tense.FUTUR_I]: { ich: 'werde zurückgeben', du: 'wirst zurückgeben', er_sie_es: 'wird zurückgeben', wir: 'werden zurückgeben', ihr: 'werdet zurückgeben', sie_Sie: 'werden zurückgeben' },
+  },
+  'zurückkommen': {
+    [Tense.PRAESENS]: { ich: 'komme zurück', du: 'kommst zurück', er_sie_es: 'kommt zurück', wir: 'kommen zurück', ihr: 'kommt zurück', sie_Sie: 'kommen zurück' },
+    [Tense.PRAETERITUM]: { ich: 'kam zurück', du: 'kamst zurück', er_sie_es: 'kam zurück', wir: 'kamen zurück', ihr: 'kamt zurück', sie_Sie: 'kamen zurück' },
+    [Tense.PERFEKT]: { ich: 'bin zurückgekommen', du: 'bist zurückgekommen', er_sie_es: 'ist zurückgekommen', wir: 'sind zurückgekommen', ihr: 'seid zurückgekommen', sie_Sie: 'sind zurückgekommen' },
+    [Tense.PLUSQUAMPERFEKT]: { ich: 'war zurückgekommen', du: 'warst zurückgekommen', er_sie_es: 'war zurückgekommen', wir: 'waren zurückgekommen', ihr: 'wart zurückgekommen', sie_Sie: 'waren zurückgekommen' },
+    [Tense.FUTUR_I]: { ich: 'werde zurückkommen', du: 'wirst zurückkommen', er_sie_es: 'wird zurückkommen', wir: 'werden zurückkommen', ihr: 'werdet zurückkommen', sie_Sie: 'werden zurückkommen' },
+  },
+  'zusammenfassen': createSeparableVerb('zusammen', 'fass', 'fass'),
   'zwingen': {
     [Tense.PRAESENS]: { ich: 'zwinge', du: 'zwingst', er_sie_es: 'zwingt', wir: 'zwingen', ihr: 'zwingt', sie_Sie: 'zwingen' },
     [Tense.PRAETERITUM]: { ich: 'zwang', du: 'zwangst', er_sie_es: 'zwang', wir: 'zwangen', ihr: 'zwangt', sie_Sie: 'zwangen' },
@@ -645,76 +1602,54 @@ export const COMMON_VERBS_DB = {
 
 export const getLocalConjugation = (lemma, tense) => {
   const lemmaLower = lemma.toLowerCase();
-
   return COMMON_VERBS_DB[lemmaLower]?.[tense] || null;
 };
 
-
 // --- Reverse Lookup Engine ---
-
-// Map: "konjugiertes_wort" -> { lemma: "grundform", tense: "zeitform" }
 let REVERSE_VERB_INDEX = null;
 
 const buildReverseIndex = () => {
   if (REVERSE_VERB_INDEX) return;
-
   REVERSE_VERB_INDEX = new Map();
-
   Object.keys(COMMON_VERBS_DB).forEach(lemma => {
     const verbData = COMMON_VERBS_DB[lemma];
+    if (!verbData) return;
     Object.keys(verbData).forEach(tenseKey => {
       const tense = tenseKey;
       const conjugations = verbData[tense];
       if (!conjugations) return;
-
       Object.entries(conjugations).forEach(([personKey, conjugatedForm]) => {
         const key = conjugatedForm.toLowerCase();
-
-        // Add to index
         if (!REVERSE_VERB_INDEX.has(key)) {
           REVERSE_VERB_INDEX.set(key, { lemma, tense });
         }
-
-        // Handle compound tenses ("habe gemacht") -> Index "gemacht"
         if (key.includes(' ')) {
           const parts = key.split(' ');
-          const participle = parts[parts.length - 1]; // Last word
-          if (participle.length > 3) { // Avoid short noise
-            if (!REVERSE_VERB_INDEX.has(participle)) {
-              REVERSE_VERB_INDEX.set(participle, { lemma, tense: Tense.PERFEKT });
-            }
+          const participle = parts[parts.length - 1];
+          if (participle.length > 3 && !REVERSE_VERB_INDEX.has(participle)) {
+            REVERSE_VERB_INDEX.set(participle, { lemma, tense: 'PERFEKT' });
           }
         }
       });
     });
   });
-
-  // Add infinitives
   Object.keys(COMMON_VERBS_DB).forEach(lemma => {
     const lemmaLower = lemma.toLowerCase();
     if (!REVERSE_VERB_INDEX.has(lemmaLower)) {
-      REVERSE_VERB_INDEX.set(lemmaLower, { lemma, tense: Tense.PRAESENS });
+      REVERSE_VERB_INDEX.set(lemmaLower, { lemma, tense: 'PRAESENS' });
     }
   });
 };
 
-// Initialize asynchronously
 setTimeout(buildReverseIndex, 100);
 
 export const findVerbLemma = (word) => {
   if (!word) return null;
-  buildReverseIndex(); // Ensure index is built
+  buildReverseIndex();
   const cleanWord = word.toLowerCase().trim();
-
-  // Direct match
   let match = REVERSE_VERB_INDEX.get(cleanWord);
-
-  // Simple heuristic for suffixes if not found
   if (!match && cleanWord.endsWith('st')) {
     match = REVERSE_VERB_INDEX.get(cleanWord.slice(0, -2));
   }
-
   return match ? match.lemma : null;
 };
-
-

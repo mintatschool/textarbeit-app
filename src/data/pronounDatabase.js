@@ -1,0 +1,73 @@
+/**
+ * Datenbank für "Pronomen" (Fürwörter)
+ * Enthält Personal-, Possessiv-, Demonstrativ-, Indefinit- und Interrogativpronomen
+ * Format: { word: string, category: string }
+ */
+
+export const PRONOUN_DB = [
+    // --- Personalpronomen ---
+    { word: 'ich', category: 'Pronomen' },
+    { word: 'du', category: 'Pronomen' },
+    { word: 'er', category: 'Pronomen' },
+    { word: 'sie', category: 'Pronomen' },
+    { word: 'es', category: 'Pronomen' },
+    { word: 'wir', category: 'Pronomen' },
+    { word: 'ihr', category: 'Pronomen' },
+    { word: 'man', category: 'Pronomen' },
+    { word: 'mich', category: 'Pronomen' },
+    { word: 'dich', category: 'Pronomen' },
+    { word: 'sich', category: 'Pronomen' },
+    { word: 'uns', category: 'Pronomen' },
+    { word: 'euch', category: 'Pronomen' },
+    { word: 'mir', category: 'Pronomen' },
+    { word: 'dir', category: 'Pronomen' },
+    { word: 'ihm', category: 'Pronomen' },
+    { word: 'ihnen', category: 'Pronomen' },
+    // --- Possessivpronomen ---
+    { word: 'mein', category: 'Pronomen' },
+    { word: 'meine', category: 'Pronomen' },
+    { word: 'dein', category: 'Pronomen' },
+    { word: 'deine', category: 'Pronomen' },
+    { word: 'sein', category: 'Pronomen' },
+    { word: 'seine', category: 'Pronomen' },
+    { word: 'ihr', category: 'Pronomen' },
+    { word: 'ihre', category: 'Pronomen' },
+    { word: 'unser', category: 'Pronomen' },
+    { word: 'unsere', category: 'Pronomen' },
+    { word: 'euer', category: 'Pronomen' },
+    { word: 'eure', category: 'Pronomen' },
+    // --- Demonstrativpronomen ---
+    { word: 'dieser', category: 'Pronomen' },
+    { word: 'diese', category: 'Pronomen' },
+    { word: 'dieses', category: 'Pronomen' },
+    { word: 'diesem', category: 'Pronomen' },
+    { word: 'diesen', category: 'Pronomen' },
+    { word: 'jener', category: 'Pronomen' },
+    { word: 'jene', category: 'Pronomen' },
+    { word: 'jenes', category: 'Pronomen' },
+    { word: 'solcher', category: 'Pronomen' },
+    { word: 'solche', category: 'Pronomen' },
+    // --- Indefinitpronomen ---
+    { word: 'alle', category: 'Pronomen' },
+    { word: 'alles', category: 'Pronomen' },
+    { word: 'etwas', category: 'Pronomen' },
+    { word: 'nichts', category: 'Pronomen' },
+    { word: 'jemand', category: 'Pronomen' },
+    { word: 'niemand', category: 'Pronomen' },
+    { word: 'einige', category: 'Pronomen' },
+    { word: 'viele', category: 'Pronomen' },
+    { word: 'wenige', category: 'Pronomen' },
+    { word: 'mancher', category: 'Pronomen' },
+    { word: 'jeder', category: 'Pronomen' },
+    { word: 'kein', category: 'Pronomen' },
+    { word: 'keine', category: 'Pronomen' },
+    // --- Interrogativpronomen (Fragewörter) ---
+    { word: 'wer', category: 'Pronomen' },
+    { word: 'wen', category: 'Pronomen' },
+    { word: 'wem', category: 'Pronomen' },
+    { word: 'wessen', category: 'Pronomen' },
+    { word: 'was', category: 'Pronomen' },
+    { word: 'welcher', category: 'Pronomen' },
+    { word: 'welche', category: 'Pronomen' },
+    { word: 'welches', category: 'Pronomen' },
+];

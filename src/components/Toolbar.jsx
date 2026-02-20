@@ -131,12 +131,13 @@ export const Toolbar = ({
     setIsTextMarkerMode,
     onToggleTextMarkerMode,
     exerciseActivity = {}, // New prop for exercise availability
-    onShowExerciseHint // New: Function to show exercise hint modal
+    onShowExerciseHint, // New: Function to show exercise hint modal
+    showWortartenMenu,
+    setShowWortartenMenu
 }) => {
     const [editingColorIndex, setEditingColorIndex] = useState(null);
     const [showResetConfirm, setShowResetConfirm] = useState(false);
     const [showMarkAllConfirm, setShowMarkAllConfirm] = useState(false); // New state
-    const [showWortartenMenu, setShowWortartenMenu] = useState(false); // New Central Menu State
     // Removed local isTextMarkerMode state
 
     const toHighlighterColor = (hex) => {
@@ -196,7 +197,7 @@ export const Toolbar = ({
             <div className="flex flex-col gap-3 items-center p-1 rounded-2xl bg-slate-50 border border-slate-200 shadow-inner w-full">
                 <ToolbarButton
                     title="Zurück zur Eingabe"
-                    icon={Icons.Edit2}
+                    icon={Icons.BackToInput}
                     onClick={onToggleView}
                     active={false}
                     className="w-14 h-10 rounded-2xl bg-white border border-slate-200 shadow-sm hover:border-blue-400"

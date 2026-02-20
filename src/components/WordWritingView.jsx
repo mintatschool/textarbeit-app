@@ -96,7 +96,7 @@ export const WordWritingView = ({ words, settings, setSettings, onClose, title, 
     };
 
     // Derived State for Progress
-    const progressPercentage = ((currentIndex) / validWords.length) * 100;
+    const progressPercentage = showReward ? 100 : ((currentIndex) / validWords.length) * 100;
 
     // Cloud SVG Path (Same as WordCloudView)
     const cloudSVGPath = "M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z";

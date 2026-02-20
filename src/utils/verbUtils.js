@@ -20,6 +20,20 @@ export const isCompoundTense = (tense) => {
     return [Tense.PERFEKT, Tense.PLUSQUAMPERFEKT, Tense.FUTUR_I].includes(tense);
 };
 
+// --- NEUE LOGIK START ---
+// Helper to define exceptions for splitting logic
+// Helper to define exceptions for splitting logic
+const NO_SPLIT_WORDS = new Set([
+    'bin', 'bist', 'ist', 'sind', 'seid', // sein (Präsens)
+    'war', 'warst', 'waren', 'wart',      // sein (Präteritum)
+    'habe', 'hast', 'hat',                // haben (Präsens - oft unregelmäßig)
+    'hatte', 'hattest', 'hatten', 'hattet', // haben (Präteritum)
+    'wirst',                              // werden (Präsens - du wirst)
+    'musst',                              // müssen (du musst - avoid 'mus' stem)
+    'tue', 'tust', 'tut', 'tun',          // tun (Präsens)
+    'tat', 'tatest', 'taten', 'tatet',    // tun (Präteritum)
+]);
+
 export const getVerbPuzzleParts = (conjugated, tense, pronoun = null, conjugationData = null) => {
     conjugated = conjugated.trim().toLowerCase();
 
@@ -29,6 +43,22 @@ export const getVerbPuzzleParts = (conjugated, tense, pronoun = null, conjugatio
             const aux = conjugated.substring(0, spaceIndex);
             const part = conjugated.substring(spaceIndex + 1);
             return { fixedBefore: '', target: aux, fixedAfter: part };
+        }
+    }
+
+    // Explicit check for non-separable words
+    if (NO_SPLIT_WORDS.has(conjugated)) {
+        return { fixedBefore: conjugated, target: '', fixedAfter: '' };
+    }
+
+    // Special Logic for Modal Verbs in Present Tense (Präsens)
+    // where ich-form and er/sie/es-form are identical (e.g., ich kann, er kann)
+    if (tense === Tense.PRAESENS && conjugationData && pronoun) {
+        // If ich and er_sie_es forms are identical, treat them as stems without endings
+        if (conjugationData.ich === conjugationData.er_sie_es) {
+            if (pronoun === 'ich' || pronoun === 'er_sie_es') {
+                return { fixedBefore: conjugated, target: '', fixedAfter: '' };
+            }
         }
     }
 

@@ -1,10 +1,3 @@
-/* GLOBALER FONT-MAPPING FIX: iPad Ersatz für Comic Sans MS */
-@font-face {
-    font-family: 'Comic Sans MS';
-    src: local('Comic Neue'), local('Comic Neue Regular'), url('https://fonts.gstatic.com/s/comicneue/v8/4UaHr65GO1pc_EFT3SjOdE30Pw.woff2') format('woff2');
-    /* Maps any request for Comic Sans MS to Comic Neue */
-}
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -27,8 +20,8 @@
         touch-action: pan-y;
         -webkit-tap-highlight-color: transparent;
 
-        /* Globaler Font-Stack: Bevorzugt Comic Neue vor Comic Sans */
-        font-family: 'Inter', 'Comic Neue', 'Comic Sans MS', 'Mali', -apple-system, sans-serif;
+        /* Globaler Font-Stack: Bevorzugt Inter, fallback auf Comic Sans */
+        font-family: 'Inter', 'Comic Sans MS', 'Comic Neue', 'Mali', -apple-system, sans-serif;
     }
 
     /* OPTIMIERUNG: Touch Targets optimieren & Delay entfernen */
@@ -306,22 +299,21 @@
 
     .shadow-border-yellow {
         box-shadow: none;
-        z-index: 10;
     }
 
     .shadow-border-yellow-left {
-        box-shadow: none;
-        z-index: 10;
+        box-shadow: 10rem 0 0 0 #fef9c3;
+        /* Bridges gap to the right */
     }
 
     .shadow-border-yellow-right {
-        box-shadow: none;
-        z-index: 10;
+        box-shadow: -10rem 0 0 0 #fef9c3;
+        /* Bridges gap to the left */
     }
 
     .shadow-border-yellow-mid {
-        box-shadow: none;
-        z-index: 10;
+        box-shadow: 10rem 0 0 0 #fef9c3, -10rem 0 0 0 #fef9c3;
+        /* Bridges both sides */
     }
 
     .blur-container {

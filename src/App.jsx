@@ -165,6 +165,7 @@ const App = () => {
     const [wordListSortByColor, setWordListSortByColor] = useState(false);
     const [wordListColumnCount, setWordListColumnCount] = useState(1);
     const [showExerciseHint, setShowExerciseHint] = useState(null); // Exercise key to show hint for
+    const [showWortartenMenu, setShowWortartenMenu] = useState(false); // Propagated from Toolbar to App for menu return
 
     const textAreaRef = useRef(null);
     const activeColorRef = useRef(activeColor);
@@ -438,6 +439,56 @@ const App = () => {
         });
     }, [wordsOnly, highlightedIndices, wordColors, textCorrections, hyphenator, wordGroups]);
 
+    const individualExerciseWords = useMemo(() => {
+        const hasHighlights = highlightedIndices.size > 0;
+        const coloredIndices = Object.keys(wordColors);
+        const hasColors = coloredIndices.length > 0;
+
+        if (!hasHighlights && !hasColors) return [];
+
+        let result = wordsOnly;
+
+        if (hasHighlights) {
+            result = result.filter(w => {
+                for (let i = 0; i < w.word.length; i++) {
+                    if (highlightedIndices.has(w.index + i)) return true;
+                }
+                return false;
+            });
+        }
+
+        return result.map(w => {
+            const lookupKey = `${w.word}_${w.index}`;
+            let finalWord = w.word;
+            if (textCorrections[lookupKey]) {
+                finalWord = textCorrections[lookupKey];
+            } else {
+                finalWord = getCorrectCasing(finalWord);
+            }
+
+            return {
+                ...w,
+                originalWord: w.word,
+                word: finalWord,
+                text: finalWord,
+                syllables: getCachedSyllables(finalWord, hyphenator),
+                originalSyllables: getCachedSyllables(w.word, hyphenator)
+            };
+        });
+    }, [wordsOnly, highlightedIndices, wordColors, textCorrections, hyphenator]);
+
+    const uniqueIndividualExerciseWords = useMemo(() => {
+        const unique = [];
+        const seen = new Set();
+        individualExerciseWords.forEach(w => {
+            if (!seen.has(w.word)) {
+                seen.add(w.word);
+                unique.push(w);
+            }
+        });
+        return unique;
+    }, [individualExerciseWords]);
+
     const uniqueExerciseWords = useMemo(() => {
         const unique = [];
         const seen = new Set();
@@ -460,7 +511,7 @@ const App = () => {
         // Simple sentence detection (can be improved)
         const hasSentences = hasText && (text.includes('.') || text.includes('!') || text.includes('?'));
 
-        const hasVerbs = uniqueExerciseWords.some(w => {
+        const hasVerbs = uniqueIndividualExerciseWords.some(w => {
             if (w.isVerb) return true;
             if (w.data && (w.data.category === 'VERB' || w.data.pos === 'VERB')) return true;
 
@@ -471,7 +522,7 @@ const App = () => {
             return !!findVerbLemma(w.word);
         });
 
-        const hasAdjectives = uniqueExerciseWords.some(w => {
+        const hasAdjectives = uniqueIndividualExerciseWords.some(w => {
             if (w.isAdjective) return true;
             if (w.data && (w.data.category === 'ADJ' || w.data.pos === 'ADJ')) return true;
 
@@ -486,7 +537,7 @@ const App = () => {
         // We can reuse the same logic we use inside NounWritingView to check if *any* noun is found
         const sortedParts = [
             // Nouns: Must be capitalized (simple heuristic for German)
-            uniqueExerciseWords.some(w => {
+            uniqueIndividualExerciseWords.some(w => {
                 const isCapitalized = w.word[0] === w.word[0].toUpperCase();
                 return isCapitalized && analyzeTextLocalNouns(w.word).length > 0;
             }),
@@ -497,7 +548,7 @@ const App = () => {
             // Better: Just check if it exists in DB. Overlap is acceptable but we want to avoid 1 word = 2 categories.
             // If "Essen" is Noun, findVerbLemma might say "essen" exists.
 
-            uniqueExerciseWords.some(w => {
+            uniqueIndividualExerciseWords.some(w => {
                 // If it's a confirmed Noun (capitalized + in noun DB), ignore it as Verb for this specific check
                 // to prevent 1 word fulfilling 2 criteria.
                 const isCapitalized = w.word[0] === w.word[0].toUpperCase();
@@ -506,7 +557,7 @@ const App = () => {
                 return !!findVerbLemma(w.word);
             }),
 
-            uniqueExerciseWords.some(w => {
+            uniqueIndividualExerciseWords.some(w => {
                 // Same for Adjectives - if it's a Noun, ignore.
                 const isCapitalized = w.word[0] === w.word[0].toUpperCase();
                 if (isCapitalized && analyzeTextLocalNouns(w.word).length > 0) return false;
@@ -516,7 +567,7 @@ const App = () => {
         ].filter(Boolean).length;
 
         // Noun detection for NounWriting (only those with plurals)
-        const hasNounsForWriting = uniqueExerciseWords.some(w => {
+        const hasNounsForWriting = uniqueIndividualExerciseWords.some(w => {
             // Stricter check: Must be capitalized to be considered a Noun for exercise enablement
             const isCapitalized = w.word[0] === w.word[0].toUpperCase();
             if (!isCapitalized) return false;
@@ -526,7 +577,7 @@ const App = () => {
         });
 
         // Check for syllables (at least one word with > 1 syllable)
-        const hasMultiSyllableWords = uniqueExerciseWords.some(w => w.syllables && w.syllables.length > 1);
+        const hasMultiSyllableWords = uniqueIndividualExerciseWords.some(w => w.syllables && w.syllables.length > 1);
 
         // Check for Word Sorting requirements (valid columns)
         // Must have at least 2 columns with titles and items
@@ -565,6 +616,7 @@ const App = () => {
             gapWords: hasWords,
             cloud: hasWords,
             splitExercise: hasWords,
+            splitExerciseTwo: hasWords,
 
             // Part of Speech Based - require marked words of specific types
             wordWriting: hasWords,
@@ -1534,6 +1586,8 @@ const App = () => {
                     setShowSplitExercise={(v) => v && setActiveView('split')}
                     setShowWordWriting={(v) => v && setActiveView('wordWriting')}
                     onShowExerciseHint={setShowExerciseHint}
+                    showWortartenMenu={showWortartenMenu}
+                    setShowWortartenMenu={setShowWortartenMenu}
                 />
             )}
 
@@ -1808,15 +1862,15 @@ const App = () => {
 
 
                     <Suspense fallback={<LazyFallback />}>
-                        {activeView === 'puzzletest_two' && <PuzzleTestTwoSyllableView words={hasMarkings ? uniqueExerciseWords : []} settings={settings} onClose={() => setActiveView('text')} title="Silbenpuzzle 1" activeColor={activeColor} />}
-                        {activeView === 'syllable_composition' && <SyllableCompositionView words={hasMarkings ? uniqueExerciseWords : []} settings={settings} onClose={() => setActiveView('text')} title="Silbenbau 1" activeColor={activeColor} />}
-                        {activeView === 'syllable_composition_extension' && <SyllableCompositionExtensionView words={hasMarkings ? uniqueExerciseWords : []} settings={settings} onClose={() => setActiveView('text')} title="Silbenbau 2" activeColor={activeColor} />}
-                        {activeView === 'puzzletest_multi' && <PuzzleTestMultiSyllableView words={hasMarkings ? uniqueExerciseWords : []} settings={settings} onClose={() => setActiveView('text')} title="Silbenpuzzle 2" activeColor={activeColor} />}
-                        {activeView === 'cloud' && <WordCloudView words={hasMarkings ? uniqueExerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Schüttelwörter" />}
+                        {activeView === 'puzzletest_two' && <PuzzleTestTwoSyllableView words={hasMarkings ? uniqueIndividualExerciseWords : []} settings={settings} onClose={() => setActiveView('text')} title="Silbenpuzzle 1" activeColor={activeColor} />}
+                        {activeView === 'syllable_composition' && <SyllableCompositionView words={hasMarkings ? uniqueIndividualExerciseWords : []} settings={settings} onClose={() => setActiveView('text')} title="Silbenbau 1" activeColor={activeColor} />}
+                        {activeView === 'syllable_composition_extension' && <SyllableCompositionExtensionView words={hasMarkings ? uniqueIndividualExerciseWords : []} settings={settings} onClose={() => setActiveView('text')} title="Silbenbau 2" activeColor={activeColor} />}
+                        {activeView === 'puzzletest_multi' && <PuzzleTestMultiSyllableView words={hasMarkings ? uniqueIndividualExerciseWords : []} settings={settings} onClose={() => setActiveView('text')} title="Silbenpuzzle 2" activeColor={activeColor} />}
+                        {activeView === 'cloud' && <WordCloudView words={hasMarkings ? uniqueIndividualExerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Schüttelwörter" />}
                         {activeView === 'wordWriting' && (
                             <Suspense fallback={<LazyFallback />}>
                                 <WordWritingView
-                                    words={exerciseWords}
+                                    words={individualExerciseWords}
                                     settings={settings}
                                     setSettings={setSettings}
                                     onClose={() => setActiveView('text')}
@@ -1825,15 +1879,15 @@ const App = () => {
                                 />
                             </Suspense>
                         )}
-                        {activeView === 'carpet' && <SyllableCarpetView words={hasMarkings ? exerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Silbenteppich" />}
-                        {activeView === 'speed_reading' && <SpeedReadingView words={hasMarkings ? uniqueExerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Blitzlesen" />}
+                        {activeView === 'carpet' && <SyllableCarpetView words={hasMarkings ? individualExerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Silbenteppich" />}
+                        {activeView === 'speed_reading' && <SpeedReadingView words={hasMarkings ? uniqueIndividualExerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Blitzlesen" />}
                         {activeView === 'wordSortingByParticiple' && (
                             <WordPartOfSpeechSortingView
                                 exerciseWords={exerciseWords}
                                 settings={settings}
                                 setSettings={setSettings}
                                 colorPalette={colorPalette}
-                                onClose={() => setActiveView('text')}
+                                onClose={() => { setActiveView('text'); setShowWortartenMenu(true); }}
                                 highlightedIndices={highlightedIndices}
                                 hideYellowLetters={hideYellowLetters}
                                 wordColors={wordColors}
@@ -1841,7 +1895,7 @@ const App = () => {
                         )}
 
                         {activeView === 'wordSorting' && <WordSortingView columnsState={columnsState} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Wörter sortieren" wordColors={wordColors} colorPalette={colorPalette} textCorrections={textCorrections} highlightedIndices={highlightedIndices} hideYellowLetters={hideYellowLetters} />}
-                        {activeView === 'alphabetSorting' && <AlphabetSortingView words={hasMarkings ? uniqueExerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Alphabetisch sortieren" />}
+                        {activeView === 'alphabetSorting' && <AlphabetSortingView words={hasMarkings ? uniqueIndividualExerciseWords : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Alphabetisch sortieren" />}
                         {activeView === 'list' && <WordListView
                             words={exerciseWords}
                             columnsState={columnsState}
@@ -1951,14 +2005,14 @@ const App = () => {
                         {activeView === 'sentence' && <SentencePuzzleView text={text} mode="sentence" settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Satzpuzzle" hyphenator={hyphenator} />}
                         {activeView === 'textpuzzle' && <SentencePuzzleView text={text} mode="text" settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Textpuzzle" hyphenator={hyphenator} />}
                         {activeView === 'sentenceshuffle' && <SentenceShuffleView text={text} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Schüttelsätze" hyphenator={hyphenator} />}
-                        {activeView === 'staircase' && <StaircaseView words={hasMarkings ? uniqueExerciseWords.map(w => ({ ...w, isHighlighted: highlightedIndices.has(w.index) })) : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Treppenwörter" />}
-                        {activeView === 'split' && <SplitExerciseView words={hasMarkings ? uniqueExerciseWords : []} onClose={() => setActiveView('text')} settings={settings} setSettings={setSettings} title="Wörter trennen" />}
-                        {activeView === 'gapWords' && <GapWordsView words={hasMarkings ? uniqueExerciseWords : []} highlightedIndices={highlightedIndices} wordColors={wordColors} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Lückenwörter" />}
-                        {activeView === 'initialSound' && <GapWordsView words={hasMarkings ? uniqueExerciseWords : []} highlightedIndices={highlightedIndices} wordColors={wordColors} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} isInitialSound={true} title="Anfangsbuchstaben" />}
-                        {activeView === 'verbWriting' && <VerbWritingView words={uniqueExerciseWords} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} />}
-                        {activeView === 'adjectiveWriting' && <AdjectiveWritingView words={uniqueExerciseWords} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} />}
-                        {activeView === 'nounWriting' && <NounWritingView words={uniqueExerciseWords} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} />}
-                        {activeView === 'verbPuzzle' && <VerbPuzzleView words={uniqueExerciseWords} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} />}
+                        {activeView === 'staircase' && <StaircaseView words={hasMarkings ? uniqueIndividualExerciseWords.map(w => ({ ...w, isHighlighted: highlightedIndices.has(w.index) })) : []} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Treppenwörter" />}
+                        {activeView === 'split' && <SplitExerciseView words={hasMarkings ? uniqueIndividualExerciseWords : []} onClose={() => setActiveView('text')} settings={settings} setSettings={setSettings} title="Wörter trennen" />}
+                        {activeView === 'gapWords' && <GapWordsView words={hasMarkings ? uniqueIndividualExerciseWords : []} highlightedIndices={highlightedIndices} wordColors={wordColors} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Lückenwörter" />}
+                        {activeView === 'initialSound' && <GapWordsView words={hasMarkings ? uniqueIndividualExerciseWords : []} highlightedIndices={highlightedIndices} wordColors={wordColors} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} isInitialSound={true} title="Anfangsbuchstaben" />}
+                        {activeView === 'verbWriting' && <VerbWritingView words={uniqueIndividualExerciseWords} settings={settings} setSettings={setSettings} onClose={() => { setActiveView('text'); setShowWortartenMenu(true); }} />}
+                        {activeView === 'adjectiveWriting' && <AdjectiveWritingView words={uniqueIndividualExerciseWords} settings={settings} setSettings={setSettings} onClose={() => { setActiveView('text'); setShowWortartenMenu(true); }} />}
+                        {activeView === 'nounWriting' && <NounWritingView words={uniqueIndividualExerciseWords} settings={settings} setSettings={setSettings} onClose={() => { setActiveView('text'); setShowWortartenMenu(true); }} />}
+                        {activeView === 'verbPuzzle' && <VerbPuzzleView words={uniqueIndividualExerciseWords} settings={settings} setSettings={setSettings} onClose={() => { setActiveView('text'); setShowWortartenMenu(true); }} />}
                         {activeView === 'gapSentences' && <GapSentencesView text={text} highlightedIndices={highlightedIndices} wordColors={wordColors} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Lückensätze" hyphenator={hyphenator} />}
                         {activeView === 'gapText' && <GapTextView text={text} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Lückentext" hyphenator={hyphenator} />}
                         {activeView === 'caseExercise' && <CaseExerciseView text={text} settings={settings} setSettings={setSettings} onClose={() => setActiveView('text')} title="Groß-/Kleinschreibung" />}

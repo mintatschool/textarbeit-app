@@ -47,7 +47,7 @@ export const SettingsModal = ({ settings, setSettings, onExport, onImport, logo,
 
     const fonts = [
         { name: "Patrick Hand", val: "'Patrick Hand', cursive" },
-        { name: "Comic Sans / Neue", val: "'Comic Neue', 'Comic Sans MS', cursive" },
+        { name: "Comic Sans / Neue", val: "'Comic Sans MS', 'Comic Neue', cursive" },
         { name: "Mali", val: "'Mali', cursive" },
         { name: "Andika", val: "'Andika', sans-serif" },
         { name: "Open Sans", val: "'Open Sans', sans-serif" },

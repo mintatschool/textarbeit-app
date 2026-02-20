@@ -410,7 +410,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                     const getNormalizedColor = (idx) => {
                         const code = wordColors && wordColors[idx];
                         const resolved = resolveColor(code);
-                        if (code === 'yellow' || resolved === 'yellow') return '#fef08a';
+                        if (code === 'yellow' || resolved === 'yellow') return '#fef9c3';
                         return resolved;
                     };
 
@@ -463,7 +463,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                             paddingRight: '1px',
                             marginLeft: '-1px',
                             marginRight: '-1px',
-                            zIndex: 10 // Ensure color layer is above standard text
+                            position: 'relative'
                         };
                         // Identify as yellow for legacy class logic if needed (e.g. text color black)
                         if (resolvedChunkColor === '#fef08a' || resolvedChunkColor === 'yellow') {
@@ -515,7 +515,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                                 }
                             }}
                         >
-                            <span className={shouldHideLetter ? 'blur-letter-content' : ''}>
+                            <span className={`relative z-10 ${shouldHideLetter ? 'blur-letter-content' : ''}`}>
                                 {chunk}
                             </span>
                         </span>
@@ -679,7 +679,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                                             const getNormalizedColor = (idx) => {
                                                 const code = wordColors && wordColors[idx];
                                                 const resolved = resolveColor(code);
-                                                if (code === 'yellow' || resolved === 'yellow') return '#fef08a';
+                                                if (code === 'yellow' || resolved === 'yellow') return '#fef9c3';
                                                 return resolved;
                                             };
 
@@ -719,7 +719,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                                                     paddingRight: '1px',
                                                     marginLeft: '-1px',
                                                     marginRight: '-1px',
-                                                    zIndex: 10
+                                                    position: 'relative'
                                                 };
                                                 // Identify as yellow for legacy class logic if needed
                                                 if (resolvedChunkColor === '#fef08a' || resolvedChunkColor === 'yellow') {
@@ -771,7 +771,7 @@ const Word = React.memo(({ word, prefix, suffix, startIndex, isHighlighted, high
                                                         }
                                                     }}
                                                 >
-                                                    <span className={shouldHideLetter ? 'blur-letter-content' : ''}>
+                                                    <span className={`relative z-10 ${shouldHideLetter ? 'blur-letter-content' : ''}`}>
                                                         {chunk}
                                                     </span>
                                                 </span>

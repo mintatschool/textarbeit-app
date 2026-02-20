@@ -3,6 +3,7 @@ import { analyzeTextLocalNouns } from '../data/nounDatabase';
 import { findVerbLemma } from '../data/verbDatabase';
 import { findAdjectiveLemma } from '../data/adjectiveDatabase';
 import { OTHER_WORDS_DB } from '../data/otherDatabase';
+import { PRONOUN_DB } from '../data/pronounDatabase';
 
 /**
  * Returns the correct casing for a German word based on its presence in word databases.
@@ -35,7 +36,13 @@ export const getCorrectCasing = (word) => {
         return lower;
     }
 
-    // 4. Check if it's in the Other database
+    // 4. Check if it's in the Pronoun database
+    const pronounMatch = PRONOUN_DB.find(p => p.word.toLowerCase() === lower);
+    if (pronounMatch) {
+        return pronounMatch.word; // Return exactly as stored in DB
+    }
+
+    // 5. Check if it's in the Other database
     const otherMatch = OTHER_WORDS_DB.find(o => o.word.toLowerCase() === lower);
     if (otherMatch) {
         return otherMatch.word; // Return exactly as stored in DB

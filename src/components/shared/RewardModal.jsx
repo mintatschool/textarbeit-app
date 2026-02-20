@@ -22,7 +22,7 @@ export const RewardModal = ({
     restartText,
     containerClassName = "fixed inset-0 z-[200] flex items-center justify-center",
     contentClassName = "bg-white rounded-3xl p-12 shadow-2xl pop-animate pointer-events-auto text-center border-b-8 border-green-100 relative z-10 mx-4 max-w-lg w-full",
-    backdropClassName = "fixed inset-0 bg-white/60 backdrop-blur-[2px]",
+    backdropClassName = "fixed inset-0 bg-white/20 backdrop-blur-[1px]",
     iconSize = 64,
     style = {}
 }) => {
